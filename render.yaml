@@ -17,7 +17,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN
-        value: https://baccarat-frontend.onrender.com,https://baccarat-admin.onrender.com
+        value: https://baccarat-frontend-74oz.onrender.com,https://baccarat-admin.onrender.com
 
   # Frontend Static Site (Player)
   - type: web
@@ -32,9 +32,9 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://baccarat-api.onrender.com/api
+        value: https://baccarat-api-hnfb.onrender.com/api
       - key: VITE_SOCKET_URL
-        value: https://baccarat-api.onrender.com
+        value: https://baccarat-api-hnfb.onrender.com
 
   # Admin Dashboard Static Site
   - type: web
@@ -49,4 +49,4 @@ services:
         destination: /index.html
     envVars:
       - key: VITE_API_URL
-        value: https://baccarat-api.onrender.com/api
+        value: https://baccarat-api-hnfb.onrender.com/api
