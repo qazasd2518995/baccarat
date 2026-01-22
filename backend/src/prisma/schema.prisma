@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  agent
+  member
+}
+
+enum UserStatus {
+  active
+  suspended
+  banned
+}
+
+enum TransactionType {
+  deposit
+  withdraw
+  bet
+  win
+  refund
+  adjustment
+}
+
+enum BetType {
+  player
+  banker
+  tie
+  player_pair
+  banker_pair
+  super_six
+}
+
+enum BetStatus {
+  pending
+  won
+  lost
+  refunded
+}
+
+enum GameResult {
+  player
+  banker
+  tie
+}
+
+model User {
+  id            String      @id @default(uuid())
+  username      String      @unique
+  passwordHash  String      @map("password_hash")
+  nickname      String?
+  role          UserRole
+  parentAgentId String?     @map("parent_agent_id")
+  parentAgent   User?       @relation("AgentHierarchy", fields: [parentAgentId], references: [id])
+  subUsers      User[]      @relation("AgentHierarchy")
+  balance       Decimal     @default(0) @db.Decimal(15, 2)
+  status        UserStatus  @default(active)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  transactionsAsUser     Transaction[] @relation("UserTransactions")
+  transactionsAsOperator Transaction[] @relation("OperatorTransactions")
+  bets                   Bet[]
+
+  @@map("users")
+}
+
+model Transaction {
+  id            String          @id @default(uuid())
+  userId        String          @map("user_id")
+  user          User            @relation("UserTransactions", fields: [userId], references: [id])
+  operatorId    String          @map("operator_id")
+  operator      User            @relation("OperatorTransactions", fields: [operatorId], references: [id])
+  type          TransactionType
+  amount        Decimal         @db.Decimal(15, 2)
+  balanceBefore Decimal         @map("balance_before") @db.Decimal(15, 2)
+  balanceAfter  Decimal         @map("balance_after") @db.Decimal(15, 2)
+  note          String?
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  @@map("transactions")
+}
+
+model GameRound {
+  id           String     @id @default(uuid())
+  roundNumber  Int        @default(autoincrement()) @map("round_number")
+  shoeNumber   Int        @default(1) @map("shoe_number")
+  playerCards  Json       @map("player_cards")
+  bankerCards  Json       @map("banker_cards")
+  playerPoints Int        @map("player_points")
+  bankerPoints Int        @map("banker_points")
+  result       GameResult
+  playerPair   Boolean    @default(false) @map("player_pair")
+  bankerPair   Boolean    @default(false) @map("banker_pair")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  bets Bet[]
+
+  @@map("game_rounds")
+}
+
+model Bet {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id])
+  roundId   String    @map("round_id")
+  round     GameRound @relation(fields: [roundId], references: [id])
+  betType   BetType   @map("bet_type")
+  amount    Decimal   @db.Decimal(15, 2)
+  payout    Decimal?  @db.Decimal(15, 2)
+  status    BetStatus @default(pending)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("bets")
+}

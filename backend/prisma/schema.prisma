@@ -1,0 +1,328 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  admin
+  agent
+  member
+}
+
+enum UserStatus {
+  active
+  suspended
+  banned
+}
+
+enum TransactionType {
+  deposit
+  withdraw
+  bet
+  win
+  refund
+  adjustment
+}
+
+enum BetType {
+  player
+  banker
+  tie
+  player_pair
+  banker_pair
+  super_six
+}
+
+enum BetStatus {
+  pending
+  won
+  lost
+  refunded
+}
+
+enum GameResult {
+  player
+  banker
+  tie
+}
+
+enum NoticeType {
+  info
+  warning
+  urgent
+}
+
+model User {
+  id              String      @id @default(uuid())
+  username        String      @unique
+  passwordHash    String      @map("password_hash")
+  nickname        String?
+  role            UserRole
+  parentAgentId   String?     @map("parent_agent_id")
+  parentAgent     User?       @relation("AgentHierarchy", fields: [parentAgentId], references: [id])
+  subUsers        User[]      @relation("AgentHierarchy")
+  balance         Decimal     @default(0) @db.Decimal(15, 2)
+  status          UserStatus  @default(active)
+  bettingLimitId  String?     @map("betting_limit_id")
+  bettingLimit    BettingLimit? @relation(fields: [bettingLimitId], references: [id])
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+
+  transactionsAsUser     Transaction[]    @relation("UserTransactions")
+  transactionsAsOperator Transaction[]    @relation("OperatorTransactions")
+  bets                   Bet[]
+  depositControl         DepositControl?
+  winCapControl          WinCapControl?
+  agentLineWinCap        AgentLineWinCap?
+  createdNotices         Notice[]
+  operationLogs          OperationLog[]
+  chatMessages           ChatMessage[]
+  giftTransactions       GiftTransaction[]
+  dealerFollows          DealerFollow[]
+  notificationSettings   NotificationSettings?
+
+  @@map("users")
+}
+
+model Transaction {
+  id            String          @id @default(uuid())
+  userId        String          @map("user_id")
+  user          User            @relation("UserTransactions", fields: [userId], references: [id])
+  operatorId    String          @map("operator_id")
+  operator      User            @relation("OperatorTransactions", fields: [operatorId], references: [id])
+  type          TransactionType
+  amount        Decimal         @db.Decimal(15, 2)
+  balanceBefore Decimal         @map("balance_before") @db.Decimal(15, 2)
+  balanceAfter  Decimal         @map("balance_after") @db.Decimal(15, 2)
+  note          String?
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  @@map("transactions")
+}
+
+model GameRound {
+  id           String     @id @default(uuid())
+  roundNumber  Int        @default(autoincrement()) @map("round_number")
+  shoeNumber   Int        @default(1) @map("shoe_number")
+  playerCards  Json       @map("player_cards")
+  bankerCards  Json       @map("banker_cards")
+  playerPoints Int        @map("player_points")
+  bankerPoints Int        @map("banker_points")
+  result       GameResult
+  playerPair   Boolean    @default(false) @map("player_pair")
+  bankerPair   Boolean    @default(false) @map("banker_pair")
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  bets Bet[]
+
+  @@map("game_rounds")
+}
+
+model Bet {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id])
+  roundId   String    @map("round_id")
+  round     GameRound @relation(fields: [roundId], references: [id])
+  betType   BetType   @map("bet_type")
+  amount    Decimal   @db.Decimal(15, 2)
+  payout    Decimal?  @db.Decimal(15, 2)
+  status    BetStatus @default(pending)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("bets")
+}
+
+// Game state for persistence across server restarts
+model GameState {
+  id             String   @id @default("singleton")
+  shoeNumber     Int      @default(1) @map("shoe_number")
+  roundCounter   Int      @default(0) @map("round_counter")
+  cardsRemaining Int      @default(416) @map("cards_remaining")
+  shuffledDeck   Json?    @map("shuffled_deck")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("game_state")
+}
+
+// 入金控制
+model DepositControl {
+  id        String   @id @default(uuid())
+  userId    String   @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  enabled   Boolean  @default(false)
+  minAmount Decimal? @map("min_amount") @db.Decimal(15, 2)
+  maxAmount Decimal? @map("max_amount") @db.Decimal(15, 2)
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("deposit_controls")
+}
+
+// 會員封頂控制
+model WinCapControl {
+  id         String   @id @default(uuid())
+  userId     String   @unique @map("user_id")
+  user       User     @relation(fields: [userId], references: [id])
+  enabled    Boolean  @default(false)
+  dailyCap   Decimal? @map("daily_cap") @db.Decimal(15, 2)
+  weeklyCap  Decimal? @map("weekly_cap") @db.Decimal(15, 2)
+  monthlyCap Decimal? @map("monthly_cap") @db.Decimal(15, 2)
+  currentWin Decimal  @default(0) @map("current_win") @db.Decimal(15, 2)
+  note       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("win_cap_controls")
+}
+
+// 代理線封頂控制
+model AgentLineWinCap {
+  id         String   @id @default(uuid())
+  agentId    String   @unique @map("agent_id")
+  agent      User     @relation(fields: [agentId], references: [id])
+  enabled    Boolean  @default(false)
+  dailyCap   Decimal? @map("daily_cap") @db.Decimal(15, 2)
+  weeklyCap  Decimal? @map("weekly_cap") @db.Decimal(15, 2)
+  monthlyCap Decimal? @map("monthly_cap") @db.Decimal(15, 2)
+  currentWin Decimal  @default(0) @map("current_win") @db.Decimal(15, 2)
+  note       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("agent_line_win_caps")
+}
+
+// 公告
+model Notice {
+  id          String     @id @default(uuid())
+  title       String
+  content     String
+  type        NoticeType @default(info)
+  isPinned    Boolean    @default(false) @map("is_pinned")
+  isPublished Boolean    @default(true) @map("is_published")
+  createdBy   String     @map("created_by")
+  creator     User       @relation(fields: [createdBy], references: [id])
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  @@map("notices")
+}
+
+// 操作日誌
+model OperationLog {
+  id         String   @id @default(uuid())
+  operatorId String   @map("operator_id")
+  operator   User     @relation(fields: [operatorId], references: [id])
+  action     String
+  targetType String?  @map("target_type")
+  targetId   String?  @map("target_id")
+  details    Json?
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("operation_logs")
+}
+
+// 聊天消息
+model ChatMessage {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  message   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("chat_messages")
+}
+
+// 禮物交易記錄
+model GiftTransaction {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id])
+  dealerName String   @map("dealer_name")
+  giftType   String   @map("gift_type")
+  giftName   String   @map("gift_name")
+  price      Decimal  @db.Decimal(15, 2)
+  quantity   Int      @default(1)
+  total      Decimal  @db.Decimal(15, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("gift_transactions")
+}
+
+// 遊戲桌台
+model GameTable {
+  id             String   @id @default(uuid())
+  name           String
+  dealerName     String   @map("dealer_name")
+  dealerAvatar   String?  @map("dealer_avatar")
+  gameType       String   @default("baccarat") @map("game_type")
+  minBet         Decimal  @map("min_bet") @db.Decimal(15, 2)
+  maxBet         Decimal  @map("max_bet") @db.Decimal(15, 2)
+  isActive       Boolean  @default(true) @map("is_active")
+  currentPlayers Int      @default(0) @map("current_players")
+  shoeNumber     Int      @default(1) @map("shoe_number")
+  roundNumber    Int      @default(0) @map("round_number")
+  bankerWins     Int      @default(0) @map("banker_wins")
+  playerWins     Int      @default(0) @map("player_wins")
+  tieCount       Int      @default(0) @map("tie_count")
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("game_tables")
+}
+
+// 限紅設定
+model BettingLimit {
+  id        String   @id @default(uuid())
+  name      String
+  playerMin Decimal  @map("player_min") @db.Decimal(15, 2)
+  playerMax Decimal  @map("player_max") @db.Decimal(15, 2)
+  bankerMin Decimal  @map("banker_min") @db.Decimal(15, 2)
+  bankerMax Decimal  @map("banker_max") @db.Decimal(15, 2)
+  tieMin    Decimal  @map("tie_min") @db.Decimal(15, 2)
+  tieMax    Decimal  @map("tie_max") @db.Decimal(15, 2)
+  pairMin   Decimal  @map("pair_min") @db.Decimal(15, 2)
+  pairMax   Decimal  @map("pair_max") @db.Decimal(15, 2)
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users User[]
+
+  @@map("betting_limits")
+}
+
+// 關注荷官
+model DealerFollow {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id])
+  dealerName String   @map("dealer_name")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, dealerName])
+  @@map("dealer_follows")
+}
+
+// 通知設置
+model NotificationSettings {
+  id                      String   @id @default(uuid())
+  userId                  String   @unique @map("user_id")
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  settlementNotifications Boolean  @default(true) @map("settlement_notifications")
+  balanceAlerts           Boolean  @default(true) @map("balance_alerts")
+  systemAnnouncements     Boolean  @default(true) @map("system_announcements")
+  soundEffects            Boolean  @default(false) @map("sound_effects")
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+
+  @@map("notification_settings")
+}
