@@ -5,8 +5,15 @@ import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
   Users,
+  UserPlus,
   Coins,
   Spade,
+  Gamepad2,
+  History,
+  FileText,
+  BarChart3,
+  Bell,
+  Settings,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -15,9 +22,16 @@ import { useAuthStore } from '../store/authStore';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, key: 'dashboard' },
-  { path: '/users', icon: Users, key: 'users' },
+  { path: '/agents', icon: UserPlus, key: 'agents' },
+  { path: '/members', icon: Users, key: 'members' },
   { path: '/transactions', icon: Coins, key: 'transactions' },
-  { path: '/games', icon: Spade, key: 'gameHistory' },
+  { path: '/betting-records', icon: History, key: 'bettingRecords' },
+  { path: '/game-control', icon: Gamepad2, key: 'gameControl' },
+  { path: '/game-rounds', icon: Spade, key: 'gameRounds' },
+  { path: '/operation-logs', icon: FileText, key: 'operationLogs' },
+  { path: '/reports', icon: BarChart3, key: 'reports' },
+  { path: '/notices', icon: Bell, key: 'notices' },
+  { path: '/settings', icon: Settings, key: 'settings' },
 ];
 
 export default function Layout() {

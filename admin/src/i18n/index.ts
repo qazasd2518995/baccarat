@@ -26,9 +26,15 @@ const resources = {
 
       // Navigation
       dashboard: 'Dashboard',
-      users: 'Users',
+      agents: 'Agents',
+      members: 'Members',
       transactions: 'Transactions',
-      gameHistory: 'Game History',
+      bettingRecords: 'Betting Records',
+      gameControl: 'Game Control',
+      gameRounds: 'Game Rounds',
+      operationLogs: 'Operation Logs',
+      reports: 'Reports',
+      notices: 'Notices',
       settings: 'Settings',
 
       // Users
@@ -89,9 +95,15 @@ const resources = {
 
       // Navigation
       dashboard: '仪表盘',
-      users: '用户管理',
+      agents: '代理管理',
+      members: '会员管理',
       transactions: '交易记录',
-      gameHistory: '游戏历史',
+      bettingRecords: '投注记录',
+      gameControl: '游戏控制',
+      gameRounds: '游戏局数',
+      operationLogs: '操作日志',
+      reports: '报表',
+      notices: '公告',
       settings: '设置',
 
       // Users

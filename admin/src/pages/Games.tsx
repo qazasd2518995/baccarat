@@ -189,8 +189,8 @@ export default function Games() {
                     <span className="text-2xl font-bold text-red-400">{round.bankerPoints}</span>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${RESULT_COLORS[round.result]} text-white font-bold text-sm`}>
-                      {round.result[0].toUpperCase()}
+                    <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${round.result ? RESULT_COLORS[round.result] : 'bg-gray-500'} text-white font-bold text-sm`}>
+                      {round.result ? round.result[0].toUpperCase() : '-'}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">

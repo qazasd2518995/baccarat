@@ -51,7 +51,9 @@ export interface GameRound {
   shoeNumber: number;
   playerPoints: number;
   bankerPoints: number;
-  result: GameResult;
+  playerScore?: number;
+  bankerScore?: number;
+  result: GameResult | null;
   playerPair: boolean;
   bankerPair: boolean;
   createdAt: string;
@@ -77,6 +79,7 @@ export interface TransactionsResponse extends PaginatedResponse<Transaction> {
 
 export interface GameRoundsResponse extends PaginatedResponse<GameRound> {
   rounds: GameRound[];
+  total?: number;
 }
 
 // Auth types
