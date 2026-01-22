@@ -42,7 +42,7 @@ function PokerChip({ position, color, delay = 0 }: { position: [number, number, 
 }
 
 // 3D Playing Card Component
-function PlayingCard({ position, rotation, suit }: { position: [number, number, number]; rotation: [number, number, number]; suit: string }) {
+function PlayingCard({ position, rotation }: { position: [number, number, number]; rotation: [number, number, number] }) {
   const meshRef = useRef<THREE.Group>(null);
 
   useFrame((state) => {
@@ -88,14 +88,15 @@ function GoldParticles({ count = 200 }) {
     }
   });
 
+  const bufferRef = useRef<THREE.BufferAttribute>(null);
+
   return (
     <points ref={points}>
       <bufferGeometry>
-        <bufferAttribute
+        <primitive
+          ref={bufferRef}
           attach="attributes-position"
-          count={count}
-          array={particlesPosition}
-          itemSize={3}
+          object={new THREE.BufferAttribute(particlesPosition, 3)}
         />
       </bufferGeometry>
       <pointsMaterial
