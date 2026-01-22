@@ -190,9 +190,9 @@ function Scene() {
       <PokerChip position={[5, 0, -3]} color="#8b0000" delay={1.5} />
 
       {/* Playing Cards */}
-      <PlayingCard position={[-5, 0, -4]} rotation={[0.2, 0.5, 0.1]} suit="spade" />
-      <PlayingCard position={[5, 2, -5]} rotation={[-0.1, -0.3, 0.2]} suit="heart" />
-      <PlayingCard position={[0, -3, -6]} rotation={[0.1, 0.8, -0.1]} suit="diamond" />
+      <PlayingCard position={[-5, 0, -4]} rotation={[0.2, 0.5, 0.1]} />
+      <PlayingCard position={[5, 2, -5]} rotation={[-0.1, -0.3, 0.2]} />
+      <PlayingCard position={[0, -3, -6]} rotation={[0.1, 0.8, -0.1]} />
 
       {/* Floating Diamonds */}
       <FloatingDiamond position={[-2, 1, -2]} />
