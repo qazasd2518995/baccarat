@@ -2,7 +2,6 @@ import axios from 'axios';
 import type {
   User,
   Transaction,
-  GameRound,
   UsersResponse,
   TransactionsResponse,
   GameRoundsResponse,

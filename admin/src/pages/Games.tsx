@@ -10,12 +10,6 @@ const RESULT_COLORS: Record<GameResult, string> = {
   tie: 'bg-green-500',
 };
 
-const RESULT_TEXT: Record<GameResult, string> = {
-  player: 'Player',
-  banker: 'Banker',
-  tie: 'Tie',
-};
-
 export default function Games() {
   const { t } = useTranslation();
   const [rounds, setRounds] = useState<GameRound[]>([]);

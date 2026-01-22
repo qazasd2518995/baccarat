@@ -58,7 +58,7 @@ export interface GameRound {
 }
 
 // API response types
-export interface PaginatedResponse<T> {
+export interface PaginatedResponse<_T> {
   pagination: {
     page: number;
     limit: number;
