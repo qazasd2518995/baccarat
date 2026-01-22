@@ -1,5 +1,11 @@
 # Render Blueprint - https://render.com/docs/blueprint-spec
 
+databases:
+  - name: baccarat-db
+    plan: free
+    databaseName: baccarat
+    user: baccarat_user
+
 services:
   # Backend API Service
   - type: web
@@ -13,7 +19,9 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        value: postgresql://baccarat_gbky_user:snC9kxCNURKVk26FWryMr5rcjp8NSK9Z@dpg-d5otv4i4d50c739q8vjg-a/baccarat_gbky
+        fromDatabase:
+          name: baccarat-db
+          property: connectionString
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN
