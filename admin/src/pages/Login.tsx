@@ -1,8 +1,8 @@
 import { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Loader2, Crown, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, User, Lock, Sparkles } from 'lucide-react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Float, MeshTransmissionMaterial, Environment, Stars } from '@react-three/drei';
 import * as THREE from 'three';
@@ -202,6 +202,127 @@ function Scene() {
   );
 }
 
+// Luxury Input Component
+function LuxuryInput({
+  type,
+  value,
+  onChange,
+  placeholder,
+  icon: Icon,
+  showPasswordToggle,
+  showPassword,
+  onTogglePassword
+}: {
+  type: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder: string;
+  icon: React.ElementType;
+  showPasswordToggle?: boolean;
+  showPassword?: boolean;
+  onTogglePassword?: () => void;
+}) {
+  const [isFocused, setIsFocused] = useState(false);
+
+  return (
+    <motion.div
+      className="relative"
+      initial={{ opacity: 0, x: -30 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Outer glow container */}
+      <div
+        className="relative rounded-2xl p-[1px] transition-all duration-500"
+        style={{
+          background: isFocused
+            ? 'linear-gradient(135deg, #d4af37 0%, #f5d17a 50%, #d4af37 100%)'
+            : 'linear-gradient(135deg, rgba(212, 175, 55, 0.3) 0%, rgba(212, 175, 55, 0.1) 100%)',
+          boxShadow: isFocused
+            ? '0 0 30px rgba(212, 175, 55, 0.3), 0 0 60px rgba(212, 175, 55, 0.1)'
+            : 'none'
+        }}
+      >
+        {/* Inner container */}
+        <div
+          className="relative rounded-2xl overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, rgba(15, 15, 25, 0.95) 0%, rgba(10, 10, 18, 0.98) 100%)'
+          }}
+        >
+          {/* Shimmer effect on focus */}
+          <AnimatePresence>
+            {isFocused && (
+              <motion.div
+                initial={{ x: '-100%' }}
+                animate={{ x: '200%' }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+                className="absolute inset-0 w-1/2"
+                style={{
+                  background: 'linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent)'
+                }}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* Input wrapper */}
+          <div className="relative flex items-center">
+            {/* Icon */}
+            <div
+              className="absolute left-5 transition-all duration-300"
+              style={{
+                color: isFocused ? '#d4af37' : 'rgba(212, 175, 55, 0.4)'
+              }}
+            >
+              <Icon className="w-5 h-5" strokeWidth={1.5} />
+            </div>
+
+            {/* Input */}
+            <input
+              type={showPasswordToggle ? (showPassword ? 'text' : 'password') : type}
+              value={value}
+              onChange={onChange}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder={placeholder}
+              required
+              className="w-full bg-transparent text-white text-base py-5 pl-14 pr-14 outline-none placeholder-gold-muted"
+              style={{
+                fontFamily: "'Noto Sans SC', sans-serif",
+                letterSpacing: '0.5px'
+              }}
+            />
+
+            {/* Password toggle */}
+            {showPasswordToggle && (
+              <button
+                type="button"
+                onClick={onTogglePassword}
+                className="absolute right-5 p-1 transition-all duration-300 hover:scale-110"
+                style={{ color: 'rgba(212, 175, 55, 0.5)' }}
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom accent line */}
+      <motion.div
+        className="absolute -bottom-[1px] left-1/2 h-[2px] -translate-x-1/2"
+        initial={{ width: 0 }}
+        animate={{ width: isFocused ? '60%' : '0%' }}
+        transition={{ duration: 0.3 }}
+        style={{
+          background: 'linear-gradient(90deg, transparent, #ffd700, transparent)'
+        }}
+      />
+    </motion.div>
+  );
+}
+
 export default function Login() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -258,232 +379,313 @@ export default function Login() {
       {/* Main Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="w-full max-w-[420px]"
+          initial={{ opacity: 0, y: 40, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-[480px]"
         >
-          {/* Language Switcher - Top Right */}
+          {/* Language Switcher */}
           <motion.button
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
+            transition={{ delay: 0.5 }}
             onClick={() => i18n.changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
-            className="absolute -top-12 right-0 px-4 py-1.5 text-xs font-medium tracking-wider transition-all duration-300 hover:text-white"
-            style={{ color: 'rgba(212, 175, 55, 0.7)' }}
+            className="absolute -top-14 right-0 px-5 py-2 text-xs font-medium tracking-widest uppercase transition-all duration-300 rounded-full hover:bg-white/5"
+            style={{
+              color: 'rgba(212, 175, 55, 0.7)',
+              border: '1px solid rgba(212, 175, 55, 0.2)'
+            }}
           >
-            {i18n.language === 'zh' ? 'ENGLISH' : '中文'}
+            {i18n.language === 'zh' ? 'English' : '中文'}
           </motion.button>
 
-          {/* Login Card - Refined Design */}
+          {/* Main Card */}
           <div
             className="relative overflow-hidden"
             style={{
-              background: 'linear-gradient(180deg, rgba(18, 18, 28, 0.92) 0%, rgba(12, 12, 20, 0.96) 100%)',
-              borderRadius: '24px',
+              background: 'linear-gradient(180deg, rgba(18, 18, 30, 0.9) 0%, rgba(10, 10, 18, 0.95) 100%)',
+              borderRadius: '32px',
               border: '1px solid rgba(212, 175, 55, 0.15)',
-              boxShadow: '0 40px 80px -20px rgba(0, 0, 0, 0.8), 0 0 1px rgba(212, 175, 55, 0.3)'
+              boxShadow: `
+                0 50px 100px -30px rgba(0, 0, 0, 0.8),
+                0 0 0 1px rgba(212, 175, 55, 0.1) inset,
+                0 0 80px rgba(212, 175, 55, 0.03) inset
+              `
             }}
           >
-            {/* Top Gold Accent Line */}
-            <div
-              className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-[2px]"
-              style={{ background: 'linear-gradient(90deg, transparent, #d4af37, transparent)' }}
-            />
+            {/* Top decorative border */}
+            <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500/50 to-transparent" />
+
+            {/* Corner accents */}
+            <div className="absolute top-0 left-0 w-20 h-20 border-l-2 border-t-2 border-amber-500/20 rounded-tl-[32px]" />
+            <div className="absolute top-0 right-0 w-20 h-20 border-r-2 border-t-2 border-amber-500/20 rounded-tr-[32px]" />
+            <div className="absolute bottom-0 left-0 w-20 h-20 border-l-2 border-b-2 border-amber-500/20 rounded-bl-[32px]" />
+            <div className="absolute bottom-0 right-0 w-20 h-20 border-r-2 border-b-2 border-amber-500/20 rounded-br-[32px]" />
 
             {/* Card Content */}
-            <div className="px-10 py-12">
-              {/* Logo & Title Section */}
+            <div className="px-12 py-14">
+              {/* Logo Section */}
               <motion.div
-                initial={{ opacity: 0, y: 15 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="text-center mb-10"
+                transition={{ delay: 0.2, duration: 0.6 }}
+                className="text-center mb-12"
               >
-                {/* Crown Icon */}
+                {/* Animated Crown/Diamond Logo */}
                 <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                  className="inline-flex items-center justify-center w-16 h-16 mb-5 rounded-2xl"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.05) 100%)',
-                    border: '1px solid rgba(212, 175, 55, 0.3)'
-                  }}
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ delay: 0.3, duration: 0.8, type: 'spring', stiffness: 200 }}
+                  className="relative w-24 h-24 mx-auto mb-8"
                 >
-                  <Crown className="w-8 h-8" style={{ color: '#d4af37' }} strokeWidth={1.5} />
-                </motion.div>
-
-                {/* Title */}
-                <h1
-                  className="text-2xl font-semibold tracking-wide mb-2"
-                  style={{ color: '#ffffff' }}
-                >
-                  {i18n.language === 'zh' ? '管理后台' : 'Admin Console'}
-                </h1>
-                <p
-                  className="text-sm tracking-widest uppercase"
-                  style={{ color: 'rgba(212, 175, 55, 0.5)' }}
-                >
-                  {i18n.language === 'zh' ? '百家乐管理系统' : 'Baccarat Management'}
-                </p>
-              </motion.div>
-
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-5">
-                {/* Error Message */}
-                {error && (
+                  {/* Outer ring */}
                   <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="px-4 py-3 rounded-lg text-sm text-center"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                    className="absolute inset-0 rounded-full"
                     style={{
-                      background: 'rgba(220, 38, 38, 0.1)',
-                      border: '1px solid rgba(220, 38, 38, 0.3)',
-                      color: '#fca5a5'
+                      border: '1px solid rgba(212, 175, 55, 0.3)',
+                      borderTopColor: '#d4af37'
                     }}
-                  >
-                    {error}
-                  </motion.div>
-                )}
+                  />
 
-                {/* Username Field */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.35 }}
-                >
-                  <label
-                    className="block text-xs font-medium mb-2 tracking-wider uppercase"
-                    style={{ color: 'rgba(255, 255, 255, 0.5)' }}
-                  >
-                    {t('username')}
-                  </label>
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-3.5 rounded-lg text-sm transition-all duration-300 outline-none"
+                  {/* Inner glow */}
+                  <div
+                    className="absolute inset-2 rounded-full"
                     style={{
-                      background: 'rgba(255, 255, 255, 0.03)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      color: '#ffffff'
+                      background: 'radial-gradient(circle, rgba(212, 175, 55, 0.15) 0%, transparent 70%)'
                     }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = 'rgba(212, 175, 55, 0.5)';
-                      e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                  />
+
+                  {/* Center icon container */}
+                  <div
+                    className="absolute inset-4 rounded-full flex items-center justify-center"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.05) 100%)',
+                      border: '1px solid rgba(212, 175, 55, 0.3)',
+                      boxShadow: '0 0 40px rgba(212, 175, 55, 0.2) inset'
                     }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                      e.target.style.background = 'rgba(255, 255, 255, 0.03)';
+                  >
+                    <Sparkles className="w-8 h-8 text-amber-400" strokeWidth={1.5} />
+                  </div>
+
+                  {/* Pulse effect */}
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.5, 0, 0.5]
                     }}
-                    placeholder={i18n.language === 'zh' ? '输入用户名' : 'Enter username'}
-                    required
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="absolute inset-0 rounded-full"
+                    style={{ border: '1px solid rgba(212, 175, 55, 0.5)' }}
                   />
                 </motion.div>
 
-                {/* Password Field */}
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
+                {/* Title */}
+                <motion.h1
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
                   transition={{ delay: 0.4 }}
+                  className="text-3xl font-bold mb-3 tracking-wide"
+                  style={{
+                    fontFamily: "'Noto Serif SC', serif",
+                    background: 'linear-gradient(135deg, #ffd700 0%, #f5d17a 30%, #d4af37 60%, #ffd700 100%)',
+                    backgroundSize: '200% auto',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    animation: 'shimmer 4s ease-in-out infinite'
+                  }}
                 >
+                  {i18n.language === 'zh' ? '尊贵管理系统' : 'Royal Admin'}
+                </motion.h1>
+
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-sm tracking-[0.25em] uppercase"
+                  style={{ color: 'rgba(212, 175, 55, 0.5)' }}
+                >
+                  {i18n.language === 'zh' ? '百家乐后台管理' : 'Baccarat Management'}
+                </motion.p>
+
+                {/* Decorative line */}
+                <motion.div
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: 0.6, duration: 0.8 }}
+                  className="mt-6 h-[1px] mx-auto w-20"
+                  style={{ background: 'linear-gradient(90deg, transparent, #d4af37, transparent)' }}
+                />
+              </motion.div>
+
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Error Message */}
+                <AnimatePresence>
+                  {error && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, height: 0 }}
+                      animate={{ opacity: 1, y: 0, height: 'auto' }}
+                      exit={{ opacity: 0, y: -10, height: 0 }}
+                      className="px-5 py-4 rounded-2xl text-sm text-center overflow-hidden"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(220, 38, 38, 0.05) 100%)',
+                        border: '1px solid rgba(220, 38, 38, 0.3)',
+                        color: '#fca5a5'
+                      }}
+                    >
+                      {error}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Username Field */}
+                <div>
                   <label
-                    className="block text-xs font-medium mb-2 tracking-wider uppercase"
-                    style={{ color: 'rgba(255, 255, 255, 0.5)' }}
+                    className="block text-xs font-medium mb-3 tracking-[0.2em] uppercase"
+                    style={{ color: 'rgba(212, 175, 55, 0.6)' }}
+                  >
+                    {t('username')}
+                  </label>
+                  <LuxuryInput
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder={i18n.language === 'zh' ? '请输入用户名' : 'Enter username'}
+                    icon={User}
+                  />
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <label
+                    className="block text-xs font-medium mb-3 tracking-[0.2em] uppercase"
+                    style={{ color: 'rgba(212, 175, 55, 0.6)' }}
                   >
                     {t('password')}
                   </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full px-4 py-3.5 pr-12 rounded-lg text-sm transition-all duration-300 outline-none"
-                      style={{
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        color: '#ffffff'
-                      }}
-                      onFocus={(e) => {
-                        e.target.style.borderColor = 'rgba(212, 175, 55, 0.5)';
-                        e.target.style.background = 'rgba(255, 255, 255, 0.05)';
-                      }}
-                      onBlur={(e) => {
-                        e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                        e.target.style.background = 'rgba(255, 255, 255, 0.03)';
-                      }}
-                      placeholder={i18n.language === 'zh' ? '输入密码' : 'Enter password'}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 transition-colors"
-                      style={{ color: 'rgba(255, 255, 255, 0.3)' }}
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </motion.div>
+                  <LuxuryInput
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={i18n.language === 'zh' ? '请输入密码' : 'Enter password'}
+                    icon={Lock}
+                    showPasswordToggle
+                    showPassword={showPassword}
+                    onTogglePassword={() => setShowPassword(!showPassword)}
+                  />
+                </div>
 
                 {/* Login Button */}
                 <motion.div
-                  initial={{ opacity: 0, y: 15 }}
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.45 }}
-                  className="pt-3"
+                  transition={{ delay: 0.5 }}
+                  className="pt-6"
                 >
                   <motion.button
                     type="submit"
                     disabled={loading}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    className="w-full py-4 rounded-lg font-semibold text-sm tracking-wider uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="relative w-full py-5 rounded-2xl font-bold text-base tracking-[0.15em] uppercase transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group"
                     style={{
-                      background: 'linear-gradient(135deg, #d4af37 0%, #b8962e 100%)',
+                      background: 'linear-gradient(135deg, #d4af37 0%, #f5d17a 25%, #d4af37 50%, #aa8c2c 100%)',
                       color: '#0a0a0f',
-                      boxShadow: '0 4px 20px rgba(212, 175, 55, 0.25)'
+                      boxShadow: '0 10px 40px rgba(212, 175, 55, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1) inset'
                     }}
                   >
-                    {loading ? (
-                      <Loader2 className="w-5 h-5 animate-spin inline-block" />
-                    ) : (
-                      i18n.language === 'zh' ? '登 录' : 'Sign In'
-                    )}
+                    {/* Animated shine effect */}
+                    <motion.div
+                      className="absolute inset-0"
+                      initial={{ x: '-100%' }}
+                      whileHover={{ x: '100%' }}
+                      transition={{ duration: 0.6 }}
+                      style={{
+                        background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent)'
+                      }}
+                    />
+
+                    {/* Button content */}
+                    <span className="relative z-10 flex items-center justify-center gap-3">
+                      {loading ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          <span style={{ fontFamily: "'Noto Sans SC', sans-serif" }}>
+                            {i18n.language === 'zh' ? '立即登录' : 'Sign In'}
+                          </span>
+                          <motion.span
+                            animate={{ x: [0, 4, 0] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                          >
+                            →
+                          </motion.span>
+                        </>
+                      )}
+                    </span>
+
+                    {/* Bottom highlight */}
+                    <div
+                      className="absolute bottom-0 left-0 right-0 h-[1px]"
+                      style={{ background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent)' }}
+                    />
                   </motion.button>
                 </motion.div>
               </form>
             </div>
 
-            {/* Bottom Section */}
+            {/* Footer Section */}
             <div
-              className="px-10 py-5 text-center border-t"
-              style={{ borderColor: 'rgba(255, 255, 255, 0.05)' }}
+              className="px-12 py-6 text-center"
+              style={{
+                background: 'linear-gradient(180deg, transparent 0%, rgba(212, 175, 55, 0.02) 100%)',
+                borderTop: '1px solid rgba(212, 175, 55, 0.1)'
+              }}
             >
-              <p className="text-xs" style={{ color: 'rgba(255, 255, 255, 0.25)' }}>
-                {i18n.language === 'zh' ? '安全登录 · 数据加密' : 'Secure Login · Encrypted'}
-              </p>
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-8 h-[1px] bg-gradient-to-r from-transparent to-amber-500/30" />
+                <p className="text-xs tracking-widest" style={{ color: 'rgba(212, 175, 55, 0.4)' }}>
+                  {i18n.language === 'zh' ? '安全加密 · 尊享体验' : 'Secure · Premium'}
+                </p>
+                <div className="w-8 h-[1px] bg-gradient-to-l from-transparent to-amber-500/30" />
+              </div>
             </div>
           </div>
 
-          {/* Footer */}
+          {/* Bottom Copyright */}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="text-center mt-8 text-xs"
-            style={{ color: 'rgba(255, 255, 255, 0.2)' }}
+            transition={{ delay: 0.8 }}
+            className="text-center mt-8 text-xs tracking-wider"
+            style={{ color: 'rgba(255, 255, 255, 0.15)' }}
           >
-            © 2025 Baccarat Admin System
+            © 2025 Royal Baccarat System
           </motion.p>
         </motion.div>
       </div>
 
-      {/* Styles */}
+      {/* Global Styles */}
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;700&display=swap');
+
+        @keyframes shimmer {
+          0%, 100% { background-position: 0% center; }
+          50% { background-position: 200% center; }
+        }
+
         input::placeholder {
-          color: rgba(255, 255, 255, 0.25);
+          color: rgba(212, 175, 55, 0.25);
+        }
+
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus {
+          -webkit-text-fill-color: #ffffff;
+          -webkit-box-shadow: 0 0 0px 1000px rgba(15, 15, 25, 0.95) inset;
+          transition: background-color 5000s ease-in-out 0s;
         }
       `}</style>
     </div>
