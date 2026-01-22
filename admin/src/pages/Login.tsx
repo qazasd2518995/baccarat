@@ -315,20 +315,19 @@ export default function Login() {
             <h1
               className="text-3xl font-bold mb-2 tracking-wider"
               style={{
-                fontFamily: "'Playfair Display', serif",
                 background: 'linear-gradient(135deg, #f5d17a 0%, #d4af37 50%, #f5d17a 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 textShadow: '0 0 40px rgba(212, 175, 55, 0.3)'
               }}
             >
-              ADMIN
+              {i18n.language === 'zh' ? '管理后台' : 'ADMIN'}
             </h1>
             <p
-              className="text-sm tracking-[0.2em] uppercase"
+              className="text-sm tracking-[0.15em]"
               style={{ color: 'rgba(212, 175, 55, 0.6)' }}
             >
-              Management Console
+              {i18n.language === 'zh' ? '百家乐管理控制台' : 'Management Console'}
             </p>
           </motion.div>
 
@@ -358,27 +357,28 @@ export default function Login() {
               >
                 {t('username')}
               </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                  <User className="w-5 h-5" style={{ color: 'rgba(212, 175, 55, 0.5)' }} />
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                  <User className="w-5 h-5" style={{ color: '#d4af37' }} />
                 </div>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 rounded-xl transition-all duration-300 outline-none"
+                  className="w-full pl-12 pr-4 py-4 rounded-lg transition-all duration-300 outline-none text-base"
                   style={{
-                    background: 'rgba(0, 0, 0, 0.3)',
-                    border: '1px solid rgba(212, 175, 55, 0.2)',
+                    background: 'linear-gradient(135deg, rgba(20, 20, 35, 0.95) 0%, rgba(15, 15, 28, 0.98) 100%)',
+                    border: '2px solid rgba(212, 175, 55, 0.4)',
                     color: '#ffffff',
+                    boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(212, 175, 55, 0.1)'
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = 'rgba(212, 175, 55, 0.5)';
-                    e.target.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.1), inset 0 0 20px rgba(212, 175, 55, 0.05)';
+                    e.target.style.borderColor = '#d4af37';
+                    e.target.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.3)';
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = 'rgba(212, 175, 55, 0.2)';
-                    e.target.style.boxShadow = 'none';
+                    e.target.style.borderColor = 'rgba(212, 175, 55, 0.4)';
+                    e.target.style.boxShadow = 'inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(212, 175, 55, 0.1)';
                   }}
                   placeholder={t('username')}
                   required
@@ -394,27 +394,28 @@ export default function Login() {
               >
                 {t('password')}
               </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2">
-                  <Lock className="w-5 h-5" style={{ color: 'rgba(212, 175, 55, 0.5)' }} />
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+                  <Lock className="w-5 h-5" style={{ color: '#d4af37' }} />
                 </div>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3.5 rounded-xl transition-all duration-300 outline-none"
+                  className="w-full pl-12 pr-4 py-4 rounded-lg transition-all duration-300 outline-none text-base"
                   style={{
-                    background: 'rgba(0, 0, 0, 0.3)',
-                    border: '1px solid rgba(212, 175, 55, 0.2)',
+                    background: 'linear-gradient(135deg, rgba(20, 20, 35, 0.95) 0%, rgba(15, 15, 28, 0.98) 100%)',
+                    border: '2px solid rgba(212, 175, 55, 0.4)',
                     color: '#ffffff',
+                    boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(212, 175, 55, 0.1)'
                   }}
                   onFocus={(e) => {
-                    e.target.style.borderColor = 'rgba(212, 175, 55, 0.5)';
-                    e.target.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.1), inset 0 0 20px rgba(212, 175, 55, 0.05)';
+                    e.target.style.borderColor = '#d4af37';
+                    e.target.style.boxShadow = '0 0 20px rgba(212, 175, 55, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.3)';
                   }}
                   onBlur={(e) => {
-                    e.target.style.borderColor = 'rgba(212, 175, 55, 0.2)';
-                    e.target.style.boxShadow = 'none';
+                    e.target.style.borderColor = 'rgba(212, 175, 55, 0.4)';
+                    e.target.style.boxShadow = 'inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 0 rgba(212, 175, 55, 0.1)';
                   }}
                   placeholder={t('password')}
                   required
@@ -428,23 +429,26 @@ export default function Login() {
               disabled={loading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-4 rounded-xl font-bold text-base tracking-wider transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+              className="w-full py-4 rounded-lg font-bold text-lg tracking-wider transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed mt-8 relative overflow-hidden"
               style={{
-                background: 'linear-gradient(135deg, #f5d17a 0%, #d4af37 50%, #a88a2a 100%)',
+                background: 'linear-gradient(135deg, #f5d17a 0%, #d4af37 40%, #b8960c 100%)',
                 color: '#0a0a0f',
-                boxShadow: '0 10px 30px rgba(212, 175, 55, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                border: '2px solid #f5d17a',
+                boxShadow: '0 8px 32px rgba(212, 175, 55, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 0 rgba(0, 0, 0, 0.1)'
               }}
               onMouseEnter={(e) => {
                 if (!loading) {
-                  e.currentTarget.style.boxShadow = '0 15px 40px rgba(212, 175, 55, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(212, 175, 55, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 -2px 0 rgba(0, 0, 0, 0.1)';
+                  e.currentTarget.style.background = 'linear-gradient(135deg, #ffe066 0%, #f5d17a 40%, #d4af37 100%)';
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 10px 30px rgba(212, 175, 55, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2)';
+                e.currentTarget.style.boxShadow = '0 8px 32px rgba(212, 175, 55, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3), inset 0 -2px 0 rgba(0, 0, 0, 0.1)';
+                e.currentTarget.style.background = 'linear-gradient(135deg, #f5d17a 0%, #d4af37 40%, #b8960c 100%)';
               }}
             >
               {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin inline-block" />
+                <Loader2 className="w-6 h-6 animate-spin inline-block" />
               ) : (
                 t('login')
               )}
@@ -463,13 +467,13 @@ export default function Login() {
             className="text-xs tracking-wider"
             style={{ color: 'rgba(212, 175, 55, 0.4)' }}
           >
-            © 2025 BACCARAT ADMIN PANEL
+            © 2025 百家乐管理系统
           </p>
           <p
             className="text-xs mt-1"
             style={{ color: 'rgba(255, 255, 255, 0.2)' }}
           >
-            Premium Gaming Management System
+            尊享游戏管理平台
           </p>
         </motion.div>
       </motion.div>
