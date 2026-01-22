@@ -8,12 +8,12 @@ services:
     plan: free
     rootDir: backend
     buildCommand: npm install --include=dev && npm run build
-    startCommand: sleep 5 && npx prisma db push && npm start
+    startCommand: npx prisma db push && npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        value: postgresql://baccarat_gbky_user:snC9kxCNURKVk26FWryMr5rcjp8NSK9Z@dpg-d5otv4i4d50c739q8vjg-a.oregon-postgres.render.com/baccarat_gbky
+        value: postgresql://baccarat_db_24rf_user:9KXOIWX8BwMu13rQVFhjmIQbmWIjdmiw@dpg-d5ouijv5c7fs73aocvng-a/baccarat_db_24rf
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN
