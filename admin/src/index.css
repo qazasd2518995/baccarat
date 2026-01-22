@@ -1,22 +1,59 @@
 @import "tailwindcss";
 
+/* Custom theme */
 @theme {
   --color-primary: #f59e0b;
   --color-secondary: #1e293b;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
+/* Custom base styles */
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #0a0f1c;
+  color: white;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#root {
-  min-height: 100vh;
+/* Login form input styles */
+.login-input {
+  background: linear-gradient(135deg, rgba(20, 20, 35, 0.9) 0%, rgba(15, 15, 28, 0.95) 100%) !important;
+  border: 2px solid rgba(212, 175, 55, 0.3) !important;
+  border-radius: 0.75rem !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+}
+
+.login-input:focus {
+  background: linear-gradient(135deg, rgba(30, 30, 50, 0.95) 0%, rgba(20, 20, 35, 0.98) 100%) !important;
+  border: 2px solid #d4af37 !important;
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.2), inset 0 0 20px rgba(212, 175, 55, 0.05) !important;
+}
+
+/* Fix Chrome autofill background color */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgba(20, 20, 35, 0.95) inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background-color: rgba(20, 20, 35, 0.95) !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+  caret-color: #ffffff !important;
+}
+
+/* Also handle autofill for login-input class */
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover,
+.login-input:-webkit-autofill:focus,
+.login-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px rgba(20, 20, 35, 0.95) inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  background-color: rgba(20, 20, 35, 0.95) !important;
+  border: 2px solid rgba(212, 175, 55, 0.3) !important;
+}
+
+input::placeholder {
+  color: rgba(212, 175, 55, 0.3);
 }

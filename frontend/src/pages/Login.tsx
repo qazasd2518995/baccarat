@@ -229,15 +229,17 @@ export default function Login() {
       const { data } = await authApi.login(username, password);
 
       if (data.token && data.user) {
+        // Only allow member role to login to game
+        if (data.user.role === 'admin' || data.user.role === 'agent') {
+          setError(i18n.language === 'zh' ? '管理员和代理请使用管理后台登录' : 'Admins and agents please use admin panel to login');
+          setIsLoading(false);
+          return;
+        }
+
         setAuth(data.token, data.user);
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-
-        if (data.user.role === 'admin' || data.user.role === 'agent') {
-          navigate('/admin', { replace: true });
-        } else {
-          navigate('/', { replace: true });
-        }
+        navigate('/', { replace: true });
       } else {
         setError(i18n.language === 'zh' ? '登录响应无效' : 'Invalid login response');
       }
@@ -469,7 +471,7 @@ export default function Login() {
                     onChange={(e) => setUsername(e.target.value)}
                     onFocus={() => setFocusedField('username')}
                     onBlur={() => setFocusedField(null)}
-                    className="w-full px-5 py-4 rounded-xl transition-all duration-500 outline-none text-base"
+                    className="login-input w-full px-5 py-4 rounded-xl transition-all duration-500 outline-none text-base"
                     style={{
                       background: focusedField === 'username'
                         ? 'linear-gradient(135deg, rgba(30, 30, 50, 0.95) 0%, rgba(20, 20, 35, 0.98) 100%)'
@@ -511,7 +513,7 @@ export default function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     onFocus={() => setFocusedField('password')}
                     onBlur={() => setFocusedField(null)}
-                    className="w-full px-5 py-4 rounded-xl transition-all duration-500 outline-none text-base"
+                    className="login-input w-full px-5 py-4 rounded-xl transition-all duration-500 outline-none text-base"
                     style={{
                       background: focusedField === 'password'
                         ? 'linear-gradient(135deg, rgba(30, 30, 50, 0.95) 0%, rgba(20, 20, 35, 0.98) 100%)'

@@ -71,18 +71,6 @@ export default function GameHeader() {
           {i18n.language === 'zh' ? 'EN' : '中文'}
         </motion.button>
 
-        {/* Admin Link (if admin or agent) */}
-        {user && (user.role === 'admin' || user.role === 'agent') && (
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/admin')}
-            className="px-4 py-2 rounded-xl bg-slate-700/50 hover:bg-slate-600/50 border border-slate-500/30 text-sm font-medium"
-          >
-            {t('admin')}
-          </motion.button>
-        )}
-
         {/* User Menu */}
         <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-800/50 border border-slate-700/30">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
