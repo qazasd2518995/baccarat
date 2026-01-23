@@ -24,6 +24,7 @@ interface BettingRecord {
   roundId: string;
   fullRoundId: string;
   game: string;
+  gameType: 'baccarat' | 'dragontiger' | 'bullbull';
   settleTime: string;
   table: string;
   shoe: number;
@@ -32,12 +33,30 @@ interface BettingRecord {
   validBet: number;
   result: string;
   winLoss: number;
-  playerCards: Card[];
-  bankerCards: Card[];
-  playerPoints: number;
-  bankerPoints: number;
-  playerPair: boolean;
-  bankerPair: boolean;
+  // Baccarat specific
+  playerCards?: Card[];
+  bankerCards?: Card[];
+  playerPoints?: number;
+  bankerPoints?: number;
+  playerPair?: boolean;
+  bankerPair?: boolean;
+  // Dragon Tiger specific
+  dragonCard?: Card;
+  tigerCard?: Card;
+  dragonValue?: number;
+  tigerValue?: number;
+  // Bull Bull specific
+  bbBankerCards?: Card[];
+  bbPlayer1Cards?: Card[];
+  bbPlayer2Cards?: Card[];
+  bbPlayer3Cards?: Card[];
+  bankerRank?: string;
+  player1Rank?: string;
+  player2Rank?: string;
+  player3Rank?: string;
+  player1Result?: string;
+  player2Result?: string;
+  player3Result?: string;
   bets: BetDetail[];
 }
 
@@ -86,6 +105,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
   // Helper to translate bet type
   const translateBetType = (type: string) => {
     const betTypeMap: Record<string, { zh: string; en: string }> = {
+      // Baccarat
       player: { zh: '闲', en: 'Player' },
       banker: { zh: '庄', en: 'Banker' },
       tie: { zh: '和', en: 'Tie' },
@@ -94,6 +114,20 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
       super_six: { zh: '超级六', en: 'Super 6' },
       player_bonus: { zh: '闲龙宝', en: 'P.Dragon' },
       banker_bonus: { zh: '庄龙宝', en: 'B.Dragon' },
+      // Dragon Tiger
+      dragon: { zh: '龙', en: 'Dragon' },
+      tiger: { zh: '虎', en: 'Tiger' },
+      dt_tie: { zh: '和', en: 'Tie' },
+      dt_suited_tie: { zh: '同花和', en: 'Suited Tie' },
+      dragon_big: { zh: '龙大', en: 'Dragon Big' },
+      dragon_small: { zh: '龙小', en: 'Dragon Small' },
+      tiger_big: { zh: '虎大', en: 'Tiger Big' },
+      tiger_small: { zh: '虎小', en: 'Tiger Small' },
+      // Bull Bull
+      bb_banker: { zh: '庄', en: 'Banker' },
+      bb_player1: { zh: '闲1', en: 'Player 1' },
+      bb_player2: { zh: '闲2', en: 'Player 2' },
+      bb_player3: { zh: '闲3', en: 'Player 3' },
     };
     const mapped = betTypeMap[type];
     if (mapped) {
@@ -123,16 +157,42 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
         const totalPayout = bets.reduce((sum: number, b: any) => sum + Number(b.payout), 0);
         const netResult = totalPayout - totalBet;
 
-        // Determine result text
-        let resultText = round.result;
-        if (i18n.language === 'zh') {
-          resultText = round.result === 'player' ? '闲赢' :
-                       round.result === 'banker' ? '庄赢' :
-                       round.result === 'tie' ? '和局' : round.result;
+        // Determine game name based on gameType
+        const gameType = round.gameType || 'baccarat';
+        let gameName: string;
+        if (gameType === 'dragontiger') {
+          gameName = i18n.language === 'zh' ? '龙虎' : 'Dragon Tiger';
+        } else if (gameType === 'bullbull') {
+          gameName = i18n.language === 'zh' ? '牛牛' : 'Bull Bull';
         } else {
-          resultText = round.result === 'player' ? 'Player' :
-                       round.result === 'banker' ? 'Banker' :
-                       round.result === 'tie' ? 'Tie' : round.result;
+          gameName = i18n.language === 'zh' ? '百家乐' : 'Baccarat';
+        }
+
+        // Determine result text based on game type
+        let resultText = round.result;
+        if (gameType === 'baccarat') {
+          if (i18n.language === 'zh') {
+            resultText = round.result === 'player' ? '闲赢' :
+                         round.result === 'banker' ? '庄赢' :
+                         round.result === 'tie' ? '和局' : round.result;
+          } else {
+            resultText = round.result === 'player' ? 'Player' :
+                         round.result === 'banker' ? 'Banker' :
+                         round.result === 'tie' ? 'Tie' : round.result;
+          }
+        } else if (gameType === 'dragontiger') {
+          if (i18n.language === 'zh') {
+            resultText = round.result === 'dragon' ? '龙赢' :
+                         round.result === 'tiger' ? '虎赢' :
+                         round.result === 'dt_tie' ? '和局' : round.result;
+          } else {
+            resultText = round.result === 'dragon' ? 'Dragon' :
+                         round.result === 'tiger' ? 'Tiger' :
+                         round.result === 'dt_tie' ? 'Tie' : round.result;
+          }
+        } else if (gameType === 'bullbull') {
+          // Bull Bull shows player results (win/lose for each position)
+          resultText = round.result || '-';
         }
 
         // Map bet details
@@ -144,12 +204,22 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
         }));
 
         // Get table name from API response or use default
-        const tableName = round.table?.name || (i18n.language === 'zh' ? '默认桌' : 'Default Table');
+        let tableName = round.table?.name;
+        if (!tableName) {
+          if (gameType === 'dragontiger') {
+            tableName = i18n.language === 'zh' ? '龙虎桌' : 'Dragon Tiger';
+          } else if (gameType === 'bullbull') {
+            tableName = i18n.language === 'zh' ? '牛牛桌' : 'Bull Bull';
+          } else {
+            tableName = i18n.language === 'zh' ? '默认桌' : 'Default Table';
+          }
+        }
 
         return {
           roundId: round.id.slice(0, 8),
           fullRoundId: round.id,
-          game: i18n.language === 'zh' ? '百家乐' : 'Baccarat',
+          game: gameName,
+          gameType: gameType as 'baccarat' | 'dragontiger' | 'bullbull',
           settleTime: new Date(round.createdAt).toLocaleString(i18n.language === 'zh' ? 'zh-TW' : 'en-US'),
           table: tableName,
           shoe: round.shoeNumber || 1,
@@ -158,12 +228,30 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
           validBet: totalBet,
           result: resultText,
           winLoss: netResult,
+          // Baccarat specific
           playerCards: round.playerCards || [],
           bankerCards: round.bankerCards || [],
           playerPoints: round.playerPoints || 0,
           bankerPoints: round.bankerPoints || 0,
           playerPair: round.playerPair || false,
           bankerPair: round.bankerPair || false,
+          // Dragon Tiger specific
+          dragonCard: round.dragonCard,
+          tigerCard: round.tigerCard,
+          dragonValue: round.dragonValue,
+          tigerValue: round.tigerValue,
+          // Bull Bull specific
+          bbBankerCards: round.bankerCards,
+          bbPlayer1Cards: round.player1Cards,
+          bbPlayer2Cards: round.player2Cards,
+          bbPlayer3Cards: round.player3Cards,
+          bankerRank: round.bankerRank,
+          player1Rank: round.player1Rank,
+          player2Rank: round.player2Rank,
+          player3Rank: round.player3Rank,
+          player1Result: round.player1Result,
+          player2Result: round.player2Result,
+          player3Result: round.player3Result,
           bets: betDetails,
         };
       });
@@ -464,51 +552,131 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                                   className="p-4"
                                 >
                                   <div className="flex gap-8">
-                                    {/* Player Cards */}
-                                    <div className="flex-1">
-                                      <div className="text-blue-400 font-medium mb-2 flex items-center gap-2">
-                                        {t('playerHand')}
-                                        <span className="bg-blue-500/20 px-2 py-0.5 rounded text-xs">
-                                          {record.playerPoints} {t('points')}
-                                        </span>
-                                        {record.playerPair && (
-                                          <span className="bg-blue-500/30 px-2 py-0.5 rounded text-xs">
-                                            {t('playerPair')}
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="flex gap-2">
-                                        {record.playerCards.map((card, idx) => (
-                                          <PlayingCard key={idx} card={card} size="sm" />
-                                        ))}
-                                        {record.playerCards.length === 0 && (
-                                          <span className="text-gray-500 text-xs">{t('noData')}</span>
-                                        )}
-                                      </div>
-                                    </div>
+                                    {/* Baccarat: Player & Banker Cards */}
+                                    {record.gameType === 'baccarat' && (
+                                      <>
+                                        <div className="flex-1">
+                                          <div className="text-blue-400 font-medium mb-2 flex items-center gap-2">
+                                            {t('playerHand')}
+                                            <span className="bg-blue-500/20 px-2 py-0.5 rounded text-xs">
+                                              {record.playerPoints} {t('points')}
+                                            </span>
+                                            {record.playerPair && (
+                                              <span className="bg-blue-500/30 px-2 py-0.5 rounded text-xs">
+                                                {t('playerPair')}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <div className="flex gap-2">
+                                            {record.playerCards?.map((card, idx) => (
+                                              <PlayingCard key={idx} card={card} size="sm" />
+                                            ))}
+                                            {(!record.playerCards || record.playerCards.length === 0) && (
+                                              <span className="text-gray-500 text-xs">{t('noData')}</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="flex-1">
+                                          <div className="text-red-400 font-medium mb-2 flex items-center gap-2">
+                                            {t('bankerHand')}
+                                            <span className="bg-red-500/20 px-2 py-0.5 rounded text-xs">
+                                              {record.bankerPoints} {t('points')}
+                                            </span>
+                                            {record.bankerPair && (
+                                              <span className="bg-red-500/30 px-2 py-0.5 rounded text-xs">
+                                                {t('bankerPair')}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <div className="flex gap-2">
+                                            {record.bankerCards?.map((card, idx) => (
+                                              <PlayingCard key={idx} card={card} size="sm" />
+                                            ))}
+                                            {(!record.bankerCards || record.bankerCards.length === 0) && (
+                                              <span className="text-gray-500 text-xs">{t('noData')}</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
 
-                                    {/* Banker Cards */}
-                                    <div className="flex-1">
-                                      <div className="text-red-400 font-medium mb-2 flex items-center gap-2">
-                                        {t('bankerHand')}
-                                        <span className="bg-red-500/20 px-2 py-0.5 rounded text-xs">
-                                          {record.bankerPoints} {t('points')}
-                                        </span>
-                                        {record.bankerPair && (
-                                          <span className="bg-red-500/30 px-2 py-0.5 rounded text-xs">
-                                            {t('bankerPair')}
-                                          </span>
-                                        )}
+                                    {/* Dragon Tiger: Dragon & Tiger Cards */}
+                                    {record.gameType === 'dragontiger' && (
+                                      <>
+                                        <div className="flex-1">
+                                          <div className="text-yellow-400 font-medium mb-2 flex items-center gap-2">
+                                            {i18n.language === 'zh' ? '龙' : 'Dragon'}
+                                            <span className="bg-yellow-500/20 px-2 py-0.5 rounded text-xs">
+                                              {record.dragonValue}
+                                            </span>
+                                          </div>
+                                          <div className="flex gap-2">
+                                            {record.dragonCard && (
+                                              <PlayingCard card={record.dragonCard} size="sm" />
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="flex-1">
+                                          <div className="text-purple-400 font-medium mb-2 flex items-center gap-2">
+                                            {i18n.language === 'zh' ? '虎' : 'Tiger'}
+                                            <span className="bg-purple-500/20 px-2 py-0.5 rounded text-xs">
+                                              {record.tigerValue}
+                                            </span>
+                                          </div>
+                                          <div className="flex gap-2">
+                                            {record.tigerCard && (
+                                              <PlayingCard card={record.tigerCard} size="sm" />
+                                            )}
+                                          </div>
+                                        </div>
+                                      </>
+                                    )}
+
+                                    {/* Bull Bull: All Hands */}
+                                    {record.gameType === 'bullbull' && (
+                                      <div className="flex-1 grid grid-cols-2 gap-4">
+                                        <div>
+                                          <div className="text-yellow-400 font-medium mb-2">
+                                            {i18n.language === 'zh' ? '庄家' : 'Banker'} - {record.bankerRank}
+                                          </div>
+                                          <div className="flex gap-1 flex-wrap">
+                                            {record.bbBankerCards?.map((card, idx) => (
+                                              <PlayingCard key={idx} card={card} size="sm" />
+                                            ))}
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <div className={`font-medium mb-2 ${record.player1Result === 'win' ? 'text-green-400' : 'text-red-400'}`}>
+                                            {i18n.language === 'zh' ? '闲1' : 'P1'} - {record.player1Rank} ({record.player1Result})
+                                          </div>
+                                          <div className="flex gap-1 flex-wrap">
+                                            {record.bbPlayer1Cards?.map((card, idx) => (
+                                              <PlayingCard key={idx} card={card} size="sm" />
+                                            ))}
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <div className={`font-medium mb-2 ${record.player2Result === 'win' ? 'text-green-400' : 'text-red-400'}`}>
+                                            {i18n.language === 'zh' ? '闲2' : 'P2'} - {record.player2Rank} ({record.player2Result})
+                                          </div>
+                                          <div className="flex gap-1 flex-wrap">
+                                            {record.bbPlayer2Cards?.map((card, idx) => (
+                                              <PlayingCard key={idx} card={card} size="sm" />
+                                            ))}
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <div className={`font-medium mb-2 ${record.player3Result === 'win' ? 'text-green-400' : 'text-red-400'}`}>
+                                            {i18n.language === 'zh' ? '闲3' : 'P3'} - {record.player3Rank} ({record.player3Result})
+                                          </div>
+                                          <div className="flex gap-1 flex-wrap">
+                                            {record.bbPlayer3Cards?.map((card, idx) => (
+                                              <PlayingCard key={idx} card={card} size="sm" />
+                                            ))}
+                                          </div>
+                                        </div>
                                       </div>
-                                      <div className="flex gap-2">
-                                        {record.bankerCards.map((card, idx) => (
-                                          <PlayingCard key={idx} card={card} size="sm" />
-                                        ))}
-                                        {record.bankerCards.length === 0 && (
-                                          <span className="text-gray-500 text-xs">{t('noData')}</span>
-                                        )}
-                                      </div>
-                                    </div>
+                                    )}
 
                                     {/* My Bets */}
                                     <div className="flex-1">

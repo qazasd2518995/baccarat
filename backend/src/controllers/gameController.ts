@@ -211,35 +211,148 @@ export async function playGame(req: Request, res: Response) {
   }
 }
 
-// Get game history
+// Get game history (all game types: Baccarat, Dragon Tiger, Bull Bull)
 export async function getGameHistory(req: Request, res: Response) {
   try {
-    const { page = '1', limit = '50' } = req.query;
+    const { page = '1', limit = '50', from, to } = req.query;
     const currentUser = req.user!;
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
 
-    const [rounds, total] = await Promise.all([
-      prisma.gameRound.findMany({
+    // Build date filter
+    const dateFilter: any = {};
+    if (from) dateFilter.gte = new Date(from as string);
+    if (to) {
+      const toDate = new Date(to as string);
+      toDate.setHours(23, 59, 59, 999);
+      dateFilter.lte = toDate;
+    }
+
+    const where: any = { userId: currentUser.userId };
+    if (Object.keys(dateFilter).length > 0) {
+      where.createdAt = dateFilter;
+    }
+
+    // Query all bets with their associated rounds
+    const [bets, total] = await Promise.all([
+      prisma.bet.findMany({
+        where,
         include: {
-          bets: {
-            where: { userId: currentUser.userId },
-          },
-          table: {
-            select: {
-              id: true,
-              name: true,
+          round: {
+            include: {
+              table: {
+                select: { id: true, name: true },
+              },
             },
           },
+          dragonTigerRound: true,
+          bullBullRound: true,
         },
         skip,
         take: limitNum,
         orderBy: { createdAt: 'desc' },
       }),
-      prisma.gameRound.count(),
+      prisma.bet.count({ where }),
     ]);
+
+    // Group bets by round (since multiple bets can be in the same round)
+    const roundsMap = new Map<string, any>();
+
+    for (const bet of bets) {
+      // Determine which round this bet belongs to
+      let roundKey: string;
+      let roundData: any;
+      let gameType: string;
+
+      if (bet.roundId && bet.round) {
+        // Baccarat
+        roundKey = `baccarat-${bet.roundId}`;
+        gameType = 'baccarat';
+        roundData = {
+          id: bet.round.id,
+          roundNumber: bet.round.roundNumber,
+          shoeNumber: bet.round.shoeNumber,
+          result: bet.round.result,
+          playerCards: bet.round.playerCards,
+          bankerCards: bet.round.bankerCards,
+          playerPoints: bet.round.playerPoints,
+          bankerPoints: bet.round.bankerPoints,
+          playerPair: bet.round.playerPair,
+          bankerPair: bet.round.bankerPair,
+          createdAt: bet.round.createdAt,
+          table: bet.round.table,
+          gameType,
+        };
+      } else if (bet.dragonTigerRoundId && bet.dragonTigerRound) {
+        // Dragon Tiger
+        roundKey = `dragontiger-${bet.dragonTigerRoundId}`;
+        gameType = 'dragontiger';
+        roundData = {
+          id: bet.dragonTigerRound.id,
+          roundNumber: bet.dragonTigerRound.roundNumber,
+          shoeNumber: bet.dragonTigerRound.shoeNumber,
+          result: bet.dragonTigerRound.result,
+          dragonCard: bet.dragonTigerRound.dragonCard,
+          tigerCard: bet.dragonTigerRound.tigerCard,
+          dragonValue: bet.dragonTigerRound.dragonValue,
+          tigerValue: bet.dragonTigerRound.tigerValue,
+          isSuitedTie: bet.dragonTigerRound.isSuitedTie,
+          createdAt: bet.dragonTigerRound.createdAt,
+          table: null,
+          gameType,
+        };
+      } else if (bet.bullBullRoundId && bet.bullBullRound) {
+        // Bull Bull
+        roundKey = `bullbull-${bet.bullBullRoundId}`;
+        gameType = 'bullbull';
+        roundData = {
+          id: bet.bullBullRound.id,
+          roundNumber: bet.bullBullRound.roundNumber,
+          shoeNumber: bet.bullBullRound.shoeNumber,
+          result: `${bet.bullBullRound.player1Result}/${bet.bullBullRound.player2Result}/${bet.bullBullRound.player3Result}`,
+          bankerCards: bet.bullBullRound.bankerCards,
+          player1Cards: bet.bullBullRound.player1Cards,
+          player2Cards: bet.bullBullRound.player2Cards,
+          player3Cards: bet.bullBullRound.player3Cards,
+          bankerRank: bet.bullBullRound.bankerRank,
+          player1Rank: bet.bullBullRound.player1Rank,
+          player2Rank: bet.bullBullRound.player2Rank,
+          player3Rank: bet.bullBullRound.player3Rank,
+          player1Result: bet.bullBullRound.player1Result,
+          player2Result: bet.bullBullRound.player2Result,
+          player3Result: bet.bullBullRound.player3Result,
+          createdAt: bet.bullBullRound.createdAt,
+          table: null,
+          gameType,
+        };
+      } else {
+        // Unknown or orphaned bet, skip
+        continue;
+      }
+
+      // Add or merge into existing round
+      if (!roundsMap.has(roundKey)) {
+        roundsMap.set(roundKey, {
+          ...roundData,
+          bets: [],
+        });
+      }
+
+      roundsMap.get(roundKey).bets.push({
+        id: bet.id,
+        betType: bet.betType,
+        amount: Number(bet.amount),
+        payout: bet.payout ? Number(bet.payout) : 0,
+        status: bet.status,
+      });
+    }
+
+    // Convert to array and sort by createdAt desc
+    const rounds = Array.from(roundsMap.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
 
     res.json({
       rounds,
