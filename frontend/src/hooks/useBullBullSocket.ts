@@ -98,10 +98,26 @@ export function useBullBullSocket() {
     console.log('[useBullBullSocket] Connecting...');
     const socket = connectSocket(token);
 
+    // Helper function to initialize game state
+    const initializeGame = () => {
+      console.log('[useBullBullSocket] Initializing game state...');
+      setConnected(true);
+      // Join bull bull table
+      socket.emit('join:table', { gameType: 'bullbull' });
+      // Request current game state
+      socket.emit('bb:requestState');
+    };
+
     socket.on('connect', () => {
       console.log('[useBullBullSocket] Connected');
-      setConnected(true);
+      initializeGame();
     });
+
+    // If socket is already connected (e.g., from Lobby), initialize immediately
+    if (socket.connected) {
+      console.log('[useBullBullSocket] Socket already connected, initializing...');
+      initializeGame();
+    }
 
     socket.on('disconnect', () => {
       console.log('[useBullBullSocket] Disconnected');

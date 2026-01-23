@@ -1,6 +1,9 @@
 import { z } from 'zod';
+import { PrismaClient } from '@prisma/client';
 import type { AuthenticatedSocket, TypedServer } from './index.js';
 import { getGameState, placeBet, clearBets, getUserBets, getRecentRounds } from '../services/dragonTigerState.js';
+
+const prisma = new PrismaClient();
 
 // Validation schema for Dragon Tiger bet placement
 const placeBetSchema = z.object({
@@ -112,6 +115,12 @@ export function handleDragonTigerEvents(io: TypedServer, socket: AuthenticatedSo
       const state = getGameState(userId);
       const recentRounds = await getRecentRounds(100);
 
+      // Fetch user balance
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { balance: true },
+      });
+
       // Send current game state
       socket.emit('dt:state' as any, {
         phase: state.phase,
@@ -128,13 +137,19 @@ export function handleDragonTigerEvents(io: TypedServer, socket: AuthenticatedSo
         myBets: state.myBets,
       });
 
+      // Send balance update
+      socket.emit('user:balance', {
+        balance: Number(user?.balance || 0),
+        reason: 'deposit', // Using 'deposit' as a generic initial load reason
+      });
+
       // Send roadmap data
       socket.emit('dt:roadmap' as any, {
         recentRounds,
       });
 
       console.log(
-        `[DT Socket] ${username} requested state: phase=${state.phase}, round=${state.roundNumber}`
+        `[DT Socket] ${username} requested state: phase=${state.phase}, round=${state.roundNumber}, balance=${user?.balance}`
       );
     } catch (error) {
       console.error(`[DT Socket] Error getting state for ${username}:`, error);

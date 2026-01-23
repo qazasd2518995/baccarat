@@ -114,6 +114,12 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
       const state = getGameState(userId);
       const recentRounds = await getRecentRounds(100);
 
+      // Fetch user balance
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { balance: true },
+      });
+
       // Send current game state
       socket.emit('game:state', {
         phase: state.phase,
@@ -132,13 +138,19 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
         myBets: state.myBets,
       });
 
+      // Send balance update
+      socket.emit('user:balance', {
+        balance: Number(user?.balance || 0),
+        reason: 'deposit', // Using 'deposit' as a generic initial load reason
+      });
+
       // Send roadmap data
       socket.emit('game:roadmap', {
         recentRounds,
       });
 
       console.log(
-        `[Socket] ${username} requested state: phase=${state.phase}, round=${state.roundNumber}`
+        `[Socket] ${username} requested state: phase=${state.phase}, round=${state.roundNumber}, balance=${user?.balance}`
       );
     } catch (error) {
       console.error(`[Socket] Error getting state for ${username}:`, error);

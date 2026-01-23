@@ -63,9 +63,9 @@ export function useGameSocket(tableId?: string) {
     console.log('[useGameSocket] Connecting...');
     const socket = connectSocket(token);
 
-    // Connection events
-    socket.on('connect', () => {
-      console.log('[useGameSocket] Connected');
+    // Helper function to initialize game state
+    const initializeGame = () => {
+      console.log('[useGameSocket] Initializing game state...');
       setConnected(true);
 
       // Join specific table if tableId provided
@@ -74,14 +74,37 @@ export function useGameSocket(tableId?: string) {
         console.log(`[useGameSocket] Joined baccarat table ${tableId}`);
       }
 
-      // Fetch betting limits on connection
+      // Request current game state (this also sends balance)
+      socket.emit('game:requestState');
+
+      // Fetch betting limits
       gameApi.getMyLimits().then((res) => {
         console.log('[useGameSocket] Loaded betting limits:', res.data);
         setBettingLimits(res.data.limits);
       }).catch((err) => {
         console.error('[useGameSocket] Failed to load betting limits:', err);
       });
+
+      // Fetch current balance from API as backup
+      gameApi.getGameState().then((res) => {
+        console.log('[useGameSocket] Loaded initial balance:', res.data.balance);
+        setBalance(res.data.balance);
+      }).catch((err) => {
+        console.error('[useGameSocket] Failed to load initial balance:', err);
+      });
+    };
+
+    // Connection events
+    socket.on('connect', () => {
+      console.log('[useGameSocket] Connected');
+      initializeGame();
     });
+
+    // If socket is already connected (e.g., from Lobby), initialize immediately
+    if (socket.connected) {
+      console.log('[useGameSocket] Socket already connected, initializing...');
+      initializeGame();
+    }
 
     socket.on('disconnect', () => {
       console.log('[useGameSocket] Disconnected');

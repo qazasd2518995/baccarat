@@ -97,10 +97,26 @@ export function useDragonTigerSocket() {
     console.log('[useDragonTigerSocket] Connecting...');
     const socket = connectSocket(token);
 
+    // Helper function to initialize game state
+    const initializeGame = () => {
+      console.log('[useDragonTigerSocket] Initializing game state...');
+      setConnected(true);
+      // Join dragon tiger table
+      socket.emit('join:table', { gameType: 'dragontiger' });
+      // Request current game state
+      socket.emit('dt:requestState');
+    };
+
     socket.on('connect', () => {
       console.log('[useDragonTigerSocket] Connected');
-      setConnected(true);
+      initializeGame();
     });
+
+    // If socket is already connected (e.g., from Lobby), initialize immediately
+    if (socket.connected) {
+      console.log('[useDragonTigerSocket] Socket already connected, initializing...');
+      initializeGame();
+    }
 
     socket.on('disconnect', () => {
       console.log('[useDragonTigerSocket] Disconnected');
