@@ -45,10 +45,20 @@ export interface Transaction {
 // Game types
 export type GameResult = 'player' | 'banker' | 'tie';
 
+export type CardSuit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
+
+export interface Card {
+  suit: CardSuit;
+  rank: string; // 'A', '2'-'10', 'J', 'Q', 'K'
+  value: number; // 0-9
+}
+
 export interface GameRound {
   id: string;
   roundNumber: number;
   shoeNumber: number;
+  playerCards?: Card[];
+  bankerCards?: Card[];
   playerPoints: number;
   bankerPoints: number;
   playerScore?: number;
