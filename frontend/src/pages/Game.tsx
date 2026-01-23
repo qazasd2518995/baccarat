@@ -41,6 +41,7 @@ import {
   FollowingListModal,
   TableSwitchModal,
   GiftModal,
+  ResultsProportionModal,
 } from '../components/game/modals';
 import PlayingCard from '../components/game/PlayingCard';
 
@@ -421,6 +422,10 @@ export default function Game() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
 
+  // Get tableId from URL query params
+  const searchParams = new URLSearchParams(window.location.search);
+  const tableId = searchParams.get('table') || undefined;
+
   // Modal states
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isRulesOpen, setIsRulesOpen] = useState(false);
@@ -428,6 +433,7 @@ export default function Game() {
   const [isFollowingOpen, setIsFollowingOpen] = useState(false);
   const [isTableSwitchOpen, setIsTableSwitchOpen] = useState(false);
   const [isGiftOpen, setIsGiftOpen] = useState(false);
+  const [isProportionOpen, setIsProportionOpen] = useState(false);
 
   // UI states
   const [isMuted, setIsMuted] = useState(false);
@@ -482,7 +488,7 @@ export default function Game() {
   }, [leaderboardPeriod]);
 
   // Socket hook for WebSocket connection
-  const { submitBets, cancelBets } = useGameSocket();
+  const { submitBets, cancelBets } = useGameSocket(tableId);
 
   // Chat state
   const { messages: chatMessages, sendMessage: sendChatMessage, loading: chatLoading } = useChatSocket();
@@ -1143,14 +1149,18 @@ export default function Game() {
               <div className="flex-1 flex flex-col border-l border-r border-gray-400">
                 {/* Top Row - Side bets (5 buttons) */}
                 <div className="flex h-[95px] border-b border-gray-400">
-                  {/* 閒龍寶 - 暫時禁用（後端尚未支援） */}
+                  {/* 閒龍寶 - Player Dragon Bonus */}
                   <button
-                    disabled={true}
-                    className="relative flex-1 flex flex-col items-center justify-center border-r border-gray-400 opacity-50 cursor-not-allowed"
-                    style={{ backgroundColor: '#F5F5F5' }}
+                    onClick={() => handlePlaceBet('player_bonus')}
+                    disabled={!canBet}
+                    className={`relative flex-1 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('player_bonus') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
+                    style={{ backgroundColor: '#E0F2FE' }}
                   >
-                    <span className="text-gray-500 text-sm font-medium">閒龍寶</span>
-                    <span className="text-gray-400 text-xs">即將推出</span>
+                    <span className="text-blue-700 text-sm font-medium">閒龍寶</span>
+                    <span className="text-red-600 text-xs">1:30</span>
+                    {getBetAmount('player_bonus') > 0 && (
+                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('player_bonus')}</div>
+                    )}
                   </button>
 
                   {/* 閒對 - Light blue */}
@@ -1196,14 +1206,18 @@ export default function Game() {
                     )}
                   </button>
 
-                  {/* 莊龍寶 - 暫時禁用（後端尚未支援） */}
+                  {/* 莊龍寶 - Banker Dragon Bonus */}
                   <button
-                    disabled={true}
-                    className="relative flex-1 flex flex-col items-center justify-center opacity-50 cursor-not-allowed"
-                    style={{ backgroundColor: '#F5F5F5' }}
+                    onClick={() => handlePlaceBet('banker_bonus')}
+                    disabled={!canBet}
+                    className={`relative flex-1 flex flex-col items-center justify-center transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('banker_bonus') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
+                    style={{ backgroundColor: '#FEE2E2' }}
                   >
-                    <span className="text-gray-500 text-sm font-medium">莊龍寶</span>
-                    <span className="text-gray-400 text-xs">即將推出</span>
+                    <span className="text-red-700 text-sm font-medium">莊龍寶</span>
+                    <span className="text-red-600 text-xs">1:30</span>
+                    {getBetAmount('banker_bonus') > 0 && (
+                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('banker_bonus')}</div>
+                    )}
                   </button>
                 </div>
 
@@ -1470,7 +1484,10 @@ export default function Game() {
             >
               <Heart className="w-3 h-3" /> {t('followingList')}
             </button>
-            <button className="w-full text-left text-xs text-gray-400 flex items-center gap-2 py-1 hover:bg-gray-800/50 rounded px-2 -mx-2">
+            <button
+              onClick={() => setIsProportionOpen(true)}
+              className="w-full text-left text-xs text-gray-400 flex items-center gap-2 py-1 hover:bg-gray-800/50 rounded px-2 -mx-2"
+            >
               <BarChart2 className="w-3 h-3" /> {t('resultsProportion')}
             </button>
             <button
@@ -1514,6 +1531,7 @@ export default function Game() {
         dealerName="花花"
         balance={balance}
       />
+      <ResultsProportionModal isOpen={isProportionOpen} onClose={() => setIsProportionOpen(false)} />
     </div>
   );
 }

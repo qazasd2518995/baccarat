@@ -31,6 +31,17 @@ export const BET_PAYOUTS_NO_COMMISSION = {
   super_six_3cards: 20,
 } as const;
 
+// Dragon Bonus payouts (龍寶賠率)
+export const DRAGON_BONUS_PAYOUTS = {
+  natural_win: 1,    // 例牌獲勝 - 1:1
+  diff_4: 1,         // 點差4 - 1:1
+  diff_5: 2,         // 點差5 - 2:1
+  diff_6: 4,         // 點差6 - 4:1
+  diff_7: 6,         // 點差7 - 6:1
+  diff_8: 10,        // 點差8 - 10:1
+  diff_9: 30,        // 點差9 - 30:1
+} as const;
+
 // Create a single deck of cards
 function createDeck(): Card[] {
   const suits: Card['suit'][] = ['hearts', 'diamonds', 'clubs', 'spades'];
@@ -195,10 +206,63 @@ export function playRound(shoe: Card[]): RoundResult {
 export interface BetResult {
   won: boolean;
   payout: number; // Net payout (0 if lost, positive if won)
+  push?: boolean; // For dragon bonus: tie = push (return bet)
 }
 
 export interface CalculateBetOptions {
   isNoCommission?: boolean;
+}
+
+// Check if initial 2 cards form a natural (8 or 9 points)
+function isNaturalHand(cards: Card[]): boolean {
+  if (cards.length < 2) return false;
+  // Only check first 2 cards
+  const twoCardPoints = (cards[0].value + cards[1].value) % 10;
+  return twoCardPoints === 8 || twoCardPoints === 9;
+}
+
+// Calculate Dragon Bonus result
+function calculateDragonBonusResult(
+  betSide: 'player' | 'banker',
+  roundResult: RoundResult,
+  betAmount: number
+): BetResult {
+  const { result, playerCards, bankerCards, playerPoints, bankerPoints } = roundResult;
+
+  // Tie = Push (return bet)
+  if (result === 'tie') {
+    return { won: false, payout: 0, push: true };
+  }
+
+  // Check if bet side won
+  const betWon = betSide === result;
+
+  if (!betWon) {
+    // Bet side lost
+    return { won: false, payout: -betAmount };
+  }
+
+  // Bet side won - calculate payout
+  const winnerCards = betSide === 'player' ? playerCards : bankerCards;
+  const winnerPoints = betSide === 'player' ? playerPoints : bankerPoints;
+  const loserPoints = betSide === 'player' ? bankerPoints : playerPoints;
+  const pointDiff = Math.abs(winnerPoints - loserPoints);
+
+  // Check if winner has natural (8 or 9 with first 2 cards)
+  if (isNaturalHand(winnerCards)) {
+    // Natural win pays 1:1
+    return { won: true, payout: betAmount * DRAGON_BONUS_PAYOUTS.natural_win };
+  }
+
+  // Non-natural win - check point difference
+  if (pointDiff >= 4 && pointDiff <= 9) {
+    const payoutKey = `diff_${pointDiff}` as keyof typeof DRAGON_BONUS_PAYOUTS;
+    const multiplier = DRAGON_BONUS_PAYOUTS[payoutKey];
+    return { won: true, payout: betAmount * multiplier };
+  }
+
+  // Non-natural win with point diff < 4 = lose
+  return { won: false, payout: -betAmount };
 }
 
 export function calculateBetResult(
@@ -260,6 +324,12 @@ export function calculateBetResult(
         return { won: true, payout: betAmount * payout };
       }
       return { won: false, payout: -betAmount };
+
+    case 'player_bonus':
+      return calculateDragonBonusResult('player', roundResult, betAmount);
+
+    case 'banker_bonus':
+      return calculateDragonBonusResult('banker', roundResult, betAmount);
 
     default:
       return { won: false, payout: 0 };

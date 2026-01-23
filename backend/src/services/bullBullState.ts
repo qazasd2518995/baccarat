@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import type { Card, RoundResult, CalculateBetOptions } from '../utils/gameLogic.js';
-import { calculateBetResult } from '../utils/gameLogic.js';
-import type { BetEntry, BetType } from '../socket/types.js';
+import type { Card, BullBullRoundResult, BullBullBetType, BullBullRank, HandResult } from '../utils/bullBullLogic.js';
+import { calculateBBBetResult, getRankDisplayName } from '../utils/bullBullLogic.js';
 
 // Re-export GamePhase type for other modules
 export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
@@ -9,18 +8,24 @@ export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
 const prisma = new PrismaClient();
 
 // Current round info stored in memory
-export interface CurrentRound {
+export interface BullBullCurrentRound {
   id: string;
   roundNumber: number;
   shoeNumber: number;
   startedAt: Date;
-  playerCards: Card[];
-  bankerCards: Card[];
-  playerPoints: number;
-  bankerPoints: number;
-  result: 'player' | 'banker' | 'tie' | null;
-  playerPair: boolean;
-  bankerPair: boolean;
+  banker: HandResult | null;
+  player1: HandResult | null;
+  player2: HandResult | null;
+  player3: HandResult | null;
+  player1Result: 'win' | 'lose' | null;
+  player2Result: 'win' | 'lose' | null;
+  player3Result: 'win' | 'lose' | null;
+}
+
+// Bet entry for Bull Bull
+export interface BBBetEntry {
+  type: BullBullBetType;
+  amount: number;
 }
 
 // Persistent state (loaded from DB on startup)
@@ -33,7 +38,7 @@ interface PersistedState {
 
 // In-memory state
 let currentPhase: GamePhase = 'betting';
-let currentRound: CurrentRound | null = null;
+let currentRound: BullBullCurrentRound | null = null;
 let roundCounter = 0;
 let shoeNumber = 1;
 let cardsRemaining = 416;
@@ -41,29 +46,26 @@ let shuffledDeck: Card[] | null = null;
 let timeRemaining = 0;
 
 // Map of userId -> their bets for current round
-const currentBets = new Map<string, BetEntry[]>();
+const currentBets = new Map<string, BBBetEntry[]>();
 
 // Map of userId -> reserved balance (already deducted from DB)
 const reservedBalances = new Map<string, number>();
-
-// Map of userId -> no commission mode for current round
-const noCommissionMode = new Map<string, boolean>();
 
 // ============================================
 // State Persistence
 // ============================================
 
-const SINGLETON_ID = 'singleton';
+const SINGLETON_ID = 'bb_singleton';
 
 export async function loadPersistedState(): Promise<void> {
   try {
-    let state = await prisma.gameState.findUnique({
+    let state = await prisma.bullBullGameState.findUnique({
       where: { id: SINGLETON_ID },
     });
 
     if (!state) {
       // Create initial state
-      state = await prisma.gameState.create({
+      state = await prisma.bullBullGameState.create({
         data: {
           id: SINGLETON_ID,
           shoeNumber: 1,
@@ -71,7 +73,7 @@ export async function loadPersistedState(): Promise<void> {
           cardsRemaining: 416,
         },
       });
-      console.log('[GameState] Created initial persisted state');
+      console.log('[BullBullState] Created initial persisted state');
     }
 
     shoeNumber = state.shoeNumber;
@@ -79,16 +81,16 @@ export async function loadPersistedState(): Promise<void> {
     cardsRemaining = state.cardsRemaining;
     shuffledDeck = state.shuffledDeck as Card[] | null;
 
-    console.log(`[GameState] Loaded persisted state: shoe #${shoeNumber}, round #${roundCounter}, cards remaining: ${cardsRemaining}`);
+    console.log(`[BullBullState] Loaded persisted state: shoe #${shoeNumber}, round #${roundCounter}, cards remaining: ${cardsRemaining}`);
   } catch (error) {
-    console.error('[GameState] Failed to load persisted state:', error);
+    console.error('[BullBullState] Failed to load persisted state:', error);
     // Continue with default values
   }
 }
 
 export async function savePersistedState(): Promise<void> {
   try {
-    await prisma.gameState.upsert({
+    await prisma.bullBullGameState.upsert({
       where: { id: SINGLETON_ID },
       update: {
         shoeNumber,
@@ -105,7 +107,7 @@ export async function savePersistedState(): Promise<void> {
       },
     });
   } catch (error) {
-    console.error('[GameState] Failed to save persisted state:', error);
+    console.error('[BullBullState] Failed to save persisted state:', error);
   }
 }
 
@@ -157,7 +159,7 @@ export function getTimeRemaining(): number {
 // Round Management
 // ============================================
 
-export function getCurrentRound(): CurrentRound | null {
+export function getCurrentRound(): BullBullCurrentRound | null {
   return currentRound;
 }
 
@@ -165,20 +167,20 @@ export function getRoundCounter(): number {
   return roundCounter;
 }
 
-export async function createNewRound(): Promise<CurrentRound> {
+export async function createNewRound(): Promise<BullBullCurrentRound> {
   roundCounter++;
   currentRound = {
-    id: `round-${Date.now()}-${roundCounter}`,
+    id: `bb-round-${Date.now()}-${roundCounter}`,
     roundNumber: roundCounter,
     shoeNumber,
     startedAt: new Date(),
-    playerCards: [],
-    bankerCards: [],
-    playerPoints: 0,
-    bankerPoints: 0,
-    result: null,
-    playerPair: false,
-    bankerPair: false,
+    banker: null,
+    player1: null,
+    player2: null,
+    player3: null,
+    player1Result: null,
+    player2Result: null,
+    player3Result: null,
   };
 
   // Persist the new round counter
@@ -193,18 +195,18 @@ export async function startNewShoe(): Promise<void> {
   cardsRemaining = 416;
   shuffledDeck = null;
   await savePersistedState();
-  console.log(`[GameState] Started new shoe #${shoeNumber}`);
+  console.log(`[BullBullState] Started new shoe #${shoeNumber}`);
 }
 
-export function setRoundResult(result: RoundResult): void {
+export function setRoundResult(result: BullBullRoundResult): void {
   if (currentRound) {
-    currentRound.playerCards = result.playerCards;
-    currentRound.bankerCards = result.bankerCards;
-    currentRound.playerPoints = result.playerPoints;
-    currentRound.bankerPoints = result.bankerPoints;
-    currentRound.result = result.result;
-    currentRound.playerPair = result.playerPair;
-    currentRound.bankerPair = result.bankerPair;
+    currentRound.banker = result.banker;
+    currentRound.player1 = result.player1;
+    currentRound.player2 = result.player2;
+    currentRound.player3 = result.player3;
+    currentRound.player1Result = result.player1Result;
+    currentRound.player2Result = result.player2Result;
+    currentRound.player3Result = result.player3Result;
   }
 }
 
@@ -212,34 +214,24 @@ export function setRoundResult(result: RoundResult): void {
 // Bet Management
 // ============================================
 
-// Default betting limits if user has no specific limit
+// Default betting limits for Bull Bull
 const DEFAULT_LIMITS = {
-  playerMin: 10, playerMax: 100000,
   bankerMin: 10, bankerMax: 100000,
-  tieMin: 10, tieMax: 50000,
-  pairMin: 10, pairMax: 50000,
-  bonusMin: 10, bonusMax: 50000,  // Dragon Bonus limits
+  playerMin: 10, playerMax: 100000,
 };
 
 // Helper function to get min/max for bet type
 function getLimitForBetType(
   limit: typeof DEFAULT_LIMITS,
-  betType: BetType
+  betType: BullBullBetType
 ): { min: number; max: number } {
   switch (betType) {
-    case 'player':
-      return { min: limit.playerMin, max: limit.playerMax };
-    case 'banker':
+    case 'bb_banker':
       return { min: limit.bankerMin, max: limit.bankerMax };
-    case 'tie':
-      return { min: limit.tieMin, max: limit.tieMax };
-    case 'player_pair':
-    case 'banker_pair':
-    case 'super_six':
-      return { min: limit.pairMin, max: limit.pairMax };
-    case 'player_bonus':
-    case 'banker_bonus':
-      return { min: limit.bonusMin, max: limit.bonusMax };
+    case 'bb_player1':
+    case 'bb_player2':
+    case 'bb_player3':
+      return { min: limit.playerMin, max: limit.playerMax };
     default:
       return { min: limit.playerMin, max: limit.playerMax };
   }
@@ -247,12 +239,11 @@ function getLimitForBetType(
 
 export async function placeBet(
   userId: string,
-  bets: BetEntry[],
-  isNoCommission: boolean = false
+  bets: BBBetEntry[]
 ): Promise<{
   success: boolean;
   roundId?: string;
-  bets?: BetEntry[];
+  bets?: BBBetEntry[];
   totalBet?: number;
   newBalance?: number;
   errorCode?: string;
@@ -267,13 +258,12 @@ export async function placeBet(
     };
   }
 
-  // Get user with betting limit
+  // Get user
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       balance: true,
       status: true,
-      bettingLimit: true,
     },
   });
 
@@ -293,22 +283,7 @@ export async function placeBet(
     };
   }
 
-  // Determine betting limits
-  const limits = user.bettingLimit
-    ? {
-        playerMin: Number(user.bettingLimit.playerMin),
-        playerMax: Number(user.bettingLimit.playerMax),
-        bankerMin: Number(user.bettingLimit.bankerMin),
-        bankerMax: Number(user.bettingLimit.bankerMax),
-        tieMin: Number(user.bettingLimit.tieMin),
-        tieMax: Number(user.bettingLimit.tieMax),
-        pairMin: Number(user.bettingLimit.pairMin),
-        pairMax: Number(user.bettingLimit.pairMax),
-        // Use pair limits as fallback for dragon bonus (until bonus columns added to BettingLimit)
-        bonusMin: Number(user.bettingLimit.pairMin),
-        bonusMax: Number(user.bettingLimit.pairMax),
-      }
-    : DEFAULT_LIMITS;
+  const limits = DEFAULT_LIMITS;
 
   const currentBalance = Number(user.balance);
   const existingBets = currentBets.get(userId) || [];
@@ -326,7 +301,7 @@ export async function placeBet(
     };
   }
 
-  // Validate bet amounts (must be positive) and check limits
+  // Validate bet amounts and check limits
   for (const bet of bets) {
     if (bet.amount <= 0) {
       return {
@@ -380,7 +355,6 @@ export async function placeBet(
   // Update state
   currentBets.set(userId, mergedBets);
   reservedBalances.set(userId, totalRequired);
-  noCommissionMode.set(userId, isNoCommission);
 
   return {
     success: true,
@@ -434,11 +408,11 @@ export async function clearBets(userId: string): Promise<{
   return { success: true };
 }
 
-export function getAllBets(): Map<string, BetEntry[]> {
+export function getAllBets(): Map<string, BBBetEntry[]> {
   return currentBets;
 }
 
-export function getUserBets(userId: string): BetEntry[] {
+export function getUserBets(userId: string): BBBetEntry[] {
   return currentBets.get(userId) || [];
 }
 
@@ -449,10 +423,11 @@ export function getUserBets(userId: string): BetEntry[] {
 export interface SettlementResult {
   userId: string;
   betResults: Array<{
-    type: BetType;
+    type: BullBullBetType;
     amount: number;
     won: boolean;
     payout: number;
+    multiplier: number;
   }>;
   totalBet: number;
   totalPayout: number;
@@ -464,49 +439,42 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
   const settlements: SettlementResult[] = [];
   const round = currentRound;
 
-  if (!round || !round.result) {
+  if (!round || !round.banker || !round.player1 || !round.player2 || !round.player3) {
     return [];
   }
 
-  const roundResult: RoundResult = {
-    playerCards: round.playerCards,
-    bankerCards: round.bankerCards,
-    playerPoints: round.playerPoints,
-    bankerPoints: round.bankerPoints,
-    result: round.result,
-    playerPair: round.playerPair,
-    bankerPair: round.bankerPair,
+  const roundResult: BullBullRoundResult = {
+    banker: round.banker,
+    player1: round.player1,
+    player2: round.player2,
+    player3: round.player3,
+    player1Result: round.player1Result!,
+    player2Result: round.player2Result!,
+    player3Result: round.player3Result!,
   };
 
   for (const [userId, bets] of currentBets.entries()) {
-    const isNoCommission = noCommissionMode.get(userId) || false;
     const betResults = bets.map((bet) => {
-      const result = calculateBetResult(bet.type, bet.amount, roundResult, { isNoCommission });
+      const result = calculateBBBetResult(bet.type, bet.amount, roundResult);
       return {
         type: bet.type,
         amount: bet.amount,
         won: result.won,
         payout: result.payout,
+        multiplier: result.multiplier,
       };
     });
 
     const totalBet = bets.reduce((sum, b) => sum + b.amount, 0);
 
     // Calculate total payout
-    // For each bet:
-    // - If won: return stake + winnings (payout is positive)
-    // - If push (tie on player/banker): return stake (payout is 0)
-    // - If lost: nothing returned (payout is negative)
     let totalPayout = 0;
     for (const result of betResults) {
       if (result.won) {
         // Won: get back stake + winnings
         totalPayout += result.amount + result.payout;
-      } else if (result.payout === 0) {
-        // Push: get back stake only
-        totalPayout += result.amount;
       }
-      // Lost: payout is negative, nothing returned
+      // Lost: nothing returned
     }
 
     const netResult = totalPayout - totalBet;
@@ -527,24 +495,13 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
 
     // Save bets to database
     for (const bet of betResults) {
-      let status: 'won' | 'lost' | 'refunded';
-      let payoutAmount: number;
-
-      if (bet.won) {
-        status = 'won';
-        payoutAmount = bet.amount + bet.payout;
-      } else if (bet.payout === 0) {
-        status = 'refunded';
-        payoutAmount = bet.amount;
-      } else {
-        status = 'lost';
-        payoutAmount = 0;
-      }
+      const status = bet.won ? 'won' : 'lost';
+      const payoutAmount = bet.won ? bet.amount + bet.payout : 0;
 
       await prisma.bet.create({
         data: {
           userId,
-          roundId: savedRoundId,
+          bullBullRoundId: savedRoundId,
           betType: bet.type as any,
           amount: bet.amount,
           payout: payoutAmount,
@@ -557,16 +514,16 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
     const finalBalance = Number(user?.balance || 0);
     const balanceBeforeBet = finalBalance - netResult;
 
-    // Bet transaction (already deducted when placed, so this is just for record)
+    // Bet transaction
     await prisma.transaction.create({
       data: {
         userId,
-        operatorId: userId, // System operation
+        operatorId: userId,
         type: 'bet',
         amount: -totalBet,
         balanceBefore: balanceBeforeBet + totalBet,
         balanceAfter: balanceBeforeBet,
-        note: `Round #${round.roundNumber} - Bets: ${bets.map((b) => `${b.type}:${b.amount}`).join(', ')}`,
+        note: `Bull Bull Round #${round.roundNumber} - Bets: ${bets.map((b) => `${b.type}:${b.amount}`).join(', ')}`,
       },
     });
 
@@ -579,7 +536,7 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
           amount: totalPayout,
           balanceBefore: balanceBeforeBet,
           balanceAfter: finalBalance,
-          note: `Round #${round.roundNumber} - ${round.result?.toUpperCase()} wins`,
+          note: `Bull Bull Round #${round.roundNumber}`,
         },
       });
     }
@@ -600,7 +557,6 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
 export function clearAllBets(): void {
   currentBets.clear();
   reservedBalances.clear();
-  noCommissionMode.clear();
 }
 
 // ============================================
@@ -614,47 +570,42 @@ export function getGameState(userId?: string) {
     roundNumber: currentRound?.roundNumber || 0,
     shoeNumber: currentRound?.shoeNumber || 1,
     timeRemaining,
-    playerCards: currentRound?.playerCards || [],
-    bankerCards: currentRound?.bankerCards || [],
-    playerPoints: currentRound?.playerPoints,
-    bankerPoints: currentRound?.bankerPoints,
-    result: currentRound?.result,
-    playerPair: currentRound?.playerPair,
-    bankerPair: currentRound?.bankerPair,
+    banker: currentRound?.banker || null,
+    player1: currentRound?.player1 || null,
+    player2: currentRound?.player2 || null,
+    player3: currentRound?.player3 || null,
+    player1Result: currentRound?.player1Result || null,
+    player2Result: currentRound?.player2Result || null,
+    player3Result: currentRound?.player3Result || null,
     myBets: userId ? currentBets.get(userId) || [] : [],
   };
 }
 
-// Get recent rounds for roadmap (from database) - baccarat only
+// Get recent rounds for roadmap (from database)
 export async function getRecentRounds(limit: number = 100) {
-  const rounds = await prisma.gameRound.findMany({
-    where: {
-      result: {
-        in: ['player', 'banker', 'tie'],
-      },
-    },
+  const rounds = await prisma.bullBullRound.findMany({
     orderBy: { createdAt: 'desc' },
     take: limit,
     select: {
       roundNumber: true,
-      result: true,
-      playerPair: true,
-      bankerPair: true,
-      playerPoints: true,
-      bankerPoints: true,
-      playerCards: true,
-      bankerCards: true,
+      bankerRank: true,
+      player1Rank: true,
+      player2Rank: true,
+      player3Rank: true,
+      player1Result: true,
+      player2Result: true,
+      player3Result: true,
     },
   });
 
-  // Transform to include totalCards count
   return rounds.reverse().map(round => ({
     roundNumber: round.roundNumber,
-    result: round.result as 'player' | 'banker' | 'tie',
-    playerPair: round.playerPair,
-    bankerPair: round.bankerPair,
-    playerPoints: round.playerPoints,
-    bankerPoints: round.bankerPoints,
-    totalCards: (round.playerCards as any[])?.length + (round.bankerCards as any[])?.length || 0,
+    bankerRank: round.bankerRank,
+    player1Rank: round.player1Rank,
+    player2Rank: round.player2Rank,
+    player3Rank: round.player3Rank,
+    player1Result: round.player1Result,
+    player2Result: round.player2Result,
+    player3Result: round.player3Result,
   }));
 }

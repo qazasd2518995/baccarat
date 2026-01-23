@@ -119,6 +119,27 @@ async function handleBettingPhase(
     roundId: round.id,
   });
 
+  // Get table info for lobby updates
+  const baccaratTable = await prisma.gameTable.findFirst({
+    where: { gameType: 'baccarat', isActive: true },
+  });
+
+  // Broadcast initial betting phase to lobby
+  if (baccaratTable) {
+    io.to('lobby').emit('lobby:tableUpdate', {
+      tableId: baccaratTable.id,
+      phase: 'betting',
+      timeRemaining,
+      roundNumber: round.roundNumber,
+      shoeNumber: round.shoeNumber,
+      roadmap: {
+        banker: baccaratTable.bankerWins,
+        player: baccaratTable.playerWins,
+        tie: baccaratTable.tieCount,
+      },
+    });
+  }
+
   // Timer tick every second
   timerInterval = setInterval(() => {
     timeRemaining--;
@@ -128,6 +149,22 @@ async function handleBettingPhase(
       timeRemaining,
       phase: 'betting',
     });
+
+    // Also update lobby with countdown
+    if (baccaratTable) {
+      io.to('lobby').emit('lobby:tableUpdate', {
+        tableId: baccaratTable.id,
+        phase: 'betting',
+        timeRemaining,
+        roundNumber: round.roundNumber,
+        shoeNumber: round.shoeNumber,
+        roadmap: {
+          banker: baccaratTable.bankerWins,
+          player: baccaratTable.playerWins,
+          tie: baccaratTable.tieCount,
+        },
+      });
+    }
 
     if (timeRemaining <= 0 && timerInterval) {
       clearInterval(timerInterval);
@@ -318,6 +355,48 @@ async function handleResultPhase(io: TypedServer, duration: number): Promise<voi
       console.log(
         `[GameLoop] Settled for user ${settlement.userId}: bet=${settlement.totalBet}, payout=${settlement.totalPayout}, net=${settlement.netResult}`
       );
+    }
+
+    // Update table statistics in database
+    // Find the first baccarat table or create default tracking
+    const baccaratTable = await prisma.gameTable.findFirst({
+      where: { gameType: 'baccarat', isActive: true },
+    });
+
+    if (baccaratTable) {
+      const updateData: { bankerWins?: { increment: number }; playerWins?: { increment: number }; tieCount?: { increment: number }; roundNumber: { increment: number } } = {
+        roundNumber: { increment: 1 },
+      };
+
+      if (round.result === 'banker') {
+        updateData.bankerWins = { increment: 1 };
+      } else if (round.result === 'player') {
+        updateData.playerWins = { increment: 1 };
+      } else if (round.result === 'tie') {
+        updateData.tieCount = { increment: 1 };
+      }
+
+      const updatedTable = await prisma.gameTable.update({
+        where: { id: baccaratTable.id },
+        data: updateData,
+      });
+
+      console.log(`[GameLoop] Updated table ${baccaratTable.name} statistics: ${round.result}`);
+
+      // Broadcast table update to lobby
+      io.to('lobby').emit('lobby:tableUpdate', {
+        tableId: updatedTable.id,
+        phase: 'result',
+        timeRemaining: Math.floor(duration / 1000),
+        roundNumber: updatedTable.roundNumber,
+        shoeNumber: updatedTable.shoeNumber,
+        lastResult: round.result,
+        roadmap: {
+          banker: updatedTable.bankerWins,
+          player: updatedTable.playerWins,
+          tie: updatedTable.tieCount,
+        },
+      });
     }
 
     // Emit roadmap update to all

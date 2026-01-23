@@ -4,7 +4,7 @@ import type { Card, GameResult } from '../utils/gameLogic.js';
 export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
 
 // Bet types
-export type BetType = 'player' | 'banker' | 'tie' | 'player_pair' | 'banker_pair' | 'super_six';
+export type BetType = 'player' | 'banker' | 'tie' | 'player_pair' | 'banker_pair' | 'super_six' | 'player_bonus' | 'banker_bonus';
 
 // Bet entry
 export interface BetEntry {
@@ -115,6 +115,21 @@ export interface RoadmapUpdateEvent {
   }>;
 }
 
+// Table update (for lobby real-time updates)
+export interface TableUpdateEvent {
+  tableId: string;
+  phase: GamePhase;
+  timeRemaining: number;
+  roundNumber: number;
+  shoeNumber: number;
+  lastResult?: GameResult;
+  roadmap: {
+    banker: number;
+    player: number;
+    tie: number;
+  };
+}
+
 // ============================================
 // Chat Events
 // ============================================
@@ -155,6 +170,7 @@ export interface ServerToClientEvents {
   'bet:settlement': (data: BetSettlementEvent) => void;
   'user:balance': (data: BalanceUpdateEvent) => void;
   'chat:message': (data: ChatMessageEvent) => void;
+  'lobby:tableUpdate': (data: TableUpdateEvent) => void;
   error: (data: ErrorEvent) => void;
 }
 

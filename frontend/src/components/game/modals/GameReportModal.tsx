@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { X, Calendar, ChevronLeft, ChevronRight, Search, Loader2 } from 'lucide-react';
+import { X, Calendar, ChevronLeft, ChevronRight, Search, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { gameApi, transactionApi, giftApi } from '../../../services/api';
+import PlayingCard from '../PlayingCard';
+import type { Card } from '../../../types';
 
 interface GameReportModalProps {
   isOpen: boolean;
@@ -11,8 +13,16 @@ interface GameReportModalProps {
 
 type ReportTab = 'betting' | 'balance' | 'tips';
 
+interface BetDetail {
+  type: string;
+  amount: number;
+  payout: number;
+  status: string;
+}
+
 interface BettingRecord {
   roundId: string;
+  fullRoundId: string;
   game: string;
   settleTime: string;
   table: string;
@@ -22,6 +32,13 @@ interface BettingRecord {
   validBet: number;
   result: string;
   winLoss: number;
+  playerCards: Card[];
+  bankerCards: Card[];
+  playerPoints: number;
+  bankerPoints: number;
+  playerPair: boolean;
+  bankerPair: boolean;
+  bets: BetDetail[];
 }
 
 interface BalanceRecord {
@@ -45,7 +62,6 @@ interface TipsRecord {
   dealer: string;
 }
 
-
 export default function GameReportModal({ isOpen, onClose }: GameReportModalProps) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<ReportTab>('betting');
@@ -54,6 +70,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   // Real data states
   const [bettingRecords, setBettingRecords] = useState<BettingRecord[]>([]);
@@ -65,6 +82,25 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
     { id: 'balance', labelKey: 'balanceReport' },
     { id: 'tips', labelKey: 'tipsReport' },
   ];
+
+  // Helper to translate bet type
+  const translateBetType = (type: string) => {
+    const betTypeMap: Record<string, { zh: string; en: string }> = {
+      player: { zh: '闲', en: 'Player' },
+      banker: { zh: '庄', en: 'Banker' },
+      tie: { zh: '和', en: 'Tie' },
+      player_pair: { zh: '闲对', en: 'P.Pair' },
+      banker_pair: { zh: '庄对', en: 'B.Pair' },
+      super_six: { zh: '超级六', en: 'Super 6' },
+      player_bonus: { zh: '闲龙宝', en: 'P.Dragon' },
+      banker_bonus: { zh: '庄龙宝', en: 'B.Dragon' },
+    };
+    const mapped = betTypeMap[type];
+    if (mapped) {
+      return i18n.language === 'zh' ? mapped.zh : mapped.en;
+    }
+    return type;
+  };
 
   // Fetch betting history
   const fetchBettingHistory = useCallback(async () => {
@@ -90,8 +126,8 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
         // Determine result text
         let resultText = round.result;
         if (i18n.language === 'zh') {
-          resultText = round.result === 'player' ? '閒贏' :
-                       round.result === 'banker' ? '莊贏' :
+          resultText = round.result === 'player' ? '闲赢' :
+                       round.result === 'banker' ? '庄赢' :
                        round.result === 'tie' ? '和局' : round.result;
         } else {
           resultText = round.result === 'player' ? 'Player' :
@@ -99,17 +135,33 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                        round.result === 'tie' ? 'Tie' : round.result;
         }
 
+        // Map bet details
+        const betDetails: BetDetail[] = bets.map((b: any) => ({
+          type: b.betType,
+          amount: Number(b.amount),
+          payout: Number(b.payout),
+          status: b.status,
+        }));
+
         return {
           roundId: round.id.slice(0, 8),
-          game: i18n.language === 'zh' ? '百家樂' : 'Baccarat',
+          fullRoundId: round.id,
+          game: i18n.language === 'zh' ? '百家乐' : 'Baccarat',
           settleTime: new Date(round.createdAt).toLocaleString(i18n.language === 'zh' ? 'zh-TW' : 'en-US'),
-          table: 'Table 1',
+          table: i18n.language === 'zh' ? '默认桌' : 'Default Table',
           shoe: round.shoeNumber || 1,
           round: round.roundNumber || 0,
           betAmount: totalBet,
           validBet: totalBet,
           result: resultText,
           winLoss: netResult,
+          playerCards: round.playerCards || [],
+          bankerCards: round.bankerCards || [],
+          playerPoints: round.playerPoints || 0,
+          bankerPoints: round.bankerPoints || 0,
+          playerPair: round.playerPair || false,
+          bankerPair: round.bankerPair || false,
+          bets: betDetails,
         };
       });
 
@@ -146,7 +198,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                      tx.type === 'withdraw' ? '出金' :
                      tx.type === 'bet' ? '下注' :
                      tx.type === 'win' ? '派彩' :
-                     tx.type === 'adjustment' ? '調整' : tx.type;
+                     tx.type === 'adjustment' ? '调整' : tx.type;
         } else {
           typeText = tx.type === 'deposit' ? 'Deposit' :
                      tx.type === 'withdraw' ? 'Withdraw' :
@@ -194,7 +246,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
       const records: TipsRecord[] = gifts.map((gift: any) => ({
         orderId: gift.id.slice(0, 8).toUpperCase(),
         settleTime: new Date(gift.createdAt).toLocaleString(i18n.language === 'zh' ? 'zh-TW' : 'en-US'),
-        tableName: 'Table 1', // Table info not stored in gift transaction
+        tableName: i18n.language === 'zh' ? '默认桌' : 'Default Table',
         item: gift.giftName,
         price: Number(gift.price),
         quantity: gift.quantity,
@@ -228,10 +280,12 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
   // Reset page when switching tabs
   useEffect(() => {
     setCurrentPage(1);
+    setExpandedRow(null);
   }, [activeTab]);
 
   const handleSearch = () => {
     setCurrentPage(1);
+    setExpandedRow(null);
     if (activeTab === 'betting') {
       fetchBettingHistory();
     } else if (activeTab === 'balance') {
@@ -239,6 +293,10 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
     } else if (activeTab === 'tips') {
       fetchTipsHistory();
     }
+  };
+
+  const toggleExpand = (roundId: string) => {
+    setExpandedRow(expandedRow === roundId ? null : roundId);
   };
 
   if (!isOpen) return null;
@@ -258,7 +316,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-[#1a2235] rounded-xl w-[900px] max-h-[85vh] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
+          className="bg-[#1a2235] rounded-xl w-[950px] max-h-[85vh] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700/50">
@@ -337,46 +395,147 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                   <table className="w-full text-sm">
                     <thead className="bg-[#2a3548] text-gray-400">
                       <tr>
-                        <th className="px-3 py-3 text-left">{t('roundId')}</th>
-                        <th className="px-3 py-3 text-left">{t('game')}</th>
-                        <th className="px-3 py-3 text-left">{t('settleTime')}</th>
-                        <th className="px-3 py-3 text-left">{t('table')}</th>
-                        <th className="px-3 py-3 text-center">{t('shoe')}</th>
-                        <th className="px-3 py-3 text-center">{t('round')}</th>
-                        <th className="px-3 py-3 text-right">{t('betAmount')}</th>
-                        <th className="px-3 py-3 text-right">{t('validBet')}</th>
-                        <th className="px-3 py-3 text-center">{t('result')}</th>
-                        <th className="px-3 py-3 text-right">{t('winLoss')}</th>
+                        <th className="px-2 py-3 text-left w-8"></th>
+                        <th className="px-2 py-3 text-left">{t('roundId')}</th>
+                        <th className="px-2 py-3 text-left">{t('game')}</th>
+                        <th className="px-2 py-3 text-left">{t('settleTime')}</th>
+                        <th className="px-2 py-3 text-left">{t('table')}</th>
+                        <th className="px-2 py-3 text-center">{t('shoeNum')}</th>
+                        <th className="px-2 py-3 text-center">{t('roundNum')}</th>
+                        <th className="px-2 py-3 text-right">{t('betAmount')}</th>
+                        <th className="px-2 py-3 text-right">{t('validBet')}</th>
+                        <th className="px-2 py-3 text-center">{t('result')}</th>
+                        <th className="px-2 py-3 text-right">{t('winLoss')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {bettingRecords.map((record) => (
-                        <tr key={record.roundId} className="border-b border-gray-700/30 hover:bg-gray-800/30">
-                          <td className="px-3 py-3 text-gray-300">{record.roundId}</td>
-                          <td className="px-3 py-3 text-gray-300">{record.game}</td>
-                          <td className="px-3 py-3 text-gray-400">{record.settleTime}</td>
-                          <td className="px-3 py-3 text-gray-300">{record.table}</td>
-                          <td className="px-3 py-3 text-center text-gray-400">{record.shoe}</td>
-                          <td className="px-3 py-3 text-center text-gray-400">{record.round}</td>
-                          <td className="px-3 py-3 text-right text-gray-300">{record.betAmount.toLocaleString()}</td>
-                          <td className="px-3 py-3 text-right text-gray-300">{record.validBet.toLocaleString()}</td>
-                          <td className="px-3 py-3 text-center">
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              record.result.includes('莊') || record.result === 'Banker' ? 'bg-red-500/20 text-red-400' :
-                              record.result.includes('閒') || record.result === 'Player' ? 'bg-blue-500/20 text-blue-400' :
-                              'bg-green-500/20 text-green-400'
+                        <>
+                          <tr
+                            key={record.roundId}
+                            className={`border-b border-gray-700/30 hover:bg-gray-800/30 cursor-pointer ${
+                              expandedRow === record.roundId ? 'bg-gray-800/40' : ''
+                            }`}
+                            onClick={() => toggleExpand(record.roundId)}
+                          >
+                            <td className="px-2 py-3 text-gray-400">
+                              {expandedRow === record.roundId ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </td>
+                            <td className="px-2 py-3 text-gray-300 font-mono">{record.roundId}</td>
+                            <td className="px-2 py-3 text-gray-300">{record.game}</td>
+                            <td className="px-2 py-3 text-gray-400 text-xs">{record.settleTime}</td>
+                            <td className="px-2 py-3 text-gray-300">{record.table}</td>
+                            <td className="px-2 py-3 text-center text-gray-400">{record.shoe}</td>
+                            <td className="px-2 py-3 text-center text-gray-400">{record.round}</td>
+                            <td className="px-2 py-3 text-right text-gray-300">{record.betAmount.toLocaleString()}</td>
+                            <td className="px-2 py-3 text-right text-gray-300">{record.validBet.toLocaleString()}</td>
+                            <td className="px-2 py-3 text-center">
+                              <span className={`px-2 py-1 rounded text-xs ${
+                                record.result.includes('庄') || record.result === 'Banker' ? 'bg-red-500/20 text-red-400' :
+                                record.result.includes('闲') || record.result === 'Player' ? 'bg-blue-500/20 text-blue-400' :
+                                'bg-green-500/20 text-green-400'
+                              }`}>
+                                {record.result}
+                              </span>
+                            </td>
+                            <td className={`px-2 py-3 text-right font-medium ${
+                              record.winLoss > 0 ? 'text-green-400' :
+                              record.winLoss < 0 ? 'text-red-400' :
+                              'text-gray-400'
                             }`}>
-                              {record.result}
-                            </span>
-                          </td>
-                          <td className={`px-3 py-3 text-right font-medium ${
-                            record.winLoss > 0 ? 'text-green-400' :
-                            record.winLoss < 0 ? 'text-red-400' :
-                            'text-gray-400'
-                          }`}>
-                            {record.winLoss > 0 ? '+' : ''}{record.winLoss.toLocaleString()}
-                          </td>
-                        </tr>
+                              {record.winLoss > 0 ? '+' : ''}{record.winLoss.toLocaleString()}
+                            </td>
+                          </tr>
+                          {/* Expanded Row with Card Details */}
+                          {expandedRow === record.roundId && (
+                            <tr key={`${record.roundId}-expanded`}>
+                              <td colSpan={11} className="bg-[#0d1117] border-b border-gray-700/30">
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="p-4"
+                                >
+                                  <div className="flex gap-8">
+                                    {/* Player Cards */}
+                                    <div className="flex-1">
+                                      <div className="text-blue-400 font-medium mb-2 flex items-center gap-2">
+                                        {t('playerHand')}
+                                        <span className="bg-blue-500/20 px-2 py-0.5 rounded text-xs">
+                                          {record.playerPoints} {t('points')}
+                                        </span>
+                                        {record.playerPair && (
+                                          <span className="bg-blue-500/30 px-2 py-0.5 rounded text-xs">
+                                            {t('playerPair')}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex gap-2">
+                                        {record.playerCards.map((card, idx) => (
+                                          <PlayingCard key={idx} card={card} size="sm" />
+                                        ))}
+                                        {record.playerCards.length === 0 && (
+                                          <span className="text-gray-500 text-xs">{t('noData')}</span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Banker Cards */}
+                                    <div className="flex-1">
+                                      <div className="text-red-400 font-medium mb-2 flex items-center gap-2">
+                                        {t('bankerHand')}
+                                        <span className="bg-red-500/20 px-2 py-0.5 rounded text-xs">
+                                          {record.bankerPoints} {t('points')}
+                                        </span>
+                                        {record.bankerPair && (
+                                          <span className="bg-red-500/30 px-2 py-0.5 rounded text-xs">
+                                            {t('bankerPair')}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="flex gap-2">
+                                        {record.bankerCards.map((card, idx) => (
+                                          <PlayingCard key={idx} card={card} size="sm" />
+                                        ))}
+                                        {record.bankerCards.length === 0 && (
+                                          <span className="text-gray-500 text-xs">{t('noData')}</span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* My Bets */}
+                                    <div className="flex-1">
+                                      <div className="text-orange-400 font-medium mb-2">
+                                        {t('myBets')}
+                                      </div>
+                                      {record.bets.length > 0 ? (
+                                        <div className="space-y-1">
+                                          {record.bets.map((bet, idx) => (
+                                            <div key={idx} className="flex items-center justify-between text-xs bg-gray-800/50 px-2 py-1 rounded">
+                                              <span className="text-gray-300">{translateBetType(bet.type)}</span>
+                                              <span className="text-gray-400">{bet.amount.toLocaleString()}</span>
+                                              <span className={bet.status === 'won' ? 'text-green-400' : bet.status === 'lost' ? 'text-red-400' : 'text-gray-400'}>
+                                                {bet.status === 'won' ? `+${bet.payout.toLocaleString()}` :
+                                                 bet.status === 'lost' ? `-${bet.amount.toLocaleString()}` :
+                                                 '0'}
+                                              </span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <span className="text-gray-500 text-xs">{t('noData')}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              </td>
+                            </tr>
+                          )}
+                        </>
                       ))}
                     </tbody>
                   </table>

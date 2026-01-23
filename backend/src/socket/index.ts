@@ -1,9 +1,14 @@
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import { PrismaClient } from '@prisma/client';
 import type { JWTPayload } from '../middleware/auth.js';
 import { handleGameEvents } from './gameSocket.js';
+import { handleDragonTigerEvents } from './dragonTigerSocket.js';
+import { handleBullBullEvents } from './bullBullSocket.js';
 import { handleChatEvents } from './chatSocket.js';
 import type { ServerToClientEvents, ClientToServerEvents } from './types.js';
+
+const prisma = new PrismaClient();
 
 // Extended socket with user info
 export interface AuthenticatedSocket extends Socket<ClientToServerEvents, ServerToClientEvents> {
@@ -33,7 +38,7 @@ export function initializeSocket(io: TypedServer): void {
     }
   });
 
-  io.on('connection', (socket: Socket) => {
+  io.on('connection', async (socket: Socket) => {
     const authSocket = socket as AuthenticatedSocket;
     console.log(
       `[Socket] User connected: ${authSocket.user.username} (${authSocket.user.userId}) - Socket ID: ${authSocket.id}`
@@ -42,14 +47,76 @@ export function initializeSocket(io: TypedServer): void {
     // Join user to their personal room for targeted messages
     socket.join(`user:${authSocket.user.userId}`);
 
-    // Join default game table room
+    // Join lobby room for table updates
+    socket.join('lobby');
+
+    // Join default game table room (baccarat)
     socket.join('table:default');
 
-    // Setup game event handlers
+    // Send initial balance on connection
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: authSocket.user.userId },
+        select: { balance: true },
+      });
+      if (user) {
+        socket.emit('user:balance', {
+          balance: Number(user.balance),
+          reason: 'deposit', // Using 'deposit' as a generic initial load reason
+        });
+        console.log(`[Socket] Sent initial balance to ${authSocket.user.username}: ${user.balance}`);
+      }
+    } catch (error) {
+      console.error(`[Socket] Failed to fetch initial balance for ${authSocket.user.username}:`, error);
+    }
+
+    // Setup game event handlers for Baccarat
     handleGameEvents(io, authSocket);
+
+    // Setup game event handlers for Dragon Tiger
+    handleDragonTigerEvents(io, authSocket);
+
+    // Setup game event handlers for Bull Bull
+    handleBullBullEvents(io, authSocket);
 
     // Setup chat event handlers
     handleChatEvents(io, authSocket);
+
+    // Handle joining specific game tables
+    socket.on('join:table' as any, (data: { gameType: string; tableId?: string }) => {
+      const { gameType, tableId } = data;
+      // Leave other game tables first (but keep user room)
+      socket.rooms.forEach(room => {
+        if (room.startsWith('table:') && !room.startsWith('user:')) {
+          socket.leave(room);
+        }
+      });
+
+      // Join the requested table
+      switch (gameType) {
+        case 'baccarat':
+          if (tableId) {
+            // Join specific multi-table baccarat table
+            socket.join(`table:baccarat:${tableId}`);
+            console.log(`[Socket] ${authSocket.user.username} joined baccarat table ${tableId}`);
+          } else {
+            // Join default table for backward compatibility
+            socket.join('table:default');
+            console.log(`[Socket] ${authSocket.user.username} joined default baccarat table`);
+          }
+          break;
+        case 'dragontiger':
+          socket.join('table:dragontiger');
+          console.log(`[Socket] ${authSocket.user.username} joined dragon tiger table`);
+          break;
+        case 'bullbull':
+          socket.join('table:bullbull');
+          console.log(`[Socket] ${authSocket.user.username} joined bull bull table`);
+          break;
+        default:
+          socket.join('table:default');
+      }
+    });
 
     // Handle disconnection
     socket.on('disconnect', (reason) => {

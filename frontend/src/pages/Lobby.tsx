@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { leaderboardApi, chatApi, tablesApi } from '../services/api';
+import { useLobbySocket } from '../hooks/useLobbySocket';
 import {
   Bell,
   Settings,
@@ -146,6 +147,48 @@ export default function Lobby() {
   const [tables, setTables] = useState<Table[]>([]);
   const [_tablesLoading, setTablesLoading] = useState(true);
 
+  // Real-time table update handler
+  const handleTableUpdate = useCallback((update: {
+    tableId: string;
+    phase: 'betting' | 'sealed' | 'dealing' | 'result';
+    timeRemaining: number;
+    roundNumber: number;
+    shoeNumber: number;
+    lastResult?: 'player' | 'banker' | 'tie';
+    roadmap: { banker: number; player: number; tie: number };
+  }) => {
+    setTables(prevTables =>
+      prevTables.map(table => {
+        if (table.id !== update.tableId) return table;
+
+        // Map phase to status
+        let status: 'betting' | 'dealing' | 'waiting' = 'waiting';
+        if (update.phase === 'betting') status = 'betting';
+        else if (update.phase === 'dealing') status = 'dealing';
+        else if (update.phase === 'sealed' || update.phase === 'result') status = 'waiting';
+
+        // Update lastResults if we got a new result
+        let lastResults = table.lastResults;
+        if (update.lastResult && update.phase === 'result') {
+          lastResults = [update.lastResult, ...table.lastResults].slice(0, 20);
+        }
+
+        return {
+          ...table,
+          status,
+          countdown: update.timeRemaining,
+          roundNumber: update.roundNumber,
+          shoeNumber: update.shoeNumber,
+          roadmap: update.roadmap,
+          lastResults,
+        };
+      })
+    );
+  }, []);
+
+  // Connect to lobby socket for real-time updates
+  useLobbySocket(handleTableUpdate);
+
   // Fetch tables
   useEffect(() => {
     const fetchTables = async () => {
@@ -198,13 +241,25 @@ export default function Lobby() {
     };
 
     fetchTables();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchTables, 30000);
+    // Refresh every 5 minutes as fallback (real-time updates via socket)
+    const interval = setInterval(fetchTables, 300000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleJoinTable = (tableId: string) => {
-    navigate(`/game?table=${tableId}`);
+  const handleJoinTable = (tableId: string, gameType?: string) => {
+    // Route to the correct game based on game type
+    switch (gameType) {
+      case 'dragonTiger':
+        navigate(`/game/dragontiger?table=${tableId}`);
+        break;
+      case 'bullBull':
+        navigate(`/game/bullbull?table=${tableId}`);
+        break;
+      case 'baccarat':
+      default:
+        navigate(`/game?table=${tableId}`);
+        break;
+    }
   };
 
   // Filter tables based on selected category and view mode
@@ -480,7 +535,7 @@ export default function Lobby() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      onClick={() => handleJoinTable(table.id)}
+                      onClick={() => handleJoinTable(table.id, table.gameType)}
                       className="bg-[#1a1f2e] rounded-lg overflow-hidden border border-gray-800/50 hover:border-orange-500/50 cursor-pointer group transition-all"
                     >
                       {/* Table Preview */}

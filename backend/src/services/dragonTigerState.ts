@@ -1,7 +1,6 @@
 import { PrismaClient } from '@prisma/client';
-import type { Card, RoundResult, CalculateBetOptions } from '../utils/gameLogic.js';
-import { calculateBetResult } from '../utils/gameLogic.js';
-import type { BetEntry, BetType } from '../socket/types.js';
+import type { Card, DragonTigerRoundResult, DragonTigerBetType } from '../utils/dragonTigerLogic.js';
+import { calculateDTBetResult } from '../utils/dragonTigerLogic.js';
 
 // Re-export GamePhase type for other modules
 export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
@@ -9,18 +8,23 @@ export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
 const prisma = new PrismaClient();
 
 // Current round info stored in memory
-export interface CurrentRound {
+export interface DragonTigerCurrentRound {
   id: string;
   roundNumber: number;
   shoeNumber: number;
   startedAt: Date;
-  playerCards: Card[];
-  bankerCards: Card[];
-  playerPoints: number;
-  bankerPoints: number;
-  result: 'player' | 'banker' | 'tie' | null;
-  playerPair: boolean;
-  bankerPair: boolean;
+  dragonCard: Card | null;
+  tigerCard: Card | null;
+  dragonValue: number;
+  tigerValue: number;
+  result: 'dragon' | 'tiger' | 'tie' | null;
+  isSuitedTie: boolean;
+}
+
+// Bet entry for Dragon Tiger
+export interface DTBetEntry {
+  type: DragonTigerBetType;
+  amount: number;
 }
 
 // Persistent state (loaded from DB on startup)
@@ -33,7 +37,7 @@ interface PersistedState {
 
 // In-memory state
 let currentPhase: GamePhase = 'betting';
-let currentRound: CurrentRound | null = null;
+let currentRound: DragonTigerCurrentRound | null = null;
 let roundCounter = 0;
 let shoeNumber = 1;
 let cardsRemaining = 416;
@@ -41,29 +45,26 @@ let shuffledDeck: Card[] | null = null;
 let timeRemaining = 0;
 
 // Map of userId -> their bets for current round
-const currentBets = new Map<string, BetEntry[]>();
+const currentBets = new Map<string, DTBetEntry[]>();
 
 // Map of userId -> reserved balance (already deducted from DB)
 const reservedBalances = new Map<string, number>();
-
-// Map of userId -> no commission mode for current round
-const noCommissionMode = new Map<string, boolean>();
 
 // ============================================
 // State Persistence
 // ============================================
 
-const SINGLETON_ID = 'singleton';
+const SINGLETON_ID = 'dt_singleton';
 
 export async function loadPersistedState(): Promise<void> {
   try {
-    let state = await prisma.gameState.findUnique({
+    let state = await prisma.dragonTigerGameState.findUnique({
       where: { id: SINGLETON_ID },
     });
 
     if (!state) {
       // Create initial state
-      state = await prisma.gameState.create({
+      state = await prisma.dragonTigerGameState.create({
         data: {
           id: SINGLETON_ID,
           shoeNumber: 1,
@@ -71,7 +72,7 @@ export async function loadPersistedState(): Promise<void> {
           cardsRemaining: 416,
         },
       });
-      console.log('[GameState] Created initial persisted state');
+      console.log('[DragonTigerState] Created initial persisted state');
     }
 
     shoeNumber = state.shoeNumber;
@@ -79,16 +80,16 @@ export async function loadPersistedState(): Promise<void> {
     cardsRemaining = state.cardsRemaining;
     shuffledDeck = state.shuffledDeck as Card[] | null;
 
-    console.log(`[GameState] Loaded persisted state: shoe #${shoeNumber}, round #${roundCounter}, cards remaining: ${cardsRemaining}`);
+    console.log(`[DragonTigerState] Loaded persisted state: shoe #${shoeNumber}, round #${roundCounter}, cards remaining: ${cardsRemaining}`);
   } catch (error) {
-    console.error('[GameState] Failed to load persisted state:', error);
+    console.error('[DragonTigerState] Failed to load persisted state:', error);
     // Continue with default values
   }
 }
 
 export async function savePersistedState(): Promise<void> {
   try {
-    await prisma.gameState.upsert({
+    await prisma.dragonTigerGameState.upsert({
       where: { id: SINGLETON_ID },
       update: {
         shoeNumber,
@@ -105,7 +106,7 @@ export async function savePersistedState(): Promise<void> {
       },
     });
   } catch (error) {
-    console.error('[GameState] Failed to save persisted state:', error);
+    console.error('[DragonTigerState] Failed to save persisted state:', error);
   }
 }
 
@@ -157,7 +158,7 @@ export function getTimeRemaining(): number {
 // Round Management
 // ============================================
 
-export function getCurrentRound(): CurrentRound | null {
+export function getCurrentRound(): DragonTigerCurrentRound | null {
   return currentRound;
 }
 
@@ -165,20 +166,19 @@ export function getRoundCounter(): number {
   return roundCounter;
 }
 
-export async function createNewRound(): Promise<CurrentRound> {
+export async function createNewRound(): Promise<DragonTigerCurrentRound> {
   roundCounter++;
   currentRound = {
-    id: `round-${Date.now()}-${roundCounter}`,
+    id: `dt-round-${Date.now()}-${roundCounter}`,
     roundNumber: roundCounter,
     shoeNumber,
     startedAt: new Date(),
-    playerCards: [],
-    bankerCards: [],
-    playerPoints: 0,
-    bankerPoints: 0,
+    dragonCard: null,
+    tigerCard: null,
+    dragonValue: 0,
+    tigerValue: 0,
     result: null,
-    playerPair: false,
-    bankerPair: false,
+    isSuitedTie: false,
   };
 
   // Persist the new round counter
@@ -193,18 +193,17 @@ export async function startNewShoe(): Promise<void> {
   cardsRemaining = 416;
   shuffledDeck = null;
   await savePersistedState();
-  console.log(`[GameState] Started new shoe #${shoeNumber}`);
+  console.log(`[DragonTigerState] Started new shoe #${shoeNumber}`);
 }
 
-export function setRoundResult(result: RoundResult): void {
+export function setRoundResult(result: DragonTigerRoundResult): void {
   if (currentRound) {
-    currentRound.playerCards = result.playerCards;
-    currentRound.bankerCards = result.bankerCards;
-    currentRound.playerPoints = result.playerPoints;
-    currentRound.bankerPoints = result.bankerPoints;
+    currentRound.dragonCard = result.dragonCard;
+    currentRound.tigerCard = result.tigerCard;
+    currentRound.dragonValue = result.dragonValue;
+    currentRound.tigerValue = result.tigerValue;
     currentRound.result = result.result;
-    currentRound.playerPair = result.playerPair;
-    currentRound.bankerPair = result.bankerPair;
+    currentRound.isSuitedTie = result.isSuitedTie;
   }
 }
 
@@ -212,47 +211,46 @@ export function setRoundResult(result: RoundResult): void {
 // Bet Management
 // ============================================
 
-// Default betting limits if user has no specific limit
+// Default betting limits for Dragon Tiger
 const DEFAULT_LIMITS = {
-  playerMin: 10, playerMax: 100000,
-  bankerMin: 10, bankerMax: 100000,
+  dragonMin: 10, dragonMax: 100000,
+  tigerMin: 10, tigerMax: 100000,
   tieMin: 10, tieMax: 50000,
-  pairMin: 10, pairMax: 50000,
-  bonusMin: 10, bonusMax: 50000,  // Dragon Bonus limits
+  suitedTieMin: 10, suitedTieMax: 10000,
+  bigSmallMin: 10, bigSmallMax: 50000,
 };
 
 // Helper function to get min/max for bet type
 function getLimitForBetType(
   limit: typeof DEFAULT_LIMITS,
-  betType: BetType
+  betType: DragonTigerBetType
 ): { min: number; max: number } {
   switch (betType) {
-    case 'player':
-      return { min: limit.playerMin, max: limit.playerMax };
-    case 'banker':
-      return { min: limit.bankerMin, max: limit.bankerMax };
-    case 'tie':
+    case 'dragon':
+      return { min: limit.dragonMin, max: limit.dragonMax };
+    case 'tiger':
+      return { min: limit.tigerMin, max: limit.tigerMax };
+    case 'dt_tie':
       return { min: limit.tieMin, max: limit.tieMax };
-    case 'player_pair':
-    case 'banker_pair':
-    case 'super_six':
-      return { min: limit.pairMin, max: limit.pairMax };
-    case 'player_bonus':
-    case 'banker_bonus':
-      return { min: limit.bonusMin, max: limit.bonusMax };
+    case 'dt_suited_tie':
+      return { min: limit.suitedTieMin, max: limit.suitedTieMax };
+    case 'dragon_big':
+    case 'dragon_small':
+    case 'tiger_big':
+    case 'tiger_small':
+      return { min: limit.bigSmallMin, max: limit.bigSmallMax };
     default:
-      return { min: limit.playerMin, max: limit.playerMax };
+      return { min: limit.dragonMin, max: limit.dragonMax };
   }
 }
 
 export async function placeBet(
   userId: string,
-  bets: BetEntry[],
-  isNoCommission: boolean = false
+  bets: DTBetEntry[]
 ): Promise<{
   success: boolean;
   roundId?: string;
-  bets?: BetEntry[];
+  bets?: DTBetEntry[];
   totalBet?: number;
   newBalance?: number;
   errorCode?: string;
@@ -267,13 +265,12 @@ export async function placeBet(
     };
   }
 
-  // Get user with betting limit
+  // Get user
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       balance: true,
       status: true,
-      bettingLimit: true,
     },
   });
 
@@ -293,22 +290,7 @@ export async function placeBet(
     };
   }
 
-  // Determine betting limits
-  const limits = user.bettingLimit
-    ? {
-        playerMin: Number(user.bettingLimit.playerMin),
-        playerMax: Number(user.bettingLimit.playerMax),
-        bankerMin: Number(user.bettingLimit.bankerMin),
-        bankerMax: Number(user.bettingLimit.bankerMax),
-        tieMin: Number(user.bettingLimit.tieMin),
-        tieMax: Number(user.bettingLimit.tieMax),
-        pairMin: Number(user.bettingLimit.pairMin),
-        pairMax: Number(user.bettingLimit.pairMax),
-        // Use pair limits as fallback for dragon bonus (until bonus columns added to BettingLimit)
-        bonusMin: Number(user.bettingLimit.pairMin),
-        bonusMax: Number(user.bettingLimit.pairMax),
-      }
-    : DEFAULT_LIMITS;
+  const limits = DEFAULT_LIMITS;
 
   const currentBalance = Number(user.balance);
   const existingBets = currentBets.get(userId) || [];
@@ -326,7 +308,7 @@ export async function placeBet(
     };
   }
 
-  // Validate bet amounts (must be positive) and check limits
+  // Validate bet amounts and check limits
   for (const bet of bets) {
     if (bet.amount <= 0) {
       return {
@@ -380,7 +362,6 @@ export async function placeBet(
   // Update state
   currentBets.set(userId, mergedBets);
   reservedBalances.set(userId, totalRequired);
-  noCommissionMode.set(userId, isNoCommission);
 
   return {
     success: true,
@@ -434,11 +415,11 @@ export async function clearBets(userId: string): Promise<{
   return { success: true };
 }
 
-export function getAllBets(): Map<string, BetEntry[]> {
+export function getAllBets(): Map<string, DTBetEntry[]> {
   return currentBets;
 }
 
-export function getUserBets(userId: string): BetEntry[] {
+export function getUserBets(userId: string): DTBetEntry[] {
   return currentBets.get(userId) || [];
 }
 
@@ -449,7 +430,7 @@ export function getUserBets(userId: string): BetEntry[] {
 export interface SettlementResult {
   userId: string;
   betResults: Array<{
-    type: BetType;
+    type: DragonTigerBetType;
     amount: number;
     won: boolean;
     payout: number;
@@ -468,20 +449,18 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
     return [];
   }
 
-  const roundResult: RoundResult = {
-    playerCards: round.playerCards,
-    bankerCards: round.bankerCards,
-    playerPoints: round.playerPoints,
-    bankerPoints: round.bankerPoints,
+  const roundResult: DragonTigerRoundResult = {
+    dragonCard: round.dragonCard!,
+    tigerCard: round.tigerCard!,
+    dragonValue: round.dragonValue,
+    tigerValue: round.tigerValue,
     result: round.result,
-    playerPair: round.playerPair,
-    bankerPair: round.bankerPair,
+    isSuitedTie: round.isSuitedTie,
   };
 
   for (const [userId, bets] of currentBets.entries()) {
-    const isNoCommission = noCommissionMode.get(userId) || false;
     const betResults = bets.map((bet) => {
-      const result = calculateBetResult(bet.type, bet.amount, roundResult, { isNoCommission });
+      const result = calculateDTBetResult(bet.type, bet.amount, roundResult);
       return {
         type: bet.type,
         amount: bet.amount,
@@ -493,10 +472,11 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
     const totalBet = bets.reduce((sum, b) => sum + b.amount, 0);
 
     // Calculate total payout
-    // For each bet:
-    // - If won: return stake + winnings (payout is positive)
-    // - If push (tie on player/banker): return stake (payout is 0)
-    // - If lost: nothing returned (payout is negative)
+    // For Dragon Tiger:
+    // - Win: return stake + winnings
+    // - Half-loss (tie on dragon/tiger bet): return half stake
+    // - Push (7 on big/small): return full stake
+    // - Full loss: nothing returned
     let totalPayout = 0;
     for (const result of betResults) {
       if (result.won) {
@@ -505,8 +485,11 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
       } else if (result.payout === 0) {
         // Push: get back stake only
         totalPayout += result.amount;
+      } else if (result.payout === -result.amount * 0.5) {
+        // Half loss (tie on dragon/tiger): get back half stake
+        totalPayout += result.amount * 0.5;
       }
-      // Lost: payout is negative, nothing returned
+      // Full loss: payout is -amount, nothing returned
     }
 
     const netResult = totalPayout - totalBet;
@@ -536,6 +519,10 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
       } else if (bet.payout === 0) {
         status = 'refunded';
         payoutAmount = bet.amount;
+      } else if (bet.payout === -bet.amount * 0.5) {
+        // Half refund for tie
+        status = 'refunded';
+        payoutAmount = bet.amount * 0.5;
       } else {
         status = 'lost';
         payoutAmount = 0;
@@ -544,7 +531,7 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
       await prisma.bet.create({
         data: {
           userId,
-          roundId: savedRoundId,
+          dragonTigerRoundId: savedRoundId,
           betType: bet.type as any,
           amount: bet.amount,
           payout: payoutAmount,
@@ -557,16 +544,16 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
     const finalBalance = Number(user?.balance || 0);
     const balanceBeforeBet = finalBalance - netResult;
 
-    // Bet transaction (already deducted when placed, so this is just for record)
+    // Bet transaction
     await prisma.transaction.create({
       data: {
         userId,
-        operatorId: userId, // System operation
+        operatorId: userId,
         type: 'bet',
         amount: -totalBet,
         balanceBefore: balanceBeforeBet + totalBet,
         balanceAfter: balanceBeforeBet,
-        note: `Round #${round.roundNumber} - Bets: ${bets.map((b) => `${b.type}:${b.amount}`).join(', ')}`,
+        note: `Dragon Tiger Round #${round.roundNumber} - Bets: ${bets.map((b) => `${b.type}:${b.amount}`).join(', ')}`,
       },
     });
 
@@ -579,7 +566,7 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
           amount: totalPayout,
           balanceBefore: balanceBeforeBet,
           balanceAfter: finalBalance,
-          note: `Round #${round.roundNumber} - ${round.result?.toUpperCase()} wins`,
+          note: `Dragon Tiger Round #${round.roundNumber} - ${round.result?.toUpperCase()} wins`,
         },
       });
     }
@@ -600,7 +587,6 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
 export function clearAllBets(): void {
   currentBets.clear();
   reservedBalances.clear();
-  noCommissionMode.clear();
 }
 
 // ============================================
@@ -614,47 +600,37 @@ export function getGameState(userId?: string) {
     roundNumber: currentRound?.roundNumber || 0,
     shoeNumber: currentRound?.shoeNumber || 1,
     timeRemaining,
-    playerCards: currentRound?.playerCards || [],
-    bankerCards: currentRound?.bankerCards || [],
-    playerPoints: currentRound?.playerPoints,
-    bankerPoints: currentRound?.bankerPoints,
+    dragonCard: currentRound?.dragonCard || null,
+    tigerCard: currentRound?.tigerCard || null,
+    dragonValue: currentRound?.dragonValue,
+    tigerValue: currentRound?.tigerValue,
     result: currentRound?.result,
-    playerPair: currentRound?.playerPair,
-    bankerPair: currentRound?.bankerPair,
+    isSuitedTie: currentRound?.isSuitedTie,
     myBets: userId ? currentBets.get(userId) || [] : [],
   };
 }
 
-// Get recent rounds for roadmap (from database) - baccarat only
+// Get recent rounds for roadmap (from database)
 export async function getRecentRounds(limit: number = 100) {
-  const rounds = await prisma.gameRound.findMany({
-    where: {
-      result: {
-        in: ['player', 'banker', 'tie'],
-      },
-    },
+  const rounds = await prisma.dragonTigerRound.findMany({
     orderBy: { createdAt: 'desc' },
     take: limit,
     select: {
       roundNumber: true,
       result: true,
-      playerPair: true,
-      bankerPair: true,
-      playerPoints: true,
-      bankerPoints: true,
-      playerCards: true,
-      bankerCards: true,
+      isSuitedTie: true,
+      dragonValue: true,
+      tigerValue: true,
+      dragonCard: true,
+      tigerCard: true,
     },
   });
 
-  // Transform to include totalCards count
   return rounds.reverse().map(round => ({
     roundNumber: round.roundNumber,
-    result: round.result as 'player' | 'banker' | 'tie',
-    playerPair: round.playerPair,
-    bankerPair: round.bankerPair,
-    playerPoints: round.playerPoints,
-    bankerPoints: round.bankerPoints,
-    totalCards: (round.playerCards as any[])?.length + (round.bankerCards as any[])?.length || 0,
+    result: round.result,
+    isSuitedTie: round.isSuitedTie,
+    dragonValue: round.dragonValue,
+    tigerValue: round.tigerValue,
   }));
 }

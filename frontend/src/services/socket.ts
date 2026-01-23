@@ -111,6 +111,21 @@ export interface ChatMessageEvent {
   createdAt: string;
 }
 
+// Lobby table update event
+export interface TableUpdateEvent {
+  tableId: string;
+  phase: GamePhase;
+  timeRemaining: number;
+  roundNumber: number;
+  shoeNumber: number;
+  lastResult?: GameResult;
+  roadmap: {
+    banker: number;
+    player: number;
+    tie: number;
+  };
+}
+
 // Server to Client Events Interface
 interface ServerToClientEvents {
   'game:state': (data: GameStateEvent) => void;
@@ -123,6 +138,7 @@ interface ServerToClientEvents {
   'bet:settlement': (data: BetSettlementEvent) => void;
   'user:balance': (data: BalanceUpdateEvent) => void;
   'chat:message': (data: ChatMessageEvent) => void;
+  'lobby:tableUpdate': (data: TableUpdateEvent) => void;
   error: (data: ErrorEvent) => void;
 }
 
@@ -132,6 +148,7 @@ interface ClientToServerEvents {
   'bet:clear': () => void;
   'game:requestState': () => void;
   'chat:send': (data: { message: string }) => void;
+  'join:table': (data: { gameType: string; tableId?: string }) => void;
 }
 
 // Typed Socket
@@ -227,4 +244,13 @@ export function sendChatMessage(message: string): void {
     return;
   }
   socket.emit('chat:send', { message });
+}
+
+export function joinTable(gameType: string, tableId?: string): void {
+  if (!socket?.connected) {
+    console.error('[Socket] Cannot join table: not connected');
+    return;
+  }
+  socket.emit('join:table', { gameType, tableId });
+  console.log(`[Socket] Joining ${gameType} table${tableId ? ` ${tableId}` : ''}`);
 }

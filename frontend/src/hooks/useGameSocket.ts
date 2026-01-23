@@ -4,6 +4,7 @@ import {
   disconnectSocket,
   placeBet as socketPlaceBet,
   clearBets as socketClearBets,
+  joinTable as socketJoinTable,
   type GameStateEvent,
   type PhaseChangeEvent,
   type TimerEvent,
@@ -19,7 +20,7 @@ import { useGameStore } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
 import { gameApi } from '../services/api';
 
-export function useGameSocket() {
+export function useGameSocket(tableId?: string) {
   const { token, isAuthenticated } = useAuthStore();
   const hasConnected = useRef(false);
 
@@ -66,6 +67,12 @@ export function useGameSocket() {
     socket.on('connect', () => {
       console.log('[useGameSocket] Connected');
       setConnected(true);
+
+      // Join specific table if tableId provided
+      if (tableId) {
+        socketJoinTable('baccarat', tableId);
+        console.log(`[useGameSocket] Joined baccarat table ${tableId}`);
+      }
 
       // Fetch betting limits on connection
       gameApi.getMyLimits().then((res) => {
@@ -193,7 +200,7 @@ export function useGameSocket() {
       disconnectSocket();
       resetAll();
     };
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated, token, tableId]);
 
   // Submit pending bets to server
   const submitBets = useCallback((isNoCommission: boolean = false) => {

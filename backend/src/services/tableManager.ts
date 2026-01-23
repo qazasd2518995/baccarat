@@ -1,0 +1,640 @@
+import { Server } from 'socket.io';
+import { PrismaClient } from '@prisma/client';
+import { createShoe, playRound, calculateBetResult, type Card, type RoundResult } from '../utils/gameLogic.js';
+import type { GamePhase, BetEntry, BetType } from '../socket/types.js';
+import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
+
+const prisma = new PrismaClient();
+
+// Type-safe Socket.io server
+type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
+
+// Phase durations in milliseconds
+const PHASE_DURATIONS: Record<GamePhase, number> = {
+  betting: 35000,    // 35 seconds
+  sealed: 3000,      // 3 seconds
+  dealing: 10000,    // 10 seconds
+  result: 5000,      // 5 seconds
+};
+
+// Table state interface
+interface TableState {
+  tableId: string;
+  tableName: string;
+  phase: GamePhase;
+  timeRemaining: number;
+  roundId: string | null;
+  roundNumber: number;
+  shoeNumber: number;
+  cardsRemaining: number;
+  currentShoe: Card[];
+  currentRound: {
+    id: string;
+    roundNumber: number;
+    shoeNumber: number;
+    startedAt: Date;
+    playerCards: Card[];
+    bankerCards: Card[];
+    playerPoints: number;
+    bankerPoints: number;
+    result: 'player' | 'banker' | 'tie' | null;
+    playerPair: boolean;
+    bankerPair: boolean;
+  } | null;
+  currentBets: Map<string, BetEntry[]>;
+  noCommissionMode: Map<string, boolean>;
+  timerInterval: NodeJS.Timeout | null;
+}
+
+// Store all table states
+const tables = new Map<string, TableState>();
+
+// Get or create table state
+function getTableState(tableId: string): TableState {
+  if (!tables.has(tableId)) {
+    const state: TableState = {
+      tableId,
+      tableName: `Table ${tableId}`,
+      phase: 'betting',
+      timeRemaining: 0,
+      roundId: null,
+      roundNumber: 0,
+      shoeNumber: 1,
+      cardsRemaining: 416,
+      currentShoe: createShoe(),
+      currentRound: null,
+      currentBets: new Map(),
+      noCommissionMode: new Map(),
+      timerInterval: null,
+    };
+    tables.set(tableId, state);
+  }
+  return tables.get(tableId)!;
+}
+
+// Helper function for delays
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Get Socket.io room name for a table
+function getTableRoom(tableId: string): string {
+  return `table:baccarat:${tableId}`;
+}
+
+// ============================================
+// Table Game Loop
+// ============================================
+
+export async function startTableLoop(io: TypedServer, tableId: string, startDelay: number = 0): Promise<void> {
+  console.log(`[Table ${tableId}] Starting game loop with ${startDelay}ms delay...`);
+
+  // Add initial delay for staggered table starts
+  if (startDelay > 0) {
+    await delay(startDelay);
+  }
+
+  const state = getTableState(tableId);
+  state.currentShoe = createShoe();
+  state.cardsRemaining = state.currentShoe.length;
+  console.log(`[Table ${tableId}] Shoe created with ${state.currentShoe.length} cards`);
+
+  runTablePhase(io, tableId, 'betting');
+}
+
+async function runTablePhase(io: TypedServer, tableId: string, phase: GamePhase): Promise<void> {
+  const state = getTableState(tableId);
+  const roomName = getTableRoom(tableId);
+
+  console.log(`[Table ${tableId}] Entering phase: ${phase}`);
+  state.phase = phase;
+
+  const duration = PHASE_DURATIONS[phase];
+  state.timeRemaining = Math.floor(duration / 1000);
+
+  switch (phase) {
+    case 'betting':
+      await handleTableBettingPhase(io, tableId, duration, state.timeRemaining);
+      break;
+    case 'sealed':
+      await handleTableSealedPhase(io, tableId, duration);
+      break;
+    case 'dealing':
+      await handleTableDealingPhase(io, tableId);
+      break;
+    case 'result':
+      await handleTableResultPhase(io, tableId, duration);
+      break;
+  }
+}
+
+async function handleTableBettingPhase(
+  io: TypedServer,
+  tableId: string,
+  duration: number,
+  timeRemaining: number
+): Promise<void> {
+  const state = getTableState(tableId);
+  const roomName = getTableRoom(tableId);
+
+  // Create new round
+  state.roundNumber++;
+  state.currentRound = {
+    id: `table-${tableId}-round-${Date.now()}-${state.roundNumber}`,
+    roundNumber: state.roundNumber,
+    shoeNumber: state.shoeNumber,
+    startedAt: new Date(),
+    playerCards: [],
+    bankerCards: [],
+    playerPoints: 0,
+    bankerPoints: 0,
+    result: null,
+    playerPair: false,
+    bankerPair: false,
+  };
+  state.roundId = state.currentRound.id;
+
+  console.log(`[Table ${tableId}] New round #${state.roundNumber} started in shoe #${state.shoeNumber}`);
+
+  // Broadcast phase change
+  io.to(roomName).emit('game:phase', {
+    phase: 'betting',
+    timeRemaining,
+    roundId: state.roundId,
+  });
+
+  // Timer tick
+  state.timerInterval = setInterval(() => {
+    state.timeRemaining--;
+    io.to(roomName).emit('game:timer', {
+      timeRemaining: state.timeRemaining,
+      phase: 'betting',
+    });
+
+    if (state.timeRemaining <= 0 && state.timerInterval) {
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+    }
+  }, 1000);
+
+  await delay(duration);
+
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+
+  runTablePhase(io, tableId, 'sealed');
+}
+
+async function handleTableSealedPhase(io: TypedServer, tableId: string, duration: number): Promise<void> {
+  const state = getTableState(tableId);
+  const roomName = getTableRoom(tableId);
+
+  io.to(roomName).emit('game:phase', {
+    phase: 'sealed',
+    timeRemaining: Math.floor(duration / 1000),
+    roundId: state.roundId,
+  });
+
+  console.log(`[Table ${tableId}] Betting sealed, no more bets`);
+
+  await delay(duration);
+  runTablePhase(io, tableId, 'dealing');
+}
+
+async function handleTableDealingPhase(io: TypedServer, tableId: string): Promise<void> {
+  const state = getTableState(tableId);
+  const roomName = getTableRoom(tableId);
+
+  // Check for reshuffle
+  if (state.currentShoe.length < 20) {
+    state.shoeNumber++;
+    state.currentShoe = createShoe();
+    state.cardsRemaining = state.currentShoe.length;
+    console.log(`[Table ${tableId}] New shoe #${state.shoeNumber} created`);
+  }
+
+  io.to(roomName).emit('game:phase', {
+    phase: 'dealing',
+    timeRemaining: Math.floor(PHASE_DURATIONS.dealing / 1000),
+    roundId: state.roundId,
+  });
+
+  // Play round
+  const roundResult = playRound(state.currentShoe);
+  state.cardsRemaining = state.currentShoe.length;
+
+  console.log(
+    `[Table ${tableId}] Cards dealt: Player ${roundResult.playerPoints} vs Banker ${roundResult.bankerPoints} = ${roundResult.result}`
+  );
+
+  // Store result
+  if (state.currentRound) {
+    state.currentRound.playerCards = roundResult.playerCards;
+    state.currentRound.bankerCards = roundResult.bankerCards;
+    state.currentRound.playerPoints = roundResult.playerPoints;
+    state.currentRound.bankerPoints = roundResult.bankerPoints;
+    state.currentRound.result = roundResult.result;
+    state.currentRound.playerPair = roundResult.playerPair;
+    state.currentRound.bankerPair = roundResult.bankerPair;
+  }
+
+  // Emit cards sequentially
+  io.to(roomName).emit('game:card', {
+    target: 'player',
+    cardIndex: 0,
+    card: roundResult.playerCards[0],
+    currentPoints: roundResult.playerCards[0].value % 10,
+  });
+  await delay(1200);
+
+  io.to(roomName).emit('game:card', {
+    target: 'banker',
+    cardIndex: 0,
+    card: roundResult.bankerCards[0],
+    currentPoints: roundResult.bankerCards[0].value % 10,
+  });
+  await delay(1200);
+
+  const playerTwoCardPoints = (roundResult.playerCards[0].value + roundResult.playerCards[1].value) % 10;
+  io.to(roomName).emit('game:card', {
+    target: 'player',
+    cardIndex: 1,
+    card: roundResult.playerCards[1],
+    currentPoints: playerTwoCardPoints,
+  });
+  await delay(1200);
+
+  const bankerTwoCardPoints = (roundResult.bankerCards[0].value + roundResult.bankerCards[1].value) % 10;
+  io.to(roomName).emit('game:card', {
+    target: 'banker',
+    cardIndex: 1,
+    card: roundResult.bankerCards[1],
+    currentPoints: bankerTwoCardPoints,
+  });
+  await delay(1500);
+
+  if (roundResult.playerCards.length > 2) {
+    io.to(roomName).emit('game:card', {
+      target: 'player',
+      cardIndex: 2,
+      card: roundResult.playerCards[2],
+      currentPoints: roundResult.playerPoints,
+    });
+    await delay(1200);
+  }
+
+  if (roundResult.bankerCards.length > 2) {
+    io.to(roomName).emit('game:card', {
+      target: 'banker',
+      cardIndex: 2,
+      card: roundResult.bankerCards[2],
+      currentPoints: roundResult.bankerPoints,
+    });
+    await delay(1200);
+  }
+
+  io.to(roomName).emit('game:result', {
+    roundId: state.roundId || '',
+    roundNumber: state.roundNumber,
+    result: roundResult.result,
+    playerCards: roundResult.playerCards,
+    bankerCards: roundResult.bankerCards,
+    playerPoints: roundResult.playerPoints,
+    bankerPoints: roundResult.bankerPoints,
+    playerPair: roundResult.playerPair,
+    bankerPair: roundResult.bankerPair,
+  });
+
+  runTablePhase(io, tableId, 'result');
+}
+
+async function handleTableResultPhase(io: TypedServer, tableId: string, duration: number): Promise<void> {
+  const state = getTableState(tableId);
+  const roomName = getTableRoom(tableId);
+  const round = state.currentRound;
+
+  io.to(roomName).emit('game:phase', {
+    phase: 'result',
+    timeRemaining: Math.floor(duration / 1000),
+    roundId: state.roundId,
+  });
+
+  console.log(`[Table ${tableId}] Result displayed: ${round?.result}`);
+
+  // Settlement
+  if (round && round.result) {
+    // Save to database
+    const savedRound = await prisma.gameRound.create({
+      data: {
+        shoeNumber: round.shoeNumber,
+        playerCards: round.playerCards as any,
+        bankerCards: round.bankerCards as any,
+        playerPoints: round.playerPoints,
+        bankerPoints: round.bankerPoints,
+        result: round.result,
+        playerPair: round.playerPair,
+        bankerPair: round.bankerPair,
+      },
+    });
+
+    console.log(`[Table ${tableId}] Round saved with ID: ${savedRound.id}`);
+
+    // Settle bets
+    const roundResult: RoundResult = {
+      playerCards: round.playerCards,
+      bankerCards: round.bankerCards,
+      playerPoints: round.playerPoints,
+      bankerPoints: round.bankerPoints,
+      result: round.result,
+      playerPair: round.playerPair,
+      bankerPair: round.bankerPair,
+    };
+
+    for (const [userId, bets] of state.currentBets.entries()) {
+      const isNoCommission = state.noCommissionMode.get(userId) || false;
+      const betResults = bets.map((bet) => {
+        const result = calculateBetResult(bet.type, bet.amount, roundResult, { isNoCommission });
+        return {
+          type: bet.type,
+          amount: bet.amount,
+          won: result.won,
+          payout: result.payout,
+        };
+      });
+
+      const totalBet = bets.reduce((sum, b) => sum + b.amount, 0);
+      let totalPayout = 0;
+      for (const result of betResults) {
+        if (result.won) {
+          totalPayout += result.amount + result.payout;
+        } else if (result.payout === 0) {
+          totalPayout += result.amount;
+        }
+      }
+      const netResult = totalPayout - totalBet;
+
+      // Update balance
+      if (totalPayout > 0) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: { balance: { increment: totalPayout } },
+        });
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { balance: true },
+      });
+
+      // Save bets
+      for (const bet of betResults) {
+        let status: 'won' | 'lost' | 'refunded';
+        let payoutAmount: number;
+
+        if (bet.won) {
+          status = 'won';
+          payoutAmount = bet.amount + bet.payout;
+        } else if (bet.payout === 0) {
+          status = 'refunded';
+          payoutAmount = bet.amount;
+        } else {
+          status = 'lost';
+          payoutAmount = 0;
+        }
+
+        await prisma.bet.create({
+          data: {
+            userId,
+            roundId: savedRound.id,
+            betType: bet.type as any,
+            amount: bet.amount,
+            payout: payoutAmount,
+            status,
+          },
+        });
+      }
+
+      // Emit settlement
+      io.to(`user:${userId}`).emit('bet:settlement', {
+        roundId: savedRound.id,
+        bets: betResults,
+        totalBet,
+        totalPayout,
+        netResult,
+        newBalance: Number(user?.balance || 0),
+      });
+
+      console.log(`[Table ${tableId}] Settled for user ${userId}: net=${netResult}`);
+    }
+
+    // Update table statistics in database
+    const baccaratTable = await prisma.gameTable.findFirst({
+      where: { id: tableId },
+    });
+
+    if (baccaratTable) {
+      const updateData: { bankerWins?: { increment: number }; playerWins?: { increment: number }; tieCount?: { increment: number }; roundNumber: { increment: number } } = {
+        roundNumber: { increment: 1 },
+      };
+
+      if (round.result === 'banker') {
+        updateData.bankerWins = { increment: 1 };
+      } else if (round.result === 'player') {
+        updateData.playerWins = { increment: 1 };
+      } else if (round.result === 'tie') {
+        updateData.tieCount = { increment: 1 };
+      }
+
+      await prisma.gameTable.update({
+        where: { id: baccaratTable.id },
+        data: updateData,
+      });
+
+      console.log(`[Table ${tableId}] Updated table statistics: ${round.result}`);
+    }
+
+    // Emit roadmap
+    const recentRounds = await getTableRecentRounds(100);
+    io.to(roomName).emit('game:roadmap', { recentRounds });
+
+    // Clear bets
+    state.currentBets.clear();
+    state.noCommissionMode.clear();
+
+    console.log(`[Table ${tableId}] Settlement complete, ${state.cardsRemaining} cards remaining`);
+  }
+
+  await delay(duration);
+  runTablePhase(io, tableId, 'betting');
+}
+
+// Get recent rounds for roadmap
+async function getTableRecentRounds(limit: number = 100) {
+  const rounds = await prisma.gameRound.findMany({
+    where: {
+      result: { in: ['player', 'banker', 'tie'] },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    select: {
+      roundNumber: true,
+      result: true,
+      playerPair: true,
+      bankerPair: true,
+      playerPoints: true,
+      bankerPoints: true,
+      playerCards: true,
+      bankerCards: true,
+    },
+  });
+
+  return rounds.reverse().map(round => ({
+    roundNumber: round.roundNumber,
+    result: round.result as 'player' | 'banker' | 'tie',
+    playerPair: round.playerPair,
+    bankerPair: round.bankerPair,
+    playerPoints: round.playerPoints,
+    bankerPoints: round.bankerPoints,
+    totalCards: (round.playerCards as any[])?.length + (round.bankerCards as any[])?.length || 0,
+  }));
+}
+
+// ============================================
+// Public API for Socket Handlers
+// ============================================
+
+export function getTableGameState(tableId: string, userId?: string) {
+  const state = getTableState(tableId);
+  return {
+    phase: state.phase,
+    roundId: state.roundId,
+    roundNumber: state.roundNumber,
+    shoeNumber: state.shoeNumber,
+    timeRemaining: state.timeRemaining,
+    cardsRemaining: state.cardsRemaining,
+    playerCards: state.currentRound?.playerCards || [],
+    bankerCards: state.currentRound?.bankerCards || [],
+    playerPoints: state.currentRound?.playerPoints,
+    bankerPoints: state.currentRound?.bankerPoints,
+    result: state.currentRound?.result,
+    playerPair: state.currentRound?.playerPair,
+    bankerPair: state.currentRound?.bankerPair,
+    myBets: userId ? state.currentBets.get(userId) || [] : [],
+  };
+}
+
+export async function placeTableBet(
+  tableId: string,
+  userId: string,
+  bets: BetEntry[],
+  isNoCommission: boolean = false
+): Promise<{
+  success: boolean;
+  roundId?: string;
+  bets?: BetEntry[];
+  totalBet?: number;
+  newBalance?: number;
+  errorCode?: string;
+  errorMessage?: string;
+}> {
+  const state = getTableState(tableId);
+
+  if (state.phase !== 'betting') {
+    return { success: false, errorCode: 'BETTING_CLOSED', errorMessage: 'Betting is closed' };
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { balance: true, status: true },
+  });
+
+  if (!user || user.status !== 'active') {
+    return { success: false, errorCode: 'USER_INACTIVE', errorMessage: 'User not active' };
+  }
+
+  const currentBalance = Number(user.balance);
+  const existingBets = state.currentBets.get(userId) || [];
+  const existingTotal = existingBets.reduce((sum, b) => sum + b.amount, 0);
+  const newBetTotal = bets.reduce((sum, b) => sum + b.amount, 0);
+  const totalRequired = existingTotal + newBetTotal;
+
+  if (totalRequired > currentBalance) {
+    return { success: false, errorCode: 'INSUFFICIENT_BALANCE', errorMessage: 'Insufficient balance' };
+  }
+
+  // Validate and merge bets
+  const mergedBets = [...existingBets];
+  for (const newBet of bets) {
+    if (newBet.amount <= 0) {
+      return { success: false, errorCode: 'INVALID_BET_AMOUNT', errorMessage: 'Invalid bet amount' };
+    }
+    const existingIndex = mergedBets.findIndex((b) => b.type === newBet.type);
+    if (existingIndex >= 0) {
+      mergedBets[existingIndex].amount += newBet.amount;
+    } else {
+      mergedBets.push({ ...newBet });
+    }
+  }
+
+  // Deduct balance
+  await prisma.user.update({
+    where: { id: userId },
+    data: { balance: { decrement: newBetTotal } },
+  });
+
+  state.currentBets.set(userId, mergedBets);
+  state.noCommissionMode.set(userId, isNoCommission);
+
+  return {
+    success: true,
+    roundId: state.roundId || undefined,
+    bets: mergedBets,
+    totalBet: totalRequired,
+    newBalance: currentBalance - newBetTotal,
+  };
+}
+
+export async function clearTableBets(tableId: string, userId: string): Promise<{
+  success: boolean;
+  newBalance?: number;
+  errorCode?: string;
+  errorMessage?: string;
+}> {
+  const state = getTableState(tableId);
+
+  if (state.phase !== 'betting') {
+    return { success: false, errorCode: 'BETTING_CLOSED', errorMessage: 'Cannot clear bets now' };
+  }
+
+  const existingBets = state.currentBets.get(userId) || [];
+  const totalToRefund = existingBets.reduce((sum, b) => sum + b.amount, 0);
+
+  if (totalToRefund > 0) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { balance: { increment: totalToRefund } },
+    });
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { balance: true },
+    });
+
+    state.currentBets.delete(userId);
+    state.noCommissionMode.delete(userId);
+
+    return { success: true, newBalance: Number(user?.balance || 0) };
+  }
+
+  return { success: true };
+}
+
+// Get all active tables
+export function getAllTables(): string[] {
+  return Array.from(tables.keys());
+}
+
+// Export for socket join
+export { getTableRoom };

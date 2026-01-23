@@ -4,6 +4,8 @@ import './i18n';
 import Login from './pages/Login';
 import Lobby from './pages/Lobby';
 import Game from './pages/Game';
+import DragonTigerGame from './pages/DragonTigerGame';
+import BullBullGame from './pages/BullBullGame';
 
 // Protected Route component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -33,12 +35,32 @@ function App() {
           }
         />
 
-        {/* Protected game route */}
+        {/* Protected game route - Baccarat */}
         <Route
           path="/game"
           element={
             <ProtectedRoute>
               <Game />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Protected Dragon Tiger game route */}
+        <Route
+          path="/game/dragontiger"
+          element={
+            <ProtectedRoute>
+              <DragonTigerGame />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Protected Bull Bull game route */}
+        <Route
+          path="/game/bullbull"
+          element={
+            <ProtectedRoute>
+              <BullBullGame />
             </ProtectedRoute>
           }
         />

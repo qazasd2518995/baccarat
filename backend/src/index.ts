@@ -20,6 +20,9 @@ import dealersRoutes from './routes/dealers.js';
 import { initializeSocket } from './socket/index.js';
 import { setSocketInstance } from './socket/socketManager.js';
 import { startGameLoop } from './services/gameLoop.js';
+import { startDragonTigerGameLoop } from './services/dragonTigerGameLoop.js';
+import { startBullBullGameLoop } from './services/bullBullGameLoop.js';
+import { startMultiTableGameLoop } from './services/multiTableGameLoop.js';
 import type { ServerToClientEvents, ClientToServerEvents } from './socket/types.js';
 
 dotenv.config();
@@ -74,14 +77,23 @@ initializeSocket(io);
 // Set socket instance for other modules to use
 setSocketInstance(io);
 
-// Start the server and game loop
+// Start the server and all game loops
 async function start() {
-  // Start the continuous game loop (loads persisted state first)
-  await startGameLoop(io);
+  // Start the continuous game loops (loads persisted state first)
+  // Start original single-table game loop for backward compatibility
+  startGameLoop(io);
+
+  // Start multi-table baccarat system (4 independent tables)
+  startMultiTableGameLoop(io);
+
+  // Start other game type loops
+  startDragonTigerGameLoop(io);
+  startBullBullGameLoop(io);
 
   httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`WebSocket server ready`);
+    console.log('Game loops started: Baccarat (5 tables), Dragon Tiger, Bull Bull');
   });
 }
 

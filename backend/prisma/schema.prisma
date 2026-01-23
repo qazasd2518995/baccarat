@@ -29,12 +29,31 @@ enum TransactionType {
 }
 
 enum BetType {
+  // Baccarat
   player
   banker
   tie
   player_pair
   banker_pair
   super_six
+  player_bonus
+  banker_bonus
+
+  // Dragon Tiger
+  dragon
+  tiger
+  dt_tie
+  dt_suited_tie
+  dragon_big
+  dragon_small
+  tiger_big
+  tiger_small
+
+  // Bull Bull
+  bb_banker
+  bb_player1
+  bb_player2
+  bb_player3
 }
 
 enum BetStatus {
@@ -48,6 +67,11 @@ enum GameResult {
   player
   banker
   tie
+
+  // Dragon Tiger results
+  dragon
+  tiger
+  dt_tie
 }
 
 enum NoticeType {
@@ -123,21 +147,66 @@ model GameRound {
 }
 
 model Bet {
-  id        String    @id @default(uuid())
-  userId    String    @map("user_id")
-  user      User      @relation(fields: [userId], references: [id])
-  roundId   String    @map("round_id")
-  round     GameRound @relation(fields: [roundId], references: [id])
-  betType   BetType   @map("bet_type")
-  amount    Decimal   @db.Decimal(15, 2)
-  payout    Decimal?  @db.Decimal(15, 2)
-  status    BetStatus @default(pending)
-  createdAt DateTime  @default(now()) @map("created_at")
+  id                 String              @id @default(uuid())
+  userId             String              @map("user_id")
+  user               User                @relation(fields: [userId], references: [id])
+  roundId            String?             @map("round_id")
+  round              GameRound?          @relation(fields: [roundId], references: [id])
+  dragonTigerRoundId String?             @map("dragon_tiger_round_id")
+  dragonTigerRound   DragonTigerRound?   @relation(fields: [dragonTigerRoundId], references: [id])
+  bullBullRoundId    String?             @map("bull_bull_round_id")
+  bullBullRound      BullBullRound?      @relation(fields: [bullBullRoundId], references: [id])
+  betType            BetType             @map("bet_type")
+  amount             Decimal             @db.Decimal(15, 2)
+  payout             Decimal?            @db.Decimal(15, 2)
+  status             BetStatus           @default(pending)
+  createdAt          DateTime            @default(now()) @map("created_at")
 
   @@map("bets")
 }
 
-// Game state for persistence across server restarts
+// Dragon Tiger game round
+model DragonTigerRound {
+  id          String     @id @default(uuid())
+  roundNumber Int        @default(autoincrement()) @map("round_number")
+  shoeNumber  Int        @default(1) @map("shoe_number")
+  dragonCard  Json       @map("dragon_card")
+  tigerCard   Json       @map("tiger_card")
+  dragonValue Int        @map("dragon_value")
+  tigerValue  Int        @map("tiger_value")
+  result      GameResult
+  isSuitedTie Boolean    @default(false) @map("is_suited_tie")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  bets Bet[]
+
+  @@map("dragon_tiger_rounds")
+}
+
+// Bull Bull game round
+model BullBullRound {
+  id            String   @id @default(uuid())
+  roundNumber   Int      @default(autoincrement()) @map("round_number")
+  shoeNumber    Int      @default(1) @map("shoe_number")
+  bankerCards   Json     @map("banker_cards")
+  player1Cards  Json     @map("player1_cards")
+  player2Cards  Json     @map("player2_cards")
+  player3Cards  Json     @map("player3_cards")
+  bankerRank    String   @map("banker_rank")
+  player1Rank   String   @map("player1_rank")
+  player2Rank   String   @map("player2_rank")
+  player3Rank   String   @map("player3_rank")
+  player1Result String   @map("player1_result")
+  player2Result String   @map("player2_result")
+  player3Result String   @map("player3_result")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  bets Bet[]
+
+  @@map("bull_bull_rounds")
+}
+
+// Game state for persistence across server restarts (Baccarat)
 model GameState {
   id             String   @id @default("singleton")
   shoeNumber     Int      @default(1) @map("shoe_number")
@@ -147,6 +216,30 @@ model GameState {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   @@map("game_state")
+}
+
+// Dragon Tiger game state
+model DragonTigerGameState {
+  id             String   @id @default("dt_singleton")
+  shoeNumber     Int      @default(1) @map("shoe_number")
+  roundCounter   Int      @default(0) @map("round_counter")
+  cardsRemaining Int      @default(416) @map("cards_remaining")
+  shuffledDeck   Json?    @map("shuffled_deck")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("dragon_tiger_game_state")
+}
+
+// Bull Bull game state
+model BullBullGameState {
+  id             String   @id @default("bb_singleton")
+  shoeNumber     Int      @default(1) @map("shoe_number")
+  roundCounter   Int      @default(0) @map("round_counter")
+  cardsRemaining Int      @default(416) @map("cards_remaining")
+  shuffledDeck   Json?    @map("shuffled_deck")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("bull_bull_game_state")
 }
 
 // 入金控制
