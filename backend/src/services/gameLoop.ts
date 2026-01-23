@@ -322,10 +322,17 @@ async function handleResultPhase(io: TypedServer, duration: number): Promise<voi
 
   // Perform settlement immediately (no separate settlement phase)
   if (round && round.result) {
+    // Get the default baccarat table ID for linking
+    const baccaratTable = await prisma.gameTable.findFirst({
+      where: { gameType: 'baccarat', isActive: true },
+      select: { id: true },
+    });
+
     // Persist round to database
     const savedRound = await prisma.gameRound.create({
       data: {
         shoeNumber: round.shoeNumber,
+        tableId: baccaratTable?.id || null,
         playerCards: round.playerCards as any,
         bankerCards: round.bankerCards as any,
         playerPoints: round.playerPoints,

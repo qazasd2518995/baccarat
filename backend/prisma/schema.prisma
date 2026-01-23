@@ -129,17 +129,19 @@ model Transaction {
 }
 
 model GameRound {
-  id           String     @id @default(uuid())
-  roundNumber  Int        @default(autoincrement()) @map("round_number")
-  shoeNumber   Int        @default(1) @map("shoe_number")
-  playerCards  Json       @map("player_cards")
-  bankerCards  Json       @map("banker_cards")
-  playerPoints Int        @map("player_points")
-  bankerPoints Int        @map("banker_points")
+  id           String      @id @default(uuid())
+  roundNumber  Int         @default(autoincrement()) @map("round_number")
+  shoeNumber   Int         @default(1) @map("shoe_number")
+  tableId      String?     @map("table_id")
+  table        GameTable?  @relation(fields: [tableId], references: [id])
+  playerCards  Json        @map("player_cards")
+  bankerCards  Json        @map("banker_cards")
+  playerPoints Int         @map("player_points")
+  bankerPoints Int         @map("banker_points")
   result       GameResult
-  playerPair   Boolean    @default(false) @map("player_pair")
-  bankerPair   Boolean    @default(false) @map("banker_pair")
-  createdAt    DateTime   @default(now()) @map("created_at")
+  playerPair   Boolean     @default(false) @map("player_pair")
+  bankerPair   Boolean     @default(false) @map("banker_pair")
+  createdAt    DateTime    @default(now()) @map("created_at")
 
   bets Bet[]
 
@@ -351,23 +353,25 @@ model GiftTransaction {
 
 // 遊戲桌台
 model GameTable {
-  id             String   @id @default(uuid())
+  id             String      @id @default(uuid())
   name           String
-  dealerName     String   @map("dealer_name")
-  dealerAvatar   String?  @map("dealer_avatar")
-  gameType       String   @default("baccarat") @map("game_type")
-  minBet         Decimal  @map("min_bet") @db.Decimal(15, 2)
-  maxBet         Decimal  @map("max_bet") @db.Decimal(15, 2)
-  isActive       Boolean  @default(true) @map("is_active")
-  currentPlayers Int      @default(0) @map("current_players")
-  shoeNumber     Int      @default(1) @map("shoe_number")
-  roundNumber    Int      @default(0) @map("round_number")
-  bankerWins     Int      @default(0) @map("banker_wins")
-  playerWins     Int      @default(0) @map("player_wins")
-  tieCount       Int      @default(0) @map("tie_count")
-  sortOrder      Int      @default(0) @map("sort_order")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  dealerName     String      @map("dealer_name")
+  dealerAvatar   String?     @map("dealer_avatar")
+  gameType       String      @default("baccarat") @map("game_type")
+  minBet         Decimal     @map("min_bet") @db.Decimal(15, 2)
+  maxBet         Decimal     @map("max_bet") @db.Decimal(15, 2)
+  isActive       Boolean     @default(true) @map("is_active")
+  currentPlayers Int         @default(0) @map("current_players")
+  shoeNumber     Int         @default(1) @map("shoe_number")
+  roundNumber    Int         @default(0) @map("round_number")
+  bankerWins     Int         @default(0) @map("banker_wins")
+  playerWins     Int         @default(0) @map("player_wins")
+  tieCount       Int         @default(0) @map("tie_count")
+  sortOrder      Int         @default(0) @map("sort_order")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  gameRounds GameRound[]
 
   @@map("game_tables")
 }

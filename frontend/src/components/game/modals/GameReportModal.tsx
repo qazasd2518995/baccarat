@@ -143,12 +143,15 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
           status: b.status,
         }));
 
+        // Get table name from API response or use default
+        const tableName = round.table?.name || (i18n.language === 'zh' ? '默认桌' : 'Default Table');
+
         return {
           roundId: round.id.slice(0, 8),
           fullRoundId: round.id,
           game: i18n.language === 'zh' ? '百家乐' : 'Baccarat',
           settleTime: new Date(round.createdAt).toLocaleString(i18n.language === 'zh' ? 'zh-TW' : 'en-US'),
-          table: i18n.language === 'zh' ? '默认桌' : 'Default Table',
+          table: tableName,
           shoe: round.shoeNumber || 1,
           round: round.roundNumber || 0,
           betAmount: totalBet,

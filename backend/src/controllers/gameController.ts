@@ -227,6 +227,12 @@ export async function getGameHistory(req: Request, res: Response) {
           bets: {
             where: { userId: currentUser.userId },
           },
+          table: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
         skip,
         take: limitNum,
