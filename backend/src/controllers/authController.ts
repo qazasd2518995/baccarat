@@ -38,8 +38,38 @@ export async function login(req: Request, res: Response) {
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
 
     if (!isValidPassword) {
+      // Log failed login attempt
+      const clientIp = req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'unknown';
+      await prisma.loginLog.create({
+        data: {
+          userId: user.id,
+          ipAddress: clientIp,
+          userAgent: req.headers['user-agent'] || 'unknown',
+          success: false
+        }
+      });
       return res.status(401).json({ error: '密码错误' });
     }
+
+    // Log successful login and update user's last login info
+    const clientIp = req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || 'unknown';
+    await Promise.all([
+      prisma.loginLog.create({
+        data: {
+          userId: user.id,
+          ipAddress: clientIp,
+          userAgent: req.headers['user-agent'] || 'unknown',
+          success: true
+        }
+      }),
+      prisma.user.update({
+        where: { id: user.id },
+        data: {
+          lastLoginIp: clientIp,
+          lastLoginAt: new Date()
+        }
+      })
+    ]);
 
     const token = jwt.sign(
       {

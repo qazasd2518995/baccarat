@@ -17,6 +17,9 @@ import chatRoutes from './routes/chat.js';
 import tablesRoutes from './routes/tables.js';
 import giftsRoutes from './routes/gifts.js';
 import dealersRoutes from './routes/dealers.js';
+import agentManagementRoutes from './routes/agentManagement.js';
+import agentReportRoutes from './routes/agentReport.js';
+import logsRoutes from './routes/logs.js';
 import { initializeSocket } from './socket/index.js';
 import { setSocketInstance } from './socket/socketManager.js';
 import { startGameLoop } from './services/gameLoop.js';
@@ -65,6 +68,9 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/tables', tablesRoutes);
 app.use('/api/gifts', giftsRoutes);
 app.use('/api/dealers', dealersRoutes);
+app.use('/api/agent-management', agentManagementRoutes);
+app.use('/api/agent-report', agentReportRoutes);
+app.use('/api/logs', logsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

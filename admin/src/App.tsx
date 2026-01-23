@@ -4,16 +4,10 @@ import './i18n';
 import Login from './pages/Login';
 import Layout from './pages/Layout';
 import Dashboard from './pages/Dashboard';
-import Agents from './pages/Agents';
-import Members from './pages/Members';
-import Transactions from './pages/Transactions';
+import AgentReport from './pages/AgentReport';
 import BettingRecords from './pages/BettingRecords';
-import GameControl from './pages/GameControl';
-import GameRounds from './pages/GameRounds';
-import OperationLogs from './pages/OperationLogs';
-import Reports from './pages/Reports';
-import Notices from './pages/Notices';
-import Settings from './pages/Settings';
+import AgentManagement from './pages/AgentManagement';
+import Logs from './pages/Logs';
 
 // Protected Route component (requires admin or agent role)
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -48,16 +42,11 @@ function App() {
           }
         >
           <Route index element={<Dashboard />} />
-          <Route path="agents" element={<Agents />} />
-          <Route path="members" element={<Members />} />
-          <Route path="transactions" element={<Transactions />} />
-          <Route path="betting-records" element={<BettingRecords />} />
-          <Route path="game-control" element={<GameControl />} />
-          <Route path="game-rounds" element={<GameRounds />} />
-          <Route path="operation-logs" element={<OperationLogs />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="notices" element={<Notices />} />
-          <Route path="settings" element={<Settings />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="report/agent" element={<AgentReport />} />
+          <Route path="bet/index" element={<BettingRecords />} />
+          <Route path="member/index" element={<AgentManagement />} />
+          <Route path="log/index" element={<Logs />} />
         </Route>
 
         {/* Fallback */}

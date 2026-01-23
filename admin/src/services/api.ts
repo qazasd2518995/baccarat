@@ -193,4 +193,189 @@ export const bettingLimitApi = {
   updateLimits: (data: any) => api.put('/betting-limits', data),
 };
 
+// ============================================
+// New Agent Management APIs
+// ============================================
+
+// Agent Management API
+export const agentManagementApi = {
+  // Dashboard
+  getDashboard: () => api.get('/agent-management/dashboard'),
+
+  // Agents
+  getAgents: (params?: {
+    search?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) => api.get('/agent-management/agents', { params }),
+
+  createAgent: (data: {
+    username: string;
+    password: string;
+    nickname?: string;
+    initialBalance?: number;
+    sharePercent?: number;
+    rebatePercent?: number;
+    betLimits?: string[];
+    platforms?: string[];
+  }) => api.post('/agent-management/agents', data),
+
+  // Members
+  getMembers: (params?: {
+    search?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }) => api.get('/agent-management/members', { params }),
+
+  createMember: (data: {
+    username: string;
+    password: string;
+    nickname?: string;
+    initialBalance?: number;
+  }) => api.post('/agent-management/members', data),
+
+  // User Status
+  updateUserStatus: (userId: string, data: {
+    isLocked?: boolean;
+    isFullDisabled?: boolean;
+    isReadonly?: boolean;
+    status?: string;
+  }) => api.put(`/agent-management/users/${userId}/status`, data),
+
+  // Share Settings
+  getShareSettings: (userId: string) => api.get(`/agent-management/users/${userId}/share-settings`),
+  updateShareSettings: (userId: string, data: {
+    sharePercent?: number;
+    rebatePercent?: number;
+    gameCategory?: string;
+    platform?: string;
+    settings?: Array<{
+      gameCategory: string;
+      platform: string;
+      sharePercent: number;
+      rebatePercent: number;
+    }>;
+  }) => api.put(`/agent-management/users/${userId}/share-settings`, data),
+  getShareHistory: (userId: string, params?: {
+    page?: number;
+    limit?: number;
+  }) => api.get(`/agent-management/users/${userId}/share-history`, { params }),
+
+  // Bet Limits
+  getBetLimits: (userId: string) => api.get(`/agent-management/users/${userId}/bet-limits`),
+  updateBetLimits: (userId: string, data: {
+    limits: Array<{ limitRange: string; enabled: boolean }>;
+  }) => api.put(`/agent-management/users/${userId}/bet-limits`, data),
+
+  // Withdraw All
+  withdrawAll: (userId: string) => api.post(`/agent-management/users/${userId}/withdraw-all`),
+
+  // Balance Adjustment
+  adjustBalance: (userId: string, data: {
+    type: 'deposit' | 'withdraw';
+    amount: number;
+    note?: string;
+  }) => api.post(`/agent-management/users/${userId}/balance`, data),
+
+  // Sub-accounts
+  getSubAccounts: () => api.get('/agent-management/sub-accounts'),
+  createSubAccount: (data: {
+    username: string;
+    password: string;
+    nickname?: string;
+    permissions?: object;
+  }) => api.post('/agent-management/sub-accounts', data),
+  updateSubAccount: (id: string, data: {
+    password?: string;
+    nickname?: string;
+    permissions?: object;
+    status?: string;
+  }) => api.put(`/agent-management/sub-accounts/${id}`, data),
+  deleteSubAccount: (id: string) => api.delete(`/agent-management/sub-accounts/${id}`),
+
+  // Platforms
+  getPlatforms: () => api.get('/agent-management/platforms'),
+
+  // Update Agent
+  updateAgent: (id: string, data: { password?: string; nickname?: string }) =>
+    api.put(`/agent-management/agents/${id}`, data),
+};
+
+// Agent Report API
+export const agentReportApi = {
+  getAgentReport: (params?: {
+    agentId?: string;
+    quickFilter?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => api.get('/agent-report/agent', { params }),
+
+  getMemberReport: (params?: {
+    memberId?: string;
+    quickFilter?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => api.get('/agent-report/member', { params }),
+
+  getDashboard: () => api.get('/agent-report/dashboard'),
+};
+
+// Logs API
+export const logsApi = {
+  getOperationLogs: (params?: {
+    operatorId?: string;
+    targetId?: string;
+    quickFilter?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }) => api.get('/logs/operation', { params }),
+
+  getCashLogs: (params?: {
+    operatorId?: string;
+    targetId?: string;
+    quickFilter?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }) => api.get('/logs/cash', { params }),
+
+  getShareLogs: (params?: {
+    operatorId?: string;
+    targetId?: string;
+    quickFilter?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }) => api.get('/logs/share', { params }),
+
+  getLoginLogs: (params?: {
+    userId?: string;
+    quickFilter?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }) => api.get('/logs/login', { params }),
+};
+
+// Betting Records API
+export const bettingApi = {
+  getBettingRecords: (params?: {
+    userId?: string;
+    gameType?: string;
+    status?: string;
+    quickFilter?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }) => api.get('/game/bets', { params }),
+};
+
 export default api;

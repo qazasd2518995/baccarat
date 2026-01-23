@@ -96,6 +96,17 @@ model User {
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
 
+  // 新增代理層級相關欄位
+  agentLevel      Int         @default(5) @map("agent_level")  // 代理層級 1-5
+  inviteCode      String?     @unique @map("invite_code")      // 邀請碼
+  sharePercent    Decimal     @default(0) @map("share_percent") @db.Decimal(5, 2)  // 佔成比例
+  rebatePercent   Decimal     @default(0) @map("rebate_percent") @db.Decimal(5, 2) // 退水比例
+  isLocked        Boolean     @default(false) @map("is_locked")          // 鎖定登入
+  isFullDisabled  Boolean     @default(false) @map("is_full_disabled")   // 全線禁用
+  isReadonly      Boolean     @default(false) @map("is_readonly")        // 禁止投注/操作
+  lastLoginIp     String?     @map("last_login_ip")            // 最後登入IP
+  lastLoginAt     DateTime?   @map("last_login_at")            // 最後登入時間
+
   transactionsAsUser     Transaction[]    @relation("UserTransactions")
   transactionsAsOperator Transaction[]    @relation("OperatorTransactions")
   bets                   Bet[]
@@ -108,6 +119,12 @@ model User {
   giftTransactions       GiftTransaction[]
   dealerFollows          DealerFollow[]
   notificationSettings   NotificationSettings?
+
+  // 新增關聯
+  agentShareSettings     AgentShareSetting[]
+  agentBetLimits         AgentBetLimit[]
+  subAccounts            SubAccount[]
+  loginLogs              LoginLog[]
 
   @@map("users")
 }
@@ -422,4 +439,108 @@ model NotificationSettings {
   updatedAt               DateTime @updatedAt @map("updated_at")
 
   @@map("notification_settings")
+}
+
+// 代理佔成/退水設定表 (按遊戲類別和平台)
+model AgentShareSetting {
+  id            String   @id @default(uuid())
+  agentId       String   @map("agent_id")
+  agent         User     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  gameCategory  String   @map("game_category")  // 電子、真人百家1館、真人百家2館、體育
+  platform      String                          // 具體平台名稱
+  sharePercent  Decimal  @default(0) @map("share_percent") @db.Decimal(5, 2)
+  rebatePercent Decimal  @default(0) @map("rebate_percent") @db.Decimal(5, 2)
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([agentId, gameCategory, platform])
+  @@map("agent_share_settings")
+}
+
+// 代理限紅設定表
+model AgentBetLimit {
+  id          String   @id @default(uuid())
+  agentId     String   @map("agent_id")
+  agent       User     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  limitRange  String   @map("limit_range")  // "100-1000", "100-3000" 等
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([agentId, limitRange])
+  @@map("agent_bet_limits")
+}
+
+// 子帳號表
+model SubAccount {
+  id          String     @id @default(uuid())
+  parentId    String     @map("parent_id")
+  parent      User       @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  username    String     @unique
+  password    String
+  nickname    String?
+  permissions Json?      // 權限設定
+  status      UserStatus @default(active)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  @@map("sub_accounts")
+}
+
+// 佔成/退水變更歷史記錄
+model ShareSettingHistory {
+  id            String   @id @default(uuid())
+  agentId       String   @map("agent_id")
+  operatorId    String   @map("operator_id")
+  changeType    String   @map("change_type")  // share 或 rebate
+  oldValue      Decimal  @map("old_value") @db.Decimal(5, 2)
+  newValue      Decimal  @map("new_value") @db.Decimal(5, 2)
+  gameCategory  String   @map("game_category")
+  platform      String
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("share_setting_histories")
+}
+
+// 登入日誌
+model LoginLog {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress  String   @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  success    Boolean  @default(true)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("login_logs")
+}
+
+// 現金日誌 (記錄額度變動)
+model CashLog {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  operatorId    String   @map("operator_id")
+  changeType    String   @map("change_type")  // deposit, withdraw, transfer
+  amount        Decimal  @db.Decimal(15, 2)
+  balanceBefore Decimal  @map("balance_before") @db.Decimal(15, 2)
+  balanceAfter  Decimal  @map("balance_after") @db.Decimal(15, 2)
+  note          String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@map("cash_logs")
+}
+
+// 遊戲平台配置
+model GamePlatform {
+  id           String   @id @default(uuid())
+  category     String                          // 電子、真人百家1館、真人百家2館、體育
+  platformCode String   @unique @map("platform_code")
+  platformName String   @map("platform_name")
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("game_platforms")
 }

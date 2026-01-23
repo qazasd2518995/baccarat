@@ -1,26 +1,47 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useTranslation } from 'react-i18next';
-import { Users, Building2, User, Coins } from 'lucide-react';
-import { userApi, transactionApi } from '../services/api';
-import type { User as UserType, Transaction } from '../types';
+import {
+  Wallet,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  TrendingDown,
+  BarChart3,
+  FileText,
+  User,
+  Shield,
+  Building2,
+  Link2
+} from 'lucide-react';
+import { agentReportApi } from '../services/api';
 
-interface Stats {
-  totalUsers: number;
-  totalAgents: number;
-  totalMembers: number;
-  totalBalance: number;
+interface DashboardData {
+  user: {
+    username: string;
+    nickname: string;
+    agentLevel: number;
+    balance: number;
+    status: string;
+    inviteCode: string;
+    sharePercent: number;
+    parentShare: number | null;
+  };
+  today: {
+    earnedRebate: number;
+    receivable: number;
+    payable: number;
+    memberWinLoss: number;
+    validBet: number;
+    betCount: number;
+    profit: number;
+  };
+  dateRange: {
+    startDate: string;
+    endDate: string;
+  };
 }
 
 export default function Dashboard() {
-  const { t } = useTranslation();
-  const [stats, setStats] = useState<Stats>({
-    totalUsers: 0,
-    totalAgents: 0,
-    totalMembers: 0,
-    totalBalance: 0,
-  });
-  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,20 +51,8 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [usersRes, transactionsRes] = await Promise.all([
-        userApi.getUsers({ limit: 1000 }),
-        transactionApi.getTransactions({ limit: 10 }),
-      ]);
-
-      const users = usersRes.data.users;
-      setStats({
-        totalUsers: users.length,
-        totalAgents: users.filter((u: UserType) => u.role === 'agent').length,
-        totalMembers: users.filter((u: UserType) => u.role === 'member').length,
-        totalBalance: users.reduce((sum: number, u: UserType) => sum + Number(u.balance), 0),
-      });
-
-      setRecentTransactions(transactionsRes.data.transactions);
+      const res = await agentReportApi.getDashboard();
+      setData(res.data);
     } catch (err) {
       console.error('Failed to fetch dashboard data:', err);
     } finally {
@@ -51,120 +60,225 @@ export default function Dashboard() {
     }
   };
 
-  const STAT_CARDS = [
-    { key: 'totalUsers', value: stats.totalUsers, icon: Users, color: 'from-blue-500 to-blue-600' },
-    { key: 'totalAgents', value: stats.totalAgents, icon: Building2, color: 'from-purple-500 to-purple-600' },
-    { key: 'totalMembers', value: stats.totalMembers, icon: User, color: 'from-green-500 to-green-600' },
-    { key: 'totalBalance', value: stats.totalBalance.toLocaleString(), icon: Coins, color: 'from-amber-500 to-orange-500' },
-  ];
+  const formatCurrency = (value: number) => {
+    return value.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
-  const TYPE_COLORS: Record<string, string> = {
-    deposit: 'bg-green-500/20 text-green-400',
-    withdraw: 'bg-red-500/20 text-red-400',
-    bet: 'bg-blue-500/20 text-blue-400',
-    win: 'bg-amber-500/20 text-amber-400',
-    refund: 'bg-purple-500/20 text-purple-400',
-    adjustment: 'bg-slate-500/20 text-slate-400',
+  const getAgentLevelText = (level: number) => {
+    const levels: Record<number, string> = {
+      1: '1級代理',
+      2: '2級代理',
+      3: '3級代理',
+      4: '4級代理',
+      5: '5級代理',
+    };
+    return levels[level] || `${level}級代理`;
+  };
+
+  const getStatusText = (status: string) => {
+    const statusMap: Record<string, string> = {
+      active: '正常',
+      suspended: '停用',
+      banned: '禁用',
+    };
+    return statusMap[status] || status;
+  };
+
+  const getStatusColor = (status: string) => {
+    const colorMap: Record<string, string> = {
+      active: 'text-green-400',
+      suspended: 'text-yellow-400',
+      banned: 'text-red-400',
+    };
+    return colorMap[status] || 'text-gray-400';
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-slate-400">{t('loading')}</div>
+        <div className="text-gray-400">載入中...</div>
       </div>
     );
   }
 
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-400">無法載入數據</div>
+      </div>
+    );
+  }
+
+  const statCards = [
+    {
+      label: '今日賺取退水',
+      value: formatCurrency(data.today.earnedRebate),
+      icon: Wallet,
+      color: 'from-amber-500 to-yellow-500',
+    },
+    {
+      label: '今日應收金額',
+      value: formatCurrency(data.today.receivable),
+      icon: ArrowDownCircle,
+      color: 'from-green-500 to-emerald-500',
+    },
+    {
+      label: '今日應繳上線',
+      value: formatCurrency(data.today.payable),
+      icon: ArrowUpCircle,
+      color: 'from-red-500 to-pink-500',
+    },
+    {
+      label: '今日會員輸贏',
+      value: formatCurrency(data.today.memberWinLoss),
+      icon: TrendingDown,
+      color: data.today.memberWinLoss >= 0 ? 'from-green-500 to-emerald-500' : 'from-red-500 to-pink-500',
+    },
+    {
+      label: '今日會員有效投注',
+      value: formatCurrency(data.today.validBet),
+      icon: BarChart3,
+      color: 'from-blue-500 to-cyan-500',
+    },
+    {
+      label: '今日會員注單數',
+      value: data.today.betCount.toString(),
+      icon: FileText,
+      color: 'from-purple-500 to-indigo-500',
+    },
+  ];
+
+  const userInfoItems = [
+    {
+      label: '代理層級',
+      value: getAgentLevelText(data.user.agentLevel),
+      icon: Building2
+    },
+    {
+      label: '帳號狀態',
+      value: getStatusText(data.user.status),
+      icon: Shield,
+      valueColor: getStatusColor(data.user.status)
+    },
+    {
+      label: '上級',
+      value: data.user.parentShare !== null ? `佔成 ${data.user.parentShare}%` : '無',
+      icon: User
+    },
+    {
+      label: '邀請碼',
+      value: data.user.inviteCode || '無',
+      icon: Link2
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">{t('dashboard')}</h1>
-        <p className="text-slate-400 mt-1">Overview of your system</p>
-      </div>
+      {/* Welcome Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between"
+      >
+        <div>
+          <h1 className="text-2xl font-bold text-white">
+            歡迎回來，{data.user.nickname || data.user.username}
+          </h1>
+          <p className="text-gray-400 mt-1 text-sm">
+            統計時間：{new Date(data.dateRange.startDate).toLocaleDateString('zh-TW')} 12:00:00 至{' '}
+            {new Date(data.dateRange.endDate).toLocaleDateString('zh-TW')} 12:00:00
+          </p>
+        </div>
+      </motion.div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {STAT_CARDS.map((card, index) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {statCards.map((card, index) => {
           const IconComponent = card.icon;
           return (
             <motion.div
-              key={card.key}
+              key={card.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="relative overflow-hidden rounded-2xl bg-slate-800/50 border border-slate-700/50 p-6"
+              transition={{ delay: index * 0.05 }}
+              className="relative overflow-hidden rounded-xl bg-[#1e1e1e] border border-[#333] p-5"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-400 text-sm">{t(card.key)}</p>
-                  <p className="text-2xl font-bold text-white mt-1">{card.value}</p>
+                  <p className="text-gray-400 text-sm">{card.label}</p>
+                  <p className="text-xl font-bold text-white mt-1">{card.value}</p>
                 </div>
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-r ${card.color} flex items-center justify-center`}>
-                  <IconComponent className="w-6 h-6 text-white" />
+                <div className={`w-11 h-11 rounded-lg bg-gradient-to-r ${card.color} flex items-center justify-center`}>
+                  <IconComponent className="w-5 h-5 text-white" />
                 </div>
               </div>
-              {/* Decorative gradient */}
-              <div className={`absolute -bottom-6 -right-6 w-24 h-24 bg-gradient-to-r ${card.color} opacity-10 rounded-full blur-2xl`} />
             </motion.div>
           );
         })}
       </div>
 
-      {/* Recent Transactions */}
+      {/* Today Profit - Large Display */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        className="rounded-xl bg-gradient-to-r from-[#1e1e1e] to-[#252525] border border-[#333] p-6"
+      >
+        <div className="text-center">
+          <p className="text-gray-400 text-sm mb-2">今日盈虧</p>
+          <p className={`text-4xl font-bold ${data.today.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            {data.today.profit >= 0 ? '+' : ''}{formatCurrency(data.today.profit)}
+          </p>
+        </div>
+      </motion.div>
+
+      {/* User Info Card */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="rounded-2xl bg-slate-800/50 border border-slate-700/50 overflow-hidden"
+        className="rounded-xl bg-[#1e1e1e] border border-[#333] overflow-hidden"
       >
-        <div className="p-6 border-b border-slate-700/50">
-          <h2 className="text-lg font-bold text-white">{t('recentTransactions')}</h2>
+        <div className="p-4 border-b border-[#333]">
+          <h2 className="text-white font-semibold">個人資料</h2>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-[#333]">
+          {userInfoItems.map((item) => {
+            const IconComponent = item.icon;
+            return (
+              <div key={item.label} className="p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <IconComponent className="w-5 h-5 text-amber-400" />
+                </div>
+                <p className="text-gray-400 text-xs mb-1">{item.label}</p>
+                <p className={`font-semibold ${item.valueColor || 'text-white'}`}>
+                  {item.value}
+                </p>
+              </div>
+            );
+          })}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-700/30">
-                <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">Time</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">User</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">Type</th>
-                <th className="px-6 py-4 text-right text-sm font-medium text-slate-400">{t('amount')}</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">{t('operator')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentTransactions.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
-                    {t('noData')}
-                  </td>
-                </tr>
-              ) : (
-                recentTransactions.map((tx) => (
-                  <tr key={tx.id} className="border-b border-slate-700/30 hover:bg-slate-700/20">
-                    <td className="px-6 py-4 text-sm text-slate-300">
-                      {new Date(tx.createdAt).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="font-medium text-white">{tx.user.username}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-lg text-xs font-medium ${TYPE_COLORS[tx.type]}`}>
-                        {tx.type}
-                      </span>
-                    </td>
-                    <td className={`px-6 py-4 text-right font-medium ${Number(tx.amount) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {Number(tx.amount) >= 0 ? '+' : ''}{Number(tx.amount).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 text-slate-400">
-                      {tx.operator.username}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        {/* Additional Info */}
+        <div className="border-t border-[#333] p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <span className="text-gray-400">帳號：</span>
+              <span className="text-white ml-1">{data.user.username}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">名稱：</span>
+              <span className="text-white ml-1">{data.user.nickname || '-'}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">餘額：</span>
+              <span className="text-amber-400 ml-1 font-semibold">{formatCurrency(data.user.balance)}</span>
+            </div>
+            <div>
+              <span className="text-gray-400">佔成：</span>
+              <span className="text-white ml-1">{data.user.sharePercent}%</span>
+            </div>
+          </div>
         </div>
       </motion.div>
     </div>
