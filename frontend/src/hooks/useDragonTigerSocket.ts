@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { useDragonTigerStore, type DragonTigerBetType, type DTBet } from '../store/dragonTigerStore';
+import { useDragonTigerStore } from '../store/dragonTigerStore';
 import { useAuthStore } from '../store/authStore';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';

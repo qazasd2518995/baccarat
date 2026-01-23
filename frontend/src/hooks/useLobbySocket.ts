@@ -1,8 +1,6 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   connectSocket,
-  disconnectSocket,
-  getSocket,
   type TableUpdateEvent,
 } from '../services/socket';
 import { useAuthStore } from '../store/authStore';

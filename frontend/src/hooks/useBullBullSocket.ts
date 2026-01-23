@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { useBullBullStore, type BullBullBetType, type BBBet } from '../store/bullBullStore';
+import { useBullBullStore } from '../store/bullBullStore';
 import { useAuthStore } from '../store/authStore';
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';

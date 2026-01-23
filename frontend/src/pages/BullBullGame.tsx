@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
-  Settings,
   ChevronLeft,
   HelpCircle,
   X,
@@ -13,7 +11,6 @@ import {
   WifiOff,
 } from 'lucide-react';
 import { useBullBullStore, type BullBullBetType, CHIP_VALUES, RANK_NAMES } from '../store/bullBullStore';
-import { useAuthStore } from '../store/authStore';
 import { useBullBullSocket } from '../hooks/useBullBullSocket';
 import PlayingCard from '../components/game/PlayingCard';
 
@@ -105,7 +102,7 @@ function HandDisplay({
         {hand?.cards ? (
           hand.cards.map((card, i) => (
             <div key={i} className="transform scale-75">
-              <PlayingCard card={card} size="small" />
+              <PlayingCard card={card} size="sm" />
             </div>
           ))
         ) : (
@@ -140,9 +137,7 @@ function HandDisplay({
 }
 
 export default function BullBullGame() {
-  const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   const { submitBets, cancelBets } = useBullBullSocket();
 
   const {

@@ -1,9 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
-  Settings,
   ChevronLeft,
   HelpCircle,
   X,
@@ -13,7 +11,6 @@ import {
   WifiOff,
 } from 'lucide-react';
 import { useDragonTigerStore, type DragonTigerBetType, CHIP_VALUES } from '../store/dragonTigerStore';
-import { useAuthStore } from '../store/authStore';
 import { useDragonTigerSocket } from '../hooks/useDragonTigerSocket';
 import PlayingCard from '../components/game/PlayingCard';
 
@@ -119,9 +116,7 @@ function RoadmapCell({ result }: { result?: 'dragon' | 'tiger' | 'tie' }) {
 }
 
 export default function DragonTigerGame() {
-  const { t } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   const { submitBets, cancelBets } = useDragonTigerSocket();
 
   const {
@@ -261,7 +256,7 @@ export default function DragonTigerGame() {
               <div className="text-xl font-bold text-red-400 mb-4">龍</div>
               <div className="relative">
                 {dragonCard ? (
-                  <PlayingCard card={dragonCard} size="large" />
+                  <PlayingCard card={dragonCard} size="lg" />
                 ) : (
                   <div className="w-24 h-32 bg-gradient-to-br from-red-900 to-red-950 rounded-lg border-2 border-red-700 flex items-center justify-center">
                     <span className="text-red-400 text-4xl">龍</span>
@@ -283,7 +278,7 @@ export default function DragonTigerGame() {
               <div className="text-xl font-bold text-blue-400 mb-4">虎</div>
               <div className="relative">
                 {tigerCard ? (
-                  <PlayingCard card={tigerCard} size="large" />
+                  <PlayingCard card={tigerCard} size="lg" />
                 ) : (
                   <div className="w-24 h-32 bg-gradient-to-br from-blue-900 to-blue-950 rounded-lg border-2 border-blue-700 flex items-center justify-center">
                     <span className="text-blue-400 text-4xl">虎</span>
