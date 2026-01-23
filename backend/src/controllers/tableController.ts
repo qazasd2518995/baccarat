@@ -30,21 +30,22 @@ export async function getTables(req: Request, res: Response) {
       where.isActive = true; // Default to active tables only
     }
 
+    // Fetch tables with their recent rounds
     const tables = await prisma.gameTable.findMany({
       where,
       orderBy: [
         { sortOrder: 'asc' },
         { createdAt: 'asc' },
       ],
+      include: {
+        // Include last 20 rounds for this table
+        gameRounds: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+          select: { result: true },
+        },
+      },
     });
-
-    // Fetch recent game results for lastResults
-    const recentRounds = await prisma.gameRound.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 6,
-      select: { result: true },
-    });
-    const lastResults = recentRounds.map((r) => r.result);
 
     const formattedTables = tables.map((table) => {
       const roadmap = {
@@ -52,6 +53,9 @@ export async function getTables(req: Request, res: Response) {
         player: table.playerWins,
         tie: table.tieCount,
       };
+
+      // Get last results from this table's rounds
+      const lastResults = table.gameRounds.map((r) => r.result);
 
       return {
         id: table.id,
@@ -90,19 +94,22 @@ export async function getTable(req: Request, res: Response) {
 
     const table = await prisma.gameTable.findUnique({
       where: { id },
+      include: {
+        // Include last 20 rounds for this table
+        gameRounds: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+          select: { result: true },
+        },
+      },
     });
 
     if (!table) {
       return res.status(404).json({ error: 'Table not found' });
     }
 
-    // Fetch recent game results for lastResults
-    const recentRounds = await prisma.gameRound.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: 6,
-      select: { result: true },
-    });
-    const lastResults = recentRounds.map((r) => r.result);
+    // Get last results from this table's rounds
+    const lastResults = table.gameRounds.map((r) => r.result);
 
     const roadmap = {
       banker: table.bankerWins,
