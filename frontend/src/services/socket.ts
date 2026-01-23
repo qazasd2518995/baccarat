@@ -180,9 +180,10 @@ export function connectSocket(token: string): TypedSocket {
     auth: { token },
     transports: ['websocket', 'polling'],
     reconnection: true,
-    reconnectionAttempts: 10,
+    reconnectionAttempts: 15,
     reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
+    reconnectionDelayMax: 10000,
+    timeout: 60000, // 60 seconds timeout for Render cold start
   }) as TypedSocket;
 
   socket.on('connect', () => {
