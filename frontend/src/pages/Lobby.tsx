@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { leaderboardApi, chatApi, tablesApi } from '../services/api';
+import { leaderboardApi, tablesApi, reportApi } from '../services/api';
 import { useLobbySocket } from '../hooks/useLobbySocket';
+import { useChatSocket } from '../hooks/useChatSocket';
 import {
   Bell,
   Settings,
@@ -114,28 +115,50 @@ export default function Lobby() {
     return () => clearInterval(interval);
   }, [leaderboardPeriod]);
 
-  // Chat history state (read-only in lobby)
-  const [chatMessages, setChatMessages] = useState<Array<{ id: string; username: string; message: string; createdAt: string }>>([]);
-  const [chatLoading, setChatLoading] = useState(true);
+  // Chat with useChatSocket hook
+  const { messages: chatMessages, loading: chatLoading, sendMessage } = useChatSocket();
+  const [chatInput, setChatInput] = useState('');
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch chat history
+  // User's total bet amount today (for chat permission)
+  const [userTotalBet, setUserTotalBet] = useState(0);
+  const canChat = userTotalBet >= 100;
+
+  // Fetch user's today bet amount
   useEffect(() => {
-    const fetchChatHistory = async () => {
+    const fetchTodayBets = async () => {
       try {
-        const res = await chatApi.getHistory({ limit: 20 });
-        setChatMessages(res.data.messages);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const res = await reportApi.getMemberReport({
+          from: today.toISOString().split('T')[0],
+          to: today.toISOString().split('T')[0],
+        });
+        setUserTotalBet(res.data?.totalBet || 0);
       } catch (err) {
-        console.error('[Lobby] Failed to fetch chat history:', err);
-      } finally {
-        setChatLoading(false);
+        console.error('[Lobby] Failed to fetch today bets:', err);
       }
     };
 
-    fetchChatHistory();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchChatHistory, 30000);
+    fetchTodayBets();
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchTodayBets, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+
+  // Handle send chat
+  const handleSendChat = () => {
+    if (!chatInput.trim() || !canChat) return;
+    sendMessage(chatInput);
+    setChatInput('');
+  };
 
   // Format chat time
   const formatChatTime = (isoString: string) => {
@@ -677,14 +700,21 @@ export default function Lobby() {
 
           {/* Live Chat */}
           <div className="border-t border-gray-800/50 p-4">
-            <div className="text-sm font-bold text-white mb-2">{t('liveChat')}</div>
-            <div className="space-y-2 text-xs max-h-32 overflow-y-auto">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-bold text-white">{t('liveChat')}</div>
+              {!canChat && (
+                <div className="text-[10px] text-gray-500">
+                  {t('betOver100')} ({userTotalBet}/100)
+                </div>
+              )}
+            </div>
+            <div ref={chatContainerRef} className="space-y-2 text-xs max-h-32 overflow-y-auto">
               {chatLoading ? (
                 <div className="text-center text-gray-500">{t('loading')}...</div>
               ) : chatMessages.length === 0 ? (
                 <div className="text-center text-gray-500">{t('noData')}</div>
               ) : (
-                chatMessages.slice(-5).map((msg) => (
+                chatMessages.slice(-10).map((msg) => (
                   <div key={msg.id} className="flex gap-2">
                     <span className="text-pink-400 shrink-0">{msg.username}</span>
                     <span className="text-gray-300 truncate flex-1">{msg.message}</span>
@@ -696,13 +726,24 @@ export default function Lobby() {
             <div className="mt-2 flex items-center gap-2">
               <input
                 type="text"
-                placeholder={t('betOver100')}
-                className="flex-1 bg-[#1e2a3a] text-white text-xs px-3 py-2 rounded outline-none"
-                disabled
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
+                placeholder={canChat ? t('typeMessage') : t('betOver100')}
+                className={`flex-1 bg-[#1e2a3a] text-white text-xs px-3 py-2 rounded outline-none ${
+                  !canChat ? 'opacity-50 cursor-not-allowed' : 'focus:ring-1 focus:ring-yellow-500/50'
+                }`}
+                disabled={!canChat}
               />
               <button className="text-gray-500 hover:text-gray-300"><Gift className="w-4 h-4" /></button>
               <button className="text-gray-500 hover:text-gray-300"><Smile className="w-4 h-4" /></button>
-              <button className="text-gray-600 cursor-not-allowed"><Send className="w-4 h-4" /></button>
+              <button
+                onClick={handleSendChat}
+                disabled={!canChat || !chatInput.trim()}
+                className={`${canChat && chatInput.trim() ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-600 cursor-not-allowed'}`}
+              >
+                <Send className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>

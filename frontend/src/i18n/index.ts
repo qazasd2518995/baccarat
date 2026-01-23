@@ -317,7 +317,8 @@ const resources = {
 
       // Chat
       liveChat: '聊天室',
-      betOver100: '投注超过100可发言...',
+      betOver100: '投注超过100可发言',
+      typeMessage: '输入消息...',
 
       // Menu
       followingList: '关注列表',
@@ -714,7 +715,8 @@ const resources = {
 
       // Chat
       liveChat: 'Live Chat',
-      betOver100: 'Bet over 100 to chat...',
+      betOver100: 'Bet over 100 to chat',
+      typeMessage: 'Type a message...',
 
       // Menu
       followingList: 'Following List',
