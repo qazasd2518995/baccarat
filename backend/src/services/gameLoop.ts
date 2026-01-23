@@ -322,10 +322,9 @@ async function handleResultPhase(io: TypedServer, duration: number): Promise<voi
 
   // Perform settlement immediately (no separate settlement phase)
   if (round && round.result) {
-    // Get the default baccarat table ID for linking
+    // Get the default baccarat table for linking and statistics
     const baccaratTable = await prisma.gameTable.findFirst({
       where: { gameType: 'baccarat', isActive: true },
-      select: { id: true },
     });
 
     // Persist round to database
@@ -365,11 +364,6 @@ async function handleResultPhase(io: TypedServer, duration: number): Promise<voi
     }
 
     // Update table statistics in database
-    // Find the first baccarat table or create default tracking
-    const baccaratTable = await prisma.gameTable.findFirst({
-      where: { gameType: 'baccarat', isActive: true },
-    });
-
     if (baccaratTable) {
       const updateData: { bankerWins?: { increment: number }; playerWins?: { increment: number }; tieCount?: { increment: number }; roundNumber: { increment: number } } = {
         roundNumber: { increment: 1 },
