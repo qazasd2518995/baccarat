@@ -115,8 +115,29 @@ async function handleBettingPhase(
     roundId: round.id,
   });
 
+  // Get dragon tiger table for lobby updates
+  const dtTable = await prisma.gameTable.findFirst({
+    where: { gameType: 'dragonTiger', isActive: true },
+  });
+
+  // Broadcast to lobby
+  if (dtTable) {
+    io.to('lobby').emit('lobby:tableUpdate', {
+      tableId: dtTable.id,
+      phase: 'betting',
+      timeRemaining,
+      roundNumber: round.roundNumber,
+      shoeNumber: round.shoeNumber,
+      roadmap: {
+        banker: dtTable.bankerWins, // dragon wins
+        player: dtTable.playerWins, // tiger wins
+        tie: dtTable.tieCount,
+      },
+    });
+  }
+
   // Timer tick every second
-  timerInterval = setInterval(() => {
+  timerInterval = setInterval(async () => {
     timeRemaining--;
     setTimeRemaining(timeRemaining);
 
@@ -124,6 +145,22 @@ async function handleBettingPhase(
       timeRemaining,
       phase: 'betting',
     });
+
+    // Also update lobby with countdown
+    if (dtTable) {
+      io.to('lobby').emit('lobby:tableUpdate', {
+        tableId: dtTable.id,
+        phase: 'betting',
+        timeRemaining,
+        roundNumber: round.roundNumber,
+        shoeNumber: round.shoeNumber,
+        roadmap: {
+          banker: dtTable.bankerWins,
+          player: dtTable.playerWins,
+          tie: dtTable.tieCount,
+        },
+      });
+    }
 
     if (timeRemaining <= 0 && timerInterval) {
       clearInterval(timerInterval);
@@ -240,6 +277,11 @@ async function handleResultPhase(io: Server, duration: number): Promise<void> {
     if (round.result === 'dragon') dbResult = 'dragon';
     else if (round.result === 'tiger') dbResult = 'tiger';
 
+    // Get dragon tiger table for statistics
+    const dtTable = await prisma.gameTable.findFirst({
+      where: { gameType: 'dragonTiger', isActive: true },
+    });
+
     // Persist round to database
     const savedRound = await prisma.dragonTigerRound.create({
       data: {
@@ -272,6 +314,41 @@ async function handleResultPhase(io: Server, duration: number): Promise<void> {
       console.log(
         `[DragonTiger] Settled for user ${settlement.userId}: bet=${settlement.totalBet}, payout=${settlement.totalPayout}, net=${settlement.netResult}`
       );
+    }
+
+    // Update table statistics in database
+    if (dtTable) {
+      const updateData: { bankerWins?: { increment: number }; playerWins?: { increment: number }; tieCount?: { increment: number }; roundNumber: { increment: number } } = {
+        roundNumber: { increment: 1 },
+      };
+
+      if (round.result === 'dragon') {
+        updateData.bankerWins = { increment: 1 }; // dragon uses bankerWins field
+      } else if (round.result === 'tiger') {
+        updateData.playerWins = { increment: 1 }; // tiger uses playerWins field
+      } else if (round.result === 'tie') {
+        updateData.tieCount = { increment: 1 };
+      }
+
+      const updatedTable = await prisma.gameTable.update({
+        where: { id: dtTable.id },
+        data: updateData,
+      });
+
+      // Broadcast table update to lobby
+      io.to('lobby').emit('lobby:tableUpdate', {
+        tableId: updatedTable.id,
+        phase: 'result',
+        timeRemaining: Math.floor(duration / 1000),
+        roundNumber: updatedTable.roundNumber,
+        shoeNumber: updatedTable.shoeNumber,
+        lastResult: round.result === 'dragon' ? 'banker' : round.result === 'tiger' ? 'player' : 'tie',
+        roadmap: {
+          banker: updatedTable.bankerWins,
+          player: updatedTable.playerWins,
+          tie: updatedTable.tieCount,
+        },
+      });
     }
 
     // Emit roadmap update to all

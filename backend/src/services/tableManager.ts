@@ -163,6 +163,27 @@ async function handleTableBettingPhase(
     roundId: state.roundId,
   });
 
+  // Get table from database for lobby updates
+  const dbTable = await prisma.gameTable.findFirst({
+    where: { id: tableId },
+  });
+
+  // Broadcast to lobby
+  if (dbTable) {
+    io.to('lobby').emit('lobby:tableUpdate', {
+      tableId: dbTable.id,
+      phase: 'betting',
+      timeRemaining,
+      roundNumber: state.roundNumber,
+      shoeNumber: state.shoeNumber,
+      roadmap: {
+        banker: dbTable.bankerWins,
+        player: dbTable.playerWins,
+        tie: dbTable.tieCount,
+      },
+    });
+  }
+
   // Timer tick
   state.timerInterval = setInterval(() => {
     state.timeRemaining--;
@@ -170,6 +191,22 @@ async function handleTableBettingPhase(
       timeRemaining: state.timeRemaining,
       phase: 'betting',
     });
+
+    // Also update lobby with countdown
+    if (dbTable) {
+      io.to('lobby').emit('lobby:tableUpdate', {
+        tableId: dbTable.id,
+        phase: 'betting',
+        timeRemaining: state.timeRemaining,
+        roundNumber: state.roundNumber,
+        shoeNumber: state.shoeNumber,
+        roadmap: {
+          banker: dbTable.bankerWins,
+          player: dbTable.playerWins,
+          tie: dbTable.tieCount,
+        },
+      });
+    }
 
     if (state.timeRemaining <= 0 && state.timerInterval) {
       clearInterval(state.timerInterval);
@@ -447,9 +484,24 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
         updateData.tieCount = { increment: 1 };
       }
 
-      await prisma.gameTable.update({
+      const updatedTable = await prisma.gameTable.update({
         where: { id: baccaratTable.id },
         data: updateData,
+      });
+
+      // Broadcast table update to lobby
+      io.to('lobby').emit('lobby:tableUpdate', {
+        tableId: updatedTable.id,
+        phase: 'result',
+        timeRemaining: Math.floor(duration / 1000),
+        roundNumber: updatedTable.roundNumber,
+        shoeNumber: updatedTable.shoeNumber,
+        lastResult: round.result,
+        roadmap: {
+          banker: updatedTable.bankerWins,
+          player: updatedTable.playerWins,
+          tie: updatedTable.tieCount,
+        },
       });
 
       console.log(`[Table ${tableId}] Updated table statistics: ${round.result}`);

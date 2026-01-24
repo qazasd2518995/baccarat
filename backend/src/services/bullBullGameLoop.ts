@@ -115,8 +115,29 @@ async function handleBettingPhase(
     roundId: round.id,
   });
 
+  // Get bull bull table for lobby updates
+  const bbTable = await prisma.gameTable.findFirst({
+    where: { gameType: 'bullBull', isActive: true },
+  });
+
+  // Broadcast to lobby
+  if (bbTable) {
+    io.to('lobby').emit('lobby:tableUpdate', {
+      tableId: bbTable.id,
+      phase: 'betting',
+      timeRemaining,
+      roundNumber: round.roundNumber,
+      shoeNumber: round.shoeNumber,
+      roadmap: {
+        banker: bbTable.bankerWins,
+        player: bbTable.playerWins,
+        tie: bbTable.tieCount,
+      },
+    });
+  }
+
   // Timer tick every second
-  timerInterval = setInterval(() => {
+  timerInterval = setInterval(async () => {
     timeRemaining--;
     setTimeRemaining(timeRemaining);
 
@@ -124,6 +145,22 @@ async function handleBettingPhase(
       timeRemaining,
       phase: 'betting',
     });
+
+    // Also update lobby with countdown
+    if (bbTable) {
+      io.to('lobby').emit('lobby:tableUpdate', {
+        tableId: bbTable.id,
+        phase: 'betting',
+        timeRemaining,
+        roundNumber: round.roundNumber,
+        shoeNumber: round.shoeNumber,
+        roadmap: {
+          banker: bbTable.bankerWins,
+          player: bbTable.playerWins,
+          tie: bbTable.tieCount,
+        },
+      });
+    }
 
     if (timeRemaining <= 0 && timerInterval) {
       clearInterval(timerInterval);
@@ -272,6 +309,11 @@ async function handleResultPhase(io: Server, duration: number): Promise<void> {
 
   // Perform settlement
   if (round && round.banker && round.player1 && round.player2 && round.player3) {
+    // Get bull bull table for statistics
+    const bbTable = await prisma.gameTable.findFirst({
+      where: { gameType: 'bullBull', isActive: true },
+    });
+
     // Persist round to database
     const savedRound = await prisma.bullBullRound.create({
       data: {
@@ -309,6 +351,43 @@ async function handleResultPhase(io: Server, duration: number): Promise<void> {
       console.log(
         `[BullBull] Settled for user ${settlement.userId}: bet=${settlement.totalBet}, payout=${settlement.totalPayout}, net=${settlement.netResult}`
       );
+    }
+
+    // Update table statistics in database
+    if (bbTable) {
+      // Count banker wins (how many players the banker beat)
+      let bankerWinCount = 0;
+      let playerWinCount = 0;
+      if (round.player1Result === 'lose') bankerWinCount++;
+      else playerWinCount++;
+      if (round.player2Result === 'lose') bankerWinCount++;
+      else playerWinCount++;
+      if (round.player3Result === 'lose') bankerWinCount++;
+      else playerWinCount++;
+
+      const updatedTable = await prisma.gameTable.update({
+        where: { id: bbTable.id },
+        data: {
+          roundNumber: { increment: 1 },
+          bankerWins: { increment: bankerWinCount },
+          playerWins: { increment: playerWinCount },
+        },
+      });
+
+      // Broadcast table update to lobby
+      io.to('lobby').emit('lobby:tableUpdate', {
+        tableId: updatedTable.id,
+        phase: 'result',
+        timeRemaining: Math.floor(duration / 1000),
+        roundNumber: updatedTable.roundNumber,
+        shoeNumber: updatedTable.shoeNumber,
+        lastResult: bankerWinCount >= 2 ? 'banker' : 'player', // Banker wins if beat 2+ players
+        roadmap: {
+          banker: updatedTable.bankerWins,
+          player: updatedTable.playerWins,
+          tie: updatedTable.tieCount,
+        },
+      });
     }
 
     // Emit roadmap update to all
