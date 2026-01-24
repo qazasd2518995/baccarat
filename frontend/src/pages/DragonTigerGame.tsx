@@ -112,13 +112,22 @@ function DTAskRoadCell({ result, labels }: { result?: 'dragon' | 'tiger' | 'tie'
     );
   }
 
-  const styles = {
+  const styles: Record<string, { border: string; text: string; bg: string }> = {
     dragon: { border: '#DC2626', text: '#FFFFFF', bg: '#DC2626' },  // Red filled
     tiger: { border: '#2563EB', text: '#FFFFFF', bg: '#2563EB' },   // Blue filled
     tie: { border: '#16A34A', text: '#FFFFFF', bg: '#16A34A' },     // Green filled
   };
 
   const style = styles[result];
+
+  // Guard against invalid result values
+  if (!style) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-white">
+        {/* Unknown result */}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full flex items-center justify-center bg-white">
@@ -131,7 +140,7 @@ function DTAskRoadCell({ result, labels }: { result?: 'dragon' | 'tiger' | 'tie'
           fontSize: '11px'
         }}
       >
-        {labels[result]}
+        {labels[result] || '?'}
       </div>
     </div>
   );
@@ -143,11 +152,16 @@ function DTBigRoadCell({ result, tieCount = 0 }: { result?: 'dragon' | 'tiger'; 
     return <div className="w-full h-full bg-white" />;
   }
 
-  const colors = {
+  const colors: Record<string, { border: string }> = {
     dragon: { border: '#DC2626' },  // Red for Dragon
     tiger: { border: '#2563EB' },   // Blue for Tiger
   };
   const color = colors[result];
+
+  // Guard against invalid result values
+  if (!color) {
+    return <div className="w-full h-full bg-white" />;
+  }
 
   return (
     <div className="relative w-full h-full flex items-center justify-center bg-white">
