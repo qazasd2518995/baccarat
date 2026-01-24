@@ -30,11 +30,14 @@ import {
   Send,
   MapPin,
   CheckCircle,
+  Coins,
 } from 'lucide-react';
-import { useDragonTigerStore, type DragonTigerBetType, CHIP_VALUES } from '../store/dragonTigerStore';
+import { useDragonTigerStore, type DragonTigerBetType } from '../store/dragonTigerStore';
+import { useGameStore, ALL_CHIP_OPTIONS } from '../store/gameStore';
 import { useDragonTigerSocket } from '../hooks/useDragonTigerSocket';
 import { useAuthStore } from '../store/authStore';
 import PlayingCard from '../components/game/PlayingCard';
+import ChipSettingsModal from '../components/game/ChipSettingsModal';
 import {
   GameSettingsModal,
   GameRulesModal,
@@ -45,18 +48,11 @@ import {
   ResultsProportionModal,
 } from '../components/game/modals';
 
-// Chip component - Casino style with edge notches
+// Chip component - Casino style with edge notches (matches ChipSettingsModal)
 function Chip({ value, selected, onClick, disabled }: { value: number; selected: boolean; onClick: () => void; disabled?: boolean }) {
-  const chipColors: Record<number, string> = {
-    5: 'from-gray-300 to-gray-500',
-    10: 'from-slate-400 to-slate-600',
-    25: 'from-emerald-400 to-emerald-600',
-    50: 'from-green-500 to-green-700',
-    100: 'from-red-500 to-red-700',
-    500: 'from-purple-500 to-purple-700',
-  };
-
-  const color = chipColors[value] || 'from-gray-500 to-gray-700';
+  // Get color from ALL_CHIP_OPTIONS to match ChipSettingsModal
+  const chipOption = ALL_CHIP_OPTIONS.find(c => c.value === value);
+  const color = chipOption?.color || 'from-gray-500 to-gray-700';
 
   const formatValue = (v: number) => {
     if (v >= 1000) {
@@ -307,6 +303,10 @@ export default function DragonTigerGame() {
   const [isTableSwitchOpen, setIsTableSwitchOpen] = useState(false);
   const [isGiftOpen, setIsGiftOpen] = useState(false);
   const [isProportionOpen, setIsProportionOpen] = useState(false);
+  const [isChipSettingsOpen, setIsChipSettingsOpen] = useState(false);
+
+  // Get displayed chips from gameStore (shared with Baccarat)
+  const { displayedChips } = useGameStore();
 
   // UI states
   const [isMuted, setIsMuted] = useState(false);
@@ -1049,7 +1049,7 @@ export default function DragonTigerGame() {
 
                 {/* Chips Row */}
                 <div className="flex justify-center items-center gap-1.5 py-2 bg-[#1a1f2e]">
-                  {CHIP_VALUES.map((value) => (
+                  {displayedChips.map((value) => (
                     <Chip
                       key={value}
                       value={value}
@@ -1058,6 +1058,37 @@ export default function DragonTigerGame() {
                       disabled={value > balance}
                     />
                   ))}
+                  {/* Chip Settings Button */}
+                  <button
+                    onClick={() => setIsChipSettingsOpen(true)}
+                    className="relative w-14 h-14 rounded-full flex items-center justify-center font-bold bg-gradient-to-br from-gray-500 to-gray-700 border-4 border-white/30 shadow-lg transition-all duration-200 cursor-pointer hover:scale-105"
+                    title={t('chipSettings') || '籌碼設置'}
+                  >
+                    {/* Inner circle decoration */}
+                    <div className="absolute inset-2 rounded-full border-2 border-white/20" />
+
+                    {/* Icon */}
+                    <Coins className="relative z-10 w-6 h-6 text-white drop-shadow-lg" />
+
+                    {/* Glossy effect */}
+                    <div
+                      className="absolute inset-0 rounded-full pointer-events-none"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%)',
+                      }}
+                    />
+
+                    {/* Edge notches */}
+                    {[...Array(8)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="absolute w-1 h-2 bg-white/30 rounded-sm"
+                        style={{
+                          transform: `rotate(${i * 45}deg) translateY(-24px)`,
+                        }}
+                      />
+                    ))}
+                  </button>
                 </div>
               </div>
 
@@ -1297,6 +1328,7 @@ export default function DragonTigerGame() {
         balance={balance}
       />
       <ResultsProportionModal isOpen={isProportionOpen} onClose={() => setIsProportionOpen(false)} />
+      <ChipSettingsModal isOpen={isChipSettingsOpen} onClose={() => setIsChipSettingsOpen(false)} />
 
       {/* Bet Success Notification Toast */}
       <AnimatePresence>
