@@ -95,13 +95,14 @@ export function initializeSocket(io: TypedServer): void {
       // Join the requested table
       switch (gameType) {
         case 'baccarat':
+          // Always join table:default for baccarat (single game loop)
+          // The tableId is just for UI/routing purposes
+          socket.join('table:default');
           if (tableId) {
-            // Join specific multi-table baccarat table
+            // Also join specific table room for future multi-table support
             socket.join(`table:baccarat:${tableId}`);
-            console.log(`[Socket] ${authSocket.user.username} joined baccarat table ${tableId}`);
+            console.log(`[Socket] ${authSocket.user.username} joined baccarat table ${tableId} (and default)`);
           } else {
-            // Join default table for backward compatibility
-            socket.join('table:default');
             console.log(`[Socket] ${authSocket.user.username} joined default baccarat table`);
           }
           break;
