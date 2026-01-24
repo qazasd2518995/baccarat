@@ -211,13 +211,13 @@ export function setRoundResult(result: DragonTigerRoundResult): void {
 // Bet Management
 // ============================================
 
-// Default betting limits for Dragon Tiger
+// Default betting limits for Dragon Tiger (GoFun style)
 const DEFAULT_LIMITS = {
   dragonMin: 10, dragonMax: 100000,
   tigerMin: 10, tigerMax: 100000,
   tieMin: 10, tieMax: 50000,
-  suitedTieMin: 10, suitedTieMax: 10000,
-  bigSmallMin: 10, bigSmallMax: 50000,
+  oddEvenMin: 10, oddEvenMax: 50000,    // 單雙
+  redBlackMin: 10, redBlackMax: 50000,   // 紅黑
 };
 
 // Helper function to get min/max for bet type
@@ -232,13 +232,16 @@ function getLimitForBetType(
       return { min: limit.tigerMin, max: limit.tigerMax };
     case 'dt_tie':
       return { min: limit.tieMin, max: limit.tieMax };
-    case 'dt_suited_tie':
-      return { min: limit.suitedTieMin, max: limit.suitedTieMax };
-    case 'dragon_big':
-    case 'dragon_small':
-    case 'tiger_big':
-    case 'tiger_small':
-      return { min: limit.bigSmallMin, max: limit.bigSmallMax };
+    case 'dragon_odd':
+    case 'dragon_even':
+    case 'tiger_odd':
+    case 'tiger_even':
+      return { min: limit.oddEvenMin, max: limit.oddEvenMax };
+    case 'dragon_red':
+    case 'dragon_black':
+    case 'tiger_red':
+    case 'tiger_black':
+      return { min: limit.redBlackMin, max: limit.redBlackMax };
     default:
       return { min: limit.dragonMin, max: limit.dragonMax };
   }

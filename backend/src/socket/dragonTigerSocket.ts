@@ -16,8 +16,11 @@ const placeBetSchema = z.object({
   bets: z.array(
     z.object({
       type: z.enum([
-        'dragon', 'tiger', 'dt_tie', 'dt_suited_tie',
-        'dragon_big', 'dragon_small', 'tiger_big', 'tiger_small'
+        'dragon', 'tiger', 'dt_tie',
+        'dragon_odd', 'dragon_even',    // 龍單/龍雙
+        'tiger_odd', 'tiger_even',      // 虎單/虎雙
+        'dragon_red', 'dragon_black',   // 龍紅/龍黑
+        'tiger_red', 'tiger_black'      // 虎紅/虎黑
       ]),
       amount: z.number().positive(),
     })

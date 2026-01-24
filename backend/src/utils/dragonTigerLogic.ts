@@ -9,27 +9,33 @@ export interface Card {
 // Dragon Tiger result type
 export type DragonTigerResult = 'dragon' | 'tiger' | 'tie';
 
-// Dragon Tiger bet types
+// Dragon Tiger bet types (GoFun style: odd/even, red/black)
 export type DragonTigerBetType =
-  | 'dragon'
-  | 'tiger'
-  | 'dt_tie'
-  | 'dt_suited_tie'
-  | 'dragon_big'
-  | 'dragon_small'
-  | 'tiger_big'
-  | 'tiger_small';
+  | 'dragon'           // 龍 1:1
+  | 'tiger'            // 虎 1:1
+  | 'dt_tie'           // 和 1:8
+  | 'dragon_odd'       // 龍單 1:0.75 (牌點數為奇數)
+  | 'dragon_even'      // 龍雙 1:1.05 (牌點數為偶數)
+  | 'tiger_odd'        // 虎單 1:0.75
+  | 'tiger_even'       // 虎雙 1:1.05
+  | 'dragon_red'       // 龍紅 1:0.9 (紅心/方塊)
+  | 'dragon_black'     // 龍黑 1:0.9 (黑桃/梅花)
+  | 'tiger_red'        // 虎紅 1:0.9
+  | 'tiger_black';     // 虎黑 1:0.9
 
-// Bet payouts for Dragon Tiger
+// Bet payouts for Dragon Tiger (GoFun style)
 export const DT_BET_PAYOUTS = {
   dragon: 1,           // 1:1
   tiger: 1,            // 1:1
   dt_tie: 8,           // 8:1
-  dt_suited_tie: 50,   // 50:1
-  dragon_big: 1,       // 1:1 (dragon card > 7)
-  dragon_small: 1,     // 1:1 (dragon card < 7)
-  tiger_big: 1,        // 1:1 (tiger card > 7)
-  tiger_small: 1,      // 1:1 (tiger card < 7)
+  dragon_odd: 0.75,    // 1:0.75
+  dragon_even: 1.05,   // 1:1.05
+  tiger_odd: 0.75,     // 1:0.75
+  tiger_even: 1.05,    // 1:1.05
+  dragon_red: 0.9,     // 1:0.9
+  dragon_black: 0.9,   // 1:0.9
+  tiger_red: 0.9,      // 1:0.9
+  tiger_black: 0.9,    // 1:0.9
 } as const;
 
 // Create a single deck of cards with Dragon Tiger values
@@ -126,13 +132,23 @@ export interface BetResult {
   payout: number; // Net payout (positive if won, negative if lost, 0 for push)
 }
 
-// Calculate bet result for Dragon Tiger
+// Helper function to check if card suit is red (hearts/diamonds)
+function isRedSuit(suit: Card['suit']): boolean {
+  return suit === 'hearts' || suit === 'diamonds';
+}
+
+// Helper function to check if value is odd
+function isOdd(value: number): boolean {
+  return value % 2 === 1;
+}
+
+// Calculate bet result for Dragon Tiger (GoFun style)
 export function calculateDTBetResult(
   betType: DragonTigerBetType,
   betAmount: number,
   roundResult: DragonTigerRoundResult
 ): BetResult {
-  const { result, isSuitedTie, dragonValue, tigerValue } = roundResult;
+  const { result, dragonCard, tigerCard, dragonValue, tigerValue } = roundResult;
 
   switch (betType) {
     case 'dragon':
@@ -159,53 +175,59 @@ export function calculateDTBetResult(
       }
       return { won: false, payout: -betAmount };
 
-    case 'dt_suited_tie':
-      if (isSuitedTie) {
-        return { won: true, payout: betAmount * DT_BET_PAYOUTS.dt_suited_tie };
+    // 龍單 - Dragon card value is odd (1, 3, 5, 7, 9, 11, 13)
+    case 'dragon_odd':
+      if (isOdd(dragonValue)) {
+        return { won: true, payout: betAmount * DT_BET_PAYOUTS.dragon_odd };
       }
       return { won: false, payout: -betAmount };
 
-    case 'dragon_big':
-      // Dragon card > 7
-      if (dragonValue > 7) {
-        return { won: true, payout: betAmount * DT_BET_PAYOUTS.dragon_big };
-      }
-      // If dragon value is exactly 7, it's a push (neither big nor small)
-      if (dragonValue === 7) {
-        return { won: false, payout: 0 };
+    // 龍雙 - Dragon card value is even (2, 4, 6, 8, 10, 12)
+    case 'dragon_even':
+      if (!isOdd(dragonValue)) {
+        return { won: true, payout: betAmount * DT_BET_PAYOUTS.dragon_even };
       }
       return { won: false, payout: -betAmount };
 
-    case 'dragon_small':
-      // Dragon card < 7
-      if (dragonValue < 7) {
-        return { won: true, payout: betAmount * DT_BET_PAYOUTS.dragon_small };
-      }
-      // If dragon value is exactly 7, it's a push
-      if (dragonValue === 7) {
-        return { won: false, payout: 0 };
+    // 虎單 - Tiger card value is odd
+    case 'tiger_odd':
+      if (isOdd(tigerValue)) {
+        return { won: true, payout: betAmount * DT_BET_PAYOUTS.tiger_odd };
       }
       return { won: false, payout: -betAmount };
 
-    case 'tiger_big':
-      // Tiger card > 7
-      if (tigerValue > 7) {
-        return { won: true, payout: betAmount * DT_BET_PAYOUTS.tiger_big };
-      }
-      // If tiger value is exactly 7, it's a push
-      if (tigerValue === 7) {
-        return { won: false, payout: 0 };
+    // 虎雙 - Tiger card value is even
+    case 'tiger_even':
+      if (!isOdd(tigerValue)) {
+        return { won: true, payout: betAmount * DT_BET_PAYOUTS.tiger_even };
       }
       return { won: false, payout: -betAmount };
 
-    case 'tiger_small':
-      // Tiger card < 7
-      if (tigerValue < 7) {
-        return { won: true, payout: betAmount * DT_BET_PAYOUTS.tiger_small };
+    // 龍紅 - Dragon card is red (hearts/diamonds)
+    case 'dragon_red':
+      if (isRedSuit(dragonCard.suit)) {
+        return { won: true, payout: betAmount * DT_BET_PAYOUTS.dragon_red };
       }
-      // If tiger value is exactly 7, it's a push
-      if (tigerValue === 7) {
-        return { won: false, payout: 0 };
+      return { won: false, payout: -betAmount };
+
+    // 龍黑 - Dragon card is black (spades/clubs)
+    case 'dragon_black':
+      if (!isRedSuit(dragonCard.suit)) {
+        return { won: true, payout: betAmount * DT_BET_PAYOUTS.dragon_black };
+      }
+      return { won: false, payout: -betAmount };
+
+    // 虎紅 - Tiger card is red
+    case 'tiger_red':
+      if (isRedSuit(tigerCard.suit)) {
+        return { won: true, payout: betAmount * DT_BET_PAYOUTS.tiger_red };
+      }
+      return { won: false, payout: -betAmount };
+
+    // 虎黑 - Tiger card is black
+    case 'tiger_black':
+      if (!isRedSuit(tigerCard.suit)) {
+        return { won: true, payout: betAmount * DT_BET_PAYOUTS.tiger_black };
       }
       return { won: false, payout: -betAmount };
 
