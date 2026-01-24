@@ -14,40 +14,72 @@ import { useBullBullStore, type BullBullBetType, CHIP_VALUES, RANK_NAMES } from 
 import { useBullBullSocket } from '../hooks/useBullBullSocket';
 import PlayingCard from '../components/game/PlayingCard';
 
-// Chip component
+// Chip component - Casino style with edge notches (matches ChipSettingsModal)
 function Chip({ value, selected, onClick, disabled }: { value: number; selected: boolean; onClick: () => void; disabled?: boolean }) {
-  const chipStyles: Record<number, { outer: string; inner: string; text: string; stripe: string }> = {
-    10: { outer: '#EF4444', inner: '#DC2626', text: 'white', stripe: '#F87171' },
-    50: { outer: '#3B82F6', inner: '#2563EB', text: 'white', stripe: '#60A5FA' },
-    100: { outer: '#FBBF24', inner: '#F59E0B', text: '#1F2937', stripe: '#FCD34D' },
-    500: { outer: '#374151', inner: '#1F2937', text: '#FBBF24', stripe: '#4B5563' },
-    1000: { outer: '#8B5CF6', inner: '#7C3AED', text: 'white', stripe: '#A78BFA' },
-    5000: { outer: '#22C55E', inner: '#16A34A', text: 'white', stripe: '#4ADE80' },
-    10000: { outer: '#EC4899', inner: '#DB2777', text: 'white', stripe: '#F472B6' },
+  // Chip colors matching ALL_CHIP_OPTIONS
+  const chipColors: Record<number, string> = {
+    10: 'from-red-500 to-red-700',
+    50: 'from-blue-500 to-blue-700',
+    100: 'from-yellow-500 to-yellow-600',
+    500: 'from-gray-700 to-gray-900',
+    1000: 'from-orange-500 to-orange-700',
+    5000: 'from-amber-600 to-amber-800',
+    10000: 'from-purple-500 to-purple-700',
+    20000: 'from-pink-500 to-pink-700',
+    50000: 'from-emerald-500 to-emerald-700',
+    100000: 'from-cyan-500 to-cyan-700',
   };
 
-  const style = chipStyles[value] || chipStyles[100];
+  const color = chipColors[value] || 'from-gray-500 to-gray-700';
+
+  // Format chip value display
+  const formatValue = (v: number) => {
+    if (v >= 1000) {
+      const k = v / 1000;
+      return k >= 1000 ? `${k / 1000}M` : `${k}K`;
+    }
+    return v.toString();
+  };
 
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`relative w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm shadow-lg transition-all ${
-        selected ? 'scale-115 -translate-y-1 ring-2 ring-white' : ''
-      } ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:scale-105 cursor-pointer'}`}
-      style={{
-        background: `radial-gradient(circle at 30% 30%, ${style.outer}, ${style.inner})`,
-        color: style.text,
-        boxShadow: selected ? '0 4px 12px rgba(0,0,0,0.4)' : '0 2px 6px rgba(0,0,0,0.3)'
-      }}
+      className={`
+        relative w-14 h-14 rounded-full flex items-center justify-center font-bold
+        bg-gradient-to-br ${color}
+        border-4 border-white/30
+        shadow-lg transition-all duration-200
+        ${selected ? 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900' : ''}
+        ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}
+      `}
     >
-      <div
-        className="absolute inset-1 rounded-full border-2 border-dashed opacity-30"
-        style={{ borderColor: style.stripe }}
-      />
-      <span className="relative z-10 text-xs font-bold">
-        {value >= 1000 ? `${value / 1000}K` : value}
+      {/* Inner circle decoration */}
+      <div className="absolute inset-2 rounded-full border-2 border-white/20" />
+
+      {/* Chip value */}
+      <span className="relative z-10 text-white font-black drop-shadow-lg text-[10px]">
+        {formatValue(value)}
       </span>
+
+      {/* Glossy effect */}
+      <div
+        className="absolute inset-0 rounded-full pointer-events-none"
+        style={{
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%)',
+        }}
+      />
+
+      {/* Edge notches (casino chip style) */}
+      {[...Array(8)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute w-1 h-2 bg-white/30 rounded-sm"
+          style={{
+            transform: `rotate(${i * 45}deg) translateY(-24px)`,
+          }}
+        />
+      ))}
     </button>
   );
 }
