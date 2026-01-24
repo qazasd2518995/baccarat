@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChevronLeft,
   HelpCircle,
@@ -179,7 +179,12 @@ const betTypeLabels: Record<string, string> = {
 
 export default function BullBullGame() {
   const navigate = useNavigate();
-  const { submitBets, cancelBets } = useBullBullSocket();
+
+  // Get tableId from URL query params
+  const [searchParams] = useSearchParams();
+  const tableId = searchParams.get('table') || undefined;
+
+  const { submitBets, cancelBets } = useBullBullSocket(tableId);
 
   const {
     isConnected,

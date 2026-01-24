@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { leaderboardApi, dealerApi } from '../services/api';
 import { useChatSocket } from '../hooks/useChatSocket';
 import {
@@ -293,7 +293,12 @@ export default function DragonTigerGame() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { submitBets, cancelBets } = useDragonTigerSocket();
+
+  // Get tableId from URL query params
+  const [searchParams] = useSearchParams();
+  const tableId = searchParams.get('table') || undefined;
+
+  const { submitBets, cancelBets } = useDragonTigerSocket(tableId);
 
   // Modal states
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
