@@ -409,6 +409,42 @@ const resources = {
       roadBanker: '庄',
       roadPlayer: '闲',
       roadTie: '和',
+
+      // Bull Bull Rank Names
+      bull_bull: '牛牛',
+      bull_9: '牛9',
+      bull_8: '牛8',
+      bull_7: '牛7',
+      bull_6: '牛6',
+      bull_5: '牛5',
+      bull_4: '牛4',
+      bull_3: '牛3',
+      bull_2: '牛2',
+      bull_1: '牛1',
+      no_bull: '没牛',
+      five_face: '五公',
+      bomb: '炸弹',
+      five_small: '五小牛',
+
+      // Card Suits
+      spades: '黑桃',
+      hearts: '红桃',
+      diamonds: '方块',
+      clubs: '梅花',
+
+      // Card Ranks
+      cardAce: 'A',
+      cardJack: 'J',
+      cardQueen: 'Q',
+      cardKing: 'K',
+
+      // Win/Lose
+      resultWin: '赢',
+      resultLose: '输',
+
+      // Balance Report Note
+      roundNote: '第{{round}}局',
+      betsNote: '下注',
     },
   },
   en: {
@@ -818,6 +854,42 @@ const resources = {
       roadBanker: 'B',
       roadPlayer: 'P',
       roadTie: 'T',
+
+      // Bull Bull Rank Names
+      bull_bull: 'Bull Bull',
+      bull_9: 'Bull 9',
+      bull_8: 'Bull 8',
+      bull_7: 'Bull 7',
+      bull_6: 'Bull 6',
+      bull_5: 'Bull 5',
+      bull_4: 'Bull 4',
+      bull_3: 'Bull 3',
+      bull_2: 'Bull 2',
+      bull_1: 'Bull 1',
+      no_bull: 'No Bull',
+      five_face: 'Five Face',
+      bomb: 'Bomb',
+      five_small: 'Five Small',
+
+      // Card Suits
+      spades: 'Spades',
+      hearts: 'Hearts',
+      diamonds: 'Diamonds',
+      clubs: 'Clubs',
+
+      // Card Ranks
+      cardAce: 'A',
+      cardJack: 'J',
+      cardQueen: 'Q',
+      cardKing: 'K',
+
+      // Win/Lose
+      resultWin: 'Win',
+      resultLose: 'Lose',
+
+      // Balance Report Note
+      roundNote: 'Round #{{round}}',
+      betsNote: 'Bets',
     },
   },
 };

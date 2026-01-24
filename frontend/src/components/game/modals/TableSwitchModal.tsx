@@ -25,6 +25,7 @@ interface TableInfo {
   isOnline: boolean;
   minBet: number;
   maxBet: number;
+  gameType: 'baccarat' | 'dragontiger' | 'bullbull';
 }
 
 
@@ -35,7 +36,7 @@ export default function TableSwitchModal({
   currentTableId,
 }: TableSwitchModalProps) {
   const { t } = useTranslation();
-  const [selectedTab, setSelectedTab] = useState<'all' | 'baccarat' | 'dragonTiger'>('all');
+  const [selectedTab, setSelectedTab] = useState<'all' | 'baccarat' | 'dragonTiger' | 'bullBull'>('all');
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,6 +60,7 @@ export default function TableSwitchModal({
           minBet: number;
           maxBet: number;
           isActive?: boolean;
+          gameType?: string;
         }) => ({
           id: t.id,
           name: t.name,
@@ -73,6 +75,7 @@ export default function TableSwitchModal({
           isOnline: t.isActive !== false,
           minBet: t.minBet,
           maxBet: t.maxBet,
+          gameType: (t.gameType as 'baccarat' | 'dragontiger' | 'bullbull') || 'baccarat',
         }));
         setTables(mappedTables);
       } catch (err) {
@@ -98,8 +101,9 @@ export default function TableSwitchModal({
 
   const filteredTables = tables.filter((table) => {
     if (selectedTab === 'all') return true;
-    if (selectedTab === 'baccarat') return table.name.includes('百家樂');
-    if (selectedTab === 'dragonTiger') return table.name.includes('龍虎');
+    if (selectedTab === 'baccarat') return table.gameType === 'baccarat';
+    if (selectedTab === 'dragonTiger') return table.gameType === 'dragontiger';
+    if (selectedTab === 'bullBull') return table.gameType === 'bullbull';
     return true;
   });
 
@@ -165,6 +169,16 @@ export default function TableSwitchModal({
               }`}
             >
               {t('dragonTiger')}
+            </button>
+            <button
+              onClick={() => setSelectedTab('bullBull')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                selectedTab === 'bullBull'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-gray-700/50 text-gray-400 hover:text-white'
+              }`}
+            >
+              {t('bullBull')}
             </button>
           </div>
 

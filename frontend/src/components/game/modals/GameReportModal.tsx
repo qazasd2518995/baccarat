@@ -136,6 +136,68 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
     return type;
   };
 
+  // Helper to translate Bull Bull rank names
+  const translateRank = (rank: string | undefined) => {
+    if (!rank) return '-';
+    const rankMap: Record<string, { zh: string; en: string }> = {
+      bull_bull: { zh: '牛牛', en: 'Bull Bull' },
+      bull_9: { zh: '牛9', en: 'Bull 9' },
+      bull_8: { zh: '牛8', en: 'Bull 8' },
+      bull_7: { zh: '牛7', en: 'Bull 7' },
+      bull_6: { zh: '牛6', en: 'Bull 6' },
+      bull_5: { zh: '牛5', en: 'Bull 5' },
+      bull_4: { zh: '牛4', en: 'Bull 4' },
+      bull_3: { zh: '牛3', en: 'Bull 3' },
+      bull_2: { zh: '牛2', en: 'Bull 2' },
+      bull_1: { zh: '牛1', en: 'Bull 1' },
+      no_bull: { zh: '没牛', en: 'No Bull' },
+      five_face: { zh: '五公', en: 'Five Face' },
+      bomb: { zh: '炸弹', en: 'Bomb' },
+      five_small: { zh: '五小牛', en: 'Five Small' },
+    };
+    const mapped = rankMap[rank];
+    if (mapped) {
+      return i18n.language === 'zh' ? mapped.zh : mapped.en;
+    }
+    return rank;
+  };
+
+  // Helper to translate win/lose result
+  const translateResult = (result: string | undefined) => {
+    if (!result) return '-';
+    if (result === 'win') {
+      return i18n.language === 'zh' ? '赢' : 'Win';
+    }
+    if (result === 'lose') {
+      return i18n.language === 'zh' ? '输' : 'Lose';
+    }
+    return result;
+  };
+
+  // Helper to translate balance report note
+  const translateNote = (note: string) => {
+    if (!note) return '';
+    // Parse "Round #123 - Bets: tie:800" format
+    const roundMatch = note.match(/Round #(\d+)/);
+    const betsMatch = note.match(/Bets: (.+)/);
+
+    if (roundMatch && betsMatch) {
+      const roundNum = roundMatch[1];
+      const bets = betsMatch[1];
+      // Translate bet types in the bets string
+      const translatedBets = bets.split(', ').map(bet => {
+        const [type, amount] = bet.split(':');
+        return `${translateBetType(type)}:${amount}`;
+      }).join(', ');
+
+      if (i18n.language === 'zh') {
+        return `第${roundNum}局 - 下注: ${translatedBets}`;
+      }
+      return `Round #${roundNum} - Bets: ${translatedBets}`;
+    }
+    return note;
+  };
+
   // Fetch betting history
   const fetchBettingHistory = useCallback(async () => {
     setLoading(true);
@@ -637,7 +699,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                                       <div className="flex-1 grid grid-cols-2 gap-4">
                                         <div>
                                           <div className="text-yellow-400 font-medium mb-2">
-                                            {i18n.language === 'zh' ? '庄家' : 'Banker'} - {record.bankerRank}
+                                            {i18n.language === 'zh' ? '庄家' : 'Banker'} - {translateRank(record.bankerRank)}
                                           </div>
                                           <div className="flex gap-1 flex-wrap">
                                             {record.bbBankerCards?.map((card, idx) => (
@@ -647,7 +709,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                                         </div>
                                         <div>
                                           <div className={`font-medium mb-2 ${record.player1Result === 'win' ? 'text-green-400' : 'text-red-400'}`}>
-                                            {i18n.language === 'zh' ? '闲1' : 'P1'} - {record.player1Rank} ({record.player1Result})
+                                            {i18n.language === 'zh' ? '闲1' : 'P1'} - {translateRank(record.player1Rank)} ({translateResult(record.player1Result)})
                                           </div>
                                           <div className="flex gap-1 flex-wrap">
                                             {record.bbPlayer1Cards?.map((card, idx) => (
@@ -657,7 +719,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                                         </div>
                                         <div>
                                           <div className={`font-medium mb-2 ${record.player2Result === 'win' ? 'text-green-400' : 'text-red-400'}`}>
-                                            {i18n.language === 'zh' ? '闲2' : 'P2'} - {record.player2Rank} ({record.player2Result})
+                                            {i18n.language === 'zh' ? '闲2' : 'P2'} - {translateRank(record.player2Rank)} ({translateResult(record.player2Result)})
                                           </div>
                                           <div className="flex gap-1 flex-wrap">
                                             {record.bbPlayer2Cards?.map((card, idx) => (
@@ -667,7 +729,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                                         </div>
                                         <div>
                                           <div className={`font-medium mb-2 ${record.player3Result === 'win' ? 'text-green-400' : 'text-red-400'}`}>
-                                            {i18n.language === 'zh' ? '闲3' : 'P3'} - {record.player3Rank} ({record.player3Result})
+                                            {i18n.language === 'zh' ? '闲3' : 'P3'} - {translateRank(record.player3Rank)} ({translateResult(record.player3Result)})
                                           </div>
                                           <div className="flex gap-1 flex-wrap">
                                             {record.bbPlayer3Cards?.map((card, idx) => (
@@ -748,7 +810,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                             {record.amount > 0 ? '+' : ''}{record.amount.toLocaleString()}
                           </td>
                           <td className="px-3 py-3 text-right text-gray-300">{record.afterAmount.toLocaleString()}</td>
-                          <td className="px-3 py-3 text-gray-400">{record.note}</td>
+                          <td className="px-3 py-3 text-gray-400">{translateNote(record.note)}</td>
                         </tr>
                       ))}
                     </tbody>
