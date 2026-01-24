@@ -32,10 +32,7 @@ function connectSocket(token: string): Socket {
 
   socket.on('connect', () => {
     console.log('[DT Socket] Connected:', socket?.id);
-    // Join dragon tiger table
-    socket?.emit('join:table', { gameType: 'dragontiger' });
-    // Request current game state
-    socket?.emit('dt:requestState');
+    // Don't auto-join here - let the hook handle it after joining the correct table
   });
 
   socket.on('connect_error', (error) => {
@@ -57,7 +54,7 @@ function disconnectSocket(): void {
   }
 }
 
-export function useDragonTigerSocket() {
+export function useDragonTigerSocket(tableId?: string) {
   const { token, isAuthenticated, updateUser } = useAuthStore();
 
   const {
@@ -95,10 +92,17 @@ export function useDragonTigerSocket() {
     const initializeGame = () => {
       console.log('[useDragonTigerSocket] Initializing game state...');
       setConnected(true);
-      // Join dragon tiger table
-      socket.emit('join:table', { gameType: 'dragontiger' });
-      // Request current game state
-      socket.emit('dt:requestState');
+
+      // Join specific dragon tiger table (defaults to table 1 if not specified)
+      const targetTable = tableId || '1';
+      socket.emit('join:table', { gameType: 'dragontiger', tableId: targetTable });
+      console.log(`[useDragonTigerSocket] Joined dragon tiger table ${targetTable}`);
+
+      // Request current game state for this table
+      // Small delay to ensure join is processed first
+      setTimeout(() => {
+        socket.emit('dt:requestState', { tableId: targetTable });
+      }, 100);
     };
 
     // Handler functions
@@ -258,7 +262,7 @@ export function useDragonTigerSocket() {
       disconnectSocket();
       resetAll();
     };
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated, token, tableId]);
 
   // Submit pending bets to server
   const submitBets = useCallback(() => {

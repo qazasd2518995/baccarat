@@ -1,12 +1,18 @@
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import type { AuthenticatedSocket, TypedServer } from './index.js';
-import { getGameState, placeBet, clearBets, getUserBets, getRecentRounds } from '../services/dragonTigerState.js';
+import {
+  getDTTableGameState,
+  placeDTTableBet,
+  clearDTTableBets,
+  getDTTableRoom,
+} from '../services/dragonTigerTableManager.js';
 
 const prisma = new PrismaClient();
 
 // Validation schema for Dragon Tiger bet placement
 const placeBetSchema = z.object({
+  tableId: z.string().optional(), // Optional tableId, defaults from socket room
   bets: z.array(
     z.object({
       type: z.enum([
@@ -18,6 +24,16 @@ const placeBetSchema = z.object({
   ).min(1),
 });
 
+// Helper to get tableId from socket rooms
+function getTableIdFromSocket(socket: AuthenticatedSocket): string {
+  for (const room of socket.rooms) {
+    if (room.startsWith('table:dragontiger:')) {
+      return room.replace('table:dragontiger:', '');
+    }
+  }
+  return '1'; // Default to table 1
+}
+
 export function handleDragonTigerEvents(io: TypedServer, socket: AuthenticatedSocket): void {
   const userId = socket.user.userId;
   const username = socket.user.username;
@@ -28,9 +44,12 @@ export function handleDragonTigerEvents(io: TypedServer, socket: AuthenticatedSo
       const validatedData = placeBetSchema.parse(data);
       const { bets } = validatedData;
 
-      console.log(`[DT Socket] ${username} placing bets:`, bets);
+      // Get tableId from data or from socket rooms
+      const tableId = validatedData.tableId || getTableIdFromSocket(socket);
 
-      const result = await placeBet(userId, bets);
+      console.log(`[DT Socket] ${username} placing bets on table ${tableId}:`, bets);
+
+      const result = await placeDTTableBet(tableId, userId, bets);
 
       if (result.success) {
         socket.emit('dt:bet:confirmed' as any, {
@@ -46,7 +65,7 @@ export function handleDragonTigerEvents(io: TypedServer, socket: AuthenticatedSo
         });
 
         console.log(
-          `[DT Socket] ${username} bet confirmed: total=${result.totalBet}, balance=${result.newBalance}`
+          `[DT Socket] ${username} bet confirmed on table ${tableId}: total=${result.totalBet}, balance=${result.newBalance}`
         );
       } else {
         socket.emit('error', {
@@ -54,7 +73,7 @@ export function handleDragonTigerEvents(io: TypedServer, socket: AuthenticatedSo
           message: result.errorMessage || 'Failed to place bet',
         });
 
-        console.log(`[DT Socket] ${username} bet rejected: ${result.errorCode}`);
+        console.log(`[DT Socket] ${username} bet rejected on table ${tableId}: ${result.errorCode}`);
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -75,9 +94,10 @@ export function handleDragonTigerEvents(io: TypedServer, socket: AuthenticatedSo
   // Handle bet clearing
   socket.on('dt:bet:clear' as any, async () => {
     try {
-      console.log(`[DT Socket] ${username} clearing bets`);
+      const tableId = getTableIdFromSocket(socket);
+      console.log(`[DT Socket] ${username} clearing bets on table ${tableId}`);
 
-      const result = await clearBets(userId);
+      const result = await clearDTTableBets(tableId, userId);
 
       if (result.success) {
         socket.emit('dt:bet:confirmed' as any, {
@@ -93,7 +113,7 @@ export function handleDragonTigerEvents(io: TypedServer, socket: AuthenticatedSo
           });
         }
 
-        console.log(`[DT Socket] ${username} bets cleared, balance=${result.newBalance}`);
+        console.log(`[DT Socket] ${username} bets cleared on table ${tableId}, balance=${result.newBalance}`);
       } else {
         socket.emit('error', {
           code: result.errorCode || 'UNKNOWN_ERROR',
@@ -110,16 +130,38 @@ export function handleDragonTigerEvents(io: TypedServer, socket: AuthenticatedSo
   });
 
   // Handle state request (for reconnection or initial load)
-  socket.on('dt:requestState' as any, async () => {
+  socket.on('dt:requestState' as any, async (data?: { tableId?: string }) => {
     try {
-      const state = getGameState(userId);
-      const recentRounds = await getRecentRounds(100);
+      // Get tableId from data or from socket rooms
+      const tableId = data?.tableId || getTableIdFromSocket(socket);
+      const state = getDTTableGameState(tableId, userId);
 
       // Fetch user balance
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: { balance: true },
       });
+
+      // Fetch recent rounds for roadmap
+      const recentRounds = await prisma.dragonTigerRound.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        select: {
+          roundNumber: true,
+          result: true,
+          isSuitedTie: true,
+          dragonValue: true,
+          tigerValue: true,
+        },
+      });
+
+      const formattedRounds = recentRounds.reverse().map(round => ({
+        roundNumber: round.roundNumber,
+        result: round.result,
+        isSuitedTie: round.isSuitedTie,
+        dragonValue: round.dragonValue,
+        tigerValue: round.tigerValue,
+      }));
 
       // Send current game state
       socket.emit('dt:state' as any, {
@@ -140,16 +182,16 @@ export function handleDragonTigerEvents(io: TypedServer, socket: AuthenticatedSo
       // Send balance update
       socket.emit('user:balance', {
         balance: Number(user?.balance || 0),
-        reason: 'deposit', // Using 'deposit' as a generic initial load reason
+        reason: 'deposit',
       });
 
       // Send roadmap data
       socket.emit('dt:roadmap' as any, {
-        recentRounds,
+        recentRounds: formattedRounds,
       });
 
       console.log(
-        `[DT Socket] ${username} requested state: phase=${state.phase}, round=${state.roundNumber}, balance=${user?.balance}`
+        `[DT Socket] ${username} requested state for table ${tableId}: phase=${state.phase}, round=${state.roundNumber}, balance=${user?.balance}`
       );
     } catch (error) {
       console.error(`[DT Socket] Error getting state for ${username}:`, error);

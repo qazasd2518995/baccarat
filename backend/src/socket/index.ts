@@ -106,12 +106,26 @@ export function initializeSocket(io: TypedServer): void {
           }
           break;
         case 'dragontiger':
-          socket.join('table:dragontiger');
-          console.log(`[Socket] ${authSocket.user.username} joined dragon tiger table`);
+          // Join specific dragon tiger table room (each table has independent game loop)
+          if (tableId) {
+            socket.join(`table:dragontiger:${tableId}`);
+            console.log(`[Socket] ${authSocket.user.username} joined dragon tiger table ${tableId}`);
+          } else {
+            // Default to table 1 if no tableId specified
+            socket.join('table:dragontiger:1');
+            console.log(`[Socket] ${authSocket.user.username} joined dragon tiger table 1 (default)`);
+          }
           break;
         case 'bullbull':
-          socket.join('table:bullbull');
-          console.log(`[Socket] ${authSocket.user.username} joined bull bull table`);
+          // Join specific bull bull table room (each table has independent game loop)
+          if (tableId) {
+            socket.join(`table:bullbull:${tableId}`);
+            console.log(`[Socket] ${authSocket.user.username} joined bull bull table ${tableId}`);
+          } else {
+            // Default to table 1 if no tableId specified
+            socket.join('table:bullbull:1');
+            console.log(`[Socket] ${authSocket.user.username} joined bull bull table 1 (default)`);
+          }
           break;
         default:
           socket.join('table:default');

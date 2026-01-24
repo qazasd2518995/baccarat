@@ -32,10 +32,7 @@ function connectSocket(token: string): Socket {
 
   socket.on('connect', () => {
     console.log('[BB Socket] Connected:', socket?.id);
-    // Join bull bull table
-    socket?.emit('join:table', { gameType: 'bullbull' });
-    // Request current game state
-    socket?.emit('bb:requestState');
+    // Don't auto-join here - let the hook handle it after joining the correct table
   });
 
   socket.on('connect_error', (error) => {
@@ -57,7 +54,7 @@ function disconnectSocket(): void {
   }
 }
 
-export function useBullBullSocket() {
+export function useBullBullSocket(tableId?: string) {
   const { token, isAuthenticated, updateUser } = useAuthStore();
 
   const {
@@ -96,10 +93,17 @@ export function useBullBullSocket() {
     const initializeGame = () => {
       console.log('[useBullBullSocket] Initializing game state...');
       setConnected(true);
-      // Join bull bull table
-      socket.emit('join:table', { gameType: 'bullbull' });
-      // Request current game state
-      socket.emit('bb:requestState');
+
+      // Join specific bull bull table (defaults to table 1 if not specified)
+      const targetTable = tableId || '1';
+      socket.emit('join:table', { gameType: 'bullbull', tableId: targetTable });
+      console.log(`[useBullBullSocket] Joined bull bull table ${targetTable}`);
+
+      // Request current game state for this table
+      // Small delay to ensure join is processed first
+      setTimeout(() => {
+        socket.emit('bb:requestState', { tableId: targetTable });
+      }, 100);
     };
 
     // Handler functions
@@ -301,7 +305,7 @@ export function useBullBullSocket() {
       disconnectSocket();
       resetAll();
     };
-  }, [isAuthenticated, token]);
+  }, [isAuthenticated, token, tableId]);
 
   // Submit pending bets to server
   const submitBets = useCallback(() => {

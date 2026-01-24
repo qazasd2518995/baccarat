@@ -22,9 +22,9 @@ import agentReportRoutes from './routes/agentReport.js';
 import logsRoutes from './routes/logs.js';
 import { initializeSocket } from './socket/index.js';
 import { setSocketInstance } from './socket/socketManager.js';
-import { startDragonTigerGameLoop } from './services/dragonTigerGameLoop.js';
-import { startBullBullGameLoop } from './services/bullBullGameLoop.js';
 import { startMultiTableGameLoop } from './services/multiTableGameLoop.js';
+import { startMultiTableDragonTiger } from './services/multiTableDragonTiger.js';
+import { startMultiTableBullBull } from './services/multiTableBullBull.js';
 import type { ServerToClientEvents, ClientToServerEvents } from './socket/types.js';
 
 dotenv.config();
@@ -87,14 +87,16 @@ async function start() {
   // Start the multi-table baccarat system (each table has independent game loop)
   startMultiTableGameLoop(io);
 
-  // Start other game type loops
-  startDragonTigerGameLoop(io);
-  startBullBullGameLoop(io);
+  // Start the multi-table dragon tiger system (each table has independent game loop)
+  startMultiTableDragonTiger(io);
+
+  // Start the multi-table bull bull system (each table has independent game loop)
+  startMultiTableBullBull(io);
 
   httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`WebSocket server ready`);
-    console.log('Game loops started: Baccarat (multi-table), Dragon Tiger, Bull Bull');
+    console.log('Game loops started: Baccarat (multi-table), Dragon Tiger (multi-table), Bull Bull (multi-table)');
   });
 }
 
