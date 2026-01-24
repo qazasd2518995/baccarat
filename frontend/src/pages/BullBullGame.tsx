@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -9,6 +9,7 @@ import {
   Check,
   Wifi,
   WifiOff,
+  CheckCircle,
 } from 'lucide-react';
 import { useBullBullStore, type BullBullBetType, CHIP_VALUES, RANK_NAMES } from '../store/bullBullStore';
 import { useBullBullSocket } from '../hooks/useBullBullSocket';
@@ -168,6 +169,14 @@ function HandDisplay({
   );
 }
 
+// Bet type labels for notification
+const betTypeLabels: Record<string, string> = {
+  bb_banker: '莊家',
+  bb_player1: '閒1',
+  bb_player2: '閒2',
+  bb_player3: '閒3',
+};
+
 export default function BullBullGame() {
   const navigate = useNavigate();
   const { submitBets, cancelBets } = useBullBullSocket();
@@ -196,9 +205,50 @@ export default function BullBullGame() {
     lastSettlement,
     roadmapData,
     shoeNumber,
+    lastBets,
   } = useBullBullStore();
 
   const [showRules, setShowRules] = useState(false);
+
+  // Bet success notification
+  const [betNotification, setBetNotification] = useState<{
+    show: boolean;
+    bets: Array<{ type: string; amount: number }>;
+    total: number;
+  }>({ show: false, bets: [], total: 0 });
+
+  // Previous confirmed bets count to detect new confirmations
+  const prevConfirmedBetsRef = useRef<number>(0);
+
+  // Show bet success notification when confirmedBets changes
+  useEffect(() => {
+    const currentCount = confirmedBets.length;
+    const prevCount = prevConfirmedBetsRef.current;
+
+    // Only show notification when bets are newly confirmed (count increased)
+    if (currentCount > 0 && currentCount > prevCount && phase === 'betting') {
+      const total = confirmedBets.reduce((sum, b) => sum + b.amount, 0);
+      setBetNotification({
+        show: true,
+        bets: confirmedBets.map(b => ({ type: b.type, amount: b.amount })),
+        total,
+      });
+
+      // Auto-hide after 3 seconds
+      const timer = setTimeout(() => {
+        setBetNotification(prev => ({ ...prev, show: false }));
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+
+    prevConfirmedBetsRef.current = currentCount;
+  }, [confirmedBets, phase]);
+
+  // Reset notification reference when round changes
+  useEffect(() => {
+    prevConfirmedBetsRef.current = 0;
+  }, [roundNumber]);
 
   const canBet = phase === 'betting';
   const hasPendingBets = pendingBets.length > 0;
@@ -420,7 +470,7 @@ export default function BullBullGame() {
             </button>
             <button
               onClick={handleRepeat}
-              disabled={!canBet}
+              disabled={!canBet || lastBets.length === 0}
               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg flex items-center gap-2"
             >
               <RotateCcw size={18} />
@@ -488,6 +538,39 @@ export default function BullBullGame() {
                 </div>
               </div>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bet Success Notification Toast */}
+      <AnimatePresence>
+        {betNotification.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -50, x: '-50%' }}
+            className="fixed top-16 left-1/2 z-[100] bg-gradient-to-r from-green-600 to-green-700 text-white px-5 py-3 rounded-lg shadow-2xl"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="font-bold text-sm mb-1">下注成功</div>
+                <div className="text-xs space-y-0.5">
+                  {betNotification.bets.map((bet, i) => (
+                    <div key={i} className="flex justify-between gap-4">
+                      <span>{betTypeLabels[bet.type] || bet.type}</span>
+                      <span className="font-bold">¥{bet.amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-1 pt-1 border-t border-white/20 text-xs font-bold flex justify-between">
+                  <span>总计</span>
+                  <span>¥{betNotification.total.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
