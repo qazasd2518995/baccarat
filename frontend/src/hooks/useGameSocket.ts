@@ -21,7 +21,7 @@ import { useAuthStore } from '../store/authStore';
 import { gameApi } from '../services/api';
 
 export function useGameSocket(tableId?: string) {
-  const { token, isAuthenticated } = useAuthStore();
+  const { token, isAuthenticated, updateUser } = useAuthStore();
 
   const {
     setConnected,
@@ -177,11 +177,15 @@ export function useGameSocket(tableId?: string) {
         netResult: data.netResult,
       });
       setBalance(data.newBalance);
+      // Also update authStore for cross-page balance sync
+      updateUser({ balance: data.newBalance });
     };
 
     const handleBalance = (data: BalanceUpdateEvent) => {
       console.log('[useGameSocket] Balance updated:', data.balance, data.reason);
       setBalance(data.balance);
+      // Also update authStore for cross-page balance sync
+      updateUser({ balance: data.balance });
     };
 
     const handleRoadmap = (data: RoadmapUpdateEvent) => {

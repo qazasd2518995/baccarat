@@ -58,7 +58,7 @@ function disconnectSocket(): void {
 }
 
 export function useBullBullSocket() {
-  const { token, isAuthenticated } = useAuthStore();
+  const { token, isAuthenticated, updateUser } = useAuthStore();
 
   const {
     setConnected,
@@ -227,11 +227,15 @@ export function useBullBullSocket() {
         netResult: data.netResult,
       });
       setBalance(data.newBalance);
+      // Also update authStore for cross-page balance sync
+      updateUser({ balance: data.newBalance });
     };
 
     const handleBalance = (data: any) => {
       console.log('[useBullBullSocket] Balance updated:', data.balance, data.reason);
       setBalance(data.balance);
+      // Also update authStore for cross-page balance sync
+      updateUser({ balance: data.balance });
     };
 
     const handleRoadmap = (data: any) => {

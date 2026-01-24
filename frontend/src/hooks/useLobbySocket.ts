@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import {
   connectSocket,
   type TableUpdateEvent,
+  type BalanceUpdateEvent,
 } from '../services/socket';
 import { useAuthStore } from '../store/authStore';
 
@@ -20,7 +21,7 @@ interface TableUpdate {
 }
 
 export function useLobbySocket(onTableUpdate: (update: TableUpdate) => void) {
-  const { token, isAuthenticated } = useAuthStore();
+  const { token, isAuthenticated, updateUser } = useAuthStore();
   const callbackRef = useRef(onTableUpdate);
 
   // Keep callback ref up to date
@@ -57,21 +58,30 @@ export function useLobbySocket(onTableUpdate: (update: TableUpdate) => void) {
       console.log('[useLobbySocket] Disconnected');
     };
 
+    // Handler for balance updates - sync to authStore for cross-page consistency
+    const handleBalanceUpdate = (data: BalanceUpdateEvent) => {
+      console.log('[useLobbySocket] Balance updated:', data.balance, data.reason);
+      updateUser({ balance: data.balance });
+    };
+
     // Remove any existing listeners first to prevent duplicates
     socket.off('lobby:tableUpdate', handleTableUpdate);
     socket.off('connect', handleConnect);
     socket.off('disconnect', handleDisconnect);
+    socket.off('user:balance', handleBalanceUpdate);
 
     // Add listeners
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
     socket.on('lobby:tableUpdate', handleTableUpdate);
+    socket.on('user:balance', handleBalanceUpdate);
 
     return () => {
       console.log('[useLobbySocket] Cleanup - removing listeners');
       socket.off('lobby:tableUpdate', handleTableUpdate);
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
+      socket.off('user:balance', handleBalanceUpdate);
     };
   }, [isAuthenticated, token]);
 
