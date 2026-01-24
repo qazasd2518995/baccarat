@@ -140,7 +140,7 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
 
   // Pending bets
   pendingBets: [],
-  selectedChip: 100,
+  selectedChip: 10,
   setSelectedChip: (amount) => set({ selectedChip: amount }),
 
   addPendingBet: (type) => {
@@ -281,7 +281,7 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
       pendingBets: [],
       confirmedBets: [],
       lastBets: [],
-      selectedChip: 100,
+      selectedChip: 10,
       dragonCard: null,
       tigerCard: null,
       dragonValue: null,
