@@ -119,23 +119,23 @@ async function handleBettingPhase(
     roundId: round.id,
   });
 
-  // Get table info for lobby updates
-  const baccaratTable = await prisma.gameTable.findFirst({
+  // Get ALL baccarat tables for lobby updates (they all share the same game loop)
+  const baccaratTables = await prisma.gameTable.findMany({
     where: { gameType: 'baccarat', isActive: true },
   });
 
-  // Broadcast initial betting phase to lobby
-  if (baccaratTable) {
+  // Broadcast initial betting phase to lobby for all baccarat tables
+  for (const table of baccaratTables) {
     io.to('lobby').emit('lobby:tableUpdate', {
-      tableId: baccaratTable.id,
+      tableId: table.id,
       phase: 'betting',
       timeRemaining,
       roundNumber: round.roundNumber,
       shoeNumber: round.shoeNumber,
       roadmap: {
-        banker: baccaratTable.bankerWins,
-        player: baccaratTable.playerWins,
-        tie: baccaratTable.tieCount,
+        banker: table.bankerWins,
+        player: table.playerWins,
+        tie: table.tieCount,
       },
     });
   }
@@ -150,18 +150,18 @@ async function handleBettingPhase(
       phase: 'betting',
     });
 
-    // Also update lobby with countdown
-    if (baccaratTable) {
+    // Also update lobby with countdown for all baccarat tables
+    for (const table of baccaratTables) {
       io.to('lobby').emit('lobby:tableUpdate', {
-        tableId: baccaratTable.id,
+        tableId: table.id,
         phase: 'betting',
         timeRemaining,
         roundNumber: round.roundNumber,
         shoeNumber: round.shoeNumber,
         roadmap: {
-          banker: baccaratTable.bankerWins,
-          player: baccaratTable.playerWins,
-          tie: baccaratTable.tieCount,
+          banker: table.bankerWins,
+          player: table.playerWins,
+          tie: table.tieCount,
         },
       });
     }
@@ -363,8 +363,12 @@ async function handleResultPhase(io: TypedServer, duration: number): Promise<voi
       );
     }
 
-    // Update table statistics in database
-    if (baccaratTable) {
+    // Update table statistics in database and broadcast to lobby for ALL baccarat tables
+    const baccaratTables = await prisma.gameTable.findMany({
+      where: { gameType: 'baccarat', isActive: true },
+    });
+
+    for (const table of baccaratTables) {
       const updateData: { bankerWins?: { increment: number }; playerWins?: { increment: number }; tieCount?: { increment: number }; roundNumber: { increment: number } } = {
         roundNumber: { increment: 1 },
       };
@@ -378,11 +382,11 @@ async function handleResultPhase(io: TypedServer, duration: number): Promise<voi
       }
 
       const updatedTable = await prisma.gameTable.update({
-        where: { id: baccaratTable.id },
+        where: { id: table.id },
         data: updateData,
       });
 
-      console.log(`[GameLoop] Updated table ${baccaratTable.name} statistics: ${round.result}`);
+      console.log(`[GameLoop] Updated table ${table.name} statistics: ${round.result}`);
 
       // Broadcast table update to lobby
       io.to('lobby').emit('lobby:tableUpdate', {

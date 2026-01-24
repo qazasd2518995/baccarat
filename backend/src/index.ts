@@ -89,8 +89,9 @@ async function start() {
   // Start original single-table game loop for backward compatibility
   startGameLoop(io);
 
-  // Start multi-table baccarat system (4 independent tables)
-  startMultiTableGameLoop(io);
+  // NOTE: Multi-table baccarat system disabled to avoid state synchronization issues
+  // All baccarat tables in lobby now show the state from the main game loop
+  // startMultiTableGameLoop(io);
 
   // Start other game type loops
   startDragonTigerGameLoop(io);

@@ -150,7 +150,7 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
       });
 
       console.log(
-        `[Socket] ${username} requested state: phase=${state.phase}, round=${state.roundNumber}, balance=${user?.balance}`
+        `[Socket] ${username} requested state: phase=${state.phase}, timeRemaining=${state.timeRemaining}, round=${state.roundNumber}, balance=${user?.balance}`
       );
     } catch (error) {
       console.error(`[Socket] Error getting state for ${username}:`, error);
