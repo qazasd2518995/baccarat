@@ -2,6 +2,55 @@ import { create } from 'zustand';
 import type { Bet, BetType, Card, GameResult, BetResult } from '../types';
 import type { GamePhase, BetEntry } from '../services/socket';
 
+// All available chip values
+export const ALL_CHIP_OPTIONS = [
+  { value: 10, color: 'from-slate-400 to-slate-600' },
+  { value: 50, color: 'from-green-500 to-green-700' },
+  { value: 100, color: 'from-red-500 to-red-700' },
+  { value: 500, color: 'from-purple-500 to-purple-700' },
+  { value: 1000, color: 'from-amber-500 to-amber-700' },
+  { value: 5000, color: 'from-cyan-500 to-cyan-700' },
+  { value: 10000, color: 'from-fuchsia-500 to-fuchsia-700' },
+  { value: 20000, color: 'from-rose-500 to-rose-700' },
+  { value: 50000, color: 'from-indigo-500 to-indigo-700' },
+  { value: 100000, color: 'from-yellow-500 to-yellow-700' },
+];
+
+// Default selected chips (6 chips)
+const DEFAULT_SELECTED_CHIPS = [10, 50, 100, 500, 1000, 5000];
+
+// LocalStorage key for chip preferences
+const CHIP_PREFERENCES_KEY = 'baccarat_chip_preferences';
+
+// Load chip preferences from localStorage
+function loadChipPreferences(): number[] {
+  try {
+    const stored = localStorage.getItem(CHIP_PREFERENCES_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length > 0 && parsed.length <= 6) {
+        // Validate all values are valid chip options
+        const validValues = ALL_CHIP_OPTIONS.map(c => c.value);
+        if (parsed.every(v => validValues.includes(v))) {
+          return parsed;
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load chip preferences:', e);
+  }
+  return DEFAULT_SELECTED_CHIPS;
+}
+
+// Save chip preferences to localStorage
+function saveChipPreferences(chips: number[]): void {
+  try {
+    localStorage.setItem(CHIP_PREFERENCES_KEY, JSON.stringify(chips));
+  } catch (e) {
+    console.error('Failed to save chip preferences:', e);
+  }
+}
+
 interface GameStore {
   // Socket connection state
   isConnected: boolean;
@@ -111,9 +160,16 @@ interface GameStore {
 
   // Full state reset
   resetAll: () => void;
+
+  // Chip preferences (customizable displayed chips)
+  displayedChips: number[];
+  setDisplayedChips: (chips: number[]) => void;
 }
 
 export const CHIP_VALUES = [10, 50, 100, 500, 1000, 5000, 10000];
+
+// Initialize displayed chips from localStorage
+const initialDisplayedChips = loadChipPreferences();
 
 export const useGameStore = create<GameStore>((set, get) => ({
   // Socket connection
@@ -312,4 +368,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
       cardsRemaining: 416,
       bettingLimits: null,
     }),
+
+  // Chip preferences
+  displayedChips: initialDisplayedChips,
+  setDisplayedChips: (chips) => {
+    saveChipPreferences(chips);
+    const state = get();
+    // If current selected chip is not in the new list, select the first available
+    if (!chips.includes(state.selectedChip)) {
+      set({ displayedChips: chips, selectedChip: chips[0] });
+    } else {
+      set({ displayedChips: chips });
+    }
+  },
 }));

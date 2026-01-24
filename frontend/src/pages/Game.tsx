@@ -29,6 +29,8 @@ import {
   Smile,
   Send,
   MapPin,
+  CheckCircle,
+  Coins,
 } from 'lucide-react';
 import { useGameStore } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
@@ -44,6 +46,7 @@ import {
   ResultsProportionModal,
 } from '../components/game/modals';
 import PlayingCard from '../components/game/PlayingCard';
+import ChipSettingsModal from '../components/game/ChipSettingsModal';
 
 // Chip component - Matches reference design exactly
 function Chip({ value, selected, onClick, disabled }: { value: number | string; selected: boolean; onClick: () => void; disabled?: boolean }) {
@@ -446,6 +449,19 @@ export default function Game() {
   // 免佣模式：莊贏賠率 1:1，但莊家以6點贏只賠 1:0.5
   const [isNoCommission, setIsNoCommission] = useState(false);
 
+  // Chip settings modal
+  const [isChipSettingsOpen, setIsChipSettingsOpen] = useState(false);
+
+  // Bet success notification
+  const [betNotification, setBetNotification] = useState<{
+    show: boolean;
+    bets: Array<{ type: string; amount: number }>;
+    total: number;
+  }>({ show: false, bets: [], total: 0 });
+
+  // Previous confirmed bets count to detect new confirmations
+  const prevConfirmedBetsRef = useRef<number>(0);
+
   // Current dealer name (could come from table selection in the future)
   const currentDealerName = '花花';
 
@@ -488,7 +504,7 @@ export default function Game() {
   }, [leaderboardPeriod]);
 
   // Socket hook for WebSocket connection
-  const { submitBets, cancelBets } = useGameSocket(tableId);
+  const { submitBets } = useGameSocket(tableId);
 
   // Chat state
   const { messages: chatMessages, sendMessage: sendChatMessage, loading: chatLoading } = useChatSocket();
@@ -576,6 +592,8 @@ export default function Game() {
     lastBets,
     loadRepeatBets,
     bettingLimits,
+    displayedChips,
+    clearPendingBets,
   } = useGameStore();
 
   // Can place bets only during betting phase
@@ -630,8 +648,47 @@ export default function Game() {
   const smallRoadData = calculateSmallRoad(bigRoadGrid);
   const cockroachPigData = calculateCockroachPig(bigRoadGrid);
 
-  // Chip values matching GoFun
-  const chipValues: (number | string)[] = [5, 10, 25, 50, 100, 500, '$'];
+  // Bet type labels (Chinese)
+  const betTypeLabels: Record<string, string> = {
+    player: '闲',
+    banker: '庄',
+    tie: '和',
+    player_pair: '闲对',
+    banker_pair: '庄对',
+    super_six: 'Super 6',
+    player_bonus: '闲龙宝',
+    banker_bonus: '庄龙宝',
+  };
+
+  // Show bet success notification when confirmedBets changes
+  useEffect(() => {
+    const currentCount = confirmedBets.length;
+    const prevCount = prevConfirmedBetsRef.current;
+
+    // Only show notification when bets are newly confirmed (count increased)
+    if (currentCount > 0 && currentCount > prevCount && phase === 'betting') {
+      const total = confirmedBets.reduce((sum, b) => sum + b.amount, 0);
+      setBetNotification({
+        show: true,
+        bets: confirmedBets.map(b => ({ type: b.type, amount: b.amount })),
+        total,
+      });
+
+      // Auto-hide after 3 seconds
+      const timer = setTimeout(() => {
+        setBetNotification(prev => ({ ...prev, show: false }));
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+
+    prevConfirmedBetsRef.current = currentCount;
+  }, [confirmedBets, phase]);
+
+  // Reset notification reference when round changes
+  useEffect(() => {
+    prevConfirmedBetsRef.current = 0;
+  }, [roundNumber]);
 
   // Phase display
   const phaseDisplay = getPhaseDisplay(phase, timeRemaining, t);
@@ -648,9 +705,9 @@ export default function Game() {
     submitBets(isNoCommission);
   };
 
-  // Handle cancel - clear all bets
+  // Handle cancel - only clear pending bets (not confirmed)
   const handleCancel = () => {
-    cancelBets();
+    clearPendingBets();
   };
 
   // Handle repeat - load last round's bets
@@ -1060,7 +1117,7 @@ export default function Game() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleCancel}
-                  disabled={!canBet || (pendingBets.length === 0 && confirmedBets.length === 0)}
+                  disabled={!canBet || pendingBets.length === 0}
                   className="flex items-center gap-1 px-3 py-1 text-gray-400 hover:text-white text-xs disabled:opacity-50"
                 >
                   <X className="w-3 h-3" /> {t('cancel')}
@@ -1273,15 +1330,31 @@ export default function Game() {
 
                 {/* Chips Row */}
                 <div className="flex justify-center items-center gap-1.5 py-2 bg-[#1a1f2e]">
-                  {chipValues.map((value) => (
+                  {displayedChips.map((value) => (
                     <Chip
                       key={value}
                       value={value}
                       selected={selectedChip === value}
-                      onClick={() => typeof value === 'number' && setSelectedChip(value)}
-                      disabled={typeof value === 'number' && value > balance}
+                      onClick={() => setSelectedChip(value)}
+                      disabled={value > balance}
                     />
                   ))}
+                  {/* Chip Settings Button */}
+                  <button
+                    onClick={() => setIsChipSettingsOpen(true)}
+                    className="relative w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-105 cursor-pointer"
+                    style={{
+                      background: 'radial-gradient(circle at 30% 30%, #6B7280, #4B5563)',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
+                    }}
+                    title={t('chipSettings') || '籌碼設置'}
+                  >
+                    <div
+                      className="absolute inset-1 rounded-full border-2 border-dashed opacity-30"
+                      style={{ borderColor: '#9CA3AF' }}
+                    />
+                    <Coins className="w-5 h-5 text-white relative z-10" />
+                  </button>
                 </div>
               </div>
 
@@ -1532,6 +1605,40 @@ export default function Game() {
         balance={balance}
       />
       <ResultsProportionModal isOpen={isProportionOpen} onClose={() => setIsProportionOpen(false)} />
+      <ChipSettingsModal isOpen={isChipSettingsOpen} onClose={() => setIsChipSettingsOpen(false)} />
+
+      {/* Bet Success Notification Toast */}
+      <AnimatePresence>
+        {betNotification.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -50, x: '-50%' }}
+            className="fixed top-16 left-1/2 z-[100] bg-gradient-to-r from-green-600 to-green-700 text-white px-5 py-3 rounded-lg shadow-2xl"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="font-bold text-sm mb-1">{t('betSuccess') || '下注成功'}</div>
+                <div className="text-xs space-y-0.5">
+                  {betNotification.bets.map((bet, i) => (
+                    <div key={i} className="flex justify-between gap-4">
+                      <span>{betTypeLabels[bet.type] || bet.type}</span>
+                      <span className="font-bold">¥{bet.amount.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-1 pt-1 border-t border-white/20 text-xs font-bold flex justify-between">
+                  <span>{t('total') || '总计'}</span>
+                  <span>¥{betNotification.total.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
