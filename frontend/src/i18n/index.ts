@@ -399,6 +399,16 @@ const resources = {
       insufficientBalance: '余额不足',
       yourBalance: '您的余额',
       sendGift: '送出礼物',
+
+      // Chip Settings
+      selectChips: '选择显示的筹码',
+      selectedCount: '已选择',
+      maxChips: '最多6个',
+
+      // Roadmap Labels
+      roadBanker: '庄',
+      roadPlayer: '闲',
+      roadTie: '和',
     },
   },
   en: {
@@ -798,6 +808,16 @@ const resources = {
       insufficientBalance: 'Insufficient balance',
       yourBalance: 'Your balance',
       sendGift: 'Send Gift',
+
+      // Chip Settings
+      selectChips: 'Select Chips',
+      selectedCount: 'Selected',
+      maxChips: 'Max 6',
+
+      // Roadmap Labels
+      roadBanker: 'B',
+      roadPlayer: 'P',
+      roadTie: 'T',
     },
   },
 };

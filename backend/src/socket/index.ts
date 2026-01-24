@@ -50,8 +50,8 @@ export function initializeSocket(io: TypedServer): void {
     // Join lobby room for table updates
     socket.join('lobby');
 
-    // Join default game table room (baccarat)
-    socket.join('table:default');
+    // NOTE: Don't auto-join any game table - let client explicitly join via join:table event
+    // This allows each baccarat table to have independent state
 
     // Send initial balance on connection
     try {
@@ -95,15 +95,14 @@ export function initializeSocket(io: TypedServer): void {
       // Join the requested table
       switch (gameType) {
         case 'baccarat':
-          // Always join table:default for baccarat (single game loop)
-          // The tableId is just for UI/routing purposes
-          socket.join('table:default');
+          // Join specific baccarat table room (each table has independent game loop)
           if (tableId) {
-            // Also join specific table room for future multi-table support
             socket.join(`table:baccarat:${tableId}`);
-            console.log(`[Socket] ${authSocket.user.username} joined baccarat table ${tableId} (and default)`);
+            console.log(`[Socket] ${authSocket.user.username} joined baccarat table ${tableId}`);
           } else {
-            console.log(`[Socket] ${authSocket.user.username} joined default baccarat table`);
+            // Default to table 1 if no tableId specified
+            socket.join('table:baccarat:1');
+            console.log(`[Socket] ${authSocket.user.username} joined baccarat table 1 (default)`);
           }
           break;
         case 'dragontiger':

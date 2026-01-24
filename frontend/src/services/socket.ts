@@ -146,7 +146,7 @@ interface ServerToClientEvents {
 interface ClientToServerEvents {
   'bet:place': (data: { bets: BetEntry[]; isNoCommission?: boolean }) => void;
   'bet:clear': () => void;
-  'game:requestState': () => void;
+  'game:requestState': (data?: { tableId?: string }) => void;
   'chat:send': (data: { message: string }) => void;
   'join:table': (data: { gameType: string; tableId?: string }) => void;
 }
@@ -188,8 +188,7 @@ export function connectSocket(token: string): TypedSocket {
 
   socket.on('connect', () => {
     console.log('[Socket] Connected:', socket?.id);
-    // Request current game state on connect
-    socket?.emit('game:requestState');
+    // Don't auto-request state here - let the hook handle it after joining the correct table
   });
 
   socket.on('connect_error', (error) => {

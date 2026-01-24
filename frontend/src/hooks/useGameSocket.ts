@@ -61,14 +61,16 @@ export function useGameSocket(tableId?: string) {
       console.log('[useGameSocket] Initializing game state...');
       setConnected(true);
 
-      // Join specific table if tableId provided
-      if (tableId) {
-        socketJoinTable('baccarat', tableId);
-        console.log(`[useGameSocket] Joined baccarat table ${tableId}`);
-      }
+      // Join specific baccarat table (defaults to table 1 if not specified)
+      const targetTable = tableId || '1';
+      socketJoinTable('baccarat', targetTable);
+      console.log(`[useGameSocket] Joined baccarat table ${targetTable}`);
 
-      // Request current game state (this also sends balance)
-      socket.emit('game:requestState');
+      // Request current game state for this table (this also sends balance)
+      // Small delay to ensure join is processed first
+      setTimeout(() => {
+        socket.emit('game:requestState', { tableId: targetTable });
+      }, 100);
 
       // Fetch betting limits
       gameApi.getMyLimits().then((res) => {

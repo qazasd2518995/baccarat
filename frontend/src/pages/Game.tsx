@@ -87,7 +87,7 @@ function Chip({ value, selected, onClick, disabled }: { value: number | string; 
 }
 
 // Ask Road Cell (問路) - Shows 莊/閒/和 in circles with colored borders
-function AskRoadCell({ result }: { result?: GameResult }) {
+function AskRoadCell({ result, labels }: { result?: GameResult; labels: { banker: string; player: string; tie: string } }) {
   if (!result) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-white">
@@ -103,7 +103,6 @@ function AskRoadCell({ result }: { result?: GameResult }) {
     tie: { border: '#16A34A', text: '#FFFFFF', bg: '#16A34A' },     // Green filled for 和
   };
 
-  const labels = { banker: '莊', player: '閒', tie: '和' };
   const style = styles[result];
 
   return (
@@ -1167,7 +1166,7 @@ export default function Game() {
                   <div className="flex-1 grid grid-cols-8 grid-rows-4 gap-px" style={{ backgroundColor: '#D1D5DB' }}>
                     {Array(32).fill(null).map((_, i) => {
                       const round = roadmapData[i];
-                      return <AskRoadCell key={`ask-b-${i}`} result={round?.result} />;
+                      return <AskRoadCell key={`ask-b-${i}`} result={round?.result} labels={{ banker: t('roadBanker'), player: t('roadPlayer'), tie: t('roadTie') }} />;
                     })}
                   </div>
                 </div>
@@ -1189,16 +1188,16 @@ export default function Game() {
                   <div className="flex-1 grid grid-cols-8 grid-rows-4 gap-px" style={{ backgroundColor: '#D1D5DB' }}>
                     {Array(32).fill(null).map((_, i) => {
                       const round = roadmapData[i];
-                      return <AskRoadCell key={`ask-p-${i}`} result={round?.result} />;
+                      return <AskRoadCell key={`ask-p-${i}`} result={round?.result} labels={{ banker: t('roadBanker'), player: t('roadPlayer'), tie: t('roadTie') }} />;
                     })}
                   </div>
                 </div>
 
                 {/* Bottom Stats - 莊/閒/和 counts */}
                 <div className="flex items-center justify-around py-1.5 bg-[#1a1f2e]">
-                  <span className="text-red-500 font-bold text-sm">莊 <span className="text-white">{bankerWins}</span></span>
-                  <span className="text-blue-500 font-bold text-sm">閒 <span className="text-white">{playerWins}</span></span>
-                  <span className="text-green-500 font-bold text-sm">和 <span className="text-white">{ties}</span></span>
+                  <span className="text-red-500 font-bold text-sm">{t('roadBanker')} <span className="text-white">{bankerWins}</span></span>
+                  <span className="text-blue-500 font-bold text-sm">{t('roadPlayer')} <span className="text-white">{playerWins}</span></span>
+                  <span className="text-green-500 font-bold text-sm">{t('roadTie')} <span className="text-white">{ties}</span></span>
                 </div>
               </div>
 
@@ -1213,7 +1212,7 @@ export default function Game() {
                     className={`relative flex-1 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('player_bonus') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#E0F2FE' }}
                   >
-                    <span className="text-blue-700 text-sm font-medium">閒龍寶</span>
+                    <span className="text-blue-700 text-sm font-medium">{t('playerBonus')}</span>
                     <span className="text-red-600 text-xs">1:30</span>
                     {getBetAmount('player_bonus') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('player_bonus')}</div>
@@ -1227,7 +1226,7 @@ export default function Game() {
                     className={`relative flex-1 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('player_pair') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#F0F4FF' }}
                   >
-                    <span className="text-gray-800 text-sm font-medium">閒對</span>
+                    <span className="text-gray-800 text-sm font-medium">{t('playerPair')}</span>
                     <span className="text-red-600 text-sm font-bold">1:11</span>
                     {getBetAmount('player_pair') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('player_pair')}</div>
@@ -1256,7 +1255,7 @@ export default function Game() {
                     className={`relative flex-1 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('banker_pair') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#FFF0F0' }}
                   >
-                    <span className="text-gray-800 text-sm font-medium">莊對</span>
+                    <span className="text-gray-800 text-sm font-medium">{t('bankerPair')}</span>
                     <span className="text-red-600 text-sm font-bold">1:11</span>
                     {getBetAmount('banker_pair') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('banker_pair')}</div>
@@ -1270,7 +1269,7 @@ export default function Game() {
                     className={`relative flex-1 flex flex-col items-center justify-center transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('banker_bonus') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#FEE2E2' }}
                   >
-                    <span className="text-red-700 text-sm font-medium">莊龍寶</span>
+                    <span className="text-red-700 text-sm font-medium">{t('bankerBonus')}</span>
                     <span className="text-red-600 text-xs">1:30</span>
                     {getBetAmount('banker_bonus') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('banker_bonus')}</div>
@@ -1287,7 +1286,7 @@ export default function Game() {
                     className={`relative flex-[2] flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('player') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#DBEAFE' }}
                   >
-                    <span className="text-blue-700 text-5xl font-black">閒</span>
+                    <span className="text-blue-700 text-5xl font-black">{t('player')}</span>
                     <span className="text-red-600 text-xl font-bold mt-1">1:1</span>
                     {getBetAmount('player') > 0 && (
                       <div className="absolute top-3 right-3 bg-yellow-500 text-black text-sm font-bold px-2.5 py-0.5 rounded-full shadow">{getBetAmount('player')}</div>
@@ -1301,7 +1300,7 @@ export default function Game() {
                     className={`relative flex-[1.2] flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('tie') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#FEF9C3' }}
                   >
-                    <span className="text-green-700 text-5xl font-black">和</span>
+                    <span className="text-green-700 text-5xl font-black">{t('tie')}</span>
                     <span className="text-red-600 text-xl font-bold mt-1">1:8</span>
                     {getBetAmount('tie') > 0 && (
                       <div className="absolute top-3 right-3 bg-yellow-500 text-black text-sm font-bold px-2.5 py-0.5 rounded-full shadow">{getBetAmount('tie')}</div>
@@ -1315,7 +1314,7 @@ export default function Game() {
                     className={`relative flex-[2] flex flex-col items-center justify-center transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('banker') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#FFE4E6' }}
                   >
-                    <span className="text-red-700 text-5xl font-black">莊</span>
+                    <span className="text-red-700 text-5xl font-black">{t('banker')}</span>
                     <span className="text-red-600 text-xl font-bold mt-1">
                       {isNoCommission ? '1:1' : '1:0.95'}
                     </span>

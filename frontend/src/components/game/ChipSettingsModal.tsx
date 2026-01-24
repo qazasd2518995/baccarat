@@ -107,13 +107,14 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
                     className={`
                       relative w-14 h-14 rounded-full flex items-center justify-center font-bold text-xs
                       bg-gradient-to-br ${chip.color}
-                      border-3 ${isSelected ? 'border-white' : 'border-white/20'}
+                      border-4 border-white/30
                       shadow-lg transition-all duration-200
+                      ${isSelected ? 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900' : ''}
                       ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
                     `}
                   >
                     {/* Inner circle decoration */}
-                    <div className="absolute inset-1.5 rounded-full border border-white/20" />
+                    <div className="absolute inset-2 rounded-full border-2 border-white/20" />
 
                     {/* Chip value */}
                     <span className="relative z-10 text-white font-black drop-shadow-lg text-[10px]">
@@ -127,6 +128,17 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
                         background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%)',
                       }}
                     />
+
+                    {/* Edge notches (casino chip style) */}
+                    {[...Array(8)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="absolute w-1 h-2 bg-white/30 rounded-sm"
+                        style={{
+                          transform: `rotate(${i * 45}deg) translateY(-24px)`,
+                        }}
+                      />
+                    ))}
 
                     {/* Check indicator */}
                     {isSelected && (

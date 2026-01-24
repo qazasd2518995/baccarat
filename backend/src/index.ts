@@ -22,7 +22,6 @@ import agentReportRoutes from './routes/agentReport.js';
 import logsRoutes from './routes/logs.js';
 import { initializeSocket } from './socket/index.js';
 import { setSocketInstance } from './socket/socketManager.js';
-import { startGameLoop } from './services/gameLoop.js';
 import { startDragonTigerGameLoop } from './services/dragonTigerGameLoop.js';
 import { startBullBullGameLoop } from './services/bullBullGameLoop.js';
 import { startMultiTableGameLoop } from './services/multiTableGameLoop.js';
@@ -85,13 +84,8 @@ setSocketInstance(io);
 
 // Start the server and all game loops
 async function start() {
-  // Start the continuous game loops (loads persisted state first)
-  // Start original single-table game loop for backward compatibility
-  startGameLoop(io);
-
-  // NOTE: Multi-table baccarat system disabled to avoid state synchronization issues
-  // All baccarat tables in lobby now show the state from the main game loop
-  // startMultiTableGameLoop(io);
+  // Start the multi-table baccarat system (each table has independent game loop)
+  startMultiTableGameLoop(io);
 
   // Start other game type loops
   startDragonTigerGameLoop(io);
@@ -100,7 +94,7 @@ async function start() {
   httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`WebSocket server ready`);
-    console.log('Game loops started: Baccarat (5 tables), Dragon Tiger, Bull Bull');
+    console.log('Game loops started: Baccarat (multi-table), Dragon Tiger, Bull Bull');
   });
 }
 

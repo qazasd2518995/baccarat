@@ -1,12 +1,18 @@
 import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import type { AuthenticatedSocket, TypedServer } from './index.js';
-import { getGameState, placeBet, clearBets, getUserBets, getRecentRounds } from '../services/gameState.js';
+import {
+  getTableGameState,
+  placeTableBet,
+  clearTableBets,
+  getTableRoom,
+} from '../services/tableManager.js';
 
 const prisma = new PrismaClient();
 
 // Validation schema for bet placement
 const placeBetSchema = z.object({
+  tableId: z.string().optional(), // Optional tableId, defaults to '1'
   bets: z.array(
     z.object({
       type: z.enum(['player', 'banker', 'tie', 'player_pair', 'banker_pair', 'super_six', 'player_bonus', 'banker_bonus']),
@@ -15,6 +21,16 @@ const placeBetSchema = z.object({
   ).min(1),
   isNoCommission: z.boolean().optional(), // 免佣模式
 });
+
+// Helper to get tableId from socket rooms
+function getTableIdFromSocket(socket: AuthenticatedSocket): string {
+  for (const room of socket.rooms) {
+    if (room.startsWith('table:baccarat:')) {
+      return room.replace('table:baccarat:', '');
+    }
+  }
+  return '1'; // Default to table 1
+}
 
 export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): void {
   const userId = socket.user.userId;
@@ -26,9 +42,12 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
       const validatedData = placeBetSchema.parse(data);
       const { bets, isNoCommission = false } = validatedData;
 
-      console.log(`[Socket] ${username} placing bets:`, bets, isNoCommission ? '(免佣)' : '');
+      // Get tableId from data or from socket rooms
+      const tableId = validatedData.tableId || getTableIdFromSocket(socket);
 
-      const result = await placeBet(userId, bets, isNoCommission);
+      console.log(`[Socket] ${username} placing bets on table ${tableId}:`, bets, isNoCommission ? '(免佣)' : '');
+
+      const result = await placeTableBet(tableId, userId, bets, isNoCommission);
 
       if (result.success) {
         socket.emit('bet:confirmed', {
@@ -44,7 +63,7 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
         });
 
         console.log(
-          `[Socket] ${username} bet confirmed: total=${result.totalBet}, balance=${result.newBalance}`
+          `[Socket] ${username} bet confirmed on table ${tableId}: total=${result.totalBet}, balance=${result.newBalance}`
         );
       } else {
         socket.emit('error', {
@@ -52,7 +71,7 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
           message: result.errorMessage || 'Failed to place bet',
         });
 
-        console.log(`[Socket] ${username} bet rejected: ${result.errorCode}`);
+        console.log(`[Socket] ${username} bet rejected on table ${tableId}: ${result.errorCode}`);
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -73,9 +92,10 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
   // Handle bet clearing
   socket.on('bet:clear', async () => {
     try {
-      console.log(`[Socket] ${username} clearing bets`);
+      const tableId = getTableIdFromSocket(socket);
+      console.log(`[Socket] ${username} clearing bets on table ${tableId}`);
 
-      const result = await clearBets(userId);
+      const result = await clearTableBets(tableId, userId);
 
       if (result.success) {
         // Emit cleared bets (empty array)
@@ -92,7 +112,7 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
           });
         }
 
-        console.log(`[Socket] ${username} bets cleared, balance=${result.newBalance}`);
+        console.log(`[Socket] ${username} bets cleared on table ${tableId}, balance=${result.newBalance}`);
       } else {
         socket.emit('error', {
           code: result.errorCode || 'UNKNOWN_ERROR',
@@ -109,16 +129,46 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
   });
 
   // Handle state request (for reconnection or initial load)
-  socket.on('game:requestState', async () => {
+  socket.on('game:requestState', async (data?: { tableId?: string }) => {
     try {
-      const state = getGameState(userId);
-      const recentRounds = await getRecentRounds(100);
+      // Get tableId from data or from socket rooms
+      const tableId = data?.tableId || getTableIdFromSocket(socket);
+      const state = getTableGameState(tableId, userId);
 
       // Fetch user balance
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: { balance: true },
       });
+
+      // Fetch recent rounds for this table
+      const recentRounds = await prisma.gameRound.findMany({
+        where: {
+          result: { in: ['player', 'banker', 'tie'] },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        select: {
+          roundNumber: true,
+          result: true,
+          playerPair: true,
+          bankerPair: true,
+          playerPoints: true,
+          bankerPoints: true,
+          playerCards: true,
+          bankerCards: true,
+        },
+      });
+
+      const formattedRounds = recentRounds.reverse().map(round => ({
+        roundNumber: round.roundNumber,
+        result: round.result as 'player' | 'banker' | 'tie',
+        playerPair: round.playerPair,
+        bankerPair: round.bankerPair,
+        playerPoints: round.playerPoints,
+        bankerPoints: round.bankerPoints,
+        totalCards: (round.playerCards as any[])?.length + (round.bankerCards as any[])?.length || 0,
+      }));
 
       // Send current game state
       socket.emit('game:state', {
@@ -127,7 +177,7 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
         roundNumber: state.roundNumber,
         shoeNumber: state.shoeNumber,
         timeRemaining: state.timeRemaining,
-        cardsRemaining: 416, // Approximate, would need to track actual count
+        cardsRemaining: state.cardsRemaining,
         playerCards: state.playerCards,
         bankerCards: state.bankerCards,
         playerPoints: state.playerPoints,
@@ -141,16 +191,16 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
       // Send balance update
       socket.emit('user:balance', {
         balance: Number(user?.balance || 0),
-        reason: 'deposit', // Using 'deposit' as a generic initial load reason
+        reason: 'deposit',
       });
 
       // Send roadmap data
       socket.emit('game:roadmap', {
-        recentRounds,
+        recentRounds: formattedRounds,
       });
 
       console.log(
-        `[Socket] ${username} requested state: phase=${state.phase}, timeRemaining=${state.timeRemaining}, round=${state.roundNumber}, balance=${user?.balance}`
+        `[Socket] ${username} requested state for table ${tableId}: phase=${state.phase}, timeRemaining=${state.timeRemaining}, round=${state.roundNumber}, balance=${user?.balance}`
       );
     } catch (error) {
       console.error(`[Socket] Error getting state for ${username}:`, error);

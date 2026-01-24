@@ -66,7 +66,7 @@ export default function Roadmap({ data }: RoadmapProps) {
                 >
                   {cell && (
                     <span className="text-white">
-                      {cell.result === 'banker' ? 'B' : cell.result === 'player' ? 'P' : 'T'}
+                      {cell.result === 'banker' ? t('roadBanker') : cell.result === 'player' ? t('roadPlayer') : t('roadTie')}
                     </span>
                   )}
                 </motion.div>
