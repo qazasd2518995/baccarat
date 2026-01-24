@@ -31,8 +31,8 @@ export default function BettingRecords() {
   const quickFilters: QuickFilter[] = [
     { key: 'today', label: '今日' },
     { key: 'yesterday', label: '昨日' },
-    { key: 'thisWeek', label: '本週' },
-    { key: 'lastWeek', label: '上週' },
+    { key: 'thisWeek', label: '本周' },
+    { key: 'lastWeek', label: '上周' },
     { key: 'thisMonth', label: '本月' },
     { key: 'lastMonth', label: '上月' },
   ];
@@ -64,8 +64,8 @@ export default function BettingRecords() {
 
   const getResultText = (result: string) => {
     switch (result) {
-      case 'player': return '閒';
-      case 'banker': return '莊';
+      case 'player': return '闲';
+      case 'banker': return '庄';
       case 'tie': return '和';
       default: return '-';
     }
@@ -87,7 +87,7 @@ export default function BettingRecords() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">投注記錄</h1>
+        <h1 className="text-2xl font-bold text-white">投注记录</h1>
       </div>
 
       {/* Filters Panel */}
@@ -103,7 +103,7 @@ export default function BettingRecords() {
         >
           <div className="flex items-center gap-2 text-white">
             <Filter className="w-4 h-4" />
-            <span className="font-medium">進階篩選</span>
+            <span className="font-medium">进阶筛选</span>
           </div>
           {showFilters ? (
             <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -117,7 +117,7 @@ export default function BettingRecords() {
           <div className="border-t border-[#333] p-4 space-y-4">
             {/* Quick Filters */}
             <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm min-w-fit">快速篩選：</span>
+              <span className="text-gray-400 text-sm min-w-fit">快速筛选：</span>
               <div className="flex flex-wrap gap-2">
                 {quickFilters.map((filter) => (
                   <button
@@ -138,18 +138,18 @@ export default function BettingRecords() {
             {/* Search and Date */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-sm">會員帳號：</span>
+                <span className="text-gray-400 text-sm">会员账号：</span>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500 w-40"
-                  placeholder="輸入帳號"
+                  placeholder="输入账号"
                 />
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-sm">日期範圍：</span>
+                <span className="text-gray-400 text-sm">日期范围：</span>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
@@ -175,7 +175,7 @@ export default function BettingRecords() {
                 className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium text-sm rounded-lg transition-colors"
               >
                 <Search className="w-4 h-4" />
-                查詢
+                查询
               </button>
               <button
                 onClick={fetchRounds}
@@ -186,7 +186,7 @@ export default function BettingRecords() {
               </button>
               <button className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 hover:bg-green-500/30 text-sm rounded-lg transition-colors">
                 <Download className="w-4 h-4" />
-                導出
+                导出
               </button>
             </div>
           </div>
@@ -196,15 +196,15 @@ export default function BettingRecords() {
       {/* Stats Summary */}
       <div className="grid grid-cols-4 gap-4">
         <div className="bg-[#1e1e1e] border border-[#333] rounded-xl p-4">
-          <div className="text-sm text-gray-400 mb-1">總局數</div>
+          <div className="text-sm text-gray-400 mb-1">总局数</div>
           <div className="text-2xl font-bold text-white">{stats.totalRounds}</div>
         </div>
         <div className="bg-[#1e1e1e] border border-[#333] rounded-xl p-4">
-          <div className="text-sm text-gray-400 mb-1">閒贏</div>
+          <div className="text-sm text-gray-400 mb-1">闲赢</div>
           <div className="text-2xl font-bold text-blue-400">{stats.playerWins}</div>
         </div>
         <div className="bg-[#1e1e1e] border border-[#333] rounded-xl p-4">
-          <div className="text-sm text-gray-400 mb-1">莊贏</div>
+          <div className="text-sm text-gray-400 mb-1">庄赢</div>
           <div className="text-2xl font-bold text-red-400">{stats.bankerWins}</div>
         </div>
         <div className="bg-[#1e1e1e] border border-[#333] rounded-xl p-4">
@@ -219,23 +219,23 @@ export default function BettingRecords() {
           <thead className="bg-[#252525]">
             <tr>
               <th className="px-4 py-4 text-left text-xs font-medium text-gray-400 uppercase w-10"></th>
-              <th className="px-4 py-4 text-left text-xs font-medium text-gray-400 uppercase">局號</th>
-              <th className="px-4 py-4 text-left text-xs font-medium text-gray-400 uppercase">靴號</th>
-              <th className="px-4 py-4 text-center text-xs font-medium text-gray-400 uppercase">結果</th>
-              <th className="px-4 py-4 text-center text-xs font-medium text-gray-400 uppercase">閒點數</th>
-              <th className="px-4 py-4 text-center text-xs font-medium text-gray-400 uppercase">莊點數</th>
-              <th className="px-4 py-4 text-center text-xs font-medium text-gray-400 uppercase">對子</th>
-              <th className="px-4 py-4 text-left text-xs font-medium text-gray-400 uppercase">時間</th>
+              <th className="px-4 py-4 text-left text-xs font-medium text-gray-400 uppercase">局号</th>
+              <th className="px-4 py-4 text-left text-xs font-medium text-gray-400 uppercase">靴号</th>
+              <th className="px-4 py-4 text-center text-xs font-medium text-gray-400 uppercase">结果</th>
+              <th className="px-4 py-4 text-center text-xs font-medium text-gray-400 uppercase">闲点数</th>
+              <th className="px-4 py-4 text-center text-xs font-medium text-gray-400 uppercase">庄点数</th>
+              <th className="px-4 py-4 text-center text-xs font-medium text-gray-400 uppercase">对子</th>
+              <th className="px-4 py-4 text-left text-xs font-medium text-gray-400 uppercase">时间</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#333]">
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-gray-400">載入中...</td>
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-400">加载中...</td>
               </tr>
             ) : rounds.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-gray-400">暫無數據</td>
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-400">暂无数据</td>
               </tr>
             ) : (
               rounds.map((round, index) => (
@@ -270,10 +270,10 @@ export default function BettingRecords() {
                     <td className="px-4 py-4 text-center">
                       <div className="flex items-center justify-center gap-1">
                         {round.playerPair && (
-                          <span className="px-2 py-0.5 rounded text-xs bg-blue-500/20 text-blue-400">閒對</span>
+                          <span className="px-2 py-0.5 rounded text-xs bg-blue-500/20 text-blue-400">闲对</span>
                         )}
                         {round.bankerPair && (
-                          <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400">莊對</span>
+                          <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400">庄对</span>
                         )}
                         {!round.playerPair && !round.bankerPair && (
                           <span className="text-gray-500">-</span>
@@ -281,7 +281,7 @@ export default function BettingRecords() {
                       </div>
                     </td>
                     <td className="px-4 py-4 text-gray-400 text-sm">
-                      {new Date(round.createdAt).toLocaleString('zh-TW')}
+                      {new Date(round.createdAt).toLocaleString('zh-CN')}
                     </td>
                   </tr>
                   {/* Expanded row with cards */}
@@ -302,12 +302,12 @@ export default function BettingRecords() {
                                 <CardGroup
                                   cards={round.playerCards}
                                   points={round.playerPoints}
-                                  label="閒家"
+                                  label="闲家"
                                   color="blue"
                                   size="md"
                                 />
                               ) : (
-                                <div className="text-gray-500 text-sm">無閒家牌數據</div>
+                                <div className="text-gray-500 text-sm">无闲家牌数据</div>
                               )}
 
                               {/* Banker Cards */}
@@ -315,12 +315,12 @@ export default function BettingRecords() {
                                 <CardGroup
                                   cards={round.bankerCards}
                                   points={round.bankerPoints}
-                                  label="莊家"
+                                  label="庄家"
                                   color="red"
                                   size="md"
                                 />
                               ) : (
-                                <div className="text-gray-500 text-sm">無莊家牌數據</div>
+                                <div className="text-gray-500 text-sm">无庄家牌数据</div>
                               )}
                             </div>
                           </motion.div>

@@ -61,18 +61,18 @@ export default function Dashboard() {
   };
 
   const formatCurrency = (value: number) => {
-    return value.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const getAgentLevelText = (level: number) => {
     const levels: Record<number, string> = {
-      1: '1級代理',
-      2: '2級代理',
-      3: '3級代理',
-      4: '4級代理',
-      5: '5級代理',
+      1: '1级代理',
+      2: '2级代理',
+      3: '3级代理',
+      4: '4级代理',
+      5: '5级代理',
     };
-    return levels[level] || `${level}級代理`;
+    return levels[level] || `${level}级代理`;
   };
 
   const getStatusText = (status: string) => {
@@ -96,7 +96,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-400">載入中...</div>
+        <div className="text-gray-400">加载中...</div>
       </div>
     );
   }
@@ -104,44 +104,44 @@ export default function Dashboard() {
   if (!data) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-400">無法載入數據</div>
+        <div className="text-gray-400">无法加载数据</div>
       </div>
     );
   }
 
   const statCards = [
     {
-      label: '今日賺取退水',
+      label: '今日赚取退水',
       value: formatCurrency(data.today.earnedRebate),
       icon: Wallet,
       color: 'from-amber-500 to-yellow-500',
     },
     {
-      label: '今日應收金額',
+      label: '今日应收金额',
       value: formatCurrency(data.today.receivable),
       icon: ArrowDownCircle,
       color: 'from-green-500 to-emerald-500',
     },
     {
-      label: '今日應繳上線',
+      label: '今日应缴上线',
       value: formatCurrency(data.today.payable),
       icon: ArrowUpCircle,
       color: 'from-red-500 to-pink-500',
     },
     {
-      label: '今日會員輸贏',
+      label: '今日会员输赢',
       value: formatCurrency(data.today.memberWinLoss),
       icon: TrendingDown,
       color: data.today.memberWinLoss >= 0 ? 'from-green-500 to-emerald-500' : 'from-red-500 to-pink-500',
     },
     {
-      label: '今日會員有效投注',
+      label: '今日会员有效投注',
       value: formatCurrency(data.today.validBet),
       icon: BarChart3,
       color: 'from-blue-500 to-cyan-500',
     },
     {
-      label: '今日會員注單數',
+      label: '今日会员注单数',
       value: data.today.betCount.toString(),
       icon: FileText,
       color: 'from-purple-500 to-indigo-500',
@@ -150,24 +150,24 @@ export default function Dashboard() {
 
   const userInfoItems = [
     {
-      label: '代理層級',
+      label: '代理层级',
       value: getAgentLevelText(data.user.agentLevel),
       icon: Building2
     },
     {
-      label: '帳號狀態',
+      label: '账号状态',
       value: getStatusText(data.user.status),
       icon: Shield,
       valueColor: getStatusColor(data.user.status)
     },
     {
-      label: '上級',
-      value: data.user.parentShare !== null ? `佔成 ${data.user.parentShare}%` : '無',
+      label: '上级',
+      value: data.user.parentShare !== null ? `占成 ${data.user.parentShare}%` : '无',
       icon: User
     },
     {
-      label: '邀請碼',
-      value: data.user.inviteCode || '無',
+      label: '邀请码',
+      value: data.user.inviteCode || '无',
       icon: Link2
     },
   ];
@@ -182,11 +182,11 @@ export default function Dashboard() {
       >
         <div>
           <h1 className="text-2xl font-bold text-white">
-            歡迎回來，{data.user.nickname || data.user.username}
+            欢迎回来，{data.user.nickname || data.user.username}
           </h1>
           <p className="text-gray-400 mt-1 text-sm">
-            統計時間：{new Date(data.dateRange.startDate).toLocaleDateString('zh-TW')} 12:00:00 至{' '}
-            {new Date(data.dateRange.endDate).toLocaleDateString('zh-TW')} 12:00:00
+            统计时间：{new Date(data.dateRange.startDate).toLocaleDateString('zh-CN')} 12:00:00 至{' '}
+            {new Date(data.dateRange.endDate).toLocaleDateString('zh-CN')} 12:00:00
           </p>
         </div>
       </motion.div>
@@ -225,7 +225,7 @@ export default function Dashboard() {
         className="rounded-xl bg-gradient-to-r from-[#1e1e1e] to-[#252525] border border-[#333] p-6"
       >
         <div className="text-center">
-          <p className="text-gray-400 text-sm mb-2">今日盈虧</p>
+          <p className="text-gray-400 text-sm mb-2">今日盈亏</p>
           <p className={`text-4xl font-bold ${data.today.profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
             {data.today.profit >= 0 ? '+' : ''}{formatCurrency(data.today.profit)}
           </p>
@@ -240,7 +240,7 @@ export default function Dashboard() {
         className="rounded-xl bg-[#1e1e1e] border border-[#333] overflow-hidden"
       >
         <div className="p-4 border-b border-[#333]">
-          <h2 className="text-white font-semibold">個人資料</h2>
+          <h2 className="text-white font-semibold">个人资料</h2>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-[#333]">
           {userInfoItems.map((item) => {
@@ -263,19 +263,19 @@ export default function Dashboard() {
         <div className="border-t border-[#333] p-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
-              <span className="text-gray-400">帳號：</span>
+              <span className="text-gray-400">账号：</span>
               <span className="text-white ml-1">{data.user.username}</span>
             </div>
             <div>
-              <span className="text-gray-400">名稱：</span>
+              <span className="text-gray-400">名称：</span>
               <span className="text-white ml-1">{data.user.nickname || '-'}</span>
             </div>
             <div>
-              <span className="text-gray-400">餘額：</span>
+              <span className="text-gray-400">余额：</span>
               <span className="text-amber-400 ml-1 font-semibold">{formatCurrency(data.user.balance)}</span>
             </div>
             <div>
-              <span className="text-gray-400">佔成：</span>
+              <span className="text-gray-400">占成：</span>
               <span className="text-white ml-1">{data.user.sharePercent}%</span>
             </div>
           </div>

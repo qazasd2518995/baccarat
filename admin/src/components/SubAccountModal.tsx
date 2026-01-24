@@ -66,34 +66,34 @@ export default function SubAccountModal({
 
   const validateForm = () => {
     if (!form.username) {
-      setError('請輸入帳號');
+      setError('请输入账号');
       return false;
     }
 
     if (form.username.length < 6 || form.username.length > 12) {
-      setError('帳號格式為6-12位');
+      setError('账号格式为6-12位');
       return false;
     }
 
     if (!isEditing || form.password) {
       if (!form.password) {
-        setError('請輸入密碼');
+        setError('请输入密码');
         return false;
       }
 
       if (form.password.length < 8 || form.password.length > 16) {
-        setError('密碼為8-16位字符');
+        setError('密码为8-16位字符');
         return false;
       }
 
       if (form.password !== form.confirmPassword) {
-        setError('兩次密碼輸入不一致');
+        setError('两次密码输入不一致');
         return false;
       }
     }
 
     if (!form.nickname) {
-      setError('請輸入代理名稱');
+      setError('请输入代理名称');
       return false;
     }
 
@@ -125,7 +125,7 @@ export default function SubAccountModal({
       onClose();
     } catch (err: any) {
       console.error('Failed to save sub account:', err);
-      setError(err.response?.data?.error || '操作失敗，請稍後再試');
+      setError(err.response?.data?.error || '操作失败，请稍后再试');
     } finally {
       setLoading(false);
     }
@@ -143,7 +143,7 @@ export default function SubAccountModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#333]">
           <h2 className="text-white text-lg font-bold">
-            {isEditing ? '編輯子帳號' : '創建子帳號'}
+            {isEditing ? '编辑子账号' : '创建子账号'}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="w-5 h-5" />
@@ -152,10 +152,10 @@ export default function SubAccountModal({
 
         {/* Content */}
         <div className="p-6 space-y-4">
-          {/* 帳號設置 */}
+          {/* 账号设置 */}
           <div>
             <label className="block text-gray-400 text-sm mb-2">
-              <span className="text-red-500">*</span> 帳號設置
+              <span className="text-red-500">*</span> 账号设置
             </label>
             <div className="flex gap-2">
               <input
@@ -163,7 +163,7 @@ export default function SubAccountModal({
                 value={form.username}
                 onChange={(e) => setForm({ ...form, username: e.target.value.toUpperCase() })}
                 disabled={isEditing}
-                placeholder="請輸入帳號"
+                placeholder="请输入账号"
                 className="flex-1 px-4 py-3 bg-[#252525] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500 disabled:text-gray-500"
               />
               {!isEditing && (
@@ -172,24 +172,24 @@ export default function SubAccountModal({
                   className="px-4 py-3 bg-amber-500 hover:bg-amber-600 text-black text-sm font-medium rounded-lg transition-colors flex items-center gap-1"
                 >
                   <RefreshCw className="w-4 h-4" />
-                  自動生成
+                  自动生成
                 </button>
               )}
             </div>
-            <p className="text-gray-500 text-xs mt-1">帳號為英文加數字組成，格式為6-12位</p>
+            <p className="text-gray-500 text-xs mt-1">账号为英文加数字组成，格式为6-12位</p>
           </div>
 
-          {/* 密碼設置 */}
+          {/* 密码设置 */}
           <div>
             <label className="block text-gray-400 text-sm mb-2">
-              <span className="text-red-500">*</span> 密碼設置
+              <span className="text-red-500">*</span> 密码设置
             </label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder={isEditing ? '不修改請留空' : '請輸入密碼'}
+                placeholder={isEditing ? '不修改请留空' : '请输入密码'}
                 className="w-full px-4 py-3 pr-10 bg-[#252525] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
               />
               <button
@@ -203,17 +203,17 @@ export default function SubAccountModal({
             <p className="text-gray-500 text-xs mt-1">8-16位字符</p>
           </div>
 
-          {/* 確認密碼 */}
+          {/* 确认密码 */}
           <div>
             <label className="block text-gray-400 text-sm mb-2">
-              <span className="text-red-500">*</span> 確認密碼
+              <span className="text-red-500">*</span> 确认密码
             </label>
             <div className="relative">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={form.confirmPassword}
                 onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                placeholder="再次確認密碼"
+                placeholder="再次确认密码"
                 className="w-full px-4 py-3 pr-10 bg-[#252525] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
               />
               <button
@@ -226,17 +226,17 @@ export default function SubAccountModal({
             </div>
           </div>
 
-          {/* 代理名稱 */}
+          {/* 代理名称 */}
           <div>
             <label className="block text-gray-400 text-sm mb-2">
-              <span className="text-red-500">*</span> 代理名稱
+              <span className="text-red-500">*</span> 代理名称
             </label>
             <div className="relative">
               <input
                 type="text"
                 value={form.nickname}
                 onChange={(e) => setForm({ ...form, nickname: e.target.value })}
-                placeholder="請輸入代理名稱"
+                placeholder="请输入代理名称"
                 className="w-full px-4 py-3 pr-10 bg-[#252525] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
               />
               {form.nickname && (
@@ -251,7 +251,7 @@ export default function SubAccountModal({
             </div>
           </div>
 
-          {/* 錯誤訊息 */}
+          {/* 错误信息 */}
           {error && (
             <p className="text-red-400 text-sm text-center">{error}</p>
           )}
@@ -270,7 +270,7 @@ export default function SubAccountModal({
             disabled={loading}
             className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors disabled:opacity-50"
           >
-            {loading ? '處理中...' : '提 交'}
+            {loading ? '处理中...' : '提 交'}
           </button>
         </div>
       </motion.div>

@@ -28,26 +28,26 @@ interface CategoryData {
   settings: ShareSetting[];
 }
 
-// 遊戲分類配置
+// 游戏分类配置
 const GAME_CATEGORIES: CategoryData[] = [
   {
-    category: '電子',
+    category: '电子',
     platforms: ['100HP', 'AMB', 'ATG', 'EG', 'IN-OUT', '9Game', 'PANDA', 'PIX', 'QT', 'RG', 'RSG', 'Sigma', 'Slotmill', 'TURBO', 'WOW', 'ZG'],
     settings: []
   },
   {
-    category: '真人百家2館',
+    category: '真人百家2馆',
     platforms: ['卡利真人', 'DG真人', 'EEAI'],
     settings: []
   },
   {
-    category: '真人百家1館',
-    platforms: ['MT真人', 'RC真人', 'T9真人', '華利高真人電投'],
+    category: '真人百家1馆',
+    platforms: ['MT真人', 'RC真人', 'T9真人', '华利高真人电投'],
     settings: []
   },
   {
-    category: '體育',
-    platforms: ['SUPER體育'],
+    category: '体育',
+    platforms: ['SUPER体育'],
     settings: []
   }
 ];
@@ -229,7 +229,7 @@ export default function ShareSettingModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#333]">
-          <h2 className="text-white text-lg font-bold">編輯代理 - {agentName}</h2>
+          <h2 className="text-white text-lg font-bold">编辑代理 - {agentName}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
@@ -237,11 +237,11 @@ export default function ShareSettingModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
-          {/* 快速設置 */}
+          {/* 快速设置 */}
           <div className="bg-[#252525] rounded-lg p-4 mb-4">
-            <h3 className="text-white font-medium mb-3">快速設置</h3>
+            <h3 className="text-white font-medium mb-3">快速设置</h3>
 
-            {/* 分類選擇 */}
+            {/* 分类选择 */}
             <div className="flex items-center gap-4 mb-4">
               {GAME_CATEGORIES.map(cat => (
                 <label key={cat.category} className="flex items-center gap-2 cursor-pointer">
@@ -260,32 +260,32 @@ export default function ShareSettingModal({
                   onClick={handleSelectAll}
                   className="px-3 py-1 bg-[#333] text-white text-sm rounded hover:bg-[#444] transition-colors"
                 >
-                  全 選
+                  全 选
                 </button>
                 <button
                   onClick={handleSelectInverse}
                   className="px-3 py-1 bg-[#333] text-white text-sm rounded hover:bg-[#444] transition-colors"
                 >
-                  反 選
+                  反 选
                 </button>
               </div>
             </div>
 
-            {/* 批量設置 */}
+            {/* 批量设置 */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <input
                   type="number"
                   value={batchSharePercent}
                   onChange={(e) => setBatchSharePercent(e.target.value)}
-                  placeholder="下級佔成"
+                  placeholder="下级占成"
                   className="w-32 px-3 py-2 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500"
                 />
                 <button
                   onClick={handleBatchSetShare}
                   className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black text-sm font-medium rounded transition-colors"
                 >
-                  設置佔成
+                  设置占成
                 </button>
               </div>
 
@@ -294,14 +294,14 @@ export default function ShareSettingModal({
                   type="number"
                   value={batchRebatePercent}
                   onChange={(e) => setBatchRebatePercent(e.target.value)}
-                  placeholder="下級退水"
+                  placeholder="下级退水"
                   className="w-32 px-3 py-2 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500"
                 />
                 <button
                   onClick={handleBatchSetRebate}
                   className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black text-sm font-medium rounded transition-colors"
                 >
-                  設置退水
+                  设置退水
                 </button>
               </div>
 
@@ -310,25 +310,25 @@ export default function ShareSettingModal({
                 className="ml-auto flex items-center gap-1 text-amber-400 hover:text-amber-300 text-sm"
               >
                 <History className="w-4 h-4" />
-                佔成/退水歷史
+                占成/退水历史
               </button>
             </div>
           </div>
 
-          {/* 設定表格 */}
+          {/* 设定表格 */}
           <div className="bg-[#252525] rounded-lg overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="bg-[#1a1a1a]">
-                  <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">分類</th>
-                  <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">廠商</th>
-                  <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">佔成可輸入值</th>
-                  <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">退水可輸入值</th>
+                  <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">分类</th>
+                  <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">厂商</th>
+                  <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">占成可输入值</th>
+                  <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">退水可输入值</th>
                   <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">
-                    下級佔成 <span className="text-amber-400">✎</span>
+                    下级占成 <span className="text-amber-400">✎</span>
                   </th>
                   <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">
-                    下級退水 <span className="text-amber-400">✎</span>
+                    下级退水 <span className="text-amber-400">✎</span>
                   </th>
                 </tr>
               </thead>
@@ -423,7 +423,7 @@ export default function ShareSettingModal({
 
           {/* 提示 */}
           <p className="text-amber-400 text-sm text-center mt-4">
-            請先開啟廠商在設置佔成退水，否則設置無效。如無廠商請聯繫上級代理。
+            请先开启厂商在设置占成退水，否则设置无效。如无厂商请联系上级代理。
           </p>
         </div>
 

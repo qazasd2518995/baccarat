@@ -57,7 +57,7 @@ export default function ShareHistoryModal({
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleString('zh-TW', {
+    return new Date(dateStr).toLocaleString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -70,7 +70,7 @@ export default function ShareHistoryModal({
   const getChangeTypeText = (type: string) => {
     switch (type) {
       case 'share':
-        return '佔成';
+        return '占成';
       case 'rebate':
         return '退水';
       default:
@@ -100,7 +100,7 @@ export default function ShareHistoryModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#333]">
-          <h2 className="text-white text-lg font-bold">佔成/退水歷史 - {agentName}</h2>
+          <h2 className="text-white text-lg font-bold">占成/退水历史 - {agentName}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
@@ -110,21 +110,21 @@ export default function ShareHistoryModal({
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="text-gray-400">載入中...</div>
+              <div className="text-gray-400">加载中...</div>
             </div>
           ) : history.length === 0 ? (
             <div className="flex items-center justify-center h-64">
-              <div className="text-gray-400">暫無歷史記錄</div>
+              <div className="text-gray-400">暂无历史记录</div>
             </div>
           ) : (
             <div className="bg-[#252525] rounded-lg overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="bg-[#1a1a1a]">
-                    <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">操作時間</th>
+                    <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">操作时间</th>
                     <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">操作人</th>
-                    <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">變動類型</th>
-                    <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">遊戲分類</th>
+                    <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">变动类型</th>
+                    <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">游戏分类</th>
                     <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">平台</th>
                     <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">原值</th>
                     <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">新值</th>
@@ -170,7 +170,7 @@ export default function ShareHistoryModal({
         {/* Footer with Pagination */}
         <div className="flex items-center justify-between p-4 border-t border-[#333]">
           <div className="text-gray-400 text-sm">
-            第 {page} 頁，共 {totalPages} 頁
+            第 {page} 页，共 {totalPages} 页
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -195,7 +195,7 @@ export default function ShareHistoryModal({
             onClick={onClose}
             className="px-6 py-2 bg-[#333] text-white rounded-lg hover:bg-[#444] transition-colors"
           >
-            關 閉
+            关 闭
           </button>
         </div>
       </motion.div>

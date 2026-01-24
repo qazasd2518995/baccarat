@@ -45,19 +45,19 @@ export default function EditAgentModal({
 
   const validateForm = () => {
     if (!form.nickname) {
-      setError('請輸入代理名稱');
+      setError('请输入代理名称');
       return false;
     }
 
-    // 密碼是可選的，但如果填了就要驗證
+    // 密码是可选的，但如果填了就要验证
     if (form.password) {
       if (form.password.length < 8 || form.password.length > 16) {
-        setError('密碼為8-16位字符');
+        setError('密码为8-16位字符');
         return false;
       }
 
       if (form.password !== form.confirmPassword) {
-        setError('兩次密碼輸入不一致');
+        setError('两次密码输入不一致');
         return false;
       }
     }
@@ -83,7 +83,7 @@ export default function EditAgentModal({
       onClose();
     } catch (err: any) {
       console.error('Failed to update agent:', err);
-      setError(err.response?.data?.error || '操作失敗，請稍後再試');
+      setError(err.response?.data?.error || '操作失败，请稍后再试');
     } finally {
       setLoading(false);
     }
@@ -100,7 +100,7 @@ export default function EditAgentModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#333]">
-          <h2 className="text-white text-lg font-bold">編輯代理</h2>
+          <h2 className="text-white text-lg font-bold">编辑代理</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
@@ -108,10 +108,10 @@ export default function EditAgentModal({
 
         {/* Content */}
         <div className="p-6 space-y-4">
-          {/* 帳號設置 */}
+          {/* 账号设置 */}
           <div>
             <label className="block text-gray-400 text-sm mb-2">
-              <span className="text-red-500">*</span> 帳號設置
+              <span className="text-red-500">*</span> 账号设置
             </label>
             <div className="flex gap-2">
               <input
@@ -124,23 +124,23 @@ export default function EditAgentModal({
                 disabled
                 className="px-4 py-3 bg-[#333] text-gray-500 text-sm font-medium rounded-lg cursor-not-allowed"
               >
-                自動生成
+                自动生成
               </button>
             </div>
-            <p className="text-gray-500 text-xs mt-1">帳號為英文加數字組成，格式為6-12位</p>
+            <p className="text-gray-500 text-xs mt-1">账号为英文加数字组成，格式为6-12位</p>
           </div>
 
-          {/* 密碼設置 */}
+          {/* 密码设置 */}
           <div>
             <label className="block text-gray-400 text-sm mb-2">
-              密碼設置
+              密码设置
             </label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="不修改請留空"
+                placeholder="不修改请留空"
                 className="w-full px-4 py-3 pr-10 bg-[#252525] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
               />
               <button
@@ -154,17 +154,17 @@ export default function EditAgentModal({
             <p className="text-gray-500 text-xs mt-1">8-16位字符</p>
           </div>
 
-          {/* 確認密碼 */}
+          {/* 确认密码 */}
           <div>
             <label className="block text-gray-400 text-sm mb-2">
-              確認密碼
+              确认密码
             </label>
             <div className="relative">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
                 value={form.confirmPassword}
                 onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                placeholder="再次確認密碼"
+                placeholder="再次确认密码"
                 className="w-full px-4 py-3 pr-10 bg-[#252525] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
               />
               <button
@@ -177,17 +177,17 @@ export default function EditAgentModal({
             </div>
           </div>
 
-          {/* 代理名稱 */}
+          {/* 代理名称 */}
           <div>
             <label className="block text-gray-400 text-sm mb-2">
-              <span className="text-red-500">*</span> 代理名稱
+              <span className="text-red-500">*</span> 代理名称
             </label>
             <div className="relative">
               <input
                 type="text"
                 value={form.nickname}
                 onChange={(e) => setForm({ ...form, nickname: e.target.value })}
-                placeholder="請輸入代理名稱"
+                placeholder="请输入代理名称"
                 className="w-full px-4 py-3 pr-10 bg-[#252525] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
               />
               {form.nickname && (
@@ -202,7 +202,7 @@ export default function EditAgentModal({
             </div>
           </div>
 
-          {/* 錯誤訊息 */}
+          {/* 错误信息 */}
           {error && (
             <p className="text-red-400 text-sm text-center">{error}</p>
           )}

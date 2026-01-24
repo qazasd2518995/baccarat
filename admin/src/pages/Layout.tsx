@@ -14,11 +14,11 @@ import {
 import { useAuthStore } from '../store/authStore';
 
 const NAV_ITEMS = [
-  { path: '/', icon: LayoutDashboard, label: '儀表盤' },
-  { path: '/report/agent', icon: FileText, label: '帳務報表' },
-  { path: '/bet/index', icon: History, label: '投注記錄' },
-  { path: '/member/index', icon: Users, label: '下線代理管理' },
-  { path: '/log/index', icon: ScrollText, label: '日誌' },
+  { path: '/', icon: LayoutDashboard, label: '仪表盘' },
+  { path: '/report/agent', icon: FileText, label: '账务报表' },
+  { path: '/bet/index', icon: History, label: '投注记录' },
+  { path: '/member/index', icon: Users, label: '下线代理管理' },
+  { path: '/log/index', icon: ScrollText, label: '日志' },
 ];
 
 export default function Layout() {
@@ -51,7 +51,7 @@ export default function Layout() {
                 animate={{ opacity: 1 }}
                 className="text-amber-400 font-bold text-base tracking-wide"
               >
-                代理後台
+                代理后台
               </motion.span>
             )}
           </div>
@@ -105,9 +105,9 @@ export default function Layout() {
         {/* Header */}
         <header className="h-14 bg-[#1e1e1e] border-b border-[#333] flex items-center justify-between px-6">
           <div className="text-gray-400 text-sm">
-            歡迎回來，<span className="text-white font-medium">{user?.nickname || user?.username}</span>
+            欢迎回来，<span className="text-white font-medium">{user?.nickname || user?.username}</span>
             <span className="ml-2 px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-400 font-medium">
-              {user?.role === 'admin' ? '管理員' : '代理'}
+              {user?.role === 'admin' ? '管理员' : '代理'}
             </span>
           </div>
 

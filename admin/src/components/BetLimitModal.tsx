@@ -11,7 +11,7 @@ interface BetLimitModalProps {
   onSuccess?: () => void;
 }
 
-// 限紅選項配置
+// 限红选项配置
 const BET_LIMIT_OPTIONS = [
   '100-1000',
   '100-3000',
@@ -102,7 +102,7 @@ export default function BetLimitModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#333]">
-          <h2 className="text-white text-lg font-bold">編輯代理 - {agentName}</h2>
+          <h2 className="text-white text-lg font-bold">编辑代理 - {agentName}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
@@ -116,17 +116,17 @@ export default function BetLimitModal({
               onClick={handleSelectAll}
               className="px-3 py-1.5 bg-[#333] text-white text-sm rounded hover:bg-[#444] transition-colors"
             >
-              全選
+              全选
             </button>
             <button
               onClick={handleSelectInverse}
               className="px-3 py-1.5 bg-[#333] text-white text-sm rounded hover:bg-[#444] transition-colors"
             >
-              反選
+              反选
             </button>
           </div>
 
-          {/* 限紅選項 */}
+          {/* 限红选项 */}
           <div className="grid grid-cols-2 gap-3">
             {BET_LIMIT_OPTIONS.map(limit => (
               <label

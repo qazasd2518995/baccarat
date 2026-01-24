@@ -38,24 +38,24 @@ export default function BalanceModal({
   }, [isOpen]);
 
   const formatCurrency = (value: number) => {
-    return value.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const handleSave = async () => {
     const amountNum = parseFloat(amount);
 
     if (!amount || isNaN(amountNum) || amountNum <= 0) {
-      setError('請輸入有效的金額');
+      setError('请输入有效的金额');
       return;
     }
 
     if (operationType === 'deposit' && amountNum > myBalance) {
-      setError('存入金額不能超過自身額度餘額');
+      setError('存入金额不能超过自身额度余额');
       return;
     }
 
     if (operationType === 'withdraw' && amountNum > currentBalance) {
-      setError('提取金額不能超過代理當前餘額');
+      setError('提取金额不能超过代理当前余额');
       return;
     }
 
@@ -72,7 +72,7 @@ export default function BalanceModal({
       onClose();
     } catch (err: any) {
       console.error('Failed to adjust balance:', err);
-      setError(err.response?.data?.error || '操作失敗，請稍後再試');
+      setError(err.response?.data?.error || '操作失败，请稍后再试');
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ export default function BalanceModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#333]">
-          <h2 className="text-white text-lg font-bold">編輯代理 - {agentName}</h2>
+          <h2 className="text-white text-lg font-bold">编辑代理 - {agentName}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
@@ -97,15 +97,15 @@ export default function BalanceModal({
 
         {/* Content */}
         <div className="p-6">
-          {/* 我的剩餘額度 */}
+          {/* 我的剩余额度 */}
           <div className="bg-[#252525] border border-[#333] rounded-lg p-4 mb-6">
-            <p className="text-gray-400 text-sm mb-2">代理剩餘額度</p>
+            <p className="text-gray-400 text-sm mb-2">代理剩余额度</p>
             <p className="text-white text-3xl font-bold">{formatCurrency(myBalance)}</p>
           </div>
 
-          {/* 代理當前餘額 */}
+          {/* 代理当前余额 */}
           <div className="mb-4">
-            <label className="block text-gray-400 text-sm mb-2">代理餘額</label>
+            <label className="block text-gray-400 text-sm mb-2">代理余额</label>
             <input
               type="text"
               value={formatCurrency(currentBalance)}
@@ -114,10 +114,10 @@ export default function BalanceModal({
             />
           </div>
 
-          {/* 操作類型 */}
+          {/* 操作类型 */}
           <div className="mb-4">
             <label className="block text-gray-400 text-sm mb-2">
-              <span className="text-red-500">*</span> 操作類型
+              <span className="text-red-500">*</span> 操作类型
             </label>
             <div className="flex items-center gap-6">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -143,10 +143,10 @@ export default function BalanceModal({
             </div>
           </div>
 
-          {/* 修改餘額 */}
+          {/* 修改余额 */}
           <div className="mb-2">
             <label className="block text-gray-400 text-sm mb-2">
-              <span className="text-red-500">*</span> 修改餘額
+              <span className="text-red-500">*</span> 修改余额
             </label>
             <input
               type="number"
@@ -155,7 +155,7 @@ export default function BalanceModal({
                 setAmount(e.target.value);
                 setError('');
               }}
-              placeholder="請輸入修改餘額"
+              placeholder="请输入修改余额"
               className="w-full px-4 py-3 bg-[#252525] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
             />
           </div>
@@ -163,11 +163,11 @@ export default function BalanceModal({
           {/* 提示 */}
           <p className="text-gray-500 text-xs mb-4">
             {operationType === 'deposit'
-              ? '給代理的額度不能超過自身額度餘額'
-              : '提取金額不能超過代理當前餘額'}
+              ? '给代理的额度不能超过自身额度余额'
+              : '提取金额不能超过代理当前余额'}
           </p>
 
-          {/* 錯誤訊息 */}
+          {/* 错误信息 */}
           {error && (
             <p className="text-red-400 text-sm text-center mb-4">{error}</p>
           )}

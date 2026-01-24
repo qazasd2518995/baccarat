@@ -69,8 +69,8 @@ export default function AgentReport() {
   const quickFilters: QuickFilter[] = [
     { key: 'today', label: '今日' },
     { key: 'yesterday', label: '昨日' },
-    { key: 'thisWeek', label: '本週' },
-    { key: 'lastWeek', label: '上週' },
+    { key: 'thisWeek', label: '本周' },
+    { key: 'lastWeek', label: '上周' },
     { key: 'thisMonth', label: '本月' },
     { key: 'lastMonth', label: '上月' },
   ];
@@ -109,7 +109,7 @@ export default function AgentReport() {
   };
 
   const formatCurrency = (value: number) => {
-    return value.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const getValueColor = (value: number) => {
@@ -119,8 +119,8 @@ export default function AgentReport() {
   };
 
   const tabs = [
-    { key: 'agent' as TabType, label: '遊戲代理報表' },
-    { key: 'member' as TabType, label: '遊戲會員報表' },
+    { key: 'agent' as TabType, label: '游戏代理报表' },
+    { key: 'member' as TabType, label: '游戏会员报表' },
   ];
 
   return (
@@ -135,26 +135,26 @@ export default function AgentReport() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6 text-sm">
               <span className="text-gray-400">
-                帳號：<span className="text-white">{data.currentUser.username}</span>
+                账号：<span className="text-white">{data.currentUser.username}</span>
               </span>
               <span className="text-gray-400">
-                層級：<span className="text-amber-400">{data.currentUser.agentLevel}級代理</span>
+                层级：<span className="text-amber-400">{data.currentUser.agentLevel}级代理</span>
               </span>
             </div>
             <div className="flex items-center gap-6 text-sm">
               <span className="text-gray-400">
-                注單數：<span className="text-white">{data.currentUser.betCount}</span>
+                注单数：<span className="text-white">{data.currentUser.betCount}</span>
               </span>
               <span className="text-gray-400">
                 有效投注：<span className="text-white">{formatCurrency(data.currentUser.validBet)}</span>
               </span>
               <span className="text-gray-400">
-                會員輸贏：<span className={getValueColor(data.currentUser.memberWinLoss)}>
+                会员输赢：<span className={getValueColor(data.currentUser.memberWinLoss)}>
                   {formatCurrency(data.currentUser.memberWinLoss)}
                 </span>
               </span>
               <span className="text-gray-400">
-                個人盈虧：<span className={getValueColor(data.currentUser.profit)}>
+                个人盈亏：<span className={getValueColor(data.currentUser.profit)}>
                   {formatCurrency(data.currentUser.profit)}
                 </span>
               </span>
@@ -193,7 +193,7 @@ export default function AgentReport() {
         >
           <div className="flex items-center gap-2 text-white">
             <Filter className="w-4 h-4" />
-            <span className="font-medium">進階篩選</span>
+            <span className="font-medium">进阶筛选</span>
           </div>
           {showFilters ? (
             <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -207,7 +207,7 @@ export default function AgentReport() {
           <div className="border-t border-[#333] p-4 space-y-4">
             {/* Quick Filters */}
             <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm min-w-fit">快速篩選：</span>
+              <span className="text-gray-400 text-sm min-w-fit">快速筛选：</span>
               <div className="flex flex-wrap gap-2">
                 {quickFilters.map((filter) => (
                   <button
@@ -228,18 +228,18 @@ export default function AgentReport() {
             {/* Search and Date */}
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-sm">{activeTab === 'agent' ? '代理帳號：' : '會員帳號：'}</span>
+                <span className="text-gray-400 text-sm">{activeTab === 'agent' ? '代理账号：' : '会员账号：'}</span>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500 w-40"
-                  placeholder="輸入帳號"
+                  placeholder="输入账号"
                 />
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-sm">日期範圍：</span>
+                <span className="text-gray-400 text-sm">日期范围：</span>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
@@ -265,7 +265,7 @@ export default function AgentReport() {
                 className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium text-sm rounded-lg transition-colors"
               >
                 <Search className="w-4 h-4" />
-                查詢
+                查询
               </button>
               <button
                 onClick={fetchData}
@@ -276,7 +276,7 @@ export default function AgentReport() {
               </button>
               <button className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 hover:bg-green-500/30 text-sm rounded-lg transition-colors">
                 <Download className="w-4 h-4" />
-                導出
+                导出
               </button>
             </div>
           </div>
@@ -288,8 +288,8 @@ export default function AgentReport() {
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <Calendar className="w-4 h-4" />
           <span>
-            統計區間：{new Date(data.dateRange.startDate).toLocaleString('zh-TW')} 至{' '}
-            {new Date(data.dateRange.endDate).toLocaleString('zh-TW')}
+            统计区间：{new Date(data.dateRange.startDate).toLocaleString('zh-CN')} 至{' '}
+            {new Date(data.dateRange.endDate).toLocaleString('zh-CN')}
           </span>
         </div>
       )}
@@ -297,7 +297,7 @@ export default function AgentReport() {
       {/* Data Table */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="text-gray-400">載入中...</div>
+          <div className="text-gray-400">加载中...</div>
         </div>
       ) : activeTab === 'agent' ? (
         <div className="bg-[#1e1e1e] border border-[#333] rounded-xl overflow-hidden">
@@ -305,18 +305,18 @@ export default function AgentReport() {
             <table className="w-full">
               <thead>
                 <tr className="bg-[#252525]">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">代理帳號</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">層級</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">注單數</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">下注金額</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">代理账号</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">层级</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">注单数</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">下注金额</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">有效投注</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">會員輸贏</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">會員退水</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">個人佔成</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">個人退水</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">應收下線</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">應繳上線</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">個人盈虧</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">会员输赢</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">会员退水</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">个人占成</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">个人退水</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">应收下线</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">应缴上线</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">个人盈亏</th>
                 </tr>
               </thead>
               <tbody>
@@ -338,7 +338,7 @@ export default function AgentReport() {
                       </td>
                       <td className="px-4 py-3">
                         <span className="px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-400">
-                          {agent.agentLevel}級
+                          {agent.agentLevel}级
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right text-white">{agent.betCount}</td>
@@ -364,7 +364,7 @@ export default function AgentReport() {
                 ) : (
                   <tr>
                     <td colSpan={12} className="px-4 py-8 text-center text-gray-400">
-                      暫無數據
+                      暂无数据
                     </td>
                   </tr>
                 )}
@@ -415,11 +415,11 @@ export default function AgentReport() {
             <table className="w-full">
               <thead>
                 <tr className="bg-[#252525]">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">會員帳號</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">注單數</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">下注金額</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">会员账号</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">注单数</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">下注金额</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">有效投注</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">會員輸贏</th>
+                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">会员输赢</th>
                 </tr>
               </thead>
               <tbody>
@@ -450,7 +450,7 @@ export default function AgentReport() {
                 ) : (
                   <tr>
                     <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                      暫無數據
+                      暂无数据
                     </td>
                   </tr>
                 )}

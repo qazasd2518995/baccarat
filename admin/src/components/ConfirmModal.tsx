@@ -17,9 +17,9 @@ export default function ConfirmModal({
   isOpen,
   onClose,
   onConfirm,
-  title = '確定執行此操作？',
+  title = '确定执行此操作？',
   message,
-  confirmText = '確 定',
+  confirmText = '确 定',
   cancelText = '取 消',
   loading = false,
   type = 'warning'
@@ -74,7 +74,7 @@ export default function ConfirmModal({
             disabled={loading}
             className={`px-6 py-2 text-white font-medium rounded-lg transition-colors disabled:opacity-50 ${confirmButtonColors[type]}`}
           >
-            {loading ? '處理中...' : confirmText}
+            {loading ? '处理中...' : confirmText}
           </button>
         </div>
       </motion.div>

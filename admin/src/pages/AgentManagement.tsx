@@ -237,12 +237,12 @@ export default function AgentManagement() {
   };
 
   const formatCurrency = (value: number) => {
-    return value.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const getStatusBadge = (status: string, isLocked: boolean, isFullDisabled: boolean) => {
-    if (isFullDisabled) return <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400">全線禁用</span>;
-    if (isLocked) return <span className="px-2 py-0.5 rounded text-xs bg-yellow-500/20 text-yellow-400">鎖定</span>;
+    if (isFullDisabled) return <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400">全线禁用</span>;
+    if (isLocked) return <span className="px-2 py-0.5 rounded text-xs bg-yellow-500/20 text-yellow-400">锁定</span>;
     if (status === 'active') return <span className="px-2 py-0.5 rounded text-xs bg-green-500/20 text-green-400">正常</span>;
     if (status === 'suspended') return <span className="px-2 py-0.5 rounded text-xs bg-yellow-500/20 text-yellow-400">停用</span>;
     return <span className="px-2 py-0.5 rounded text-xs bg-gray-500/20 text-gray-400">{status}</span>;
@@ -250,8 +250,8 @@ export default function AgentManagement() {
 
   const tabs = [
     { key: 'agents' as TabType, label: '代理管理', icon: Building2 },
-    { key: 'members' as TabType, label: '會員管理', icon: Users },
-    { key: 'subAccounts' as TabType, label: '子帳號', icon: UserPlus },
+    { key: 'members' as TabType, label: '会员管理', icon: Users },
+    { key: 'subAccounts' as TabType, label: '子账号', icon: UserPlus },
   ];
 
   const betLimitOptions = [
@@ -275,7 +275,7 @@ export default function AgentManagement() {
                 <Wallet className="w-5 h-5 text-amber-400" />
               </div>
               <div>
-                <p className="text-gray-400 text-xs">剩餘額度</p>
+                <p className="text-gray-400 text-xs">剩余额度</p>
                 <p className="text-white font-bold">{formatCurrency(dashboard.balance)}</p>
               </div>
             </div>
@@ -287,7 +287,7 @@ export default function AgentManagement() {
                 <Building2 className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <p className="text-gray-400 text-xs">擁有代理數</p>
+                <p className="text-gray-400 text-xs">拥有代理数</p>
                 <p className="text-white font-bold">{dashboard.agentCount}</p>
               </div>
             </div>
@@ -299,7 +299,7 @@ export default function AgentManagement() {
                 <Users className="w-5 h-5 text-green-400" />
               </div>
               <div>
-                <p className="text-gray-400 text-xs">直屬會員數</p>
+                <p className="text-gray-400 text-xs">直属会员数</p>
                 <p className="text-white font-bold">{dashboard.directMemberCount}</p>
               </div>
             </div>
@@ -311,7 +311,7 @@ export default function AgentManagement() {
                 <Users className="w-5 h-5 text-purple-400" />
               </div>
               <div>
-                <p className="text-gray-400 text-xs">總會員數</p>
+                <p className="text-gray-400 text-xs">总会员数</p>
                 <p className="text-white font-bold">{dashboard.totalMemberCount}</p>
               </div>
             </div>
@@ -323,9 +323,9 @@ export default function AgentManagement() {
                 <span className={`w-3 h-3 rounded-full ${dashboard.status === 'active' ? 'bg-green-400' : 'bg-red-400'}`} />
               </div>
               <div>
-                <p className="text-gray-400 text-xs">帳號狀態</p>
+                <p className="text-gray-400 text-xs">账号状态</p>
                 <p className={`font-bold ${dashboard.status === 'active' ? 'text-green-400' : 'text-red-400'}`}>
-                  {dashboard.status === 'active' ? '帳號正常' : '異常'}
+                  {dashboard.status === 'active' ? '账号正常' : '异常'}
                 </p>
               </div>
             </div>
@@ -341,17 +341,17 @@ export default function AgentManagement() {
           className="bg-[#252525] border border-[#333] rounded-xl p-3 flex items-center gap-6 text-sm"
         >
           <span className="text-gray-400">
-            代理層級：<span className="text-amber-400">{dashboard.agentLevel}級代理</span>
+            代理层级：<span className="text-amber-400">{dashboard.agentLevel}级代理</span>
           </span>
           <span className="text-gray-400">
-            帳號：<span className="text-white">{dashboard.username}</span>
+            账号：<span className="text-white">{dashboard.username}</span>
           </span>
           <span className="text-gray-400">
-            剩餘額度：<span className="text-amber-400 font-medium">{formatCurrency(dashboard.balance)}</span>
+            剩余额度：<span className="text-amber-400 font-medium">{formatCurrency(dashboard.balance)}</span>
           </span>
           <span className="text-gray-400">
-            帳號狀態：<span className={dashboard.status === 'active' ? 'text-green-400' : 'text-red-400'}>
-              {dashboard.status === 'active' ? '帳號正常' : '異常'}
+            账号状态：<span className={dashboard.status === 'active' ? 'text-green-400' : 'text-red-400'}>
+              {dashboard.status === 'active' ? '账号正常' : '异常'}
             </span>
           </span>
         </motion.div>
@@ -385,7 +385,7 @@ export default function AgentManagement() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder={activeTab === 'agents' ? '請輸入代理帳號' : activeTab === 'members' ? '請輸入會員帳號' : '搜尋子帳號...'}
+              placeholder={activeTab === 'agents' ? '请输入代理账号' : activeTab === 'members' ? '请输入会员账号' : '搜索子账号...'}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -402,7 +402,7 @@ export default function AgentManagement() {
             onClick={handleSearch}
             className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium text-sm rounded-lg transition-colors"
           >
-            查詢
+            查询
           </button>
         </div>
 
@@ -417,19 +417,19 @@ export default function AgentManagement() {
           className="flex items-center gap-2 px-4 py-2 border border-amber-500 text-amber-400 hover:bg-amber-500/10 font-medium text-sm rounded-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
-          {activeTab === 'agents' ? '新建代理' : activeTab === 'members' ? '新建會員' : '新建'}
+          {activeTab === 'agents' ? '新建代理' : activeTab === 'members' ? '新建会员' : '新建'}
         </button>
       </div>
 
       {/* Content */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="text-gray-400">載入中...</div>
+          <div className="text-gray-400">加载中...</div>
         </div>
       ) : activeTab === 'agents' ? (
         <div className="space-y-3">
           {agents.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">暫無數據</div>
+            <div className="text-center py-12 text-gray-400">暂无数据</div>
           ) : (
             agents.map((agent) => (
               <motion.div
@@ -444,12 +444,12 @@ export default function AgentManagement() {
                     {/* Left: Agent Info */}
                     <div className="flex items-start gap-4">
                       <div className="text-center">
-                        <p className="text-gray-400 text-xs mb-1">代理層級</p>
-                        <p className="text-white font-medium">{agent.agentLevel}級代理</p>
+                        <p className="text-gray-400 text-xs mb-1">代理层级</p>
+                        <p className="text-white font-medium">{agent.agentLevel}级代理</p>
                       </div>
 
                       <div>
-                        <p className="text-gray-400 text-xs mb-1">帳號/複製帳號密碼</p>
+                        <p className="text-gray-400 text-xs mb-1">账号/复制账号密码</p>
                         <div className="flex items-center gap-2">
                           <span className="text-amber-400 font-medium">{agent.username}</span>
                           <button
@@ -459,11 +459,11 @@ export default function AgentManagement() {
                             <Copy className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-gray-400 text-sm">({agent.nickname || '無名稱'})</p>
+                        <p className="text-gray-400 text-sm">({agent.nickname || '无名称'})</p>
                       </div>
 
                       <div className="text-center">
-                        <p className="text-gray-400 text-xs mb-1">剩餘額度</p>
+                        <p className="text-gray-400 text-xs mb-1">剩余额度</p>
                         <p
                           className="text-amber-400 font-medium cursor-pointer hover:text-amber-300"
                           onClick={() => setBalanceModal({ open: true, agent })}
@@ -479,19 +479,19 @@ export default function AgentManagement() {
                             onClick={() => setShareSettingModal({ open: true, agent })}
                             className="text-amber-400 hover:text-amber-300 text-sm"
                           >
-                            廠商
+                            厂商
                           </button>
                           <button
                             onClick={() => setShareSettingModal({ open: true, agent })}
                             className="text-amber-400 hover:text-amber-300 text-sm"
                           >
-                            佔成/退水
+                            占成/退水
                           </button>
                           <button
                             onClick={() => setBetLimitModal({ open: true, agent })}
                             className="text-amber-400 hover:text-amber-300 text-sm"
                           >
-                            限紅
+                            限红
                           </button>
                         </div>
                       </div>
@@ -507,7 +507,7 @@ export default function AgentManagement() {
                             onChange={() => handleStatusChange(agent.id, agent.isLocked ? 'unlock' : 'lock')}
                             className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
                           />
-                          <span className="text-white text-sm">鎖定登入</span>
+                          <span className="text-white text-sm">锁定登入</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
@@ -516,7 +516,7 @@ export default function AgentManagement() {
                             onChange={() => handleStatusChange(agent.id, agent.isFullDisabled ? 'enable' : 'disable')}
                             className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
                           />
-                          <span className="text-white text-sm">全線禁用</span>
+                          <span className="text-white text-sm">全线禁用</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
@@ -534,19 +534,19 @@ export default function AgentManagement() {
                           onClick={() => setConfirmModal({ open: true, agent, action: 'withdrawAll' })}
                           className="text-amber-400 hover:text-amber-300 text-sm"
                         >
-                          抽取全線額度
+                          抽取全线额度
                         </button>
                         <br />
                         <button
                           onClick={() => setEditAgentModal({ open: true, agent })}
                           className="text-amber-400 hover:text-amber-300 text-sm"
                         >
-                          修改帳號
+                          修改账号
                         </button>
                       </div>
 
                       <div className="text-center">
-                        <p className="text-gray-400 text-xs mb-1">邀請碼/複製邀請連結</p>
+                        <p className="text-gray-400 text-xs mb-1">邀请码/复制邀请链接</p>
                         <div className="flex items-center gap-2">
                           <span className="text-white">{agent.inviteCode || '-'}</span>
                           {agent.inviteCode && (
@@ -569,7 +569,7 @@ export default function AgentManagement() {
       ) : activeTab === 'members' ? (
         <div className="space-y-3">
           {members.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">暫無數據</div>
+            <div className="text-center py-12 text-gray-400">暂无数据</div>
           ) : (
             members.map((member) => (
               <motion.div
@@ -586,12 +586,12 @@ export default function AgentManagement() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-white font-medium">{member.username}</span>
-                        <span className="text-gray-400 text-sm">({member.nickname || '無名稱'})</span>
+                        <span className="text-gray-400 text-sm">({member.nickname || '无名称'})</span>
                         {getStatusBadge(member.status, member.isLocked, false)}
                       </div>
                       <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
-                        <span>創建時間：{new Date(member.createdAt).toLocaleString('zh-TW')}</span>
-                        <span>最後登入：{member.lastLoginAt ? new Date(member.lastLoginAt).toLocaleString('zh-TW') : '從未登入'}</span>
+                        <span>创建时间：{new Date(member.createdAt).toLocaleString('zh-CN')}</span>
+                        <span>最后登入：{member.lastLoginAt ? new Date(member.lastLoginAt).toLocaleString('zh-CN') : '从未登入'}</span>
                       </div>
                     </div>
                   </div>
@@ -599,14 +599,14 @@ export default function AgentManagement() {
                   <div className="flex items-center gap-6">
                     <div className="text-right">
                       <p className="text-amber-400 font-bold">{formatCurrency(member.balance)}</p>
-                      <p className="text-xs text-gray-400">餘額</p>
+                      <p className="text-xs text-gray-400">余额</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {member.isLocked ? (
                         <button
                           onClick={() => handleStatusChange(member.id, 'unlock')}
                           className="p-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
-                          title="解鎖登入"
+                          title="解锁登入"
                         >
                           <Unlock className="w-4 h-4" />
                         </button>
@@ -614,7 +614,7 @@ export default function AgentManagement() {
                         <button
                           onClick={() => handleStatusChange(member.id, 'lock')}
                           className="p-2 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-colors"
-                          title="鎖定登入"
+                          title="锁定登入"
                         >
                           <Lock className="w-4 h-4" />
                         </button>
@@ -630,7 +630,7 @@ export default function AgentManagement() {
         // Sub Accounts Tab
         <div className="space-y-3">
           {subAccounts.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">暫無數據</div>
+            <div className="text-center py-12 text-gray-400">暂无数据</div>
           ) : (
             subAccounts.map((sub) => (
               <motion.div
@@ -647,11 +647,11 @@ export default function AgentManagement() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-white font-medium">{sub.username}</span>
-                        <span className="text-gray-400 text-sm">({sub.nickname || '無名稱'})</span>
+                        <span className="text-gray-400 text-sm">({sub.nickname || '无名称'})</span>
                         {getStatusBadge(sub.status, false, false)}
                       </div>
                       <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
-                        <span>創建時間：{new Date(sub.createdAt).toLocaleString('zh-TW')}</span>
+                        <span>创建时间：{new Date(sub.createdAt).toLocaleString('zh-CN')}</span>
                       </div>
                     </div>
                   </div>
@@ -660,14 +660,14 @@ export default function AgentManagement() {
                     <button
                       onClick={() => setSubAccountModal({ open: true, subAccount: sub })}
                       className="p-2 bg-blue-500/20 text-blue-400 rounded-lg hover:bg-blue-500/30 transition-colors"
-                      title="編輯"
+                      title="编辑"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => handleDeleteSubAccount(sub.id)}
                       className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
-                      title="刪除"
+                      title="删除"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -683,9 +683,9 @@ export default function AgentManagement() {
       <div className="flex items-center justify-end gap-2">
         <span className="text-gray-400 text-sm">1</span>
         <select className="px-2 py-1 bg-[#1e1e1e] border border-[#333] rounded text-white text-sm">
-          <option>10 條/頁</option>
-          <option>20 條/頁</option>
-          <option>50 條/頁</option>
+          <option>10 条/页</option>
+          <option>20 条/页</option>
+          <option>50 条/页</option>
         </select>
       </div>
 
@@ -699,7 +699,7 @@ export default function AgentManagement() {
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-white text-lg font-bold">
-                {activeTab === 'agents' ? `創建代理 (${createStep}/5)` : '創建會員'}
+                {activeTab === 'agents' ? `创建代理 (${createStep}/5)` : '创建会员'}
               </h2>
               <button
                 onClick={() => {
@@ -717,33 +717,33 @@ export default function AgentManagement() {
                 {createStep === 1 && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-gray-400 text-sm mb-1">帳號 *</label>
+                      <label className="block text-gray-400 text-sm mb-1">账号 *</label>
                       <input
                         type="text"
                         value={createForm.username}
                         onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
                         className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                        placeholder="請輸入帳號"
+                        placeholder="请输入账号"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-400 text-sm mb-1">密碼 *</label>
+                      <label className="block text-gray-400 text-sm mb-1">密码 *</label>
                       <input
                         type="password"
                         value={createForm.password}
                         onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                         className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                        placeholder="請輸入密碼"
+                        placeholder="请输入密码"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-400 text-sm mb-1">名稱</label>
+                      <label className="block text-gray-400 text-sm mb-1">名称</label>
                       <input
                         type="text"
                         value={createForm.nickname}
                         onChange={(e) => setCreateForm({ ...createForm, nickname: e.target.value })}
                         className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                        placeholder="請輸入名稱"
+                        placeholder="请输入名称"
                       />
                     </div>
                   </div>
@@ -752,7 +752,7 @@ export default function AgentManagement() {
                 {createStep === 2 && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-gray-400 text-sm mb-1">初始額度</label>
+                      <label className="block text-gray-400 text-sm mb-1">初始额度</label>
                       <input
                         type="number"
                         value={createForm.initialBalance}
@@ -766,9 +766,9 @@ export default function AgentManagement() {
 
                 {createStep === 3 && (
                   <div className="space-y-4">
-                    <p className="text-gray-400 text-sm">廠商設定（預設開放所有）</p>
+                    <p className="text-gray-400 text-sm">厂商设定（预设开放所有）</p>
                     <div className="bg-[#2a2a2a] rounded-lg p-4">
-                      <p className="text-white text-sm">此步驟暫時跳過，稍後可在佔成設定中配置</p>
+                      <p className="text-white text-sm">此步骤暂时跳过，稍后可在占成设定中配置</p>
                     </div>
                   </div>
                 )}
@@ -776,7 +776,7 @@ export default function AgentManagement() {
                 {createStep === 4 && (
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-gray-400 text-sm mb-1">佔成比例 (%)</label>
+                      <label className="block text-gray-400 text-sm mb-1">占成比例 (%)</label>
                       <input
                         type="number"
                         value={createForm.sharePercent}
@@ -804,7 +804,7 @@ export default function AgentManagement() {
 
                 {createStep === 5 && (
                   <div className="space-y-4">
-                    <label className="block text-gray-400 text-sm mb-2">限紅設定</label>
+                    <label className="block text-gray-400 text-sm mb-2">限红设定</label>
                     <div className="grid grid-cols-2 gap-2">
                       {betLimitOptions.map((limit) => (
                         <label
@@ -850,7 +850,7 @@ export default function AgentManagement() {
                       onClick={handleCreateAgent}
                       className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg"
                     >
-                      確認創建
+                      确认创建
                     </button>
                   )}
                 </div>
@@ -859,37 +859,37 @@ export default function AgentManagement() {
               <>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-gray-400 text-sm mb-1">帳號 *</label>
+                    <label className="block text-gray-400 text-sm mb-1">账号 *</label>
                     <input
                       type="text"
                       value={createForm.username}
                       onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
                       className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                      placeholder="請輸入帳號"
+                      placeholder="请输入账号"
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-400 text-sm mb-1">密碼 *</label>
+                    <label className="block text-gray-400 text-sm mb-1">密码 *</label>
                     <input
                       type="password"
                       value={createForm.password}
                       onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                       className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                      placeholder="請輸入密碼"
+                      placeholder="请输入密码"
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-400 text-sm mb-1">名稱</label>
+                    <label className="block text-gray-400 text-sm mb-1">名称</label>
                     <input
                       type="text"
                       value={createForm.nickname}
                       onChange={(e) => setCreateForm({ ...createForm, nickname: e.target.value })}
                       className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                      placeholder="請輸入名稱"
+                      placeholder="请输入名称"
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-400 text-sm mb-1">初始額度</label>
+                    <label className="block text-gray-400 text-sm mb-1">初始额度</label>
                     <input
                       type="number"
                       value={createForm.initialBalance}
@@ -904,7 +904,7 @@ export default function AgentManagement() {
                     onClick={handleCreateMember}
                     className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg"
                   >
-                    確認創建
+                    确认创建
                   </button>
                 </div>
               </>
@@ -956,8 +956,8 @@ export default function AgentManagement() {
         isOpen={confirmModal.open}
         onClose={() => setConfirmModal({ open: false, agent: null, action: '' })}
         onConfirm={handleWithdrawAll}
-        title="確定執行此操作？"
-        message={`即將把所選代理及其所有下級代理和會員的餘額轉移到該代理的上級代理帳戶中`}
+        title="确定执行此操作？"
+        message={`即将把所选代理及其所有下级代理和会员的余额转移到该代理的上级代理账户中`}
         type="warning"
       />
 

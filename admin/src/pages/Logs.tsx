@@ -91,17 +91,17 @@ export default function Logs() {
   const quickFilters: QuickFilter[] = [
     { key: 'today', label: '今日' },
     { key: 'yesterday', label: '昨日' },
-    { key: 'thisWeek', label: '本週' },
-    { key: 'lastWeek', label: '上週' },
+    { key: 'thisWeek', label: '本周' },
+    { key: 'lastWeek', label: '上周' },
     { key: 'thisMonth', label: '本月' },
     { key: 'lastMonth', label: '上月' },
   ];
 
   const tabs = [
-    { key: 'operation' as TabType, label: '操作日誌', icon: FileText },
-    { key: 'cash' as TabType, label: '現金日誌', icon: Coins },
-    { key: 'share' as TabType, label: '佔成日誌', icon: BarChart3 },
-    { key: 'login' as TabType, label: '登入日誌', icon: LogIn },
+    { key: 'operation' as TabType, label: '操作日志', icon: FileText },
+    { key: 'cash' as TabType, label: '现金日志', icon: Coins },
+    { key: 'share' as TabType, label: '占成日志', icon: BarChart3 },
+    { key: 'login' as TabType, label: '登入日志', icon: LogIn },
   ];
 
   useEffect(() => {
@@ -162,19 +162,19 @@ export default function Logs() {
   };
 
   const formatCurrency = (value: number) => {
-    return value.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const getActionText = (action: string) => {
     const actionMap: Record<string, string> = {
-      create_agent: '創建代理',
-      create_member: '創建會員',
-      update_status: '修改狀態',
-      update_share: '修改佔成',
-      update_bet_limit: '修改限紅',
-      deposit: '存入額度',
-      withdraw: '提取額度',
-      adjustment: '額度調整',
+      create_agent: '创建代理',
+      create_member: '创建会员',
+      update_status: '修改状态',
+      update_share: '修改占成',
+      update_bet_limit: '修改限红',
+      deposit: '存入额度',
+      withdraw: '提取额度',
+      adjustment: '额度调整',
       login: '登入',
     };
     return actionMap[action] || action;
@@ -193,7 +193,7 @@ export default function Logs() {
     const textMap: Record<string, string> = {
       deposit: '存入',
       withdraw: '提取',
-      adjustment: '調整',
+      adjustment: '调整',
     };
     return textMap[type] || type;
   };
@@ -202,7 +202,7 @@ export default function Logs() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white">日誌</h1>
+        <h1 className="text-2xl font-bold text-white">日志</h1>
       </div>
 
       {/* Tabs */}
@@ -242,7 +242,7 @@ export default function Logs() {
         >
           <div className="flex items-center gap-2 text-white">
             <Filter className="w-4 h-4" />
-            <span className="font-medium">進階篩選</span>
+            <span className="font-medium">进阶筛选</span>
           </div>
           {showFilters ? (
             <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -256,7 +256,7 @@ export default function Logs() {
           <div className="border-t border-[#333] p-4 space-y-4">
             {/* Quick Filters */}
             <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm min-w-fit">快速篩選：</span>
+              <span className="text-gray-400 text-sm min-w-fit">快速筛选：</span>
               <div className="flex flex-wrap gap-2">
                 {quickFilters.map((filter) => (
                   <button
@@ -278,32 +278,32 @@ export default function Logs() {
             <div className="flex items-center gap-4 flex-wrap">
               {activeTab !== 'login' && (
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-400 text-sm">操作人帳號：</span>
+                  <span className="text-gray-400 text-sm">操作人账号：</span>
                   <input
                     type="text"
                     value={operatorSearch}
                     onChange={(e) => setOperatorSearch(e.target.value)}
                     className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500 w-40"
-                    placeholder="輸入帳號"
+                    placeholder="输入账号"
                   />
                 </div>
               )}
 
               <div className="flex items-center gap-2">
                 <span className="text-gray-400 text-sm">
-                  {activeTab === 'login' ? '帳號：' : '變動者帳號：'}
+                  {activeTab === 'login' ? '账号：' : '变动者账号：'}
                 </span>
                 <input
                   type="text"
                   value={targetSearch}
                   onChange={(e) => setTargetSearch(e.target.value)}
                   className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500 w-40"
-                  placeholder="輸入帳號"
+                  placeholder="输入账号"
                 />
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-sm">日期範圍：</span>
+                <span className="text-gray-400 text-sm">日期范围：</span>
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
@@ -329,7 +329,7 @@ export default function Logs() {
                 className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium text-sm rounded-lg transition-colors"
               >
                 <Search className="w-4 h-4" />
-                查詢
+                查询
               </button>
               <button
                 onClick={() => {
@@ -353,7 +353,7 @@ export default function Logs() {
       {/* Data Table */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
-          <div className="text-gray-400">載入中...</div>
+          <div className="text-gray-400">加载中...</div>
         </div>
       ) : (
         <div className="bg-[#1e1e1e] border border-[#333] rounded-xl overflow-hidden">
@@ -364,16 +364,16 @@ export default function Logs() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">操作人</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">操作</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">對象</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">詳情</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">对象</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">详情</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">IP</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">時間</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">时间</th>
                   </tr>
                 </thead>
                 <tbody>
                   {operationLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-gray-400">暫無數據</td>
+                      <td colSpan={6} className="px-4 py-8 text-center text-gray-400">暂无数据</td>
                     </tr>
                   ) : (
                     operationLogs.map((log, index) => (
@@ -401,7 +401,7 @@ export default function Logs() {
                           {log.details ? JSON.stringify(log.details) : '-'}
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-sm">{log.ipAddress}</td>
-                        <td className="px-4 py-3 text-gray-400 text-sm">{new Date(log.createdAt).toLocaleString('zh-TW')}</td>
+                        <td className="px-4 py-3 text-gray-400 text-sm">{new Date(log.createdAt).toLocaleString('zh-CN')}</td>
                       </tr>
                     ))
                   )}
@@ -414,19 +414,19 @@ export default function Logs() {
                 <thead className="bg-[#252525]">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">操作人</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">對象</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">類型</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">金額</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">變動前</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">變動後</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">備註</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">時間</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">对象</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">类型</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">金额</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">变动前</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">变动后</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">备注</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">时间</th>
                   </tr>
                 </thead>
                 <tbody>
                   {cashLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-gray-400">暫無數據</td>
+                      <td colSpan={8} className="px-4 py-8 text-center text-gray-400">暂无数据</td>
                     </tr>
                   ) : (
                     cashLogs.map((log, index) => (
@@ -448,7 +448,7 @@ export default function Logs() {
                         <td className="px-4 py-3 text-right text-gray-400">{formatCurrency(log.balanceBefore)}</td>
                         <td className="px-4 py-3 text-right text-white font-medium">{formatCurrency(log.balanceAfter)}</td>
                         <td className="px-4 py-3 text-gray-400 text-sm">{log.note || '-'}</td>
-                        <td className="px-4 py-3 text-gray-400 text-sm">{new Date(log.createdAt).toLocaleString('zh-TW')}</td>
+                        <td className="px-4 py-3 text-gray-400 text-sm">{new Date(log.createdAt).toLocaleString('zh-CN')}</td>
                       </tr>
                     ))
                   )}
@@ -461,19 +461,19 @@ export default function Logs() {
                 <thead className="bg-[#252525]">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">操作人</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">對象</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">類型</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">遊戲類別</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">对象</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">类型</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">游戏类别</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">平台</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">舊值</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">旧值</th>
                     <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">新值</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">時間</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">时间</th>
                   </tr>
                 </thead>
                 <tbody>
                   {shareLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-4 py-8 text-center text-gray-400">暫無數據</td>
+                      <td colSpan={8} className="px-4 py-8 text-center text-gray-400">暂无数据</td>
                     </tr>
                   ) : (
                     shareLogs.map((log, index) => (
@@ -486,14 +486,14 @@ export default function Logs() {
                         </td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-0.5 rounded text-xs ${log.changeType === 'share' ? 'bg-purple-500/20 text-purple-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                            {log.changeType === 'share' ? '佔成' : '退水'}
+                            {log.changeType === 'share' ? '占成' : '退水'}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-gray-400">{log.gameCategory}</td>
                         <td className="px-4 py-3 text-gray-400">{log.platform}</td>
                         <td className="px-4 py-3 text-right text-red-400">{log.oldValue}%</td>
                         <td className="px-4 py-3 text-right text-green-400">{log.newValue}%</td>
-                        <td className="px-4 py-3 text-gray-400 text-sm">{new Date(log.createdAt).toLocaleString('zh-TW')}</td>
+                        <td className="px-4 py-3 text-gray-400 text-sm">{new Date(log.createdAt).toLocaleString('zh-CN')}</td>
                       </tr>
                     ))
                   )}
@@ -505,18 +505,18 @@ export default function Logs() {
               <table className="w-full">
                 <thead className="bg-[#252525]">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">帳號</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">名稱</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase">狀態</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">账号</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">名称</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-400 uppercase">状态</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">IP 地址</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">瀏覽器</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">時間</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">浏览器</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">时间</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loginLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-gray-400">暫無數據</td>
+                      <td colSpan={6} className="px-4 py-8 text-center text-gray-400">暂无数据</td>
                     </tr>
                   ) : (
                     loginLogs.map((log, index) => (
@@ -525,12 +525,12 @@ export default function Logs() {
                         <td className="px-4 py-3 text-gray-400">{log.nickname || '-'}</td>
                         <td className="px-4 py-3 text-center">
                           <span className={`px-2 py-0.5 rounded text-xs ${log.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                            {log.success ? '成功' : '失敗'}
+                            {log.success ? '成功' : '失败'}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-sm">{log.ipAddress}</td>
                         <td className="px-4 py-3 text-gray-400 text-sm max-w-xs truncate">{log.userAgent}</td>
-                        <td className="px-4 py-3 text-gray-400 text-sm">{new Date(log.createdAt).toLocaleString('zh-TW')}</td>
+                        <td className="px-4 py-3 text-gray-400 text-sm">{new Date(log.createdAt).toLocaleString('zh-CN')}</td>
                       </tr>
                     ))
                   )}
@@ -543,7 +543,7 @@ export default function Logs() {
           {totalPages > 1 && (
             <div className="border-t border-[#333] p-4 flex items-center justify-between">
               <div className="text-gray-400 text-sm">
-                共 {total} 條記錄，第 {page} / {totalPages} 頁
+                共 {total} 条记录，第 {page} / {totalPages} 页
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -551,14 +551,14 @@ export default function Logs() {
                   disabled={page === 1}
                   className="px-3 py-1.5 bg-[#2a2a2a] text-gray-400 rounded-lg disabled:opacity-50 hover:text-white transition-colors"
                 >
-                  上一頁
+                  上一页
                 </button>
                 <button
                   onClick={() => setPage(Math.min(totalPages, page + 1))}
                   disabled={page === totalPages}
                   className="px-3 py-1.5 bg-[#2a2a2a] text-gray-400 rounded-lg disabled:opacity-50 hover:text-white transition-colors"
                 >
-                  下一頁
+                  下一页
                 </button>
               </div>
             </div>
