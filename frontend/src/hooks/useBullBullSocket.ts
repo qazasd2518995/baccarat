@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useBullBullStore } from '../store/bullBullStore';
 import { useAuthStore } from '../store/authStore';
@@ -59,7 +59,6 @@ function disconnectSocket(): void {
 
 export function useBullBullSocket() {
   const { token, isAuthenticated } = useAuthStore();
-  const hasConnected = useRef(false);
 
   const {
     setConnected,
@@ -90,12 +89,7 @@ export function useBullBullSocket() {
       return;
     }
 
-    if (hasConnected.current) {
-      return;
-    }
-    hasConnected.current = true;
-
-    console.log('[useBullBullSocket] Connecting...');
+    console.log('[useBullBullSocket] Setting up socket connection...');
     const socket = connectSocket(token);
 
     // Helper function to initialize game state
@@ -108,24 +102,18 @@ export function useBullBullSocket() {
       socket.emit('bb:requestState');
     };
 
-    socket.on('connect', () => {
+    // Handler functions
+    const handleConnect = () => {
       console.log('[useBullBullSocket] Connected');
       initializeGame();
-    });
+    };
 
-    // If socket is already connected (e.g., from Lobby), initialize immediately
-    if (socket.connected) {
-      console.log('[useBullBullSocket] Socket already connected, initializing...');
-      initializeGame();
-    }
-
-    socket.on('disconnect', () => {
+    const handleDisconnect = () => {
       console.log('[useBullBullSocket] Disconnected');
       setConnected(false);
-    });
+    };
 
-    // Game state (for reconnection/initial load)
-    socket.on('bb:state', (data: any) => {
+    const handleState = (data: any) => {
       console.log('[useBullBullSocket] Received bb:state', data);
       setPhase(data.phase);
       setTimeRemaining(data.timeRemaining);
@@ -149,10 +137,9 @@ export function useBullBullSocket() {
       if (data.myBets && data.myBets.length > 0) {
         setConfirmedBets(data.myBets);
       }
-    });
+    };
 
-    // Phase change events
-    socket.on('bb:phase', (data: any) => {
+    const handlePhase = (data: any) => {
       console.log('[useBullBullSocket] Phase changed:', data.phase);
       setPhase(data.phase);
       setTimeRemaining(data.timeRemaining);
@@ -162,21 +149,18 @@ export function useBullBullSocket() {
         resetForNewRound();
         clearRevealed();
       }
-    });
+    };
 
-    // Timer tick
-    socket.on('bb:timer', (data: any) => {
+    const handleTimer = (data: any) => {
       setTimeRemaining(data.timeRemaining);
-    });
+    };
 
-    // Card dealing (face down initially)
-    socket.on('bb:card', (data: any) => {
+    const handleCard = (data: any) => {
       console.log('[useBullBullSocket] Card dealt:', data.target, data.cardIndex);
       // Cards are dealt face down initially, we track positions later
-    });
+    };
 
-    // Hand reveal
-    socket.on('bb:reveal', (data: any) => {
+    const handleReveal = (data: any) => {
       console.log('[useBullBullSocket] Hand revealed:', data.target, data.rankName);
       revealPosition(data.target);
 
@@ -188,17 +172,11 @@ export function useBullBullSocket() {
 
       if (data.target === 'banker') {
         setBanker(hand);
-      } else if (data.target === 'player1') {
-        // Result will come with final result event
-      } else if (data.target === 'player2') {
-        // Result will come with final result event
-      } else if (data.target === 'player3') {
-        // Result will come with final result event
       }
-    });
+      // Player results will come with final result event
+    };
 
-    // Round result
-    socket.on('bb:result', (data: any) => {
+    const handleResult = (data: any) => {
       console.log('[useBullBullSocket] Round result');
       setRoundNumber(data.roundNumber);
 
@@ -225,19 +203,17 @@ export function useBullBullSocket() {
         rank: data.player3.rank,
         rankName: data.player3.rankName,
       }, data.player3.result);
-    });
+    };
 
-    // Bet confirmation
-    socket.on('bb:bet:confirmed', (data: any) => {
+    const handleBetConfirmed = (data: any) => {
       console.log('[useBullBullSocket] Bet confirmed:', data);
       setConfirmedBets(data.bets);
       if (data.bets.length > 0) {
         saveLastBets();
       }
-    });
+    };
 
-    // Settlement
-    socket.on('bb:settlement', (data: any) => {
+    const handleSettlement = (data: any) => {
       console.log('[useBullBullSocket] Settlement:', data);
       setLastSettlement({
         bets: data.bets.map((b: any) => ({
@@ -251,28 +227,73 @@ export function useBullBullSocket() {
         netResult: data.netResult,
       });
       setBalance(data.newBalance);
-    });
+    };
 
-    // Balance updates
-    socket.on('user:balance', (data: any) => {
+    const handleBalance = (data: any) => {
       console.log('[useBullBullSocket] Balance updated:', data.balance, data.reason);
       setBalance(data.balance);
-    });
+    };
 
-    // Roadmap updates
-    socket.on('bb:roadmap', (data: any) => {
+    const handleRoadmap = (data: any) => {
       console.log('[useBullBullSocket] Roadmap updated:', data.recentRounds.length, 'rounds');
       setRoadmapData(data.recentRounds);
-    });
+    };
 
-    // Error handling
-    socket.on('error', (data: any) => {
+    const handleError = (data: any) => {
       console.error('[useBullBullSocket] Error:', data.code, data.message);
-    });
+    };
+
+    // Remove any existing listeners first to prevent duplicates
+    socket.off('connect', handleConnect);
+    socket.off('disconnect', handleDisconnect);
+    socket.off('bb:state', handleState);
+    socket.off('bb:phase', handlePhase);
+    socket.off('bb:timer', handleTimer);
+    socket.off('bb:card', handleCard);
+    socket.off('bb:reveal', handleReveal);
+    socket.off('bb:result', handleResult);
+    socket.off('bb:bet:confirmed', handleBetConfirmed);
+    socket.off('bb:settlement', handleSettlement);
+    socket.off('user:balance', handleBalance);
+    socket.off('bb:roadmap', handleRoadmap);
+    socket.off('error', handleError);
+
+    // Add listeners
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('bb:state', handleState);
+    socket.on('bb:phase', handlePhase);
+    socket.on('bb:timer', handleTimer);
+    socket.on('bb:card', handleCard);
+    socket.on('bb:reveal', handleReveal);
+    socket.on('bb:result', handleResult);
+    socket.on('bb:bet:confirmed', handleBetConfirmed);
+    socket.on('bb:settlement', handleSettlement);
+    socket.on('user:balance', handleBalance);
+    socket.on('bb:roadmap', handleRoadmap);
+    socket.on('error', handleError);
+
+    // If socket is already connected, initialize immediately
+    if (socket.connected) {
+      console.log('[useBullBullSocket] Socket already connected, initializing...');
+      initializeGame();
+    }
 
     return () => {
-      console.log('[useBullBullSocket] Cleanup');
-      hasConnected.current = false;
+      console.log('[useBullBullSocket] Cleanup - removing listeners');
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('bb:state', handleState);
+      socket.off('bb:phase', handlePhase);
+      socket.off('bb:timer', handleTimer);
+      socket.off('bb:card', handleCard);
+      socket.off('bb:reveal', handleReveal);
+      socket.off('bb:result', handleResult);
+      socket.off('bb:bet:confirmed', handleBetConfirmed);
+      socket.off('bb:settlement', handleSettlement);
+      socket.off('user:balance', handleBalance);
+      socket.off('bb:roadmap', handleRoadmap);
+      socket.off('error', handleError);
       disconnectSocket();
       resetAll();
     };

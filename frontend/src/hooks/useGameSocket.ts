@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback } from 'react';
 import {
   connectSocket,
   disconnectSocket,
@@ -22,7 +22,6 @@ import { gameApi } from '../services/api';
 
 export function useGameSocket(tableId?: string) {
   const { token, isAuthenticated } = useAuthStore();
-  const hasConnected = useRef(false);
 
   const {
     setConnected,
@@ -54,13 +53,7 @@ export function useGameSocket(tableId?: string) {
       return;
     }
 
-    // Prevent double connection in React Strict Mode
-    if (hasConnected.current) {
-      return;
-    }
-    hasConnected.current = true;
-
-    console.log('[useGameSocket] Connecting...');
+    console.log('[useGameSocket] Setting up socket connection...');
     const socket = connectSocket(token);
 
     // Helper function to initialize game state
@@ -94,25 +87,18 @@ export function useGameSocket(tableId?: string) {
       });
     };
 
-    // Connection events
-    socket.on('connect', () => {
+    // Handler functions
+    const handleConnect = () => {
       console.log('[useGameSocket] Connected');
       initializeGame();
-    });
+    };
 
-    // If socket is already connected (e.g., from Lobby), initialize immediately
-    if (socket.connected) {
-      console.log('[useGameSocket] Socket already connected, initializing...');
-      initializeGame();
-    }
-
-    socket.on('disconnect', () => {
+    const handleDisconnect = () => {
       console.log('[useGameSocket] Disconnected');
       setConnected(false);
-    });
+    };
 
-    // Game state (for reconnection/initial load)
-    socket.on('game:state', (data: GameStateEvent) => {
+    const handleGameState = (data: GameStateEvent) => {
       console.log('[useGameSocket] Received game:state', data);
       setPhase(data.phase);
       setTimeRemaining(data.timeRemaining);
@@ -136,10 +122,9 @@ export function useGameSocket(tableId?: string) {
       if (data.myBets && data.myBets.length > 0) {
         setConfirmedBets(data.myBets);
       }
-    });
+    };
 
-    // Phase change events
-    socket.on('game:phase', (data: PhaseChangeEvent) => {
+    const handlePhaseChange = (data: PhaseChangeEvent) => {
       console.log('[useGameSocket] Phase changed:', data.phase);
       setPhase(data.phase);
       setTimeRemaining(data.timeRemaining);
@@ -149,42 +134,37 @@ export function useGameSocket(tableId?: string) {
       if (data.phase === 'betting') {
         resetForNewRound();
       }
-    });
+    };
 
-    // Timer tick
-    socket.on('game:timer', (data: TimerEvent) => {
+    const handleTimer = (data: TimerEvent) => {
       setTimeRemaining(data.timeRemaining);
-    });
+    };
 
-    // Card dealing
-    socket.on('game:card', (data: CardDealtEvent) => {
+    const handleCard = (data: CardDealtEvent) => {
       console.log('[useGameSocket] Card dealt:', data.target, data.cardIndex);
       if (data.target === 'player') {
         addPlayerCard(data.card, data.currentPoints);
       } else {
         addBankerCard(data.card, data.currentPoints);
       }
-    });
+    };
 
-    // Round result
-    socket.on('game:result', (data: RoundResultEvent) => {
+    const handleResult = (data: RoundResultEvent) => {
       console.log('[useGameSocket] Round result:', data.result);
       setLastResult(data.result);
       setRoundNumber(data.roundNumber);
-    });
+    };
 
-    // Bet confirmation
-    socket.on('bet:confirmed', (data: BetConfirmedEvent) => {
+    const handleBetConfirmed = (data: BetConfirmedEvent) => {
       console.log('[useGameSocket] Bet confirmed:', data);
       setConfirmedBets(data.bets);
       // Save confirmed bets for repeat functionality
       if (data.bets.length > 0) {
         saveLastBets();
       }
-    });
+    };
 
-    // Settlement
-    socket.on('bet:settlement', (data: BetSettlementEvent) => {
+    const handleSettlement = (data: BetSettlementEvent) => {
       console.log('[useGameSocket] Settlement:', data);
       setLastSettlement({
         bets: data.bets.map((b) => ({
@@ -197,29 +177,70 @@ export function useGameSocket(tableId?: string) {
         netResult: data.netResult,
       });
       setBalance(data.newBalance);
-    });
+    };
 
-    // Balance updates
-    socket.on('user:balance', (data: BalanceUpdateEvent) => {
+    const handleBalance = (data: BalanceUpdateEvent) => {
       console.log('[useGameSocket] Balance updated:', data.balance, data.reason);
       setBalance(data.balance);
-    });
+    };
 
-    // Roadmap updates
-    socket.on('game:roadmap', (data: RoadmapUpdateEvent) => {
+    const handleRoadmap = (data: RoadmapUpdateEvent) => {
       console.log('[useGameSocket] Roadmap updated:', data.recentRounds.length, 'rounds');
       setRoadmapData(data.recentRounds);
-    });
+    };
 
-    // Error handling
-    socket.on('error', (data: ErrorEvent) => {
+    const handleError = (data: ErrorEvent) => {
       console.error('[useGameSocket] Error:', data.code, data.message);
-      // Could show toast notification here
-    });
+    };
+
+    // Remove any existing listeners first to prevent duplicates
+    socket.off('connect', handleConnect);
+    socket.off('disconnect', handleDisconnect);
+    socket.off('game:state', handleGameState);
+    socket.off('game:phase', handlePhaseChange);
+    socket.off('game:timer', handleTimer);
+    socket.off('game:card', handleCard);
+    socket.off('game:result', handleResult);
+    socket.off('bet:confirmed', handleBetConfirmed);
+    socket.off('bet:settlement', handleSettlement);
+    socket.off('user:balance', handleBalance);
+    socket.off('game:roadmap', handleRoadmap);
+    socket.off('error', handleError);
+
+    // Add listeners
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('game:state', handleGameState);
+    socket.on('game:phase', handlePhaseChange);
+    socket.on('game:timer', handleTimer);
+    socket.on('game:card', handleCard);
+    socket.on('game:result', handleResult);
+    socket.on('bet:confirmed', handleBetConfirmed);
+    socket.on('bet:settlement', handleSettlement);
+    socket.on('user:balance', handleBalance);
+    socket.on('game:roadmap', handleRoadmap);
+    socket.on('error', handleError);
+
+    // If socket is already connected, initialize immediately
+    if (socket.connected) {
+      console.log('[useGameSocket] Socket already connected, initializing...');
+      initializeGame();
+    }
 
     return () => {
-      console.log('[useGameSocket] Cleanup');
-      hasConnected.current = false;
+      console.log('[useGameSocket] Cleanup - removing listeners');
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('game:state', handleGameState);
+      socket.off('game:phase', handlePhaseChange);
+      socket.off('game:timer', handleTimer);
+      socket.off('game:card', handleCard);
+      socket.off('game:result', handleResult);
+      socket.off('bet:confirmed', handleBetConfirmed);
+      socket.off('bet:settlement', handleSettlement);
+      socket.off('user:balance', handleBalance);
+      socket.off('game:roadmap', handleRoadmap);
+      socket.off('error', handleError);
       disconnectSocket();
       resetAll();
     };

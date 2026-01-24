@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useDragonTigerStore } from '../store/dragonTigerStore';
 import { useAuthStore } from '../store/authStore';
@@ -59,7 +59,6 @@ function disconnectSocket(): void {
 
 export function useDragonTigerSocket() {
   const { token, isAuthenticated } = useAuthStore();
-  const hasConnected = useRef(false);
 
   const {
     setConnected,
@@ -89,12 +88,7 @@ export function useDragonTigerSocket() {
       return;
     }
 
-    if (hasConnected.current) {
-      return;
-    }
-    hasConnected.current = true;
-
-    console.log('[useDragonTigerSocket] Connecting...');
+    console.log('[useDragonTigerSocket] Setting up socket connection...');
     const socket = connectSocket(token);
 
     // Helper function to initialize game state
@@ -107,24 +101,18 @@ export function useDragonTigerSocket() {
       socket.emit('dt:requestState');
     };
 
-    socket.on('connect', () => {
+    // Handler functions
+    const handleConnect = () => {
       console.log('[useDragonTigerSocket] Connected');
       initializeGame();
-    });
+    };
 
-    // If socket is already connected (e.g., from Lobby), initialize immediately
-    if (socket.connected) {
-      console.log('[useDragonTigerSocket] Socket already connected, initializing...');
-      initializeGame();
-    }
-
-    socket.on('disconnect', () => {
+    const handleDisconnect = () => {
       console.log('[useDragonTigerSocket] Disconnected');
       setConnected(false);
-    });
+    };
 
-    // Game state (for reconnection/initial load)
-    socket.on('dt:state', (data: any) => {
+    const handleState = (data: any) => {
       console.log('[useDragonTigerSocket] Received dt:state', data);
       setPhase(data.phase);
       setTimeRemaining(data.timeRemaining);
@@ -146,10 +134,9 @@ export function useDragonTigerSocket() {
       if (data.myBets && data.myBets.length > 0) {
         setConfirmedBets(data.myBets);
       }
-    });
+    };
 
-    // Phase change events
-    socket.on('dt:phase', (data: any) => {
+    const handlePhase = (data: any) => {
       console.log('[useDragonTigerSocket] Phase changed:', data.phase);
       setPhase(data.phase);
       setTimeRemaining(data.timeRemaining);
@@ -158,41 +145,36 @@ export function useDragonTigerSocket() {
       if (data.phase === 'betting') {
         resetForNewRound();
       }
-    });
+    };
 
-    // Timer tick
-    socket.on('dt:timer', (data: any) => {
+    const handleTimer = (data: any) => {
       setTimeRemaining(data.timeRemaining);
-    });
+    };
 
-    // Card dealing
-    socket.on('dt:card', (data: any) => {
+    const handleCard = (data: any) => {
       console.log('[useDragonTigerSocket] Card dealt:', data.target);
       if (data.target === 'dragon') {
         setDragonCard(data.card, data.value);
       } else {
         setTigerCard(data.card, data.value);
       }
-    });
+    };
 
-    // Round result
-    socket.on('dt:result', (data: any) => {
+    const handleResult = (data: any) => {
       console.log('[useDragonTigerSocket] Round result:', data.result);
       setLastResult(data.result, data.isSuitedTie);
       setRoundNumber(data.roundNumber);
-    });
+    };
 
-    // Bet confirmation
-    socket.on('dt:bet:confirmed', (data: any) => {
+    const handleBetConfirmed = (data: any) => {
       console.log('[useDragonTigerSocket] Bet confirmed:', data);
       setConfirmedBets(data.bets);
       if (data.bets.length > 0) {
         saveLastBets();
       }
-    });
+    };
 
-    // Settlement
-    socket.on('dt:settlement', (data: any) => {
+    const handleSettlement = (data: any) => {
       console.log('[useDragonTigerSocket] Settlement:', data);
       setLastSettlement({
         bets: data.bets.map((b: any) => ({
@@ -205,28 +187,70 @@ export function useDragonTigerSocket() {
         netResult: data.netResult,
       });
       setBalance(data.newBalance);
-    });
+    };
 
-    // Balance updates
-    socket.on('user:balance', (data: any) => {
+    const handleBalance = (data: any) => {
       console.log('[useDragonTigerSocket] Balance updated:', data.balance, data.reason);
       setBalance(data.balance);
-    });
+    };
 
-    // Roadmap updates
-    socket.on('dt:roadmap', (data: any) => {
+    const handleRoadmap = (data: any) => {
       console.log('[useDragonTigerSocket] Roadmap updated:', data.recentRounds.length, 'rounds');
       setRoadmapData(data.recentRounds);
-    });
+    };
 
-    // Error handling
-    socket.on('error', (data: any) => {
+    const handleError = (data: any) => {
       console.error('[useDragonTigerSocket] Error:', data.code, data.message);
-    });
+    };
+
+    // Remove any existing listeners first to prevent duplicates
+    socket.off('connect', handleConnect);
+    socket.off('disconnect', handleDisconnect);
+    socket.off('dt:state', handleState);
+    socket.off('dt:phase', handlePhase);
+    socket.off('dt:timer', handleTimer);
+    socket.off('dt:card', handleCard);
+    socket.off('dt:result', handleResult);
+    socket.off('dt:bet:confirmed', handleBetConfirmed);
+    socket.off('dt:settlement', handleSettlement);
+    socket.off('user:balance', handleBalance);
+    socket.off('dt:roadmap', handleRoadmap);
+    socket.off('error', handleError);
+
+    // Add listeners
+    socket.on('connect', handleConnect);
+    socket.on('disconnect', handleDisconnect);
+    socket.on('dt:state', handleState);
+    socket.on('dt:phase', handlePhase);
+    socket.on('dt:timer', handleTimer);
+    socket.on('dt:card', handleCard);
+    socket.on('dt:result', handleResult);
+    socket.on('dt:bet:confirmed', handleBetConfirmed);
+    socket.on('dt:settlement', handleSettlement);
+    socket.on('user:balance', handleBalance);
+    socket.on('dt:roadmap', handleRoadmap);
+    socket.on('error', handleError);
+
+    // If socket is already connected, initialize immediately
+    if (socket.connected) {
+      console.log('[useDragonTigerSocket] Socket already connected, initializing...');
+      initializeGame();
+    }
 
     return () => {
-      console.log('[useDragonTigerSocket] Cleanup');
-      hasConnected.current = false;
+      console.log('[useDragonTigerSocket] Cleanup - removing listeners');
+      socket.off('connect', handleConnect);
+      socket.off('disconnect', handleDisconnect);
+      socket.off('dt:state', handleState);
+      socket.off('dt:phase', handlePhase);
+      socket.off('dt:timer', handleTimer);
+      socket.off('dt:card', handleCard);
+      socket.off('dt:result', handleResult);
+      socket.off('dt:bet:confirmed', handleBetConfirmed);
+      socket.off('dt:settlement', handleSettlement);
+      socket.off('user:balance', handleBalance);
+      socket.off('dt:roadmap', handleRoadmap);
+      socket.off('error', handleError);
       disconnectSocket();
       resetAll();
     };
