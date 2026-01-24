@@ -16,18 +16,18 @@ import PlayingCard from '../components/game/PlayingCard';
 
 // Chip component - Casino style with edge notches (matches ChipSettingsModal)
 function Chip({ value, selected, onClick, disabled }: { value: number; selected: boolean; onClick: () => void; disabled?: boolean }) {
-  // Chip colors matching ALL_CHIP_OPTIONS
+  // Chip colors matching ALL_CHIP_OPTIONS from gameStore.ts
   const chipColors: Record<number, string> = {
-    10: 'from-red-500 to-red-700',
-    50: 'from-blue-500 to-blue-700',
-    100: 'from-yellow-500 to-yellow-600',
-    500: 'from-gray-700 to-gray-900',
-    1000: 'from-orange-500 to-orange-700',
-    5000: 'from-amber-600 to-amber-800',
-    10000: 'from-purple-500 to-purple-700',
-    20000: 'from-pink-500 to-pink-700',
-    50000: 'from-emerald-500 to-emerald-700',
-    100000: 'from-cyan-500 to-cyan-700',
+    10: 'from-slate-400 to-slate-600',
+    50: 'from-green-500 to-green-700',
+    100: 'from-red-500 to-red-700',
+    500: 'from-purple-500 to-purple-700',
+    1000: 'from-amber-500 to-amber-700',
+    5000: 'from-cyan-500 to-cyan-700',
+    10000: 'from-fuchsia-500 to-fuchsia-700',
+    20000: 'from-rose-500 to-rose-700',
+    50000: 'from-indigo-500 to-indigo-700',
+    100000: 'from-yellow-500 to-yellow-700',
   };
 
   const color = chipColors[value] || 'from-gray-500 to-gray-700';
