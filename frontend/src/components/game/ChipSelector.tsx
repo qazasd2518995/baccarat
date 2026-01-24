@@ -37,7 +37,7 @@ export default function ChipSelector({ showSettings = true }: ChipSelectorProps)
           return (
             <motion.button
               key={value}
-              whileHover={!isDisabled ? { scale: 1.1, y: -4 } : {}}
+              whileHover={!isDisabled ? { scale: 1.05 } : {}}
               whileTap={!isDisabled ? { scale: 0.95 } : {}}
               onClick={() => !isDisabled && setSelectedChip(value)}
               disabled={isDisabled}
@@ -45,9 +45,8 @@ export default function ChipSelector({ showSettings = true }: ChipSelectorProps)
                 relative w-14 h-14 rounded-full flex items-center justify-center font-bold text-xs
                 bg-gradient-to-br ${color}
                 border-4 border-white/30
-                shadow-lg
-                transition-all duration-200
-                ${isSelected ? 'ring-4 ring-white/50 ring-offset-2 ring-offset-slate-900 scale-110' : ''}
+                shadow-lg transition-all duration-200
+                ${isSelected ? 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900' : ''}
                 ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
               `}
             >
@@ -55,7 +54,7 @@ export default function ChipSelector({ showSettings = true }: ChipSelectorProps)
               <div className="absolute inset-2 rounded-full border-2 border-white/20" />
 
               {/* Chip value */}
-              <span className="relative z-10 text-white font-black drop-shadow-lg">
+              <span className="relative z-10 text-white font-black drop-shadow-lg text-[10px]">
                 {formatChipValue(value)}
               </span>
 
@@ -84,10 +83,10 @@ export default function ChipSelector({ showSettings = true }: ChipSelectorProps)
         {/* Settings button */}
         {showSettings && (
           <motion.button
-            whileHover={{ scale: 1.1, y: -4 }}
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsSettingsOpen(true)}
-            className="relative w-14 h-14 rounded-full flex items-center justify-center font-bold text-xs bg-gradient-to-br from-gray-500 to-gray-700 border-4 border-white/30 shadow-lg cursor-pointer"
+            className="relative w-14 h-14 rounded-full flex items-center justify-center font-bold text-xs bg-gradient-to-br from-gray-500 to-gray-700 border-4 border-white/30 shadow-lg transition-all duration-200 cursor-pointer"
           >
             {/* Inner circle decoration */}
             <div className="absolute inset-2 rounded-full border-2 border-white/20" />
