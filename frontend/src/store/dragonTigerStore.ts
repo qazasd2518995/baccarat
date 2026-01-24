@@ -4,14 +4,17 @@ import type { Card } from '../types';
 // Dragon Tiger specific types
 export type DragonTigerResult = 'dragon' | 'tiger' | 'tie';
 export type DragonTigerBetType =
-  | 'dragon'
-  | 'tiger'
-  | 'dt_tie'
-  | 'dt_suited_tie'
-  | 'dragon_big'
-  | 'dragon_small'
-  | 'tiger_big'
-  | 'tiger_small';
+  | 'dragon'           // 龍 1:1
+  | 'tiger'            // 虎 1:1
+  | 'dt_tie'           // 和 1:8
+  | 'dragon_odd'       // 龍單 1:0.75 (牌點數為奇數)
+  | 'dragon_even'      // 龍雙 1:1.05 (牌點數為偶數)
+  | 'tiger_odd'        // 虎單 1:0.75
+  | 'tiger_even'       // 虎雙 1:1.05
+  | 'dragon_red'       // 龍紅 1:0.9 (紅心/方塊)
+  | 'dragon_black'     // 龍黑 1:0.9 (黑桃/梅花)
+  | 'tiger_red'        // 虎紅 1:0.9
+  | 'tiger_black';     // 虎黑 1:0.9
 
 export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
 
@@ -114,7 +117,7 @@ interface DragonTigerStore {
   resetAll: () => void;
 }
 
-export const CHIP_VALUES = [10, 50, 100, 500, 1000, 5000, 10000];
+export const CHIP_VALUES = [5, 10, 25, 50, 100, 500];
 
 export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
   // Socket connection
