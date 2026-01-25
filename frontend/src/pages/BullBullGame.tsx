@@ -11,6 +11,7 @@ import {
   WifiOff,
   CheckCircle,
 } from 'lucide-react';
+import { MobileNavBar } from '../components/layout/MobileNavBar';
 import { useBullBullStore, type BullBullBetType, CHIP_VALUES, RANK_NAMES } from '../store/bullBullStore';
 import { useBullBullSocket } from '../hooks/useBullBullSocket';
 import PlayingCard from '../components/game/PlayingCard';
@@ -304,53 +305,53 @@ export default function BullBullGame() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#1a1f2e] to-[#0d1117] text-white">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-[#0d1117]/80 border-b border-gray-800">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 bg-[#0d1117]/80 border-b border-gray-800">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => navigate('/')}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="p-1.5 sm:p-2 hover:bg-white/10 rounded-lg transition-colors"
           >
-            <ChevronLeft size={24} />
+            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
           <div>
-            <h1 className="text-lg font-bold">牛牛</h1>
-            <div className="text-xs text-gray-400">
+            <h1 className="text-base sm:text-lg font-bold">牛牛</h1>
+            <div className="text-[10px] sm:text-xs text-gray-400">
               靴 #{shoeNumber} · 局 #{roundNumber}
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {/* Connection status */}
           <div className={`flex items-center gap-1 ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
-            {isConnected ? <Wifi size={16} /> : <WifiOff size={16} />}
+            {isConnected ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
           </div>
 
           {/* Balance */}
-          <div className="bg-gradient-to-r from-yellow-600 to-yellow-700 px-4 py-2 rounded-lg">
-            <div className="text-xs text-yellow-200">餘額</div>
-            <div className="font-bold">${balance.toLocaleString()}</div>
+          <div className="bg-gradient-to-r from-yellow-600 to-yellow-700 px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg">
+            <div className="text-[10px] sm:text-xs text-yellow-200">餘額</div>
+            <div className="text-sm sm:text-base font-bold">${balance.toLocaleString()}</div>
           </div>
 
           {/* Help */}
           <button
             onClick={() => setShowRules(true)}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            className="hidden sm:block p-2 hover:bg-white/10 rounded-lg transition-colors"
           >
-            <HelpCircle size={20} />
+            <HelpCircle className="w-5 h-5" />
           </button>
         </div>
       </div>
 
       {/* Main game area */}
-      <div className="p-4">
+      <div className="p-2 sm:p-4 pb-32 sm:pb-36">
         {/* Phase and timer */}
-        <div className="text-center mb-6">
-          <div className={`text-2xl font-bold ${phaseDisplay.color}`}>
+        <div className="text-center mb-4 sm:mb-6">
+          <div className={`text-xl sm:text-2xl font-bold ${phaseDisplay.color}`}>
             {phaseDisplay.text}
           </div>
           {phase === 'betting' && (
-            <div className="text-4xl font-bold text-white mt-2">
+            <div className="text-3xl sm:text-4xl font-bold text-white mt-1 sm:mt-2">
               {timeRemaining}
             </div>
           )}
@@ -371,7 +372,7 @@ export default function BullBullGame() {
           </div>
 
           {/* Players */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <HandDisplay
               position="閒1"
               hand={player1}
@@ -413,9 +414,9 @@ export default function BullBullGame() {
         )}
 
         {/* Roadmap */}
-        <div className="mt-6 bg-[#0d1117] rounded-lg p-4 max-w-4xl mx-auto">
-          <div className="text-sm font-bold mb-3">歷史記錄</div>
-          <div className="grid grid-cols-10 gap-1 text-xs">
+        <div className="mt-4 sm:mt-6 bg-[#0d1117] rounded-lg p-2 sm:p-4 max-w-4xl mx-auto">
+          <div className="text-xs sm:text-sm font-bold mb-2 sm:mb-3">歷史記錄</div>
+          <div className="grid grid-cols-5 sm:grid-cols-10 gap-1 text-xs overflow-x-auto">
             {roadmapData.slice(-30).map((round, i) => (
               <div key={i} className="p-1 bg-gray-800/50 rounded text-center">
                 <div className="font-bold text-yellow-400 text-[10px]">
@@ -438,10 +439,10 @@ export default function BullBullGame() {
         </div>
       </div>
 
-      {/* Betting panel */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#0d1117]/95 border-t border-gray-800 p-4">
+      {/* Betting panel - Desktop */}
+      <div className="hidden sm:block fixed bottom-0 left-0 right-0 bg-[#0d1117]/95 border-t border-gray-800 p-4 pb-safe">
         {/* Payout info */}
-        <div className="flex justify-center gap-4 mb-4 text-xs text-gray-400">
+        <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-4 text-[10px] sm:text-xs text-gray-400">
           <span>五花牛 5:1</span>
           <span>牛牛 3:1</span>
           <span>牛七~牛九 2:1</span>
@@ -449,9 +450,9 @@ export default function BullBullGame() {
         </div>
 
         {/* Chips and controls */}
-        <div className="flex items-center justify-between max-w-3xl mx-auto">
+        <div className="flex items-center justify-between max-w-3xl mx-auto gap-4">
           {/* Chips */}
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide">
             {CHIP_VALUES.map((value) => (
               <Chip
                 key={value}
@@ -464,32 +465,47 @@ export default function BullBullGame() {
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-2">
+          <div className="flex gap-2 shrink-0">
             <button
               onClick={handleCancel}
               disabled={!canBet || (!hasPendingBets && !hasConfirmedBets)}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg flex items-center gap-2"
+              className="px-3 sm:px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg flex items-center gap-1 sm:gap-2 text-sm"
             >
-              <X size={18} />
-              取消
+              <X className="w-4 h-4" />
+              <span className="hidden sm:inline">取消</span>
             </button>
             <button
               onClick={handleRepeat}
               disabled={!canBet || lastBets.length === 0}
-              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg flex items-center gap-2"
+              className="px-3 sm:px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg flex items-center gap-1 sm:gap-2 text-sm"
             >
-              <RotateCcw size={18} />
-              重複
+              <RotateCcw className="w-4 h-4" />
+              <span className="hidden sm:inline">重複</span>
             </button>
             <button
               onClick={handleConfirm}
               disabled={!canBet || !hasPendingBets}
-              className="px-6 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg flex items-center gap-2 font-bold"
+              className="px-4 sm:px-6 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg flex items-center gap-1 sm:gap-2 font-bold text-sm"
             >
-              <Check size={18} />
+              <Check className="w-4 h-4" />
               確認
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Betting panel - Mobile chips only */}
+      <div className="sm:hidden fixed bottom-14 left-0 right-0 bg-[#0d1117]/95 border-t border-gray-800 px-2 py-2">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide justify-center">
+          {CHIP_VALUES.map((value) => (
+            <Chip
+              key={value}
+              value={value}
+              selected={selectedChip === value}
+              onClick={() => setSelectedChip(value)}
+              disabled={!canBet}
+            />
+          ))}
         </div>
       </div>
 
@@ -579,6 +595,19 @@ export default function BullBullGame() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileNavBar
+        className="sm:hidden"
+        variant="game"
+        balance={balance}
+        totalBet={pendingBets.reduce((sum, b) => sum + b.amount, 0) + confirmedBets.reduce((sum, b) => sum + b.amount, 0)}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+        onClear={clearPendingBets}
+        canBet={canBet}
+        hasBets={hasPendingBets}
+      />
     </div>
   );
 }

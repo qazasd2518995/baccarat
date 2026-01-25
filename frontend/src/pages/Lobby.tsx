@@ -28,7 +28,10 @@ import {
   Smile,
   Send,
   LogOut,
+  Menu,
+  X,
 } from 'lucide-react';
+import { MobileNavBar } from '../components/layout/MobileNavBar';
 import { useAuthStore } from '../store/authStore';
 import {
   GameSettingsModal,
@@ -84,6 +87,7 @@ export default function Lobby() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState<'normal' | 'good_road'>('normal');
   const [showResultsProportion, setShowResultsProportion] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Modal states
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -315,29 +319,35 @@ export default function Lobby() {
   return (
     <div className="h-screen bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
       {/* Top Navigation Bar - GoFun Style */}
-      <header className="h-12 bg-[#0d1117] flex items-center justify-between px-4 border-b border-gray-800/50">
-        {/* Left - Logo */}
-        <div className="flex items-center gap-4">
+      <header className="h-12 bg-[#0d1117] flex items-center justify-between px-2 sm:px-4 border-b border-gray-800/50">
+        {/* Left - Logo & Mobile Menu */}
+        <div className="flex items-center gap-2 sm:gap-4">
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="lg:hidden p-1 text-gray-400 hover:text-white"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">G</div>
-            <span className="text-orange-500 font-bold text-xl tracking-wide">GoFun</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center text-white font-bold text-xs sm:text-sm">G</div>
+            <span className="hidden sm:inline text-orange-500 font-bold text-xl tracking-wide">GoFun</span>
           </div>
         </div>
 
         {/* Center - Balance & Deposit */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-teal-500 flex items-center justify-center text-xs font-bold">T</div>
-            <span className="text-green-400 font-bold">{Number(user?.balance || 10000).toLocaleString()}</span>
-            <span className="text-gray-500">^</span>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-500 flex items-center justify-center text-[10px] sm:text-xs font-bold">T</div>
+            <span className="text-green-400 font-bold text-sm sm:text-base">{Number(user?.balance || 10000).toLocaleString()}</span>
           </div>
-          <button className="bg-green-500 hover:bg-green-400 text-white px-4 py-1 rounded text-sm font-bold transition">
+          <button className="bg-green-500 hover:bg-green-400 text-white px-2 sm:px-4 py-1 rounded text-xs sm:text-sm font-bold transition">
             {t('deposit')}
           </button>
         </div>
 
-        {/* Right - User Info */}
-        <div className="flex items-center gap-4">
+        {/* Right - User Info (desktop) */}
+        <div className="hidden md:flex items-center gap-4">
           <button className="text-gray-400 hover:text-white">
             <Bell className="w-5 h-5" />
           </button>
@@ -367,12 +377,42 @@ export default function Lobby() {
             <LogOut className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Right - Mobile icons */}
+        <div className="flex md:hidden items-center gap-2">
+          <button className="text-gray-400 hover:text-white p-1">
+            <Bell className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
+            className="text-gray-400 hover:text-red-400 p-1"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        </div>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar */}
-        <div className="w-64 bg-[#141922] border-r border-gray-800/50 flex flex-col">
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Mobile Menu Overlay */}
+        {mobileMenuOpen && (
+          <div
+            className="lg:hidden fixed inset-0 bg-black/60 z-40"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+
+        {/* Left Sidebar - Hidden on mobile, slide-in menu */}
+        <div className={`
+          fixed lg:relative inset-y-0 left-0 z-50
+          w-64 bg-[#141922] border-r border-gray-800/50 flex flex-col
+          transform transition-transform duration-300 ease-in-out
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          lg:flex
+        `}>
           {/* OFA LIVE Header */}
           <div className="p-4 border-b border-gray-800/50">
             <div className="flex items-center gap-2 mb-4">
@@ -483,15 +523,15 @@ export default function Lobby() {
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {/* Sub Navigation */}
-          <div className="h-10 bg-[#0d1117] flex items-center px-4 gap-4 border-b border-gray-800/50">
-            <button className="text-gray-500 hover:text-white">
+          <div className="h-auto sm:h-10 bg-[#0d1117] flex flex-wrap sm:flex-nowrap items-center px-2 sm:px-4 gap-2 sm:gap-4 py-2 sm:py-0 border-b border-gray-800/50">
+            <button className="hidden sm:block text-gray-500 hover:text-white">
               <Volume2 className="w-5 h-5" />
             </button>
 
-            {/* Game Type Tabs */}
-            <div className="flex items-center gap-1 bg-[#1e2a3a] rounded-lg p-1">
+            {/* Game Type Tabs - Scrollable on mobile */}
+            <div className="flex items-center gap-1 bg-[#1e2a3a] rounded-lg p-1 overflow-x-auto scrollbar-hide w-full sm:w-auto">
               {[
                 { id: 'all', labelKey: 'allGames', icon: LayoutGrid },
                 { id: 'baccarat', labelKey: 'baccarat', icon: Spade },
@@ -501,33 +541,33 @@ export default function Lobby() {
                 <button
                   key={tab.id}
                   onClick={() => setSelectedCategory(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded text-sm transition ${
+                  className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition whitespace-nowrap ${
                     selectedCategory === tab.id
                       ? 'bg-[#2a3548] text-white'
                       : 'text-gray-500 hover:text-gray-300'
                   }`}
                 >
-                  {tab.icon && <tab.icon className="w-4 h-4" />}
+                  {tab.icon && <tab.icon className="w-3 h-3 sm:w-4 sm:h-4" />}
                   {t(tab.labelKey)}
                 </button>
               ))}
             </div>
 
-            <button className="flex items-center gap-1.5 px-3 py-1 text-gray-500 hover:text-gray-300 text-sm">
+            <button className="hidden lg:flex items-center gap-1.5 px-3 py-1 text-gray-500 hover:text-gray-300 text-sm">
               <Globe className="w-4 h-4" /> {t('asia')}
             </button>
 
-            <button className="flex items-center gap-1.5 px-3 py-1 text-gray-500 hover:text-gray-300 text-sm">
+            <button className="hidden lg:flex items-center gap-1.5 px-3 py-1 text-gray-500 hover:text-gray-300 text-sm">
               <LayoutGrid className="w-4 h-4" /> {t('multiTables')}
             </button>
 
-            <div className="flex-1" />
+            <div className="hidden sm:block flex-1" />
 
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-1 bg-[#1e2a3a] rounded-lg p-1">
+            <div className="hidden sm:flex items-center gap-1 bg-[#1e2a3a] rounded-lg p-1">
               <button
                 onClick={() => setViewMode('normal')}
-                className={`px-3 py-1 rounded text-sm transition ${
+                className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition ${
                   viewMode === 'normal' ? 'bg-gray-600 text-white' : 'text-gray-500'
                 }`}
               >
@@ -535,7 +575,7 @@ export default function Lobby() {
               </button>
               <button
                 onClick={() => setViewMode('good_road')}
-                className={`px-3 py-1 rounded text-sm transition ${
+                className={`px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition ${
                   viewMode === 'good_road' ? 'bg-gray-600 text-white' : 'text-gray-500'
                 }`}
               >
@@ -544,23 +584,23 @@ export default function Lobby() {
             </div>
 
             {/* Action buttons */}
-            <button className="p-1 text-gray-500 hover:text-white">
+            <button className="hidden sm:block p-1 text-gray-500 hover:text-white">
               <Maximize className="w-4 h-4" />
             </button>
-            <button className="p-1 text-gray-500 hover:text-white">
+            <button className="hidden sm:block p-1 text-gray-500 hover:text-white">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
           {/* Tables Grid */}
-          <div className="flex-1 p-4 overflow-auto bg-[#0d1117]">
+          <div className="flex-1 p-2 sm:p-4 overflow-auto bg-[#0d1117] pb-20 xl:pb-4">
             {filteredTables.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <LayoutGrid className="w-16 h-16 mb-4 opacity-50" />
-                <p>{t('noTablesAvailable')}</p>
+                <LayoutGrid className="w-12 h-12 sm:w-16 sm:h-16 mb-4 opacity-50" />
+                <p className="text-sm sm:text-base">{t('noTablesAvailable')}</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
                 {filteredTables.map((table, index) => {
                   const percentages = getResultPercentages(table.roadmap);
                   return (
@@ -658,8 +698,8 @@ export default function Lobby() {
           </div>
         </div>
 
-        {/* Right Sidebar */}
-        <div className="w-56 bg-[#141922] border-l border-gray-800/50 flex flex-col">
+        {/* Right Sidebar - Hidden on mobile and tablet */}
+        <div className="hidden xl:flex w-56 bg-[#141922] border-l border-gray-800/50 flex-col shrink-0">
           {/* Menu Links */}
           <div className="p-4 space-y-1">
             <button
@@ -777,6 +817,13 @@ export default function Lobby() {
         isOpen={showFollowingModal}
         onClose={() => setShowFollowingModal(false)}
         onGoToTable={handleJoinTable}
+      />
+
+      {/* Mobile Bottom Navigation */}
+      <MobileNavBar
+        className="xl:hidden"
+        variant="lobby"
+        balance={Number(user?.balance || 0)}
       />
     </div>
   );

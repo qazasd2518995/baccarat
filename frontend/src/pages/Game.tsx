@@ -32,6 +32,7 @@ import {
   CheckCircle,
   Coins,
 } from 'lucide-react';
+import { MobileNavBar } from '../components/layout/MobileNavBar';
 import { useGameStore } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
 import { useGameSocket } from '../hooks/useGameSocket';
@@ -759,21 +760,21 @@ export default function Game() {
   return (
     <div className="h-screen bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
       {/* Top Header Bar */}
-      <header className="h-11 bg-[#0d1117] flex items-center justify-between px-4 border-b border-gray-800/50">
+      <header className="h-11 bg-[#0d1117] flex items-center justify-between px-2 sm:px-4 border-b border-gray-800/50">
         {/* Left - Back & Info */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => navigate('/lobby')}
             className="p-1 text-gray-400 hover:text-white"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <button className="p-1 text-gray-400 hover:text-white">
+          <button className="hidden sm:block p-1 text-gray-400 hover:text-white">
             <Info className="w-4 h-4" />
           </button>
           <button
             onClick={() => setIsRulesOpen(true)}
-            className="p-1 text-gray-400 hover:text-white"
+            className="hidden sm:block p-1 text-gray-400 hover:text-white"
           >
             <HelpCircle className="w-4 h-4" />
           </button>
@@ -786,15 +787,17 @@ export default function Game() {
           {/* Connection Status */}
           <div className={`flex items-center gap-1 text-xs ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
             {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-            {isConnected ? t('live') : t('offline')}
+            <span className="hidden sm:inline">{isConnected ? t('live') : t('offline')}</span>
           </div>
         </div>
 
-        {/* Center - empty */}
-        <div />
+        {/* Center - Balance (mobile) */}
+        <div className="xl:hidden flex items-center gap-2">
+          <span className="text-amber-400 font-bold text-sm">${balance.toLocaleString()}</span>
+        </div>
 
         {/* Right - Controls */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={toggleMute}
             className="p-1 text-gray-400 hover:text-white"
@@ -803,7 +806,7 @@ export default function Game() {
           </button>
           <button
             onClick={toggleFullscreen}
-            className="p-1 text-gray-400 hover:text-white"
+            className="hidden sm:block p-1 text-gray-400 hover:text-white"
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </button>
@@ -818,8 +821,8 @@ export default function Game() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - User Info */}
-        <div className="w-60 bg-[#141922] border-r border-gray-800/50 flex flex-col">
+        {/* Left Sidebar - User Info (hidden on mobile/tablet) */}
+        <div className="hidden xl:flex w-60 bg-[#141922] border-r border-gray-800/50 flex-col shrink-0">
           {/* OFA LIVE Header */}
           <div className="p-4 border-b border-gray-800/50">
             <div className="flex items-center justify-between mb-4">
@@ -939,7 +942,7 @@ export default function Game() {
         </div>
 
         {/* Center - Game Area */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Video Area - Takes remaining space */}
           <div className="flex-1 relative bg-gradient-to-br from-[#2d1f4e] via-[#1a1535] to-[#0f1525] overflow-hidden">
             {/* Background decorative elements */}
@@ -1131,9 +1134,9 @@ export default function Game() {
           {/* Betting Panel */}
           <div className="bg-[#0d1117]">
             {/* Control Bar */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800/50">
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-400">{t('switchPlay')}</span>
+            <div className="flex flex-wrap sm:flex-nowrap items-center justify-between px-2 sm:px-4 py-2 gap-2 border-b border-gray-800/50">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className="hidden sm:inline text-xs text-gray-400">{t('switchPlay')}</span>
                 <span className="text-xs text-gray-500">{t('noComm')}</span>
                 <button
                   onClick={() => setIsNoCommission(!isNoCommission)}
@@ -1146,7 +1149,7 @@ export default function Game() {
                   {isNoCommission ? t('on') || '開' : t('off') || '關'}
                 </button>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="hidden xl:flex items-center gap-2">
                 <button
                   onClick={handleCancel}
                   disabled={!canBet || pendingBets.length === 0}
@@ -1169,7 +1172,7 @@ export default function Game() {
                   <Check className="w-3 h-3" /> {t('confirm')}
                 </button>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="hidden lg:flex items-center gap-3">
                 <button className="text-xs text-gray-400 hover:text-white">{t('signal')}</button>
                 <button className="text-xs text-gray-400 hover:text-white flex items-center gap-1">
                   <Video className="w-3 h-3" /> {t('liveCheck')}
@@ -1179,9 +1182,9 @@ export default function Game() {
             </div>
 
             {/* Betting Areas - Full Width - Exact match to reference image */}
-            <div className="flex items-stretch h-[360px]" style={{ backgroundColor: '#FFFFFF' }}>
-              {/* Left: Ask Roads (莊問路 / 閒問路) */}
-              <div className="w-[22%] flex flex-col">
+            <div className="flex flex-col lg:flex-row lg:items-stretch min-h-[200px] lg:h-[360px] pb-16 xl:pb-0" style={{ backgroundColor: '#FFFFFF' }}>
+              {/* Left: Ask Roads (莊問路 / 閒問路) - Hidden on mobile */}
+              <div className="hidden lg:flex lg:w-[22%] flex-col">
                 {/* 莊問路 */}
                 <div className="flex flex-1 border-b border-gray-400">
                   {/* Vertical red label */}
@@ -1237,16 +1240,16 @@ export default function Game() {
               {/* Center: Betting Buttons */}
               <div className="flex-1 flex flex-col border-l border-r border-gray-400">
                 {/* Top Row - Side bets (5 buttons) */}
-                <div className="flex h-[95px] border-b border-gray-400">
+                <div className="flex flex-wrap lg:flex-nowrap h-auto lg:h-[95px] border-b border-gray-400">
                   {/* 閒龍寶 - Player Dragon Bonus */}
                   <button
                     onClick={() => handlePlaceBet('player_bonus')}
                     disabled={!canBet}
-                    className={`relative flex-1 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('player_bonus') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
+                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('player_bonus') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#E0F2FE' }}
                   >
-                    <span className="text-blue-700 text-sm font-medium">{t('playerBonus')}</span>
-                    <span className="text-red-600 text-xs">1:30</span>
+                    <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('playerBonus')}</span>
+                    <span className="text-red-600 text-[10px] sm:text-xs">1:30</span>
                     {getBetAmount('player_bonus') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('player_bonus')}</div>
                     )}
@@ -1256,11 +1259,11 @@ export default function Game() {
                   <button
                     onClick={() => handlePlaceBet('player_pair')}
                     disabled={!canBet}
-                    className={`relative flex-1 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('player_pair') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
+                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('player_pair') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#F0F4FF' }}
                   >
-                    <span className="text-gray-800 text-sm font-medium">{t('playerPair')}</span>
-                    <span className="text-red-600 text-sm font-bold">1:11</span>
+                    <span className="text-gray-800 text-xs sm:text-sm font-medium">{t('playerPair')}</span>
+                    <span className="text-red-600 text-xs sm:text-sm font-bold">1:11</span>
                     {getBetAmount('player_pair') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('player_pair')}</div>
                     )}
@@ -1270,12 +1273,12 @@ export default function Game() {
                   <button
                     onClick={() => handlePlaceBet('super_six')}
                     disabled={!canBet}
-                    className={`relative flex-1 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('super_six') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
+                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('super_six') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#F0FFF4' }}
                   >
-                    <span className="text-purple-700 text-[10px] font-bold tracking-wider">SUPER</span>
-                    <span className="text-purple-700 text-3xl font-black leading-none">6</span>
-                    <span className="text-red-600 text-[10px]">1:12/1:20</span>
+                    <span className="text-purple-700 text-[8px] sm:text-[10px] font-bold tracking-wider">SUPER</span>
+                    <span className="text-purple-700 text-xl sm:text-3xl font-black leading-none">6</span>
+                    <span className="text-red-600 text-[8px] sm:text-[10px]">1:12/1:20</span>
                     {getBetAmount('super_six') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('super_six')}</div>
                     )}
@@ -1285,11 +1288,11 @@ export default function Game() {
                   <button
                     onClick={() => handlePlaceBet('banker_pair')}
                     disabled={!canBet}
-                    className={`relative flex-1 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('banker_pair') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
+                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('banker_pair') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#FFF0F0' }}
                   >
-                    <span className="text-gray-800 text-sm font-medium">{t('bankerPair')}</span>
-                    <span className="text-red-600 text-sm font-bold">1:11</span>
+                    <span className="text-gray-800 text-xs sm:text-sm font-medium">{t('bankerPair')}</span>
+                    <span className="text-red-600 text-xs sm:text-sm font-bold">1:11</span>
                     {getBetAmount('banker_pair') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('banker_pair')}</div>
                     )}
@@ -1299,11 +1302,11 @@ export default function Game() {
                   <button
                     onClick={() => handlePlaceBet('banker_bonus')}
                     disabled={!canBet}
-                    className={`relative flex-1 flex flex-col items-center justify-center transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('banker_bonus') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
+                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-b lg:border-b-0 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('banker_bonus') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#FEE2E2' }}
                   >
-                    <span className="text-red-700 text-sm font-medium">{t('bankerBonus')}</span>
-                    <span className="text-red-600 text-xs">1:30</span>
+                    <span className="text-red-700 text-xs sm:text-sm font-medium">{t('bankerBonus')}</span>
+                    <span className="text-red-600 text-[10px] sm:text-xs">1:30</span>
                     {getBetAmount('banker_bonus') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('banker_bonus')}</div>
                     )}
@@ -1316,13 +1319,13 @@ export default function Game() {
                   <button
                     onClick={() => handlePlaceBet('player')}
                     disabled={!canBet}
-                    className={`relative flex-[2] flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('player') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
+                    className={`relative flex-[2] py-4 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('player') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#DBEAFE' }}
                   >
-                    <span className="text-blue-700 text-5xl font-black">{t('player')}</span>
-                    <span className="text-red-600 text-xl font-bold mt-1">1:1</span>
+                    <span className="text-blue-700 text-3xl sm:text-4xl lg:text-5xl font-black">{t('player')}</span>
+                    <span className="text-red-600 text-base sm:text-lg lg:text-xl font-bold mt-1">1:1</span>
                     {getBetAmount('player') > 0 && (
-                      <div className="absolute top-3 right-3 bg-yellow-500 text-black text-sm font-bold px-2.5 py-0.5 rounded-full shadow">{getBetAmount('player')}</div>
+                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-yellow-500 text-black text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full shadow">{getBetAmount('player')}</div>
                     )}
                   </button>
 
@@ -1330,13 +1333,13 @@ export default function Game() {
                   <button
                     onClick={() => handlePlaceBet('tie')}
                     disabled={!canBet}
-                    className={`relative flex-[1.2] flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('tie') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
+                    className={`relative flex-[1.2] py-4 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('tie') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#FEF9C3' }}
                   >
-                    <span className="text-green-700 text-5xl font-black">{t('tie')}</span>
-                    <span className="text-red-600 text-xl font-bold mt-1">1:8</span>
+                    <span className="text-green-700 text-3xl sm:text-4xl lg:text-5xl font-black">{t('tie')}</span>
+                    <span className="text-red-600 text-base sm:text-lg lg:text-xl font-bold mt-1">1:8</span>
                     {getBetAmount('tie') > 0 && (
-                      <div className="absolute top-3 right-3 bg-yellow-500 text-black text-sm font-bold px-2.5 py-0.5 rounded-full shadow">{getBetAmount('tie')}</div>
+                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-yellow-500 text-black text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full shadow">{getBetAmount('tie')}</div>
                     )}
                   </button>
 
@@ -1344,24 +1347,24 @@ export default function Game() {
                   <button
                     onClick={() => handlePlaceBet('banker')}
                     disabled={!canBet}
-                    className={`relative flex-[2] flex flex-col items-center justify-center transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('banker') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
+                    className={`relative flex-[2] py-4 sm:py-6 lg:py-0 flex flex-col items-center justify-center transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('banker') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
                     style={{ backgroundColor: '#FFE4E6' }}
                   >
-                    <span className="text-red-700 text-5xl font-black">{t('banker')}</span>
-                    <span className="text-red-600 text-xl font-bold mt-1">
+                    <span className="text-red-700 text-3xl sm:text-4xl lg:text-5xl font-black">{t('banker')}</span>
+                    <span className="text-red-600 text-base sm:text-lg lg:text-xl font-bold mt-1">
                       {isNoCommission ? '1:1' : '1:0.95'}
                     </span>
                     {isNoCommission && (
-                      <span className="text-red-500 text-xs">(6點贏 1:0.5)</span>
+                      <span className="text-red-500 text-[10px] sm:text-xs">(6點贏 1:0.5)</span>
                     )}
                     {getBetAmount('banker') > 0 && (
-                      <div className="absolute top-3 right-3 bg-yellow-500 text-black text-sm font-bold px-2.5 py-0.5 rounded-full shadow">{getBetAmount('banker')}</div>
+                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-yellow-500 text-black text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full shadow">{getBetAmount('banker')}</div>
                     )}
                   </button>
                 </div>
 
                 {/* Chips Row */}
-                <div className="flex justify-center items-center gap-1.5 py-2 bg-[#1a1f2e]">
+                <div className="flex justify-start lg:justify-center items-center gap-1 sm:gap-1.5 py-2 px-2 bg-[#1a1f2e] overflow-x-auto scrollbar-hide">
                   {displayedChips.map((value) => (
                     <Chip
                       key={value}
@@ -1405,8 +1408,8 @@ export default function Game() {
                 </div>
               </div>
 
-              {/* Right: Big Road + Derived Roads */}
-              <div className="w-[22%] flex flex-col">
+              {/* Right: Big Road + Derived Roads - Hidden on mobile */}
+              <div className="hidden lg:flex lg:w-[22%] flex-col">
                 {/* Big Road - circles with numbers */}
                 <div className="flex-1 p-1" style={{ backgroundColor: '#FFFFFF' }}>
                   <div className="grid grid-cols-10 grid-rows-6 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
@@ -1468,8 +1471,8 @@ export default function Game() {
           </div>
         </div>
 
-        {/* Right Sidebar */}
-        <div className="w-64 bg-[#141922] border-l border-gray-800/50 flex flex-col">
+        {/* Right Sidebar - Hidden on mobile/tablet */}
+        <div className="hidden xl:flex w-64 bg-[#141922] border-l border-gray-800/50 flex-col shrink-0">
           {/* Dealer Info */}
           <div className="p-3 border-b border-gray-800/50">
             <div className="flex items-center gap-3">
@@ -1686,6 +1689,19 @@ export default function Game() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileNavBar
+        className="xl:hidden"
+        variant="game"
+        balance={balance}
+        totalBet={totalBet}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+        onClear={clearPendingBets}
+        canBet={canBet}
+        hasBets={pendingBets.length > 0}
+      />
     </div>
   );
 }
