@@ -1022,8 +1022,8 @@ export default function Game() {
                   <User className="w-20 h-20 text-gray-500/50" />
                 </div>
 
-                {/* Cards Display */}
-                <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 flex gap-24">
+                {/* Cards Display - Responsive positioning for mobile */}
+                <div className="absolute -bottom-8 sm:-bottom-16 lg:-bottom-24 left-1/2 -translate-x-1/2 flex gap-8 sm:gap-16 lg:gap-24">
                   {/* Player Cards */}
                   <div className="flex flex-col items-center">
                     {/* Third card - above, rotated 90 degrees */}

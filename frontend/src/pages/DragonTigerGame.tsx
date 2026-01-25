@@ -923,9 +923,9 @@ export default function DragonTigerGame() {
               <span className={`ml-2 font-bold ${phaseDisplay.color}`}>{roundNumber} - {phaseDisplay.text}</span>
             </div>
 
-            {/* Cards Display - Dragon vs Tiger */}
+            {/* Cards Display - Dragon vs Tiger - Responsive gap for mobile */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="flex items-center gap-20">
+              <div className="flex items-center gap-6 sm:gap-12 lg:gap-20">
                 {/* Dragon Side */}
                 <div className="text-center">
                   <div className="text-2xl font-bold text-red-400 mb-4">{t('dtDragon')}</div>
