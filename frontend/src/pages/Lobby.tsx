@@ -27,6 +27,7 @@ import {
   Volume2,
   Smile,
   Send,
+  LogOut,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import {
@@ -79,7 +80,7 @@ function BeadRoadCell({ result }: { result?: 'player' | 'banker' | 'tie' }) {
 export default function Lobby() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState<'normal' | 'good_road'>('normal');
   const [showResultsProportion, setShowResultsProportion] = useState(false);
@@ -354,6 +355,16 @@ export default function Lobby() {
             className="text-sm text-gray-400 hover:text-white flex items-center gap-1"
           >
             <Globe className="w-4 h-4" /> {i18n.language === 'zh' ? 'EN' : '中文'}
+          </button>
+          <button
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
+            className="text-sm text-gray-400 hover:text-red-400 flex items-center gap-1 ml-2"
+            title={t('logout')}
+          >
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </header>
