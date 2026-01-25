@@ -98,8 +98,18 @@ function Chip({ value, selected, onClick, disabled }: { value: number; selected:
   );
 }
 
+// Normalize result type: backend uses 'dt_tie', frontend expects 'tie'
+function normalizeResult(result: string | undefined): 'dragon' | 'tiger' | 'tie' | undefined {
+  if (!result) return undefined;
+  if (result === 'dt_tie') return 'tie';
+  if (result === 'dragon' || result === 'tiger' || result === 'tie') return result;
+  return undefined;
+}
+
 // Dragon Tiger Ask Road Cell - Shows 龍/虎/和 in circles
-function DTAskRoadCell({ result, labels }: { result?: 'dragon' | 'tiger' | 'tie'; labels: { dragon: string; tiger: string; tie: string } }) {
+function DTAskRoadCell({ result: rawResult, labels }: { result?: string; labels: { dragon: string; tiger: string; tie: string } }) {
+  const result = normalizeResult(rawResult);
+
   if (!result) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-white">
@@ -115,15 +125,6 @@ function DTAskRoadCell({ result, labels }: { result?: 'dragon' | 'tiger' | 'tie'
   };
 
   const style = styles[result];
-
-  // Guard against invalid result values
-  if (!style) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-white">
-        {/* Unknown result */}
-      </div>
-    );
-  }
 
   return (
     <div className="w-full h-full flex items-center justify-center bg-white">
@@ -143,8 +144,10 @@ function DTAskRoadCell({ result, labels }: { result?: 'dragon' | 'tiger' | 'tie'
 }
 
 // Dragon Tiger Big Road Cell
-function DTBigRoadCell({ result, tieCount = 0 }: { result?: 'dragon' | 'tiger'; tieCount?: number }) {
-  if (!result) {
+function DTBigRoadCell({ result: rawResult, tieCount = 0 }: { result?: string; tieCount?: number }) {
+  const result = normalizeResult(rawResult);
+
+  if (!result || result === 'tie') {
     return <div className="w-full h-full bg-white" />;
   }
 
@@ -154,7 +157,6 @@ function DTBigRoadCell({ result, tieCount = 0 }: { result?: 'dragon' | 'tiger'; 
   };
   const color = colors[result];
 
-  // Guard against invalid result values
   if (!color) {
     return <div className="w-full h-full bg-white" />;
   }
@@ -228,7 +230,7 @@ function DTDerivedRoadCell({ value, type }: { value?: 'red' | 'blue'; type: 'big
 }
 
 // Build Big Road data structure for Dragon Tiger
-function buildDTBigRoad(data: Array<{ result: 'dragon' | 'tiger' | 'tie' }>) {
+function buildDTBigRoad(data: Array<{ result: string }>) {
   const ROWS = 6;
   const COLS = 20;
   const grid: ({ result: 'dragon' | 'tiger'; tieCount: number } | null)[][] =
@@ -242,17 +244,21 @@ function buildDTBigRoad(data: Array<{ result: 'dragon' | 'tiger' | 'tie' }>) {
   let tieCount = 0;
 
   for (const round of data) {
-    if (round.result === 'tie') {
+    const result = normalizeResult(round.result);
+
+    if (result === 'tie') {
       tieCount++;
       continue;
     }
 
-    if (lastResult === null || round.result !== lastResult) {
+    if (!result) continue;
+
+    if (lastResult === null || result !== lastResult) {
       if (lastResult !== null) {
         col++;
         row = 0;
       }
-      lastResult = round.result;
+      lastResult = result;
     } else {
       row++;
       if (row >= ROWS) {
@@ -263,10 +269,191 @@ function buildDTBigRoad(data: Array<{ result: 'dragon' | 'tiger' | 'tie' }>) {
 
     if (col < COLS && row < ROWS) {
       grid[row][col] = {
-        result: round.result,
+        result: result,
         tieCount,
       };
       tieCount = 0;
+    }
+  }
+
+  return grid;
+}
+
+// Build Big Eye Road for Dragon Tiger (checks pattern similarity)
+function buildDTBigEyeRoad(bigRoadGrid: ({ result: 'dragon' | 'tiger'; tieCount: number } | null)[][]): ('red' | 'blue' | null)[][] {
+  const ROWS = 4;
+  const COLS = 16;
+  const grid: ('red' | 'blue' | null)[][] = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+
+  // Get column entries from big road
+  const getColumn = (col: number) => {
+    const entries: number[] = [];
+    for (let r = 0; r < 6; r++) {
+      if (bigRoadGrid[r]?.[col]) entries.push(r);
+    }
+    return entries;
+  };
+
+  let outputCol = 0;
+  let outputRow = 0;
+  let lastColor: 'red' | 'blue' | null = null;
+
+  // Start from column 2 (need at least 2 columns of history)
+  for (let col = 1; col < 20; col++) {
+    const currCol = getColumn(col);
+    const prevCol = getColumn(col - 1);
+
+    if (currCol.length === 0) continue;
+
+    for (let i = 0; i < currCol.length; i++) {
+      if (col === 1 && i === 0) continue; // Skip first entry of second column
+
+      // Compare with previous column
+      const currLen = i + 1;
+
+      let color: 'red' | 'blue';
+      if (col >= 2) {
+        const compareCol = getColumn(col - 1);
+        const compareLen = compareCol.length;
+        // Red if pattern continues (same length or both continue down)
+        // Blue if pattern breaks
+        if (currLen === 1) {
+          color = compareLen === 1 ? 'red' : 'blue';
+        } else {
+          color = currLen <= compareLen ? 'red' : 'blue';
+        }
+      } else {
+        color = prevCol.length === currLen ? 'red' : 'blue';
+      }
+
+      // Place in grid
+      if (lastColor !== null && color !== lastColor) {
+        outputCol++;
+        outputRow = 0;
+      } else if (lastColor !== null) {
+        outputRow++;
+        if (outputRow >= ROWS) {
+          outputRow = ROWS - 1;
+          outputCol++;
+        }
+      }
+
+      if (outputCol < COLS && outputRow < ROWS) {
+        grid[outputRow][outputCol] = color;
+        lastColor = color;
+      }
+    }
+  }
+
+  return grid;
+}
+
+// Build Small Road for Dragon Tiger
+function buildDTSmallRoad(bigRoadGrid: ({ result: 'dragon' | 'tiger'; tieCount: number } | null)[][]): ('red' | 'blue' | null)[][] {
+  const ROWS = 4;
+  const COLS = 16;
+  const grid: ('red' | 'blue' | null)[][] = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+
+  const getColumn = (col: number) => {
+    const entries: number[] = [];
+    for (let r = 0; r < 6; r++) {
+      if (bigRoadGrid[r]?.[col]) entries.push(r);
+    }
+    return entries;
+  };
+
+  let outputCol = 0;
+  let outputRow = 0;
+  let lastColor: 'red' | 'blue' | null = null;
+
+  // Start from column 3 (need 3 columns of history)
+  for (let col = 2; col < 20; col++) {
+    const currCol = getColumn(col);
+    const compareCol = getColumn(col - 2);
+
+    if (currCol.length === 0) continue;
+
+    for (let i = 0; i < currCol.length; i++) {
+      if (col === 2 && i === 0) continue;
+
+      const currLen = i + 1;
+      const compareLen = compareCol.length;
+
+      const color: 'red' | 'blue' = currLen === 1
+        ? (compareLen === 1 ? 'red' : 'blue')
+        : (currLen <= compareLen ? 'red' : 'blue');
+
+      if (lastColor !== null && color !== lastColor) {
+        outputCol++;
+        outputRow = 0;
+      } else if (lastColor !== null) {
+        outputRow++;
+        if (outputRow >= ROWS) {
+          outputRow = ROWS - 1;
+          outputCol++;
+        }
+      }
+
+      if (outputCol < COLS && outputRow < ROWS) {
+        grid[outputRow][outputCol] = color;
+        lastColor = color;
+      }
+    }
+  }
+
+  return grid;
+}
+
+// Build Cockroach Road for Dragon Tiger
+function buildDTCockroachRoad(bigRoadGrid: ({ result: 'dragon' | 'tiger'; tieCount: number } | null)[][]): ('red' | 'blue' | null)[][] {
+  const ROWS = 4;
+  const COLS = 16;
+  const grid: ('red' | 'blue' | null)[][] = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+
+  const getColumn = (col: number) => {
+    const entries: number[] = [];
+    for (let r = 0; r < 6; r++) {
+      if (bigRoadGrid[r]?.[col]) entries.push(r);
+    }
+    return entries;
+  };
+
+  let outputCol = 0;
+  let outputRow = 0;
+  let lastColor: 'red' | 'blue' | null = null;
+
+  // Start from column 4 (need 4 columns of history)
+  for (let col = 3; col < 20; col++) {
+    const currCol = getColumn(col);
+    const compareCol = getColumn(col - 3);
+
+    if (currCol.length === 0) continue;
+
+    for (let i = 0; i < currCol.length; i++) {
+      if (col === 3 && i === 0) continue;
+
+      const currLen = i + 1;
+      const compareLen = compareCol.length;
+
+      const color: 'red' | 'blue' = currLen === 1
+        ? (compareLen === 1 ? 'red' : 'blue')
+        : (currLen <= compareLen ? 'red' : 'blue');
+
+      if (lastColor !== null && color !== lastColor) {
+        outputCol++;
+        outputRow = 0;
+      } else if (lastColor !== null) {
+        outputRow++;
+        if (outputRow >= ROWS) {
+          outputRow = ROWS - 1;
+          outputCol++;
+        }
+      }
+
+      if (outputCol < COLS && outputRow < ROWS) {
+        grid[outputRow][outputCol] = color;
+        lastColor = color;
+      }
     }
   }
 
@@ -502,14 +689,19 @@ export default function DragonTigerGame() {
     loadRepeatBets();
   };
 
-  // Stats from roadmap
-  const dragonWins = roadmapData.filter(r => r.result === 'dragon').length;
-  const tigerWins = roadmapData.filter(r => r.result === 'tiger').length;
-  const ties = roadmapData.filter(r => r.result === 'tie').length;
+  // Stats from roadmap (normalize dt_tie to tie)
+  const dragonWins = roadmapData.filter(r => normalizeResult(r.result) === 'dragon').length;
+  const tigerWins = roadmapData.filter(r => normalizeResult(r.result) === 'tiger').length;
+  const ties = roadmapData.filter(r => normalizeResult(r.result) === 'tie').length;
   const total = roadmapData.length;
 
   // Build big road grid
   const bigRoadGrid = buildDTBigRoad(roadmapData);
+
+  // Build derived roads
+  const bigEyeRoad = buildDTBigEyeRoad(bigRoadGrid);
+  const smallRoad = buildDTSmallRoad(bigRoadGrid);
+  const cockroachRoad = buildDTCockroachRoad(bigRoadGrid);
 
   // Phase display
   const phaseDisplay = getPhaseDisplay(phase, timeRemaining, t);
@@ -1119,25 +1311,46 @@ export default function DragonTigerGame() {
 
                 {/* Three Derived Roads */}
                 <div className="flex h-[72px] border-t border-gray-400">
+                  {/* Big Eye Road */}
                   <div className="flex-1 border-r border-gray-400" style={{ backgroundColor: '#FFFFFF' }}>
                     <div className="grid grid-cols-8 grid-rows-4 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
-                      {Array(32).fill(null).map((_, i) => (
-                        <DTDerivedRoadCell key={`bigEye-${i}`} value={undefined} type="big_eye" />
-                      ))}
+                      {Array(4).fill(null).flatMap((_, rowIndex) =>
+                        Array(8).fill(null).map((_, colIndex) => (
+                          <DTDerivedRoadCell
+                            key={`bigEye-${rowIndex}-${colIndex}`}
+                            value={bigEyeRoad[rowIndex]?.[colIndex] || undefined}
+                            type="big_eye"
+                          />
+                        ))
+                      )}
                     </div>
                   </div>
+                  {/* Small Road */}
                   <div className="flex-1 border-r border-gray-400" style={{ backgroundColor: '#FFFFFF' }}>
                     <div className="grid grid-cols-8 grid-rows-4 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
-                      {Array(32).fill(null).map((_, i) => (
-                        <DTDerivedRoadCell key={`small-${i}`} value={undefined} type="small" />
-                      ))}
+                      {Array(4).fill(null).flatMap((_, rowIndex) =>
+                        Array(8).fill(null).map((_, colIndex) => (
+                          <DTDerivedRoadCell
+                            key={`small-${rowIndex}-${colIndex}`}
+                            value={smallRoad[rowIndex]?.[colIndex] || undefined}
+                            type="small"
+                          />
+                        ))
+                      )}
                     </div>
                   </div>
+                  {/* Cockroach Road */}
                   <div className="flex-1" style={{ backgroundColor: '#FFFFFF' }}>
                     <div className="grid grid-cols-8 grid-rows-4 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
-                      {Array(32).fill(null).map((_, i) => (
-                        <DTDerivedRoadCell key={`cockroach-${i}`} value={undefined} type="cockroach" />
-                      ))}
+                      {Array(4).fill(null).flatMap((_, rowIndex) =>
+                        Array(8).fill(null).map((_, colIndex) => (
+                          <DTDerivedRoadCell
+                            key={`cockroach-${rowIndex}-${colIndex}`}
+                            value={cockroachRoad[rowIndex]?.[colIndex] || undefined}
+                            type="cockroach"
+                          />
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
