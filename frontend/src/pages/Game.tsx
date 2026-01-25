@@ -1097,14 +1097,14 @@ export default function Game() {
               </div>
             </div>
 
-            {/* Result Overlay */}
+            {/* Result Overlay - Fixed position on mobile to avoid being covered */}
             <AnimatePresence>
               {showResult && (
                 <motion.div
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0, opacity: 0 }}
-                  className="absolute inset-0 flex items-center justify-center z-30 bg-black/50"
+                  className="fixed inset-0 flex items-center justify-center z-[60] bg-black/50"
                 >
                   <div className="text-center">
                     <div className={`text-4xl font-bold mb-4 ${
