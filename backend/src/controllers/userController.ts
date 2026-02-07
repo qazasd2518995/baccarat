@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import { PrismaClient, UserRole } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
+import { UserRole } from '@prisma/client';
 import { z } from 'zod';
 import { canManageUser } from '../middleware/auth.js';
 
-const prisma = new PrismaClient();
 
 const createUserSchema = z.object({
   username: z.string().min(3).max(50),

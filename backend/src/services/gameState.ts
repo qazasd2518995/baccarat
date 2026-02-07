@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import type { Card, RoundResult, CalculateBetOptions } from '../utils/gameLogic.js';
 import { calculateBetResult } from '../utils/gameLogic.js';
 import type { BetEntry, BetType } from '../socket/types.js';
@@ -6,7 +6,6 @@ import type { BetEntry, BetType } from '../socket/types.js';
 // Re-export GamePhase type for other modules
 export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
 
-const prisma = new PrismaClient();
 
 // Current round info stored in memory
 export interface CurrentRound {

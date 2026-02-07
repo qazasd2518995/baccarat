@@ -1,5 +1,5 @@
 import { Server } from 'socket.io';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import { createShoe, playDragonTigerRound, type Card } from '../utils/dragonTigerLogic.js';
 import {
   setPhase,
@@ -22,7 +22,6 @@ import {
   type GamePhase,
 } from './dragonTigerState.js';
 
-const prisma = new PrismaClient();
 
 // Phase durations in milliseconds (Dragon Tiger is faster than Baccarat)
 const PHASE_DURATIONS: Record<GamePhase, number> = {

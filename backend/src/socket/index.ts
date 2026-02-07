@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import type { JWTPayload } from '../middleware/auth.js';
 import { handleGameEvents } from './gameSocket.js';
 import { handleDragonTigerEvents } from './dragonTigerSocket.js';
@@ -8,7 +8,6 @@ import { handleBullBullEvents } from './bullBullSocket.js';
 import { handleChatEvents } from './chatSocket.js';
 import type { ServerToClientEvents, ClientToServerEvents } from './types.js';
 
-const prisma = new PrismaClient();
 
 // Extended socket with user info
 export interface AuthenticatedSocket extends Socket<ClientToServerEvents, ServerToClientEvents> {

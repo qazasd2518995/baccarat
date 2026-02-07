@@ -1,5 +1,5 @@
 import { Server } from 'socket.io';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import { createShoe, playRound, type Card } from '../utils/gameLogic.js';
 import {
   setPhase,
@@ -23,7 +23,6 @@ import {
 import type { GamePhase } from '../socket/types.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
 
-const prisma = new PrismaClient();
 
 // Phase durations in milliseconds
 const PHASE_DURATIONS: Record<GamePhase, number> = {

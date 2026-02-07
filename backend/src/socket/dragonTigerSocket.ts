@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import type { AuthenticatedSocket, TypedServer } from './index.js';
 import {
   getDTTableGameState,
@@ -8,7 +8,6 @@ import {
   getDTTableRoom,
 } from '../services/dragonTigerTableManager.js';
 
-const prisma = new PrismaClient();
 
 // Validation schema for Dragon Tiger bet placement
 const placeBetSchema = z.object({

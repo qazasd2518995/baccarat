@@ -1,10 +1,10 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient, UserRole, UserStatus } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
+import { UserRole, UserStatus } from '@prisma/client';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import bcrypt from 'bcryptjs';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // All routes require authentication
 router.use(authenticate);

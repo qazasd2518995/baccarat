@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
-import { PrismaClient, BetType, BetStatus, GameResult } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
+import { BetType, BetStatus, GameResult } from '@prisma/client';
 import { z } from 'zod';
 import {
   createShoe,
@@ -9,7 +10,6 @@ import {
   RoundResult,
 } from '../utils/gameLogic.js';
 
-const prisma = new PrismaClient();
 
 // In-memory shoe (in production, use Redis)
 let currentShoe: Card[] = createShoe();

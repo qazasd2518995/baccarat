@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import type { AuthenticatedSocket, TypedServer } from './index.js';
 import type { SendChatPayload } from './types.js';
 
-const prisma = new PrismaClient();
 
 export function handleChatEvents(io: TypedServer, socket: AuthenticatedSocket): void {
   // Handle sending chat message

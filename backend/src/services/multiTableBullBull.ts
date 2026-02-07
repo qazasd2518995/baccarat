@@ -1,9 +1,8 @@
 import { Server } from 'socket.io';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
 import { startBBTableLoop } from './bullBullTableManager.js';
 
-const prisma = new PrismaClient();
 
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 

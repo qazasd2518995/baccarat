@@ -1,5 +1,5 @@
 import { Server } from 'socket.io';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import { createShoe, playBullBullRound, getRankDisplayName, type Card } from '../utils/bullBullLogic.js';
 import {
   setPhase,
@@ -22,7 +22,6 @@ import {
   type GamePhase,
 } from './bullBullState.js';
 
-const prisma = new PrismaClient();
 
 // Phase durations in milliseconds (Bull Bull has more cards to show)
 const PHASE_DURATIONS: Record<GamePhase, number> = {

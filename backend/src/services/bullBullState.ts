@@ -1,11 +1,10 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import type { Card, BullBullRoundResult, BullBullBetType, BullBullRank, HandResult } from '../utils/bullBullLogic.js';
 import { calculateBBBetResult, getRankDisplayName } from '../utils/bullBullLogic.js';
 
 // Re-export GamePhase type for other modules
 export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
 
-const prisma = new PrismaClient();
 
 // Current round info stored in memory
 export interface BullBullCurrentRound {

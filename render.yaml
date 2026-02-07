@@ -13,7 +13,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        value: postgresql://baccarat_db_24rf_user:9KXOIWX8BwMu13rQVFhjmIQbmWIjdmiw@dpg-d5ouijv5c7fs73aocvng-a/baccarat_db_24rf
+        value: postgresql://baccarat_db_24rf_user:9KXOIWX8BwMu13rQVFhjmIQbmWIjdmiw@dpg-d5ouijv5c7fs73aocvng-a/baccarat_db_24rf?connection_limit=20&pool_timeout=30
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN

@@ -1,10 +1,9 @@
 import { Server } from 'socket.io';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import { createShoe, playRound, calculateBetResult, type Card, type RoundResult } from '../utils/gameLogic.js';
 import type { GamePhase, BetEntry, BetType } from '../socket/types.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
 
-const prisma = new PrismaClient();
 
 // Type-safe Socket.io server
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;

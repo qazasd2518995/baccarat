@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import { getPhase, getTimeRemaining } from '../services/gameState.js';
 
-const prisma = new PrismaClient();
 
 // Calculate if a table has "good road" based on consecutive results
 function calculateGoodRoad(roadmap: { banker: number; player: number; tie: number }): boolean {

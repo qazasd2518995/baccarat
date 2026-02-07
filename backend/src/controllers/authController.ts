@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
 
-const prisma = new PrismaClient();
 
 const loginSchema = z.object({
   username: z.string().min(3).max(50),

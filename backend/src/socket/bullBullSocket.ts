@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import type { AuthenticatedSocket, TypedServer } from './index.js';
 import {
   getBBTableGameState,
@@ -8,7 +8,6 @@ import {
   getBBTableRoom,
 } from '../services/bullBullTableManager.js';
 
-const prisma = new PrismaClient();
 
 // Validation schema for Bull Bull bet placement
 const placeBetSchema = z.object({

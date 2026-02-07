@@ -1,11 +1,10 @@
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import type { Card, DragonTigerRoundResult, DragonTigerBetType } from '../utils/dragonTigerLogic.js';
 import { calculateDTBetResult } from '../utils/dragonTigerLogic.js';
 
 // Re-export GamePhase type for other modules
 export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
 
-const prisma = new PrismaClient();
 
 // Current round info stored in memory
 export interface DragonTigerCurrentRound {

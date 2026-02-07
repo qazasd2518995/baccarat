@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { PrismaClient, TransactionType } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
+import { TransactionType } from '@prisma/client';
 import { z } from 'zod';
 import { canManageUser } from '../middleware/auth.js';
 import { emitBalanceUpdate } from '../socket/socketManager.js';
 
-const prisma = new PrismaClient();
 
 const transactionSchema = z.object({
   userId: z.string().uuid(),

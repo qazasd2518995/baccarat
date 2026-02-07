@@ -1,8 +1,7 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
 import { getSocketInstance } from '../socket/socketManager.js';
 
-const prisma = new PrismaClient();
 
 // 預定義的禮物列表
 const GIFTS = [
