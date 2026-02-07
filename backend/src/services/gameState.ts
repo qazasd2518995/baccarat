@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma.js';
 import type { Card, RoundResult, CalculateBetOptions } from '../utils/gameLogic.js';
 import { calculateBetResult } from '../utils/gameLogic.js';
+import { applyWinCap } from '../utils/winCapCheck.js';
 import type { BetEntry, BetType } from '../socket/types.js';
 
 // Re-export GamePhase type for other modules
@@ -273,6 +274,7 @@ export async function placeBet(
       balance: true,
       status: true,
       bettingLimit: true,
+      parentAgentId: true,
     },
   });
 
@@ -317,14 +319,6 @@ export async function placeBet(
   // Calculate total after new bets
   const totalRequired = existingTotal + newBetTotal;
 
-  if (totalRequired > currentBalance) {
-    return {
-      success: false,
-      errorCode: 'INSUFFICIENT_BALANCE',
-      errorMessage: 'Insufficient balance',
-    };
-  }
-
   // Validate bet amounts (must be positive) and check limits
   for (const bet of bets) {
     if (bet.amount <= 0) {
@@ -359,6 +353,30 @@ export async function placeBet(
     }
   }
 
+  // Agent bet limit enforcement
+  if (user.parentAgentId) {
+    const agentLimits = await prisma.agentBetLimit.findMany({
+      where: { agentId: user.parentAgentId, enabled: true },
+    });
+    for (const agentLimit of agentLimits) {
+      const parts = agentLimit.limitRange.split('-');
+      if (parts.length === 2) {
+        const agentMax = parseFloat(parts[1]);
+        for (const bet of bets) {
+          const existingForType = existingBets.find((b) => b.type === bet.type)?.amount || 0;
+          const totalForType = existingForType + bet.amount;
+          if (totalForType > agentMax) {
+            return {
+              success: false,
+              errorCode: 'AGENT_BET_LIMIT_EXCEEDED',
+              errorMessage: `代理限红最高 ${agentMax}`,
+            };
+          }
+        }
+      }
+    }
+  }
+
   // Merge new bets with existing
   const mergedBets = [...existingBets];
   for (const newBet of bets) {
@@ -370,11 +388,18 @@ export async function placeBet(
     }
   }
 
-  // Deduct balance immediately for the new bets only
-  await prisma.user.update({
-    where: { id: userId },
+  // Atomic balance deduction with concurrency protection
+  const deductResult = await prisma.user.updateMany({
+    where: { id: userId, balance: { gte: totalRequired }, status: 'active' },
     data: { balance: { decrement: newBetTotal } },
   });
+  if (deductResult.count === 0) {
+    return {
+      success: false,
+      errorCode: 'INSUFFICIENT_BALANCE',
+      errorMessage: 'Insufficient balance or account inactive',
+    };
+  }
 
   // Update state
   currentBets.set(userId, mergedBets);
@@ -491,97 +516,101 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
 
     const totalBet = bets.reduce((sum, b) => sum + b.amount, 0);
 
-    // Calculate total payout
-    // For each bet:
-    // - If won: return stake + winnings (payout is positive)
-    // - If push (tie on player/banker): return stake (payout is 0)
-    // - If lost: nothing returned (payout is negative)
     let totalPayout = 0;
     for (const result of betResults) {
       if (result.won) {
-        // Won: get back stake + winnings
         totalPayout += result.amount + result.payout;
       } else if (result.payout === 0) {
-        // Push: get back stake only
         totalPayout += result.amount;
       }
-      // Lost: payout is negative, nothing returned
+    }
+
+    // Apply win cap enforcement
+    const netWin = totalPayout - totalBet;
+    if (netWin > 0) {
+      const cappedNetWin = await applyWinCap(prisma, userId, netWin);
+      if (cappedNetWin < netWin) {
+        totalPayout = totalBet + cappedNetWin;
+      }
     }
 
     const netResult = totalPayout - totalBet;
 
-    // Update user balance with winnings
-    if (totalPayout > 0) {
-      await prisma.user.update({
-        where: { id: userId },
-        data: { balance: { increment: totalPayout } },
-      });
-    }
-
-    // Get final balance
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { balance: true },
-    });
-
-    // Save bets to database
-    for (const bet of betResults) {
-      let status: 'won' | 'lost' | 'refunded';
-      let payoutAmount: number;
-
-      if (bet.won) {
-        status = 'won';
-        payoutAmount = bet.amount + bet.payout;
-      } else if (bet.payout === 0) {
-        status = 'refunded';
-        payoutAmount = bet.amount;
-      } else {
-        status = 'lost';
-        payoutAmount = 0;
+    // Atomic settlement transaction
+    const finalBalance = await prisma.$transaction(async (tx) => {
+      // Update user balance with winnings
+      if (totalPayout > 0) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { balance: { increment: totalPayout } },
+        });
       }
 
-      await prisma.bet.create({
-        data: {
-          userId,
-          roundId: savedRoundId,
-          betType: bet.type as any,
-          amount: bet.amount,
-          payout: payoutAmount,
-          status,
-        },
+      // Save bets to database
+      for (const bet of betResults) {
+        let status: 'won' | 'lost' | 'refunded';
+        let payoutAmount: number;
+
+        if (bet.won) {
+          status = 'won';
+          payoutAmount = bet.amount + bet.payout;
+        } else if (bet.payout === 0) {
+          status = 'refunded';
+          payoutAmount = bet.amount;
+        } else {
+          status = 'lost';
+          payoutAmount = 0;
+        }
+
+        await tx.bet.create({
+          data: {
+            userId,
+            roundId: savedRoundId,
+            betType: bet.type as any,
+            amount: bet.amount,
+            payout: payoutAmount,
+            status,
+          },
+        });
+      }
+
+      // Get balance for transaction records
+      const updatedUser = await tx.user.findUnique({
+        where: { id: userId },
+        select: { balance: true },
       });
-    }
+      const balance = Number(updatedUser?.balance || 0);
+      const balanceBeforeBet = balance - netResult;
 
-    // Create transaction records
-    const finalBalance = Number(user?.balance || 0);
-    const balanceBeforeBet = finalBalance - netResult;
-
-    // Bet transaction (already deducted when placed, so this is just for record)
-    await prisma.transaction.create({
-      data: {
-        userId,
-        operatorId: userId, // System operation
-        type: 'bet',
-        amount: -totalBet,
-        balanceBefore: balanceBeforeBet + totalBet,
-        balanceAfter: balanceBeforeBet,
-        note: `Round #${round.roundNumber} - Bets: ${bets.map((b) => `${b.type}:${b.amount}`).join(', ')}`,
-      },
-    });
-
-    if (totalPayout > 0) {
-      await prisma.transaction.create({
+      // Bet transaction record
+      await tx.transaction.create({
         data: {
           userId,
           operatorId: userId,
-          type: 'win',
-          amount: totalPayout,
-          balanceBefore: balanceBeforeBet,
-          balanceAfter: finalBalance,
-          note: `Round #${round.roundNumber} - ${round.result?.toUpperCase()} wins`,
+          type: 'bet',
+          amount: -totalBet,
+          balanceBefore: balanceBeforeBet + totalBet,
+          balanceAfter: balanceBeforeBet,
+          note: `Round #${round.roundNumber} - Bets: ${bets.map((b) => `${b.type}:${b.amount}`).join(', ')}`,
         },
       });
-    }
+
+      if (totalPayout > 0) {
+        await tx.transaction.create({
+          data: {
+            userId,
+            operatorId: userId,
+            type: 'win',
+            amount: totalPayout,
+            balanceBefore: balanceBeforeBet,
+            balanceAfter: balance,
+            note: `Round #${round.roundNumber} - ${round.result?.toUpperCase()} wins`,
+          },
+        });
+      }
+
+      return balance;
+    });
 
     settlements.push({
       userId,

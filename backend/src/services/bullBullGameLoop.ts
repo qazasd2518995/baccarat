@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
 import { prisma } from '../lib/prisma.js';
-import { createShoe, playBullBullRound, getRankDisplayName, type Card } from '../utils/bullBullLogic.js';
+import { createShoe, burnCards, playBullBullRound, getRankDisplayName, type Card } from '../utils/bullBullLogic.js';
 import {
   setPhase,
   setTimeRemaining,
@@ -56,6 +56,7 @@ export async function startBullBullGameLoop(io: Server): Promise<void> {
     console.log(`[BullBull] Restored deck with ${currentShoe.length} cards from shoe #${getShoeNumber()}`);
   } else {
     currentShoe = createShoe();
+    burnCards(currentShoe);
     setShuffledDeck(currentShoe);
     setCardsRemaining(currentShoe.length);
     await savePersistedState();
@@ -202,6 +203,7 @@ async function handleDealingPhase(io: Server): Promise<void> {
   if (currentShoe.length < 30) {
     await startNewShoe();
     currentShoe = createShoe();
+    burnCards(currentShoe);
     setShuffledDeck(currentShoe);
     setCardsRemaining(currentShoe.length);
     await savePersistedState();

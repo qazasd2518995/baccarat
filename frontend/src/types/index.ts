@@ -26,7 +26,7 @@ export interface Card {
 
 // Game types
 export type GameResult = 'player' | 'banker' | 'tie';
-export type BetType = 'player' | 'banker' | 'tie' | 'player_pair' | 'banker_pair' | 'super_six' | 'player_bonus' | 'banker_bonus';
+export type BetType = 'player' | 'banker' | 'tie' | 'player_pair' | 'banker_pair' | 'super_six' | 'player_bonus' | 'banker_bonus' | 'big' | 'small';
 export type BetStatus = 'pending' | 'won' | 'lost' | 'refunded';
 
 export interface GameRound {

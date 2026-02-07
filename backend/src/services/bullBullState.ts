@@ -1,6 +1,7 @@
 import { prisma } from '../lib/prisma.js';
 import type { Card, BullBullRoundResult, BullBullBetType, BullBullRank, HandResult } from '../utils/bullBullLogic.js';
 import { calculateBBBetResult, getRankDisplayName } from '../utils/bullBullLogic.js';
+import { applyWinCap } from '../utils/winCapCheck.js';
 
 // Re-export GamePhase type for other modules
 export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
@@ -263,6 +264,7 @@ export async function placeBet(
     select: {
       balance: true,
       status: true,
+      parentAgentId: true,
     },
   });
 
@@ -291,14 +293,6 @@ export async function placeBet(
 
   // Calculate total after new bets
   const totalRequired = existingTotal + newBetTotal;
-
-  if (totalRequired > currentBalance) {
-    return {
-      success: false,
-      errorCode: 'INSUFFICIENT_BALANCE',
-      errorMessage: 'Insufficient balance',
-    };
-  }
 
   // Validate bet amounts and check limits
   for (const bet of bets) {
@@ -334,6 +328,25 @@ export async function placeBet(
     }
   }
 
+  // Agent bet limit enforcement
+  if (user.parentAgentId) {
+    const agentLimits = await prisma.agentBetLimit.findMany({
+      where: { agentId: user.parentAgentId, enabled: true },
+    });
+    for (const agentLimit of agentLimits) {
+      const parts = agentLimit.limitRange.split('-');
+      if (parts.length === 2) {
+        const agentMax = parseFloat(parts[1]);
+        for (const bet of bets) {
+          const existingForType = existingBets.find((b) => b.type === bet.type)?.amount || 0;
+          if (existingForType + bet.amount > agentMax) {
+            return { success: false, errorCode: 'AGENT_BET_LIMIT_EXCEEDED', errorMessage: `代理限红最高 ${agentMax}` };
+          }
+        }
+      }
+    }
+  }
+
   // Merge new bets with existing
   const mergedBets = [...existingBets];
   for (const newBet of bets) {
@@ -345,11 +358,14 @@ export async function placeBet(
     }
   }
 
-  // Deduct balance immediately for the new bets only
-  await prisma.user.update({
-    where: { id: userId },
+  // Deduct balance immediately for the new bets only (atomic check)
+  const deductResult = await prisma.user.updateMany({
+    where: { id: userId, balance: { gte: totalRequired }, status: 'active' },
     data: { balance: { decrement: newBetTotal } },
   });
+  if (deductResult.count === 0) {
+    return { success: false, errorCode: 'INSUFFICIENT_BALANCE', errorMessage: 'Insufficient balance or account inactive' };
+  }
 
   // Update state
   currentBets.set(userId, mergedBets);
@@ -476,69 +492,84 @@ export async function settleAllBets(savedRoundId: string): Promise<SettlementRes
       // Lost: nothing returned
     }
 
+    // Apply win cap
+    const netWin = totalPayout - totalBet;
+    if (netWin > 0) {
+      const cappedNetWin = await applyWinCap(prisma, userId, netWin);
+      if (cappedNetWin < netWin) {
+        totalPayout = totalBet + cappedNetWin;
+      }
+    }
+
     const netResult = totalPayout - totalBet;
 
-    // Update user balance with winnings
-    if (totalPayout > 0) {
-      await prisma.user.update({
+    // Wrap all DB operations in a transaction
+    const finalBalance = await prisma.$transaction(async (tx) => {
+      // Update user balance with winnings
+      if (totalPayout > 0) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { balance: { increment: totalPayout } },
+        });
+      }
+
+      // Get final balance
+      const user = await tx.user.findUnique({
         where: { id: userId },
-        data: { balance: { increment: totalPayout } },
+        select: { balance: true },
       });
-    }
 
-    // Get final balance
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { balance: true },
-    });
+      const balance = Number(user?.balance || 0);
 
-    // Save bets to database
-    for (const bet of betResults) {
-      const status = bet.won ? 'won' : 'lost';
-      const payoutAmount = bet.won ? bet.amount + bet.payout : 0;
+      // Save bets to database
+      for (const bet of betResults) {
+        const status = bet.won ? 'won' : 'lost';
+        const payoutAmount = bet.won ? bet.amount + bet.payout : 0;
 
-      await prisma.bet.create({
-        data: {
-          userId,
-          bullBullRoundId: savedRoundId,
-          betType: bet.type as any,
-          amount: bet.amount,
-          payout: payoutAmount,
-          status,
-        },
-      });
-    }
+        await tx.bet.create({
+          data: {
+            userId,
+            bullBullRoundId: savedRoundId,
+            betType: bet.type as any,
+            amount: bet.amount,
+            payout: payoutAmount,
+            status,
+          },
+        });
+      }
 
-    // Create transaction records
-    const finalBalance = Number(user?.balance || 0);
-    const balanceBeforeBet = finalBalance - netResult;
+      // Create transaction records
+      const balanceBeforeBet = balance - netResult;
 
-    // Bet transaction
-    await prisma.transaction.create({
-      data: {
-        userId,
-        operatorId: userId,
-        type: 'bet',
-        amount: -totalBet,
-        balanceBefore: balanceBeforeBet + totalBet,
-        balanceAfter: balanceBeforeBet,
-        note: `Bull Bull Round #${round.roundNumber} - Bets: ${bets.map((b) => `${b.type}:${b.amount}`).join(', ')}`,
-      },
-    });
-
-    if (totalPayout > 0) {
-      await prisma.transaction.create({
+      // Bet transaction
+      await tx.transaction.create({
         data: {
           userId,
           operatorId: userId,
-          type: 'win',
-          amount: totalPayout,
-          balanceBefore: balanceBeforeBet,
-          balanceAfter: finalBalance,
-          note: `Bull Bull Round #${round.roundNumber}`,
+          type: 'bet',
+          amount: -totalBet,
+          balanceBefore: balanceBeforeBet + totalBet,
+          balanceAfter: balanceBeforeBet,
+          note: `Bull Bull Round #${round.roundNumber} - Bets: ${bets.map((b) => `${b.type}:${b.amount}`).join(', ')}`,
         },
       });
-    }
+
+      if (totalPayout > 0) {
+        await tx.transaction.create({
+          data: {
+            userId,
+            operatorId: userId,
+            type: 'win',
+            amount: totalPayout,
+            balanceBefore: balanceBeforeBet,
+            balanceAfter: balance,
+            note: `Bull Bull Round #${round.roundNumber}`,
+          },
+        });
+      }
+
+      return balance;
+    });
 
     settlements.push({
       userId,

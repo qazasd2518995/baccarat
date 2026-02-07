@@ -38,6 +38,8 @@ enum BetType {
   super_six
   player_bonus
   banker_bonus
+  big
+  small
 
   // Dragon Tiger
   dragon
@@ -189,6 +191,8 @@ model DragonTigerRound {
   id          String     @id @default(uuid())
   roundNumber Int        @default(autoincrement()) @map("round_number")
   shoeNumber  Int        @default(1) @map("shoe_number")
+  tableId     String?    @map("table_id")
+  table       GameTable? @relation(fields: [tableId], references: [id])
   dragonCard  Json       @map("dragon_card")
   tigerCard   Json       @map("tiger_card")
   dragonValue Int        @map("dragon_value")
@@ -204,10 +208,12 @@ model DragonTigerRound {
 
 // Bull Bull game round
 model BullBullRound {
-  id            String   @id @default(uuid())
-  roundNumber   Int      @default(autoincrement()) @map("round_number")
-  shoeNumber    Int      @default(1) @map("shoe_number")
-  bankerCards   Json     @map("banker_cards")
+  id            String      @id @default(uuid())
+  roundNumber   Int         @default(autoincrement()) @map("round_number")
+  shoeNumber    Int         @default(1) @map("shoe_number")
+  tableId       String?     @map("table_id")
+  table         GameTable?  @relation(fields: [tableId], references: [id])
+  bankerCards   Json        @map("banker_cards")
   player1Cards  Json     @map("player1_cards")
   player2Cards  Json     @map("player2_cards")
   player3Cards  Json     @map("player3_cards")
@@ -388,7 +394,10 @@ model GameTable {
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")
 
-  gameRounds GameRound[]
+  gameRounds         GameRound[]
+  dragonTigerRounds  DragonTigerRound[]
+  bullBullRounds     BullBullRound[]
+  gameTableState     GameTableState?
 
   @@map("game_tables")
 }
@@ -529,6 +538,21 @@ model CashLog {
   createdAt     DateTime @default(now()) @map("created_at")
 
   @@map("cash_logs")
+}
+
+// Multi-table state persistence
+model GameTableState {
+  id             String    @id @default(uuid())
+  tableId        String    @unique @map("table_id")
+  table          GameTable @relation(fields: [tableId], references: [id])
+  gameType       String    @map("game_type")
+  shoeNumber     Int       @default(1) @map("shoe_number")
+  roundCounter   Int       @default(0) @map("round_counter")
+  cardsRemaining Int       @default(416) @map("cards_remaining")
+  shuffledDeck   Json?     @map("shuffled_deck")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@map("game_table_states")
 }
 
 // 遊戲平台配置

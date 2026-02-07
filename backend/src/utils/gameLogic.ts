@@ -1,3 +1,5 @@
+import { randomInt } from 'crypto';
+
 // Card representation
 export interface Card {
   suit: 'hearts' | 'diamonds' | 'clubs' | 'spades';
@@ -17,6 +19,8 @@ export const BET_PAYOUTS = {
   banker_pair: 11,
   super_six_2cards: 12,
   super_six_3cards: 20,
+  big: 0.54,     // Big: total cards 5 or 6
+  small: 1.5,    // Small: total cards 4
 } as const;
 
 // No commission payouts
@@ -77,11 +81,22 @@ export function createShoe(): Card[] {
 
   // Fisher-Yates shuffle
   for (let i = shoe.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomInt(i + 1);
     [shoe[i], shoe[j]] = [shoe[j], shoe[i]];
   }
 
   return shoe;
+}
+
+// Burn cards from the shoe after shuffle (standard casino procedure)
+export function burnCards(shoe: Card[]): void {
+  if (shoe.length < 2) return;
+  const firstCard = shoe.pop()!;
+  // Burn N more cards where N = card value (face cards = 10)
+  const burnCount = firstCard.value === 0 ? 10 : firstCard.value;
+  for (let i = 0; i < burnCount && shoe.length > 0; i++) {
+    shoe.pop();
+  }
 }
 
 // Calculate hand points (sum mod 10)
@@ -330,6 +345,22 @@ export function calculateBetResult(
 
     case 'banker_bonus':
       return calculateDragonBonusResult('banker', roundResult, betAmount);
+
+    case 'big': {
+      const totalCards = roundResult.playerCards.length + roundResult.bankerCards.length;
+      if (totalCards === 5 || totalCards === 6) {
+        return { won: true, payout: betAmount * BET_PAYOUTS.big };
+      }
+      return { won: false, payout: -betAmount };
+    }
+
+    case 'small': {
+      const totalCards = roundResult.playerCards.length + roundResult.bankerCards.length;
+      if (totalCards === 4) {
+        return { won: true, payout: betAmount * BET_PAYOUTS.small };
+      }
+      return { won: false, payout: -betAmount };
+    }
 
     default:
       return { won: false, payout: 0 };

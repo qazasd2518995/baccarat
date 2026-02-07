@@ -1,3 +1,5 @@
+import { randomInt } from 'crypto';
+
 // Bull Bull (牛牛) game logic
 
 export interface Card {
@@ -93,11 +95,22 @@ export function createShoe(): Card[] {
 
   // Fisher-Yates shuffle
   for (let i = shoe.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomInt(i + 1);
     [shoe[i], shoe[j]] = [shoe[j], shoe[i]];
   }
 
   return shoe;
+}
+
+// Burn cards from the shoe after shuffle (standard casino procedure)
+export function burnCards(shoe: Card[]): void {
+  if (shoe.length < 2) return;
+  const firstCard = shoe.pop()!;
+  // Burn N more cards where N = card value (face cards = 10, A=1)
+  const burnCount = firstCard.value >= 10 ? 10 : firstCard.value;
+  for (let i = 0; i < burnCount && shoe.length > 0; i++) {
+    shoe.pop();
+  }
 }
 
 // Get card point value for calculation (A=1, 2-9=face, 10/J/Q/K=0)

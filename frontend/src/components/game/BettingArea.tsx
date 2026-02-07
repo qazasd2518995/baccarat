@@ -68,6 +68,42 @@ const BET_SPOTS: BetSpotConfig[] = [
     borderColor: 'border-amber-400/50',
     glowColor: 'shadow-amber-500/40',
   },
+  {
+    type: 'player_bonus',
+    label: 'playerBonus',
+    payout: '1:1~30',
+    color: 'text-blue-300',
+    bgColor: 'from-blue-800/40 to-blue-950/60',
+    borderColor: 'border-blue-400/40',
+    glowColor: 'shadow-blue-400/30',
+  },
+  {
+    type: 'banker_bonus',
+    label: 'bankerBonus',
+    payout: '1:1~30',
+    color: 'text-red-300',
+    bgColor: 'from-red-800/40 to-red-950/60',
+    borderColor: 'border-red-400/40',
+    glowColor: 'shadow-red-400/30',
+  },
+  {
+    type: 'big',
+    label: 'big',
+    payout: '1:0.54',
+    color: 'text-purple-400',
+    bgColor: 'from-purple-800/50 to-purple-950/70',
+    borderColor: 'border-purple-400/50',
+    glowColor: 'shadow-purple-500/40',
+  },
+  {
+    type: 'small',
+    label: 'small',
+    payout: '1:1.5',
+    color: 'text-cyan-400',
+    bgColor: 'from-cyan-800/50 to-cyan-950/70',
+    borderColor: 'border-cyan-400/50',
+    glowColor: 'shadow-cyan-500/40',
+  },
 ];
 
 interface BettingAreaProps {
@@ -85,8 +121,8 @@ export default function BettingArea({ disabled }: BettingAreaProps) {
   };
 
   return (
-    <div className="px-8 py-4">
-      <div className="flex items-stretch justify-center gap-3">
+    <div className="px-4 py-4">
+      <div className="flex items-stretch justify-center gap-2 flex-wrap">
         {BET_SPOTS.map((spot, index) => {
           const betAmount = getBetAmount(spot.type);
           const hasBet = betAmount > 0;

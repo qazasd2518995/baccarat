@@ -716,6 +716,7 @@ export default function DragonTigerGame() {
     dragon: t('dtDragon'),
     tiger: t('dtTiger'),
     dt_tie: t('dtTie'),
+    dt_suited_tie: t('dtSuitedTie'),
     dragon_odd: t('dragonOdd'),
     dragon_even: t('dragonEven'),
     tiger_odd: t('tigerOdd'),
@@ -724,6 +725,10 @@ export default function DragonTigerGame() {
     dragon_black: t('dragonBlack'),
     tiger_red: t('tigerRed'),
     tiger_black: t('tigerBlack'),
+    dragon_big: t('dragonBig'),
+    dragon_small: t('dragonSmall'),
+    tiger_big: t('tigerBig'),
+    tiger_small: t('tigerSmall'),
   };
 
   // Calculate total bet
@@ -1099,6 +1104,70 @@ export default function DragonTigerGame() {
 
               {/* Center: Betting Buttons */}
               <div className="flex-1 flex flex-col border-l border-r border-gray-400">
+                {/* Row 0 - 龍大/龍小/同花和/虎小/虎大 */}
+                <div className="flex flex-wrap lg:flex-nowrap h-auto lg:h-[60px] border-b border-gray-400">
+                  <button
+                    onClick={() => handleBet('dragon_big')}
+                    disabled={!canBet}
+                    className={`relative flex-1 min-w-[50px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('dragon_big') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
+                    style={{ backgroundColor: '#DBEAFE' }}
+                  >
+                    <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonBig')}</span>
+                    <span className="text-red-600 text-[10px] sm:text-xs">1:1</span>
+                    {getBetAmount('dragon_big') > 0 && (
+                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_big')}</div>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleBet('dragon_small')}
+                    disabled={!canBet}
+                    className={`relative flex-1 min-w-[50px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('dragon_small') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
+                    style={{ backgroundColor: '#DBEAFE' }}
+                  >
+                    <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonSmall')}</span>
+                    <span className="text-red-600 text-[10px] sm:text-xs">1:1</span>
+                    {getBetAmount('dragon_small') > 0 && (
+                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_small')}</div>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleBet('dt_suited_tie')}
+                    disabled={!canBet}
+                    className={`relative flex-[1.5] min-w-[70px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('dt_suited_tie') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
+                    style={{ backgroundColor: '#FEF9C3' }}
+                  >
+                    <span className="text-amber-700 text-xs sm:text-sm font-bold">{t('dtSuitedTie')}</span>
+                    <span className="text-red-600 text-[10px] sm:text-xs">1:50</span>
+                    {getBetAmount('dt_suited_tie') > 0 && (
+                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dt_suited_tie')}</div>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleBet('tiger_small')}
+                    disabled={!canBet}
+                    className={`relative flex-1 min-w-[50px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('tiger_small') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
+                    style={{ backgroundColor: '#FFE4E6' }}
+                  >
+                    <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerSmall')}</span>
+                    <span className="text-red-600 text-[10px] sm:text-xs">1:1</span>
+                    {getBetAmount('tiger_small') > 0 && (
+                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_small')}</div>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleBet('tiger_big')}
+                    disabled={!canBet}
+                    className={`relative flex-1 min-w-[50px] py-2 lg:py-0 flex flex-col items-center justify-center border-b lg:border-b-0 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('tiger_big') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
+                    style={{ backgroundColor: '#FFE4E6' }}
+                  >
+                    <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerBig')}</span>
+                    <span className="text-red-600 text-[10px] sm:text-xs">1:1</span>
+                    {getBetAmount('tiger_big') > 0 && (
+                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_big')}</div>
+                    )}
+                  </button>
+                </div>
+
                 {/* Row 1 - 龍雙/龍單/虎單/虎雙 */}
                 <div className="flex flex-wrap lg:flex-nowrap h-auto lg:h-[70px] border-b border-gray-400">
                   <button

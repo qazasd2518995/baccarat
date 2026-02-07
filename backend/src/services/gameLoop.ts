@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
 import { prisma } from '../lib/prisma.js';
-import { createShoe, playRound, type Card } from '../utils/gameLogic.js';
+import { createShoe, burnCards, playRound, type Card } from '../utils/gameLogic.js';
 import {
   setPhase,
   setTimeRemaining,
@@ -60,6 +60,7 @@ export async function startGameLoop(io: TypedServer): Promise<void> {
     console.log(`[GameLoop] Restored deck with ${currentShoe.length} cards from shoe #${getShoeNumber()}`);
   } else {
     currentShoe = createShoe();
+    burnCards(currentShoe);
     setShuffledDeck(currentShoe);
     setCardsRemaining(currentShoe.length);
     await savePersistedState();
@@ -206,6 +207,7 @@ async function handleDealingPhase(io: TypedServer): Promise<void> {
   if (currentShoe.length < 20) {
     await startNewShoe();
     currentShoe = createShoe();
+    burnCards(currentShoe);
     setShuffledDeck(currentShoe);
     setCardsRemaining(currentShoe.length);
     await savePersistedState();

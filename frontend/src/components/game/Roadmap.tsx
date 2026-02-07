@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import type { GameRound, GameResult } from '../../types';
@@ -29,9 +29,151 @@ const RESULT_BORDERS: Record<GameResult, string> = {
   tie: 'border-green-400',
 };
 
+// Big Road cell with tie count
+interface BigRoadCell {
+  result: 'player' | 'banker';
+  tieCount: number;
+  playerPair?: boolean;
+  bankerPair?: boolean;
+}
+
+// Build Big Road column structure from data
+function buildBigRoadColumns(data: GameRound[]): BigRoadCell[][] {
+  const columns: BigRoadCell[][] = [];
+  let currentCol: BigRoadCell[] = [];
+  let lastResult: 'player' | 'banker' | null = null;
+
+  for (const round of data) {
+    if (round.result === 'tie') {
+      // Attach tie to previous non-tie cell
+      if (currentCol.length > 0) {
+        currentCol[currentCol.length - 1].tieCount++;
+      } else if (columns.length > 0) {
+        const prevCol = columns[columns.length - 1];
+        prevCol[prevCol.length - 1].tieCount++;
+      }
+      continue;
+    }
+
+    const result = round.result as 'player' | 'banker';
+
+    if (lastResult === null || result !== lastResult) {
+      // New column
+      if (currentCol.length > 0) {
+        columns.push(currentCol);
+      }
+      currentCol = [{
+        result,
+        tieCount: 0,
+        playerPair: round.playerPair,
+        bankerPair: round.bankerPair,
+      }];
+      lastResult = result;
+    } else {
+      // Same result, extend column
+      currentCol.push({
+        result,
+        tieCount: 0,
+        playerPair: round.playerPair,
+        bankerPair: round.bankerPair,
+      });
+    }
+  }
+
+  if (currentCol.length > 0) {
+    columns.push(currentCol);
+  }
+
+  return columns;
+}
+
+// Build Big Road grid from columns (with dragon tail)
+function buildBigRoadGrid(columns: BigRoadCell[][], rows: number, maxCols: number): (BigRoadCell | null)[][] {
+  const grid: (BigRoadCell | null)[][] = Array(rows).fill(null).map(() => Array(maxCols).fill(null));
+
+  let gridCol = 0;
+
+  for (const column of columns) {
+    let row = 0;
+    for (const cell of column) {
+      if (row >= rows) {
+        // Dragon tail: go right
+        row = rows - 1;
+        gridCol++;
+      }
+      if (gridCol < maxCols) {
+        grid[row][gridCol] = cell;
+      }
+      row++;
+    }
+    gridCol++;
+  }
+
+  return grid;
+}
+
+// Build derived road using Big Road column structure analysis
+function buildDerivedRoad(columns: BigRoadCell[][], offset: number): ('red' | 'blue' | null)[][] {
+  const ROWS = 6;
+  const COLS = 20;
+  const grid: ('red' | 'blue' | null)[][] = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+
+  // We need at least (offset + 1) columns to start
+  if (columns.length < offset + 1) return grid;
+
+  let outputCol = 0;
+  let outputRow = 0;
+  let lastColor: 'red' | 'blue' | null = null;
+
+  // For each column starting from (offset), compare with column (col - offset)
+  for (let colIdx = offset; colIdx < columns.length; colIdx++) {
+    const currColLen = columns[colIdx].length;
+    const compareColLen = columns[colIdx - offset].length;
+
+    // For each entry in the current column
+    for (let i = 0; i < currColLen; i++) {
+      // Skip first entry of the first compared column
+      if (colIdx === offset && i === 0) continue;
+
+      const depthSoFar = i + 1;
+
+      let color: 'red' | 'blue';
+      if (depthSoFar === 1) {
+        // First entry in column: red if compare column also had length 1, blue otherwise
+        color = compareColLen === 1 ? 'red' : 'blue';
+      } else {
+        // Subsequent entries: red if current depth <= compare column depth (pattern continues)
+        color = depthSoFar <= compareColLen ? 'red' : 'blue';
+      }
+
+      // Place in grid (Big Road style columns)
+      if (lastColor !== null && color !== lastColor) {
+        outputCol++;
+        outputRow = 0;
+      } else if (lastColor !== null) {
+        outputRow++;
+        if (outputRow >= ROWS) {
+          outputRow = ROWS - 1;
+          outputCol++;
+        }
+      }
+
+      if (outputCol < COLS && outputRow < ROWS) {
+        grid[outputRow][outputCol] = color;
+        lastColor = color;
+      }
+    }
+  }
+
+  return grid;
+}
+
 export default function Roadmap({ data }: RoadmapProps) {
   const { t } = useTranslation();
   const [activeRoad, setActiveRoad] = useState<RoadType>('bead');
+
+  // Build Big Road columns once for use in all derived roads
+  const bigRoadColumns = useMemo(() => buildBigRoadColumns(data), [data]);
 
   // Bead Road: Simple grid, top to bottom, left to right
   const renderBeadRoad = () => {
@@ -78,43 +220,19 @@ export default function Roadmap({ data }: RoadmapProps) {
     );
   };
 
-  // Big Road: Standard baccarat big road
+  // Big Road: Standard baccarat big road with tie markers
   const renderBigRoad = () => {
     const rows = 6;
     const maxCols = 30;
-    const grid: (GameRound | null)[][] = Array(rows).fill(null).map(() => Array(maxCols).fill(null));
+    const grid = buildBigRoadGrid(bigRoadColumns, rows, maxCols);
 
-    let col = 0;
-    let row = 0;
-    let lastResult: GameResult | null = null;
-
-    // Filter out ties for main positioning (ties go on previous cell)
-    const nonTieData = data.filter(r => r.result !== 'tie');
-
-    nonTieData.forEach((round) => {
-      if (lastResult === null || round.result !== lastResult) {
-        // New column
-        if (lastResult !== null) {
-          col++;
-          row = 0;
-        }
-        lastResult = round.result;
-      } else {
-        // Same result, go down
-        row++;
-        if (row >= rows) {
-          // Dragon tail: go right
-          row = rows - 1;
-          col++;
-        }
+    // Find last used column
+    let usedCols = 0;
+    for (let c = 0; c < maxCols; c++) {
+      for (let r = 0; r < rows; r++) {
+        if (grid[r][c]) usedCols = c + 1;
       }
-
-      if (col < maxCols) {
-        grid[row][col] = round;
-      }
-    });
-
-    const usedCols = col + 1;
+    }
 
     return (
       <div className="overflow-x-auto">
@@ -127,12 +245,18 @@ export default function Roadmap({ data }: RoadmapProps) {
                   initial={cell ? { scale: 0 } : false}
                   animate={{ scale: 1 }}
                   className={`
-                    w-5 h-5 rounded-full flex items-center justify-center
+                    relative w-5 h-5 rounded-full flex items-center justify-center
                     ${cell ? `border-2 ${RESULT_BORDERS[cell.result]} bg-transparent` : 'bg-slate-700/20'}
                   `}
                 >
                   {cell && (
                     <>
+                      {/* Tie indicator - green line/count */}
+                      {cell.tieCount > 0 && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-[7px] font-bold text-green-400">{cell.tieCount}</span>
+                        </div>
+                      )}
                       {/* Pair indicators */}
                       {cell.playerPair && (
                         <div className="absolute -bottom-0.5 -left-0.5 w-1.5 h-1.5 rounded-full bg-blue-400" />
@@ -151,55 +275,22 @@ export default function Roadmap({ data }: RoadmapProps) {
     );
   };
 
-  // Derived roads (simplified version)
+  // Derived roads using column structure analysis
   const renderDerivedRoad = (offset: number) => {
-    const rows = 6;
-    const cols = 20;
-    const grid: ('red' | 'blue' | null)[][] = Array(rows).fill(null).map(() => Array(cols).fill(null));
+    const grid = buildDerivedRoad(bigRoadColumns, offset);
+    const ROWS = 6;
 
-    // Simplified derived road logic
-    const nonTieData = data.filter(r => r.result !== 'tie');
-
-    let col = 0;
-    let row = 0;
-    let lastColor: 'red' | 'blue' | null = null;
-
-    nonTieData.forEach((round, index) => {
-      if (index < offset + 1) return;
-
-      const compareIndex = index - offset - 1;
-      const compareRound = nonTieData[compareIndex];
-
-      if (!compareRound) return;
-
-      // Compare if same result
-      const isSame = round.result === compareRound.result;
-      const color: 'red' | 'blue' = isSame ? 'red' : 'blue';
-
-      if (lastColor === null || color !== lastColor) {
-        if (lastColor !== null) {
-          col++;
-          row = 0;
-        }
-        lastColor = color;
-      } else {
-        row++;
-        if (row >= rows) {
-          row = rows - 1;
-          col++;
-        }
+    // Find last used column
+    let usedCols = 0;
+    for (let c = 0; c < 20; c++) {
+      for (let r = 0; r < ROWS; r++) {
+        if (grid[r][c]) usedCols = c + 1;
       }
-
-      if (col < cols && row < rows) {
-        grid[row][col] = color;
-      }
-    });
-
-    const usedCols = col + 1;
+    }
 
     return (
       <div className="overflow-x-auto">
-        <div className="inline-grid gap-0.5" style={{ gridTemplateRows: `repeat(${rows}, 1fr)` }}>
+        <div className="inline-grid gap-0.5" style={{ gridTemplateRows: `repeat(${ROWS}, 1fr)` }}>
           {grid.map((rowData, rowIndex) => (
             <div key={rowIndex} className="flex gap-0.5">
               {rowData.slice(0, Math.max(usedCols, 10)).map((cell, colIndex) => (

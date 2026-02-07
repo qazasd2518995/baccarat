@@ -1,3 +1,5 @@
+import { randomInt } from 'crypto';
+
 // Dragon Tiger game logic
 // Card representation (same as baccarat)
 export interface Card {
@@ -9,11 +11,16 @@ export interface Card {
 // Dragon Tiger result type
 export type DragonTigerResult = 'dragon' | 'tiger' | 'tie';
 
-// Dragon Tiger bet types (GoFun style: odd/even, red/black)
+// Dragon Tiger bet types (GoFun style: odd/even, red/black + big/small + suited tie)
 export type DragonTigerBetType =
   | 'dragon'           // 龍 1:1
   | 'tiger'            // 虎 1:1
   | 'dt_tie'           // 和 1:8
+  | 'dt_suited_tie'    // 同花和 50:1 (same rank AND same suit)
+  | 'dragon_big'       // 龍大 1:1 (value 8-13, 7=loss)
+  | 'dragon_small'     // 龍小 1:1 (value 1-6, 7=loss)
+  | 'tiger_big'        // 虎大 1:1 (value 8-13, 7=loss)
+  | 'tiger_small'      // 虎小 1:1 (value 1-6, 7=loss)
   | 'dragon_odd'       // 龍單 1:0.75 (牌點數為奇數)
   | 'dragon_even'      // 龍雙 1:1.05 (牌點數為偶數)
   | 'tiger_odd'        // 虎單 1:0.75
@@ -28,6 +35,11 @@ export const DT_BET_PAYOUTS = {
   dragon: 1,           // 1:1
   tiger: 1,            // 1:1
   dt_tie: 8,           // 8:1
+  dt_suited_tie: 50,   // 50:1
+  dragon_big: 1,       // 1:1 (value 8-13, 7=loss)
+  dragon_small: 1,     // 1:1 (value 1-6, 7=loss)
+  tiger_big: 1,        // 1:1 (value 8-13, 7=loss)
+  tiger_small: 1,      // 1:1 (value 1-6, 7=loss)
   dragon_odd: 0.75,    // 1:0.75
   dragon_even: 1.05,   // 1:1.05
   tiger_odd: 0.75,     // 1:0.75
@@ -68,11 +80,22 @@ export function createShoe(): Card[] {
 
   // Fisher-Yates shuffle
   for (let i = shoe.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomInt(i + 1);
     [shoe[i], shoe[j]] = [shoe[j], shoe[i]];
   }
 
   return shoe;
+}
+
+// Burn cards from the shoe after shuffle (standard casino procedure)
+export function burnCards(shoe: Card[]): void {
+  if (shoe.length < 2) return;
+  const firstCard = shoe.pop()!;
+  // Burn N more cards where N = card value (face cards count as 10)
+  const burnCount = firstCard.value >= 10 ? 10 : firstCard.value;
+  for (let i = 0; i < burnCount && shoe.length > 0; i++) {
+    shoe.pop();
+  }
 }
 
 // Get card value for Dragon Tiger (A=1, 2-10=face value, J=11, Q=12, K=13)
@@ -172,6 +195,45 @@ export function calculateDTBetResult(
     case 'dt_tie':
       if (result === 'tie') {
         return { won: true, payout: betAmount * DT_BET_PAYOUTS.dt_tie };
+      }
+      return { won: false, payout: -betAmount };
+
+    // 同花和 - Same rank AND same suit = 50:1
+    case 'dt_suited_tie':
+      if (roundResult.isSuitedTie) {
+        return { won: true, payout: betAmount * DT_BET_PAYOUTS.dt_suited_tie };
+      }
+      return { won: false, payout: -betAmount };
+
+    // 龍大 - Dragon value 8-13 wins, 7 = house wins
+    case 'dragon_big':
+      if (dragonValue === 7) return { won: false, payout: -betAmount };
+      if (dragonValue >= 8 && dragonValue <= 13) {
+        return { won: true, payout: betAmount * DT_BET_PAYOUTS.dragon_big };
+      }
+      return { won: false, payout: -betAmount };
+
+    // 龍小 - Dragon value 1-6 wins, 7 = house wins
+    case 'dragon_small':
+      if (dragonValue === 7) return { won: false, payout: -betAmount };
+      if (dragonValue >= 1 && dragonValue <= 6) {
+        return { won: true, payout: betAmount * DT_BET_PAYOUTS.dragon_small };
+      }
+      return { won: false, payout: -betAmount };
+
+    // 虎大 - Tiger value 8-13 wins, 7 = house wins
+    case 'tiger_big':
+      if (tigerValue === 7) return { won: false, payout: -betAmount };
+      if (tigerValue >= 8 && tigerValue <= 13) {
+        return { won: true, payout: betAmount * DT_BET_PAYOUTS.tiger_big };
+      }
+      return { won: false, payout: -betAmount };
+
+    // 虎小 - Tiger value 1-6 wins, 7 = house wins
+    case 'tiger_small':
+      if (tigerValue === 7) return { won: false, payout: -betAmount };
+      if (tigerValue >= 1 && tigerValue <= 6) {
+        return { won: true, payout: betAmount * DT_BET_PAYOUTS.tiger_small };
       }
       return { won: false, payout: -betAmount };
 

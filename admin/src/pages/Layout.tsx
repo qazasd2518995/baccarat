@@ -10,15 +10,27 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Gamepad2,
+  Settings,
+  Bell,
+  BarChart3,
+  Joystick,
+  ClipboardList,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 const NAV_ITEMS = [
   { path: '/', icon: LayoutDashboard, label: '仪表盘' },
   { path: '/report/agent', icon: FileText, label: '账务报表' },
+  { path: '/reports', icon: BarChart3, label: '综合报表' },
   { path: '/bet/index', icon: History, label: '投注记录' },
+  { path: '/game/rounds', icon: Gamepad2, label: '游戏记录' },
+  { path: '/game/control', icon: Joystick, label: '游戏控制' },
   { path: '/member/index', icon: Users, label: '下线代理管理' },
+  { path: '/notices', icon: Bell, label: '公告管理' },
+  { path: '/settings', icon: Settings, label: '系统设置' },
   { path: '/log/index', icon: ScrollText, label: '日志' },
+  { path: '/operation-logs', icon: ClipboardList, label: '操作日志' },
 ];
 
 export default function Layout() {

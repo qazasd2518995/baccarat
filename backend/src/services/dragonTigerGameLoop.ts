@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
 import { prisma } from '../lib/prisma.js';
-import { createShoe, playDragonTigerRound, type Card } from '../utils/dragonTigerLogic.js';
+import { createShoe, burnCards, playDragonTigerRound, type Card } from '../utils/dragonTigerLogic.js';
 import {
   setPhase,
   setTimeRemaining,
@@ -56,6 +56,7 @@ export async function startDragonTigerGameLoop(io: Server): Promise<void> {
     console.log(`[DragonTiger] Restored deck with ${currentShoe.length} cards from shoe #${getShoeNumber()}`);
   } else {
     currentShoe = createShoe();
+    burnCards(currentShoe);
     setShuffledDeck(currentShoe);
     setCardsRemaining(currentShoe.length);
     await savePersistedState();
@@ -202,6 +203,7 @@ async function handleDealingPhase(io: Server): Promise<void> {
   if (currentShoe.length < 10) {
     await startNewShoe();
     currentShoe = createShoe();
+    burnCards(currentShoe);
     setShuffledDeck(currentShoe);
     setCardsRemaining(currentShoe.length);
     await savePersistedState();

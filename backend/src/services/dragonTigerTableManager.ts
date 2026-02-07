@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { prisma } from '../lib/prisma.js';
-import { createShoe, playDragonTigerRound, calculateDTBetResult, type Card, type DragonTigerRoundResult, type DragonTigerBetType } from '../utils/dragonTigerLogic.js';
+import { createShoe, burnCards, playDragonTigerRound, calculateDTBetResult, type Card, type DragonTigerRoundResult, type DragonTigerBetType } from '../utils/dragonTigerLogic.js';
+import { applyWinCap } from '../utils/winCapCheck.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
 
 
@@ -57,6 +58,8 @@ const tables = new Map<string, DTTableState>();
 // Get or create table state
 function getTableState(tableId: string): DTTableState {
   if (!tables.has(tableId)) {
+    const shoe = createShoe();
+    burnCards(shoe);
     const state: DTTableState = {
       tableId,
       tableName: `DT Table ${tableId}`,
@@ -65,8 +68,8 @@ function getTableState(tableId: string): DTTableState {
       roundId: null,
       roundNumber: 0,
       shoeNumber: 1,
-      cardsRemaining: 416,
-      currentShoe: createShoe(),
+      cardsRemaining: shoe.length,
+      currentShoe: shoe,
       currentRound: null,
       currentBets: new Map(),
       timerInterval: null,
@@ -74,6 +77,52 @@ function getTableState(tableId: string): DTTableState {
     tables.set(tableId, state);
   }
   return tables.get(tableId)!;
+}
+
+// Load table state from DB on startup
+async function loadTableState(tableId: string): Promise<void> {
+  try {
+    const saved = await prisma.gameTableState.findUnique({
+      where: { tableId },
+    });
+    if (saved && saved.shuffledDeck) {
+      const state = getTableState(tableId);
+      state.shoeNumber = saved.shoeNumber;
+      state.roundNumber = saved.roundCounter;
+      state.currentShoe = saved.shuffledDeck as unknown as Card[];
+      state.cardsRemaining = saved.cardsRemaining;
+      console.log(`[DT Table ${tableId}] Loaded persisted state: shoe #${state.shoeNumber}, round #${state.roundNumber}`);
+    }
+  } catch (error) {
+    console.error(`[DT Table ${tableId}] Failed to load persisted state:`, error);
+  }
+}
+
+// Save table state to DB
+async function saveTableState(tableId: string): Promise<void> {
+  const state = tables.get(tableId);
+  if (!state) return;
+  try {
+    await prisma.gameTableState.upsert({
+      where: { tableId },
+      update: {
+        shoeNumber: state.shoeNumber,
+        roundCounter: state.roundNumber,
+        cardsRemaining: state.cardsRemaining,
+        shuffledDeck: state.currentShoe as any,
+      },
+      create: {
+        tableId,
+        gameType: 'dragon_tiger',
+        shoeNumber: state.shoeNumber,
+        roundCounter: state.roundNumber,
+        cardsRemaining: state.cardsRemaining,
+        shuffledDeck: state.currentShoe as any,
+      },
+    });
+  } catch (error) {
+    console.error(`[DT Table ${tableId}] Failed to save state:`, error);
+  }
 }
 
 // Helper function for delays
@@ -97,10 +146,14 @@ export async function startDTTableLoop(io: TypedServer, tableId: string, startDe
     await delay(startDelay);
   }
 
+  await loadTableState(tableId);
   const state = getTableState(tableId);
-  state.currentShoe = createShoe();
-  state.cardsRemaining = state.currentShoe.length;
-  console.log(`[DT Table ${tableId}] Shoe created with ${state.currentShoe.length} cards`);
+  if (!state.currentShoe || state.currentShoe.length < 10) {
+    state.currentShoe = createShoe();
+    burnCards(state.currentShoe);
+    state.cardsRemaining = state.currentShoe.length;
+  }
+  console.log(`[DT Table ${tableId}] Shoe ready with ${state.cardsRemaining} cards`);
 
   runTablePhase(io, tableId, 'betting');
 }
@@ -250,7 +303,9 @@ async function handleTableDealingPhase(io: TypedServer, tableId: string): Promis
   if (state.currentShoe.length < 10) {
     state.shoeNumber++;
     state.currentShoe = createShoe();
+    burnCards(state.currentShoe);
     state.cardsRemaining = state.currentShoe.length;
+    await saveTableState(tableId);
     console.log(`[DT Table ${tableId}] New shoe #${state.shoeNumber} created`);
   }
 
@@ -331,6 +386,7 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
     // Save to database
     const savedRound = await prisma.dragonTigerRound.create({
       data: {
+        tableId,
         shoeNumber: round.shoeNumber,
         dragonCard: round.dragonCard as any,
         tigerCard: round.tigerCard as any,
@@ -375,51 +431,54 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
           totalPayout += result.amount * 0.5;
         }
       }
+
+      // Apply win cap enforcement
+      const netWin = totalPayout - totalBet;
+      if (netWin > 0) {
+        const cappedNetWin = await applyWinCap(prisma, userId, netWin);
+        if (cappedNetWin < netWin) {
+          totalPayout = totalBet + cappedNetWin;
+        }
+      }
+
       const netResult = totalPayout - totalBet;
 
-      // Update balance
-      if (totalPayout > 0) {
-        await prisma.user.update({
-          where: { id: userId },
-          data: { balance: { increment: totalPayout } },
-        });
-      }
-
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { balance: true },
-      });
-
-      // Save bets
-      for (const bet of betResults) {
-        let status: 'won' | 'lost' | 'refunded';
-        let payoutAmount: number;
-
-        if (bet.won) {
-          status = 'won';
-          payoutAmount = bet.amount + bet.payout;
-        } else if (bet.payout === 0) {
-          status = 'refunded';
-          payoutAmount = bet.amount;
-        } else if (bet.payout === -bet.amount * 0.5) {
-          status = 'refunded';
-          payoutAmount = bet.amount * 0.5;
-        } else {
-          status = 'lost';
-          payoutAmount = 0;
+      // Atomic settlement transaction
+      const finalBalance = await prisma.$transaction(async (tx) => {
+        if (totalPayout > 0) {
+          await tx.user.update({
+            where: { id: userId },
+            data: { balance: { increment: totalPayout } },
+          });
         }
 
-        await prisma.bet.create({
-          data: {
-            userId,
-            dragonTigerRoundId: savedRound.id,
-            betType: bet.type as any,
-            amount: bet.amount,
-            payout: payoutAmount,
-            status,
-          },
+        for (const bet of betResults) {
+          let status: 'won' | 'lost' | 'refunded';
+          let payoutAmount: number;
+          if (bet.won) { status = 'won'; payoutAmount = bet.amount + bet.payout; }
+          else if (bet.payout === 0) { status = 'refunded'; payoutAmount = bet.amount; }
+          else if (bet.payout === -bet.amount * 0.5) { status = 'refunded'; payoutAmount = bet.amount * 0.5; }
+          else { status = 'lost'; payoutAmount = 0; }
+
+          await tx.bet.create({
+            data: { userId, dragonTigerRoundId: savedRound.id, betType: bet.type as any, amount: bet.amount, payout: payoutAmount, status },
+          });
+        }
+
+        const updatedUser = await tx.user.findUnique({ where: { id: userId }, select: { balance: true } });
+        const balance = Number(updatedUser?.balance || 0);
+        const balanceBeforeBet = balance - netResult;
+
+        await tx.transaction.create({
+          data: { userId, operatorId: userId, type: 'bet', amount: -totalBet, balanceBefore: balanceBeforeBet + totalBet, balanceAfter: balanceBeforeBet, note: `DT Table Round #${round.roundNumber}` },
         });
-      }
+        if (totalPayout > 0) {
+          await tx.transaction.create({
+            data: { userId, operatorId: userId, type: 'win', amount: totalPayout, balanceBefore: balanceBeforeBet, balanceAfter: balance, note: `DT Table Round #${round.roundNumber} - ${round.result}` },
+          });
+        }
+        return balance;
+      });
 
       // Emit settlement
       io.to(`user:${userId}`).emit('dt:settlement' as any, {
@@ -428,7 +487,7 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
         totalBet,
         totalPayout,
         netResult,
-        newBalance: Number(user?.balance || 0),
+        newBalance: finalBalance,
       });
 
       console.log(`[DT Table ${tableId}] Settled for user ${userId}: net=${netResult}`);
@@ -475,9 +534,12 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
       console.log(`[DT Table ${tableId}] Updated table statistics: ${round.result}`);
     }
 
-    // Emit roadmap
-    const recentRounds = await getDTTableRecentRounds(100);
+    // Emit roadmap (table-specific)
+    const recentRounds = await getDTTableRecentRounds(tableId, 100);
     io.to(roomName).emit('dt:roadmap' as any, { recentRounds });
+
+    // Save state persistence
+    await saveTableState(tableId);
 
     // Clear bets
     state.currentBets.clear();
@@ -489,9 +551,10 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
   runTablePhase(io, tableId, 'betting');
 }
 
-// Get recent rounds for roadmap
-async function getDTTableRecentRounds(limit: number = 100) {
+// Get recent rounds for roadmap (table-specific)
+async function getDTTableRecentRounds(tableId: string, limit: number = 100) {
   const rounds = await prisma.dragonTigerRound.findMany({
+    where: { tableId },
     orderBy: { createdAt: 'desc' },
     take: limit,
     select: {
@@ -558,7 +621,7 @@ export async function placeDTTableBet(
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { balance: true, status: true },
+    select: { balance: true, status: true, parentAgentId: true },
   });
 
   if (!user || user.status !== 'active') {
@@ -571,16 +634,35 @@ export async function placeDTTableBet(
   const newBetTotal = bets.reduce((sum, b) => sum + b.amount, 0);
   const totalRequired = existingTotal + newBetTotal;
 
-  if (totalRequired > currentBalance) {
-    return { success: false, errorCode: 'INSUFFICIENT_BALANCE', errorMessage: 'Insufficient balance' };
-  }
-
-  // Validate and merge bets
-  const mergedBets = [...existingBets];
+  // Validate bets
   for (const newBet of bets) {
     if (newBet.amount <= 0) {
       return { success: false, errorCode: 'INVALID_BET_AMOUNT', errorMessage: 'Invalid bet amount' };
     }
+  }
+
+  // Agent bet limit enforcement
+  if (user.parentAgentId) {
+    const agentLimits = await prisma.agentBetLimit.findMany({
+      where: { agentId: user.parentAgentId, enabled: true },
+    });
+    for (const agentLimit of agentLimits) {
+      const parts = agentLimit.limitRange.split('-');
+      if (parts.length === 2) {
+        const agentMax = parseFloat(parts[1]);
+        for (const bet of bets) {
+          const existingForType = existingBets.find((b) => b.type === bet.type)?.amount || 0;
+          if (existingForType + bet.amount > agentMax) {
+            return { success: false, errorCode: 'AGENT_BET_LIMIT_EXCEEDED', errorMessage: `代理限红最高 ${agentMax}` };
+          }
+        }
+      }
+    }
+  }
+
+  // Merge bets
+  const mergedBets = [...existingBets];
+  for (const newBet of bets) {
     const existingIndex = mergedBets.findIndex((b) => b.type === newBet.type);
     if (existingIndex >= 0) {
       mergedBets[existingIndex].amount += newBet.amount;
@@ -589,11 +671,14 @@ export async function placeDTTableBet(
     }
   }
 
-  // Deduct balance
-  await prisma.user.update({
-    where: { id: userId },
+  // Atomic balance deduction with concurrency protection
+  const deductResult = await prisma.user.updateMany({
+    where: { id: userId, balance: { gte: totalRequired }, status: 'active' },
     data: { balance: { decrement: newBetTotal } },
   });
+  if (deductResult.count === 0) {
+    return { success: false, errorCode: 'INSUFFICIENT_BALANCE', errorMessage: 'Insufficient balance' };
+  }
 
   state.currentBets.set(userId, mergedBets);
 

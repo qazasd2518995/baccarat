@@ -405,6 +405,17 @@ const resources = {
       selectedCount: '已选择',
       maxChips: '最多6个',
 
+      // New Baccarat Bet Types
+      big: '大',
+      small: '小',
+
+      // Dragon Tiger New Bet Types
+      dtSuitedTie: '同花和',
+      dragonBig: '龙大',
+      dragonSmall: '龙小',
+      tigerBig: '虎大',
+      tigerSmall: '虎小',
+
       // Roadmap Labels
       roadBanker: '庄',
       roadPlayer: '闲',
@@ -876,6 +887,17 @@ const resources = {
       selectChips: 'Select Chips',
       selectedCount: 'Selected',
       maxChips: 'Max 6',
+
+      // New Baccarat Bet Types
+      big: 'Big',
+      small: 'Small',
+
+      // Dragon Tiger New Bet Types
+      dtSuitedTie: 'Suited Tie',
+      dragonBig: 'D.Big',
+      dragonSmall: 'D.Small',
+      tigerBig: 'T.Big',
+      tigerSmall: 'T.Small',
 
       // Roadmap Labels
       roadBanker: 'B',

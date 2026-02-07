@@ -4,6 +4,7 @@ import { BetType, BetStatus, GameResult } from '@prisma/client';
 import { z } from 'zod';
 import {
   createShoe,
+  burnCards,
   playRound,
   calculateBetResult,
   Card,
@@ -13,6 +14,7 @@ import {
 
 // In-memory shoe (in production, use Redis)
 let currentShoe: Card[] = createShoe();
+burnCards(currentShoe);
 let currentShoeNumber = 1;
 
 const placeBetSchema = z.object({
@@ -91,6 +93,7 @@ export async function playGame(req: Request, res: Response) {
     // Check if shoe needs reshuffle (less than 20 cards)
     if (currentShoe.length < 20) {
       currentShoe = createShoe();
+      burnCards(currentShoe);
       currentShoeNumber++;
     }
 
@@ -407,6 +410,7 @@ export async function newShoe(req: Request, res: Response) {
     }
 
     currentShoe = createShoe();
+    burnCards(currentShoe);
     currentShoeNumber++;
 
     res.json({
