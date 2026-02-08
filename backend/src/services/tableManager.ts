@@ -44,6 +44,7 @@ interface TableState {
   currentBets: Map<string, BetEntry[]>;
   noCommissionMode: Map<string, boolean>;
   timerInterval: NodeJS.Timeout | null;
+  cachedRoadmap: any[];
 }
 
 // Store all table states
@@ -68,6 +69,7 @@ function getTableState(tableId: string): TableState {
       currentBets: new Map(),
       noCommissionMode: new Map(),
       timerInterval: null,
+      cachedRoadmap: [],
     };
     tables.set(tableId, state);
   }
@@ -149,7 +151,10 @@ export async function startTableLoop(io: TypedServer, tableId: string, startDela
     burnCards(state.currentShoe);
     state.cardsRemaining = state.currentShoe.length;
   }
-  console.log(`[Table ${tableId}] Shoe ready with ${state.cardsRemaining} cards`);
+
+  // Preload roadmap cache from DB
+  state.cachedRoadmap = await getTableRecentRounds(tableId, 100);
+  console.log(`[Table ${tableId}] Shoe ready with ${state.cardsRemaining} cards, roadmap cached (${state.cachedRoadmap.length} rounds)`);
 
   runTablePhase(io, tableId, 'betting');
 }
@@ -566,8 +571,9 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
       console.log(`[Table ${tableId}] Updated table statistics: ${round.result}`);
     }
 
-    // Emit roadmap (table-specific)
+    // Emit roadmap (table-specific) and cache it
     const recentRounds = await getTableRecentRounds(tableId, 100);
+    state.cachedRoadmap = recentRounds;
     io.to(roomName).emit('game:roadmap', { recentRounds });
 
     // Save state persistence
@@ -775,3 +781,9 @@ export function getAllTables(): string[] {
 
 // Export for socket join
 export { getTableRoom };
+
+// Get cached roadmap (instant, no DB query)
+export function getTableCachedRoadmap(tableId: string): any[] {
+  const state = tables.get(tableId);
+  return state?.cachedRoadmap || [];
+}

@@ -6,6 +6,7 @@ import {
   placeDTTableBet,
   clearDTTableBets,
   getDTTableRoom,
+  getDTTableCachedRoadmap,
 } from '../services/dragonTigerTableManager.js';
 
 
@@ -138,35 +139,7 @@ export function handleDragonTigerEvents(io: TypedServer, socket: AuthenticatedSo
       const tableId = data?.tableId || getTableIdFromSocket(socket);
       const state = getDTTableGameState(tableId, userId);
 
-      // Fetch user balance and recent rounds in parallel
-      const [user, recentRounds] = await Promise.all([
-        prisma.user.findUnique({
-          where: { id: userId },
-          select: { balance: true },
-        }),
-        prisma.dragonTigerRound.findMany({
-          where: { tableId },
-          orderBy: { createdAt: 'desc' },
-          take: 100,
-          select: {
-            roundNumber: true,
-            result: true,
-            isSuitedTie: true,
-            dragonValue: true,
-            tigerValue: true,
-          },
-        }),
-      ]);
-
-      const formattedRounds = recentRounds.reverse().map(round => ({
-        roundNumber: round.roundNumber,
-        result: round.result,
-        isSuitedTie: round.isSuitedTie,
-        dragonValue: round.dragonValue,
-        tigerValue: round.tigerValue,
-      }));
-
-      // Send current game state
+      // Send game state + cached roadmap instantly (no DB query)
       socket.emit('dt:state' as any, {
         phase: state.phase,
         roundId: state.roundId,
@@ -182,15 +155,20 @@ export function handleDragonTigerEvents(io: TypedServer, socket: AuthenticatedSo
         myBets: state.myBets,
       });
 
-      // Send balance update
+      // Send cached roadmap instantly
+      socket.emit('dt:roadmap' as any, {
+        recentRounds: getDTTableCachedRoadmap(tableId),
+      });
+
+      // Fetch balance from DB (only DB query needed)
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { balance: true },
+      });
+
       socket.emit('user:balance', {
         balance: Number(user?.balance || 0),
         reason: 'deposit',
-      });
-
-      // Send roadmap data
-      socket.emit('dt:roadmap' as any, {
-        recentRounds: formattedRounds,
       });
 
       console.log(

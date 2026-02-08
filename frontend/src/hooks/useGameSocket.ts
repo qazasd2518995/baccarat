@@ -67,10 +67,7 @@ export function useGameSocket(tableId?: string) {
       console.log(`[useGameSocket] Joined baccarat table ${targetTable}`);
 
       // Request current game state for this table (this also sends balance)
-      // Small delay to ensure join is processed first
-      setTimeout(() => {
-        socket.emit('game:requestState', { tableId: targetTable });
-      }, 100);
+      socket.emit('game:requestState', { tableId: targetTable });
 
       // Fetch betting limits
       gameApi.getMyLimits().then((res) => {

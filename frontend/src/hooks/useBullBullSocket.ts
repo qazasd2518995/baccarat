@@ -100,10 +100,7 @@ export function useBullBullSocket(tableId?: string) {
       console.log(`[useBullBullSocket] Joined bull bull table ${targetTable}`);
 
       // Request current game state for this table
-      // Small delay to ensure join is processed first
-      setTimeout(() => {
-        socket.emit('bb:requestState', { tableId: targetTable });
-      }, 100);
+      socket.emit('bb:requestState', { tableId: targetTable });
     };
 
     // Handler functions

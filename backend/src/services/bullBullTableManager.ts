@@ -51,6 +51,7 @@ interface BBTableState {
   } | null;
   currentBets: Map<string, BBBetEntry[]>;
   timerInterval: NodeJS.Timeout | null;
+  cachedRoadmap: any[];
 }
 
 // Store all table states
@@ -74,6 +75,7 @@ function getTableState(tableId: string): BBTableState {
       currentRound: null,
       currentBets: new Map(),
       timerInterval: null,
+      cachedRoadmap: [],
     };
     tables.set(tableId, state);
   }
@@ -154,7 +156,10 @@ export async function startBBTableLoop(io: TypedServer, tableId: string, startDe
     burnCards(state.currentShoe);
     state.cardsRemaining = state.currentShoe.length;
   }
-  console.log(`[BB Table ${tableId}] Shoe ready with ${state.cardsRemaining} cards`);
+
+  // Preload roadmap cache from DB
+  state.cachedRoadmap = await getBBTableRecentRounds(tableId, 100);
+  console.log(`[BB Table ${tableId}] Shoe ready with ${state.cardsRemaining} cards, roadmap cached (${state.cachedRoadmap.length} rounds)`);
 
   runTablePhase(io, tableId, 'betting');
 }
@@ -577,8 +582,9 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
       console.log(`[BB Table ${tableId}] Updated table statistics`);
     }
 
-    // Emit roadmap
+    // Emit roadmap and cache it
     const recentRounds = await getBBTableRecentRounds(tableId, 100);
+    state.cachedRoadmap = recentRounds;
     io.to(roomName).emit('bb:roadmap' as any, { recentRounds });
 
     // Save state persistence
@@ -780,3 +786,9 @@ export function getAllBBTables(): string[] {
 
 // Export for socket join
 export { getTableRoom as getBBTableRoom };
+
+// Get cached roadmap (instant, no DB query)
+export function getBBTableCachedRoadmap(tableId: string): any[] {
+  const state = tables.get(tableId);
+  return state?.cachedRoadmap || [];
+}

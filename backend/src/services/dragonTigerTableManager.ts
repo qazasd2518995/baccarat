@@ -50,6 +50,7 @@ interface DTTableState {
   } | null;
   currentBets: Map<string, DTBetEntry[]>;
   timerInterval: NodeJS.Timeout | null;
+  cachedRoadmap: any[];
 }
 
 // Store all table states
@@ -73,6 +74,7 @@ function getTableState(tableId: string): DTTableState {
       currentRound: null,
       currentBets: new Map(),
       timerInterval: null,
+      cachedRoadmap: [],
     };
     tables.set(tableId, state);
   }
@@ -153,7 +155,10 @@ export async function startDTTableLoop(io: TypedServer, tableId: string, startDe
     burnCards(state.currentShoe);
     state.cardsRemaining = state.currentShoe.length;
   }
-  console.log(`[DT Table ${tableId}] Shoe ready with ${state.cardsRemaining} cards`);
+
+  // Preload roadmap cache from DB
+  state.cachedRoadmap = await getDTTableRecentRounds(tableId, 100);
+  console.log(`[DT Table ${tableId}] Shoe ready with ${state.cardsRemaining} cards, roadmap cached (${state.cachedRoadmap.length} rounds)`);
 
   runTablePhase(io, tableId, 'betting');
 }
@@ -534,8 +539,9 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
       console.log(`[DT Table ${tableId}] Updated table statistics: ${round.result}`);
     }
 
-    // Emit roadmap (table-specific)
+    // Emit roadmap (table-specific) and cache it
     const recentRounds = await getDTTableRecentRounds(tableId, 100);
+    state.cachedRoadmap = recentRounds;
     io.to(roomName).emit('dt:roadmap' as any, { recentRounds });
 
     // Save state persistence
@@ -732,3 +738,9 @@ export function getAllDTTables(): string[] {
 
 // Export for socket join
 export { getTableRoom as getDTTableRoom };
+
+// Get cached roadmap (instant, no DB query)
+export function getDTTableCachedRoadmap(tableId: string): any[] {
+  const state = tables.get(tableId);
+  return state?.cachedRoadmap || [];
+}

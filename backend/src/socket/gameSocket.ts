@@ -6,6 +6,7 @@ import {
   placeTableBet,
   clearTableBets,
   getTableRoom,
+  getTableCachedRoadmap,
 } from '../services/tableManager.js';
 
 
@@ -134,43 +135,7 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
       const tableId = data?.tableId || getTableIdFromSocket(socket);
       const state = getTableGameState(tableId, userId);
 
-      // Fetch user balance and recent rounds in parallel
-      const [user, recentRounds] = await Promise.all([
-        prisma.user.findUnique({
-          where: { id: userId },
-          select: { balance: true },
-        }),
-        prisma.gameRound.findMany({
-          where: {
-            tableId,
-            result: { in: ['player', 'banker', 'tie'] },
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 100,
-          select: {
-            roundNumber: true,
-            result: true,
-            playerPair: true,
-            bankerPair: true,
-            playerPoints: true,
-            bankerPoints: true,
-            playerCards: true,
-            bankerCards: true,
-          },
-        }),
-      ]);
-
-      const formattedRounds = recentRounds.reverse().map(round => ({
-        roundNumber: round.roundNumber,
-        result: round.result as 'player' | 'banker' | 'tie',
-        playerPair: round.playerPair,
-        bankerPair: round.bankerPair,
-        playerPoints: round.playerPoints,
-        bankerPoints: round.bankerPoints,
-        totalCards: (round.playerCards as any[])?.length + (round.bankerCards as any[])?.length || 0,
-      }));
-
-      // Send current game state
+      // Send game state + cached roadmap instantly (no DB query)
       socket.emit('game:state', {
         phase: state.phase,
         roundId: state.roundId,
@@ -188,19 +153,24 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
         myBets: state.myBets,
       });
 
-      // Send balance update
+      // Send cached roadmap instantly
+      socket.emit('game:roadmap', {
+        recentRounds: getTableCachedRoadmap(tableId),
+      });
+
+      // Fetch balance from DB (only DB query needed)
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { balance: true },
+      });
+
       socket.emit('user:balance', {
         balance: Number(user?.balance || 0),
         reason: 'deposit',
       });
 
-      // Send roadmap data
-      socket.emit('game:roadmap', {
-        recentRounds: formattedRounds,
-      });
-
       console.log(
-        `[Socket] ${username} requested state for table ${tableId}: phase=${state.phase}, timeRemaining=${state.timeRemaining}, round=${state.roundNumber}, balance=${user?.balance}`
+        `[Socket] ${username} requested state for table ${tableId}: phase=${state.phase}, round=${state.roundNumber}, balance=${user?.balance}`
       );
     } catch (error) {
       console.error(`[Socket] Error getting state for ${username}:`, error);

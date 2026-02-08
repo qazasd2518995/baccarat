@@ -6,6 +6,7 @@ import {
   placeBBTableBet,
   clearBBTableBets,
   getBBTableRoom,
+  getBBTableCachedRoadmap,
 } from '../services/bullBullTableManager.js';
 
 
@@ -132,41 +133,7 @@ export function handleBullBullEvents(io: TypedServer, socket: AuthenticatedSocke
       const tableId = data?.tableId || getTableIdFromSocket(socket);
       const state = getBBTableGameState(tableId, userId);
 
-      // Fetch user balance and recent rounds in parallel
-      const [user, recentRounds] = await Promise.all([
-        prisma.user.findUnique({
-          where: { id: userId },
-          select: { balance: true },
-        }),
-        prisma.bullBullRound.findMany({
-          where: { tableId },
-          orderBy: { createdAt: 'desc' },
-          take: 100,
-          select: {
-            roundNumber: true,
-            bankerRank: true,
-            player1Rank: true,
-            player2Rank: true,
-            player3Rank: true,
-            player1Result: true,
-            player2Result: true,
-            player3Result: true,
-          },
-        }),
-      ]);
-
-      const formattedRounds = recentRounds.reverse().map(round => ({
-        roundNumber: round.roundNumber,
-        bankerRank: round.bankerRank,
-        player1Rank: round.player1Rank,
-        player2Rank: round.player2Rank,
-        player3Rank: round.player3Rank,
-        player1Result: round.player1Result,
-        player2Result: round.player2Result,
-        player3Result: round.player3Result,
-      }));
-
-      // Send current game state
+      // Send game state + cached roadmap instantly (no DB query)
       socket.emit('bb:state' as any, {
         phase: state.phase,
         roundId: state.roundId,
@@ -183,15 +150,20 @@ export function handleBullBullEvents(io: TypedServer, socket: AuthenticatedSocke
         myBets: state.myBets,
       });
 
-      // Send balance update
+      // Send cached roadmap instantly
+      socket.emit('bb:roadmap' as any, {
+        recentRounds: getBBTableCachedRoadmap(tableId),
+      });
+
+      // Fetch balance from DB (only DB query needed)
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { balance: true },
+      });
+
       socket.emit('user:balance', {
         balance: Number(user?.balance || 0),
         reason: 'deposit',
-      });
-
-      // Send roadmap data
-      socket.emit('bb:roadmap' as any, {
-        recentRounds: formattedRounds,
       });
 
       console.log(

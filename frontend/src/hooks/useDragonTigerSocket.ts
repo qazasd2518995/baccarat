@@ -99,10 +99,7 @@ export function useDragonTigerSocket(tableId?: string) {
       console.log(`[useDragonTigerSocket] Joined dragon tiger table ${targetTable}`);
 
       // Request current game state for this table
-      // Small delay to ensure join is processed first
-      setTimeout(() => {
-        socket.emit('dt:requestState', { tableId: targetTable });
-      }, 100);
+      socket.emit('dt:requestState', { tableId: targetTable });
     };
 
     // Handler functions
