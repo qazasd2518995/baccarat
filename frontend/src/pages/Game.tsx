@@ -152,17 +152,17 @@ function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair, blink }: { 
   const color = colors[result];
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-white">
-      {/* Main circle - perfect circle, hollow */}
+    <div className="relative w-full h-full flex items-center justify-center bg-white" style={{ minWidth: 0, minHeight: 0 }}>
+      {/* Main circle - responsive size, hollow */}
       <div
-        className="w-5 h-5 rounded-full"
-        style={{ border: `2px solid ${color.border}`, ...(blink ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {}) }}
+        className="rounded-full"
+        style={{ width: '80%', height: '80%', maxWidth: 20, maxHeight: 20, border: `2px solid ${color.border}`, ...(blink ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {}) }}
       />
 
       {/* Banker pair indicator - red dot at top-left */}
       {bankerPair && (
         <div
-          className="absolute top-0 left-0 w-1.5 h-1.5 rounded-full"
+          className="absolute top-0 left-0 w-1 h-1 rounded-full"
           style={{ backgroundColor: '#DC2626' }}
         />
       )}
@@ -170,7 +170,7 @@ function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair, blink }: { 
       {/* Player pair indicator - blue dot at bottom-right */}
       {playerPair && (
         <div
-          className="absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full"
+          className="absolute bottom-0 right-0 w-1 h-1 rounded-full"
           style={{ backgroundColor: '#2563EB' }}
         />
       )}
@@ -184,7 +184,7 @@ function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair, blink }: { 
           />
         ) : (
           <div
-            className="absolute inset-0 flex items-center justify-center text-[8px] font-bold"
+            className="absolute inset-0 flex items-center justify-center text-[6px] font-bold"
             style={{ color: '#16A34A' }}
           >
             {tieCount}
@@ -251,128 +251,74 @@ const SUIT_SYMBOLS: Record<string, string> = {
   spades: '♠',
 };
 
-// Calculate Big Eye Boy road
-function calculateBigEyeBoy(bigRoadGrid: ({ result: 'player' | 'banker'; tieCount: number } | null)[][]): ('red' | 'blue')[] {
-  const results: ('red' | 'blue')[] = [];
-  const ROWS = 6;
+// Big Road grid type
+type BigRoadGrid = ({ result: 'player' | 'banker'; tieCount: number; bankerPair: boolean; playerPair: boolean } | null)[][];
 
-  // Get column lengths from big road
-  const getColumnLength = (col: number): number => {
-    let length = 0;
-    for (let row = 0; row < ROWS; row++) {
-      if (bigRoadGrid[row]?.[col]) length++;
-    }
-    return length;
-  };
+// Helper: get column length from big road grid
+function getColumnLength(bigRoadGrid: BigRoadGrid, col: number): number {
+  let length = 0;
+  for (let row = 0; row < 6; row++) {
+    if (bigRoadGrid[row]?.[col]) length++;
+  }
+  return length;
+}
 
-  // Find max column with data
+// Helper: find max column with data
+function getMaxCol(bigRoadGrid: BigRoadGrid): number {
   let maxCol = 0;
-  for (let col = 0; col < 20; col++) {
-    for (let row = 0; row < ROWS; row++) {
-      if (bigRoadGrid[row]?.[col]) maxCol = col;
+  const cols = bigRoadGrid[0]?.length || 0;
+  for (let col = 0; col < cols; col++) {
+    for (let row = 0; row < 6; row++) {
+      if (bigRoadGrid[row]?.[col]) { maxCol = col; break; }
     }
   }
+  return maxCol;
+}
 
-  // Start from column 2 (comparing with column 1)
-  for (let col = 1; col <= maxCol; col++) {
-    const currLen = getColumnLength(col);
-    const prevLen = getColumnLength(col - 1);
+// Calculate derived road (generic): compare each column with column - offset
+function calculateDerivedRoad(bigRoadGrid: BigRoadGrid, offset: number): ('red' | 'blue')[] {
+  const results: ('red' | 'blue')[] = [];
+  const maxCol = getMaxCol(bigRoadGrid);
+
+  for (let col = offset; col <= maxCol; col++) {
+    const currLen = getColumnLength(bigRoadGrid, col);
+    const compareLen = getColumnLength(bigRoadGrid, col - offset);
 
     if (currLen > 1) {
-      // Compare current column's entries with previous column
       for (let entry = 1; entry < currLen; entry++) {
-        // Red = same pattern (both have entry at this depth or both don't)
-        // Blue = different pattern
-        const prevHasEntry = entry < prevLen;
-        results.push(prevHasEntry ? 'red' : 'blue');
+        const compareHasEntry = entry < compareLen;
+        results.push(compareHasEntry ? 'red' : 'blue');
       }
     }
   }
 
   return results;
+}
+
+// Calculate Big Eye Boy road (compare with column - 1)
+function calculateBigEyeBoy(bigRoadGrid: BigRoadGrid): ('red' | 'blue')[] {
+  return calculateDerivedRoad(bigRoadGrid, 1);
 }
 
 // Calculate Small Road (compare with column - 2)
-function calculateSmallRoad(bigRoadGrid: ({ result: 'player' | 'banker'; tieCount: number } | null)[][]): ('red' | 'blue')[] {
-  const results: ('red' | 'blue')[] = [];
-  const ROWS = 6;
-
-  const getColumnLength = (col: number): number => {
-    let length = 0;
-    for (let row = 0; row < ROWS; row++) {
-      if (bigRoadGrid[row]?.[col]) length++;
-    }
-    return length;
-  };
-
-  let maxCol = 0;
-  for (let col = 0; col < 20; col++) {
-    for (let row = 0; row < ROWS; row++) {
-      if (bigRoadGrid[row]?.[col]) maxCol = col;
-    }
-  }
-
-  // Start from column 3 (comparing with column 1)
-  for (let col = 2; col <= maxCol; col++) {
-    const currLen = getColumnLength(col);
-    const compareLen = getColumnLength(col - 2);
-
-    if (currLen > 1) {
-      for (let entry = 1; entry < currLen; entry++) {
-        const compareHasEntry = entry < compareLen;
-        results.push(compareHasEntry ? 'red' : 'blue');
-      }
-    }
-  }
-
-  return results;
+function calculateSmallRoad(bigRoadGrid: BigRoadGrid): ('red' | 'blue')[] {
+  return calculateDerivedRoad(bigRoadGrid, 2);
 }
 
 // Calculate Cockroach Pig (compare with column - 3)
-function calculateCockroachPig(bigRoadGrid: ({ result: 'player' | 'banker'; tieCount: number } | null)[][]): ('red' | 'blue')[] {
-  const results: ('red' | 'blue')[] = [];
-  const ROWS = 6;
-
-  const getColumnLength = (col: number): number => {
-    let length = 0;
-    for (let row = 0; row < ROWS; row++) {
-      if (bigRoadGrid[row]?.[col]) length++;
-    }
-    return length;
-  };
-
-  let maxCol = 0;
-  for (let col = 0; col < 20; col++) {
-    for (let row = 0; row < ROWS; row++) {
-      if (bigRoadGrid[row]?.[col]) maxCol = col;
-    }
-  }
-
-  // Start from column 4 (comparing with column 1)
-  for (let col = 3; col <= maxCol; col++) {
-    const currLen = getColumnLength(col);
-    const compareLen = getColumnLength(col - 3);
-
-    if (currLen > 1) {
-      for (let entry = 1; entry < currLen; entry++) {
-        const compareHasEntry = entry < compareLen;
-        results.push(compareHasEntry ? 'red' : 'blue');
-      }
-    }
-  }
-
-  return results;
+function calculateCockroachPig(bigRoadGrid: BigRoadGrid): ('red' | 'blue')[] {
+  return calculateDerivedRoad(bigRoadGrid, 3);
 }
 
-// Build Big Road data structure - Standard baccarat big road
+// Build Big Road data structure - unlimited columns, scrolling handled at display time
 // Red circles = Banker wins, Blue circles = Player wins
 // Green line/number on circle = Tie count after that result
 // Red dot top-left = Banker pair, Blue dot bottom-right = Player pair
-function buildBigRoad(data: Array<{ result: GameResult; playerPair?: boolean; bankerPair?: boolean }>) {
+function buildBigRoad(data: Array<{ result: GameResult; playerPair?: boolean; bankerPair?: boolean }>): BigRoadGrid {
   const ROWS = 6;
-  const COLS = 20;
-  const grid: ({ result: 'player' | 'banker'; tieCount: number; bankerPair: boolean; playerPair: boolean } | null)[][] =
-    Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+  const MAX_COLS = 120; // large enough for any shoe
+  const grid: BigRoadGrid =
+    Array(ROWS).fill(null).map(() => Array(MAX_COLS).fill(null));
 
   if (data.length === 0) return grid;
 
@@ -405,7 +351,7 @@ function buildBigRoad(data: Array<{ result: GameResult; playerPair?: boolean; ba
       }
     }
 
-    if (col < COLS && row < ROWS) {
+    if (col < MAX_COLS && row < ROWS) {
       grid[row][col] = {
         result: round.result,
         tieCount,
@@ -417,6 +363,20 @@ function buildBigRoad(data: Array<{ result: GameResult; playerPair?: boolean; ba
   }
 
   return grid;
+}
+
+// Get a sliding window of the rightmost DISPLAY_COLS columns from a big road grid
+function getBigRoadWindow(grid: BigRoadGrid, displayCols: number): BigRoadGrid {
+  const maxCol = getMaxCol(grid);
+  // Start from the rightmost columns, ensuring we show at least displayCols
+  const startCol = Math.max(0, maxCol - displayCols + 2); // +2 to leave room for prediction
+  const window: BigRoadGrid = Array(6).fill(null).map(() => Array(displayCols).fill(null));
+  for (let row = 0; row < 6; row++) {
+    for (let c = 0; c < displayCols; c++) {
+      window[row][c] = grid[row]?.[startCol + c] || null;
+    }
+  }
+  return window;
 }
 
 // Phase display text
@@ -659,25 +619,39 @@ export default function Game() {
     (r.bankerPoints - r.playerPoints) >= 4
   ).length;
 
-  const bigRoadGrid = buildBigRoad(roadmapData);
+  // Build full logical Big Road (unlimited columns) and derived roads
+  const bigRoadFull = buildBigRoad(roadmapData);
 
-  // Calculate derived roads
-  const bigEyeBoyData = calculateBigEyeBoy(bigRoadGrid);
-  const smallRoadData = calculateSmallRoad(bigRoadGrid);
-  const cockroachPigData = calculateCockroachPig(bigRoadGrid);
+  // Calculate derived roads from full grid
+  const bigEyeBoyDataFull = calculateBigEyeBoy(bigRoadFull);
+  const smallRoadDataFull = calculateSmallRoad(bigRoadFull);
+  const cockroachDataFull = calculateCockroachPig(bigRoadFull);
+
+  // Display constants
+  const BIG_ROAD_DISPLAY_COLS = 20;
+  const DERIVED_DISPLAY_CELLS = 32; // 8 cols x 4 rows
+
+  // Sliding window for Big Road display
+  const bigRoadWindow = getBigRoadWindow(bigRoadFull, BIG_ROAD_DISPLAY_COLS);
+
+  // Sliding window for derived roads: show last N entries
+  const bigEyeBoyData = bigEyeBoyDataFull.slice(-DERIVED_DISPLAY_CELLS);
+  const smallRoadData = smallRoadDataFull.slice(-DERIVED_DISPLAY_CELLS);
+  const cockroachPigData = cockroachDataFull.slice(-DERIVED_DISPLAY_CELLS);
 
   // Calculate Ask Roads (問路) - predict what happens if next result is banker/player
   const bankerAskRoad = buildAskRoad(roadmapData, 'banker');
   const playerAskRoad = buildAskRoad(roadmapData, 'player');
 
-  // Compute predicted Big Road position for blinking
+  // Compute predicted Big Road position for blinking (in the display window)
   const getAskRoadBigRoadPrediction = (hypothetical: 'banker' | 'player'): { row: number; col: number; result: 'banker' | 'player' } | null => {
     const simData = [...roadmapData, { result: hypothetical as GameResult, playerPair: false, bankerPair: false }];
     const simGrid = buildBigRoad(simData);
-    // Find the cell in simGrid that doesn't exist in bigRoadGrid
-    for (let col = 0; col < 20; col++) {
+    const simWindow = getBigRoadWindow(simGrid, BIG_ROAD_DISPLAY_COLS);
+    // Find the cell in simWindow that doesn't exist in bigRoadWindow
+    for (let col = 0; col < BIG_ROAD_DISPLAY_COLS; col++) {
       for (let row = 0; row < 6; row++) {
-        if (simGrid[row]?.[col] && !bigRoadGrid[row]?.[col]) {
+        if (simWindow[row]?.[col] && !bigRoadWindow[row]?.[col]) {
           return { row, col, result: hypothetical };
         }
       }
@@ -689,8 +663,16 @@ export default function Game() {
     ? getAskRoadBigRoadPrediction(askRoadMode)
     : null;
 
-  // Get active ask road derived predictions
-  const activeAskRoad = askRoadMode === 'banker' ? bankerAskRoad : askRoadMode === 'player' ? playerAskRoad : null;
+  // Get active ask road derived predictions (also windowed for comparison)
+  const activeAskRoad = (() => {
+    if (askRoadMode === 'none') return null;
+    const askData = askRoadMode === 'banker' ? bankerAskRoad : playerAskRoad;
+    // Compute how many NEW entries the prediction adds beyond current data
+    const newBigEye = askData.bigEye.slice(bigEyeBoyDataFull.length);
+    const newSmall = askData.smallRoad.slice(smallRoadDataFull.length);
+    const newCockroach = askData.cockroach.slice(cockroachDataFull.length);
+    return { bigEye: newBigEye, smallRoad: newSmall, cockroach: newCockroach };
+  })();
 
   // Bet type labels (Chinese)
   const betTypeLabels: Record<string, string> = {
@@ -1212,9 +1194,9 @@ export default function Game() {
                       <span className="writing-vertical tracking-wider text-[10px]">莊問路</span>
                       <div className="flex gap-0.5 mt-1">
                         {(() => {
-                          const be = bankerAskRoad.bigEye.slice(bigEyeBoyData.length);
-                          const sr = bankerAskRoad.smallRoad.slice(smallRoadData.length);
-                          const cp = bankerAskRoad.cockroach.slice(cockroachPigData.length);
+                          const be = bankerAskRoad.bigEye.slice(bigEyeBoyDataFull.length);
+                          const sr = bankerAskRoad.smallRoad.slice(smallRoadDataFull.length);
+                          const cp = bankerAskRoad.cockroach.slice(cockroachDataFull.length);
                           const beC = be.length > 0 ? be[be.length - 1] : null;
                           const srC = sr.length > 0 ? sr[sr.length - 1] : null;
                           const cpC = cp.length > 0 ? cp[cp.length - 1] : null;
@@ -1237,9 +1219,9 @@ export default function Game() {
                       <span className="writing-vertical tracking-wider text-[10px]">閒問路</span>
                       <div className="flex gap-0.5 mt-1">
                         {(() => {
-                          const be = playerAskRoad.bigEye.slice(bigEyeBoyData.length);
-                          const sr = playerAskRoad.smallRoad.slice(smallRoadData.length);
-                          const cp = playerAskRoad.cockroach.slice(cockroachPigData.length);
+                          const be = playerAskRoad.bigEye.slice(bigEyeBoyDataFull.length);
+                          const sr = playerAskRoad.smallRoad.slice(smallRoadDataFull.length);
+                          const cp = playerAskRoad.cockroach.slice(cockroachDataFull.length);
                           const beC = be.length > 0 ? be[be.length - 1] : null;
                           const srC = sr.length > 0 ? sr[sr.length - 1] : null;
                           const cpC = cp.length > 0 ? cp[cp.length - 1] : null;
@@ -1468,12 +1450,12 @@ export default function Game() {
 
               {/* Right: Big Road + Derived Roads - Hidden on mobile */}
               <div className="hidden lg:flex lg:w-[22%] flex-col">
-                {/* Big Road - circles with numbers */}
+                {/* Big Road - circles with sliding window */}
                 <div className="flex-1 p-1" style={{ backgroundColor: '#FFFFFF' }}>
-                  <div className="grid grid-cols-10 grid-rows-6 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
+                  <div className="grid grid-rows-6 gap-px h-full" style={{ backgroundColor: '#D1D5DB', gridTemplateColumns: `repeat(${BIG_ROAD_DISPLAY_COLS}, minmax(0, 1fr))` }}>
                     {Array(6).fill(null).flatMap((_, rowIndex) =>
-                      Array(10).fill(null).map((_, colIndex) => {
-                        const cell = bigRoadGrid[rowIndex]?.[colIndex];
+                      Array(BIG_ROAD_DISPLAY_COLS).fill(null).map((_, colIndex) => {
+                        const cell = bigRoadWindow[rowIndex]?.[colIndex];
                         const isPredicted = askBigRoadPrediction && askBigRoadPrediction.row === rowIndex && askBigRoadPrediction.col === colIndex;
                         if (isPredicted) {
                           return (
@@ -1503,12 +1485,14 @@ export default function Game() {
                   {/* Big Eye Boy - hollow circles */}
                   <div className="flex-1 border-r border-gray-400" style={{ backgroundColor: '#FFFFFF' }}>
                     <div className="grid grid-cols-8 grid-rows-4 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
-                      {Array(32).fill(null).map((_, i) => {
-                        const isPredicted = activeAskRoad && i >= bigEyeBoyData.length && i < activeAskRoad.bigEye.length;
+                      {Array(DERIVED_DISPLAY_CELLS).fill(null).map((_, i) => {
+                        // Show predicted entry right after existing data
+                        const isPredicted = activeAskRoad && i === bigEyeBoyData.length && i < DERIVED_DISPLAY_CELLS && activeAskRoad.bigEye.length > 0;
+                        const predValue = isPredicted ? activeAskRoad.bigEye[0] : undefined;
                         return (
                           <DerivedRoadCell
                             key={`bigEye-${i}`}
-                            value={isPredicted ? activeAskRoad.bigEye[i] : bigEyeBoyData[i]}
+                            value={isPredicted ? predValue : bigEyeBoyData[i]}
                             type="big_eye"
                             blink={!!isPredicted}
                           />
@@ -1520,12 +1504,13 @@ export default function Game() {
                   {/* Small Road - filled circles */}
                   <div className="flex-1 border-r border-gray-400" style={{ backgroundColor: '#FFFFFF' }}>
                     <div className="grid grid-cols-8 grid-rows-4 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
-                      {Array(32).fill(null).map((_, i) => {
-                        const isPredicted = activeAskRoad && i >= smallRoadData.length && i < activeAskRoad.smallRoad.length;
+                      {Array(DERIVED_DISPLAY_CELLS).fill(null).map((_, i) => {
+                        const isPredicted = activeAskRoad && i === smallRoadData.length && i < DERIVED_DISPLAY_CELLS && activeAskRoad.smallRoad.length > 0;
+                        const predValue = isPredicted ? activeAskRoad.smallRoad[0] : undefined;
                         return (
                           <DerivedRoadCell
                             key={`small-${i}`}
-                            value={isPredicted ? activeAskRoad.smallRoad[i] : smallRoadData[i]}
+                            value={isPredicted ? predValue : smallRoadData[i]}
                             type="small"
                             blink={!!isPredicted}
                           />
@@ -1537,12 +1522,13 @@ export default function Game() {
                   {/* Cockroach Pig - slashes */}
                   <div className="flex-1" style={{ backgroundColor: '#FFFFFF' }}>
                     <div className="grid grid-cols-8 grid-rows-4 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
-                      {Array(32).fill(null).map((_, i) => {
-                        const isPredicted = activeAskRoad && i >= cockroachPigData.length && i < activeAskRoad.cockroach.length;
+                      {Array(DERIVED_DISPLAY_CELLS).fill(null).map((_, i) => {
+                        const isPredicted = activeAskRoad && i === cockroachPigData.length && i < DERIVED_DISPLAY_CELLS && activeAskRoad.cockroach.length > 0;
+                        const predValue = isPredicted ? activeAskRoad.cockroach[0] : undefined;
                         return (
                           <DerivedRoadCell
                             key={`cockroach-${i}`}
-                            value={isPredicted ? activeAskRoad.cockroach[i] : cockroachPigData[i]}
+                            value={isPredicted ? predValue : cockroachPigData[i]}
                             type="cockroach"
                             blink={!!isPredicted}
                           />
