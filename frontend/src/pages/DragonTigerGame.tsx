@@ -504,20 +504,38 @@ export default function DragonTigerGame() {
   } = useDragonTigerStore();
 
   // Card animation: track reconnection to skip animation
+  // Normal flow: phase → dealing first, then cards arrive individually
+  // Reconnect: dt:state sends phase + cards together
   const [skipCardAnim, setSkipCardAnim] = useState(false);
   const [vsPulse, setVsPulse] = useState(false);
-  const prevDragonCardRef = useRef(dragonCard);
+  const expectingDTCardsRef = useRef(false);
 
+  // Track phase transitions
+  const prevDTPhaseRef = useRef(phase);
   useEffect(() => {
-    // If dragon card appears and we're already in dealing/result phase → reconnect
+    if (phase === 'dealing' && prevDTPhaseRef.current !== 'dealing') {
+      expectingDTCardsRef.current = true;
+    }
+    if (phase === 'betting') {
+      expectingDTCardsRef.current = false;
+      setSkipCardAnim(false);
+      setVsPulse(false);
+    }
+    prevDTPhaseRef.current = phase;
+  }, [phase]);
+
+  // When cards appear, decide whether to animate
+  const prevDragonCardRef = useRef(dragonCard);
+  useEffect(() => {
     if (dragonCard && !prevDragonCardRef.current) {
-      if (phase === 'dealing' || phase === 'result') {
+      if (expectingDTCardsRef.current) {
+        // Normal dealing — animate
+        setSkipCardAnim(false);
+      } else {
+        // Reconnect — skip animation
         setSkipCardAnim(true);
-        // When skipping animation, mark cards as flipped immediately
         setDragonFlipped(true);
         if (tigerCard) setTigerFlipped(true);
-      } else {
-        setSkipCardAnim(false);
       }
     }
     if (!dragonCard) {
@@ -525,7 +543,7 @@ export default function DragonTigerGame() {
       setVsPulse(false);
     }
     prevDragonCardRef.current = dragonCard;
-  }, [dragonCard, tigerCard, phase, setDragonFlipped, setTigerFlipped]);
+  }, [dragonCard, tigerCard, setDragonFlipped, setTigerFlipped]);
 
   // Trigger VS pulse when both cards are flipped
   useEffect(() => {

@@ -580,27 +580,48 @@ export default function Game() {
   const canBet = phase === 'betting' && isConnected;
 
   // Card animation: track whether cards arrived via reconnect (skip animation)
-  const prevPlayerCardsLenRef = useRef(playerCards.length);
+  // Normal flow: phase changes to 'dealing' first, then cards arrive individually
+  // Reconnect flow: game:state sends phase + cards together → cards appear when phase is already dealing/result
+  // Strategy: when phase changes to 'dealing', mark that we expect cards with animation.
+  //           If cards appear without a recent phase transition to 'dealing', it's a reconnect.
   const [skipCardAnim, setSkipCardAnim] = useState(false);
   const [pointsPulseKey, setPointsPulseKey] = useState(0);
   const shoeRef = useRef<HTMLDivElement>(null);
   const cardAreaRef = useRef<HTMLDivElement>(null);
+  const expectingCardsRef = useRef(false);
 
+  // When phase changes to dealing, mark that we expect animated cards
+  const prevPhaseRef = useRef(phase);
   useEffect(() => {
-    // If cards appear instantly (e.g. reconnect with >0 cards), skip animation
+    if (phase === 'dealing' && prevPhaseRef.current !== 'dealing') {
+      // Phase just transitioned to dealing — normal flow, expect animated cards
+      expectingCardsRef.current = true;
+    }
+    if (phase === 'betting') {
+      // New round reset
+      expectingCardsRef.current = false;
+      setSkipCardAnim(false);
+    }
+    prevPhaseRef.current = phase;
+  }, [phase]);
+
+  // When cards appear, decide whether to animate
+  const prevPlayerCardsLenRef = useRef(playerCards.length);
+  useEffect(() => {
     if (playerCards.length > 0 && prevPlayerCardsLenRef.current === 0) {
-      // Check if phase is already dealing/result — means we reconnected mid-round
-      if (phase === 'dealing' || phase === 'result') {
-        setSkipCardAnim(true);
-      } else {
+      if (expectingCardsRef.current) {
+        // Normal dealing flow — animate
         setSkipCardAnim(false);
+      } else {
+        // Cards appeared without a phase transition to dealing — reconnect/state restore
+        setSkipCardAnim(true);
       }
     }
     if (playerCards.length === 0) {
       setSkipCardAnim(false);
     }
     prevPlayerCardsLenRef.current = playerCards.length;
-  }, [playerCards.length, phase]);
+  }, [playerCards.length]);
 
   // Trigger points pulse when points change
   const prevPlayerPointsRef = useRef(playerPoints);

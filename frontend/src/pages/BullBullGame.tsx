@@ -271,21 +271,37 @@ export default function BullBullGame() {
   const [showRules, setShowRules] = useState(false);
 
   // Skip animation if reconnecting mid-round
+  // Normal flow: phase → dealing first, then cards/reveal events
+  // Reconnect: bb:state sends phase + hands together
   const [skipBBCardAnim, setSkipBBCardAnim] = useState(false);
+  const expectingBBCardsRef = useRef(false);
+
+  const prevBBPhaseRef = useRef(phase);
+  useEffect(() => {
+    if (phase === 'dealing' && prevBBPhaseRef.current !== 'dealing') {
+      expectingBBCardsRef.current = true;
+    }
+    if (phase === 'betting') {
+      expectingBBCardsRef.current = false;
+      setSkipBBCardAnim(false);
+    }
+    prevBBPhaseRef.current = phase;
+  }, [phase]);
+
   const prevBankerRef = useRef(banker);
   useEffect(() => {
     if (banker && !prevBankerRef.current) {
-      if (phase === 'dealing' || phase === 'result') {
-        setSkipBBCardAnim(true);
-      } else {
+      if (expectingBBCardsRef.current) {
         setSkipBBCardAnim(false);
+      } else {
+        setSkipBBCardAnim(true);
       }
     }
     if (!banker) {
       setSkipBBCardAnim(false);
     }
     prevBankerRef.current = banker;
-  }, [banker, phase]);
+  }, [banker]);
 
   // Count dealt cards per position
   const getDealCount = (target: string) =>
