@@ -1091,113 +1091,144 @@ export default function Game() {
               <span className={`ml-2 font-bold ${phaseDisplay.color}`}>{roundNumber} - {phaseDisplay.text}</span>
             </div>
 
-            {/* Dealer placeholder */}
+            {/* Premium Electronic Dealing Table */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="relative">
-                {/* Dealer avatar placeholder */}
-                <div className="w-48 h-64 bg-gradient-to-b from-gray-600/50 to-gray-800/50 rounded-lg border border-gray-600/30 flex items-center justify-center">
-                  <User className="w-20 h-20 text-gray-500/50" />
+              {/* Felt table surface */}
+              <div className="relative w-full max-w-[600px] mx-auto" style={{ height: '70%', maxHeight: 320 }}>
+                {/* Table felt background with subtle texture */}
+                <div className="absolute inset-0 bg-gradient-to-b from-[#1a3a2a]/60 via-[#0d2818]/80 to-[#0a1f14]/60 rounded-2xl border border-[#d4af37]/20 overflow-hidden">
+                  {/* Radial glow center */}
+                  <div className="absolute inset-0 bg-radial-[ellipse_at_center] from-[#d4af37]/5 via-transparent to-transparent" />
+                  {/* Corner accent lines */}
+                  <div className="absolute top-3 left-3 w-8 h-8 border-t border-l border-[#d4af37]/30 rounded-tl" />
+                  <div className="absolute top-3 right-3 w-8 h-8 border-t border-r border-[#d4af37]/30 rounded-tr" />
+                  <div className="absolute bottom-3 left-3 w-8 h-8 border-b border-l border-[#d4af37]/30 rounded-bl" />
+                  <div className="absolute bottom-3 right-3 w-8 h-8 border-b border-r border-[#d4af37]/30 rounded-br" />
                 </div>
 
-                {/* Card Shoe - fly-from origin */}
-                <div ref={shoeRef} className="absolute -top-2 left-1/2 -translate-x-1/2 z-10">
-                  <div className="relative w-12 h-8">
-                    {[0, 1, 2].map(i => (
-                      <div
-                        key={i}
-                        className="absolute rounded bg-gradient-to-br from-[#1e3a5f] to-[#0f2744] border border-[#d4af37]/40"
-                        style={{
-                          width: 30, height: 42,
-                          top: -i * 2, left: i * 2,
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
-                        }}
-                      />
-                    ))}
+                {/* Card Shoe - top center, fly-from origin */}
+                <div ref={shoeRef} className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
+                  <div className="relative flex items-center gap-2">
+                    {/* Shoe stack */}
+                    <div className="relative w-10 h-7">
+                      {[0, 1, 2].map(i => (
+                        <div
+                          key={i}
+                          className="absolute rounded-sm bg-gradient-to-br from-[#1e3a5f] to-[#0f2744] border border-[#d4af37]/40"
+                          style={{
+                            width: 26, height: 36,
+                            top: -i * 2, left: i * 2,
+                            boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-[#d4af37]/60 font-mono tracking-wider">SHOE</span>
                   </div>
                 </div>
 
-                {/* Cards Display - Responsive positioning for mobile */}
-                <div ref={cardAreaRef} className="absolute -bottom-8 sm:-bottom-16 lg:-bottom-24 left-1/2 -translate-x-1/2 flex items-end gap-8 sm:gap-16 lg:gap-24">
-                  {/* Player Cards */}
-                  <div className="flex flex-col items-center">
-                    {/* Third card - above, rotated 90 degrees */}
-                    <div className="h-[55px]">
-                      {playerCards.length > 2 && (
-                        <div className="mb-1">
-                          <AnimatedPlayingCard
-                            card={playerCards[2]}
-                            size="sm"
-                            flyFrom={{ x: 0, y: -180 }}
-                            flyDelay={3.5}
-                            flipDelay={0.5}
-                            rotation={90}
-                            skipAnimation={skipCardAnim}
-                          />
-                        </div>
-                      )}
+                {/* Dealing zones - PLAYER left, BANKER right */}
+                <div ref={cardAreaRef} className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex items-end gap-6 sm:gap-14 lg:gap-20">
+                    {/* Player Zone */}
+                    <div className="flex flex-col items-center">
+                      {/* Player label */}
+                      <div className="mb-2 px-3 py-0.5 rounded-full bg-blue-600/20 border border-blue-500/30">
+                        <span className="text-[10px] font-bold tracking-widest text-blue-400 uppercase">player</span>
+                      </div>
+                      {/* Third card - above, rotated 90 degrees */}
+                      <div className="h-[55px]">
+                        {playerCards.length > 2 && (
+                          <div className="mb-1">
+                            <AnimatedPlayingCard
+                              card={playerCards[2]}
+                              size="sm"
+                              flyFrom={{ x: 0, y: -180 }}
+                              flyDelay={3.5}
+                              flipDelay={0.5}
+                              rotation={90}
+                              skipAnimation={skipCardAnim}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      {/* First two cards */}
+                      <div className="flex gap-1">
+                        {playerCards.length > 0 ? (
+                          playerCards.slice(0, 2).map((card, i) => (
+                            <AnimatedPlayingCard
+                              key={`player-${i}-${card.rank}-${card.suit}`}
+                              card={card}
+                              flyFrom={{ x: 60, y: -200 }}
+                              flyDelay={i * 1.2}
+                              flipDelay={0.5}
+                              skipAnimation={skipCardAnim}
+                            />
+                          ))
+                        ) : (
+                          <>
+                            <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
+                            <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
+                          </>
+                        )}
+                      </div>
                     </div>
-                    {/* First two cards - horizontal */}
-                    <div className="flex gap-1">
-                      {playerCards.length > 0 ? (
-                        playerCards.slice(0, 2).map((card, i) => (
-                          <AnimatedPlayingCard
-                            key={`player-${i}-${card.rank}-${card.suit}`}
-                            card={card}
-                            flyFrom={{ x: 60, y: -200 }}
-                            flyDelay={i * 1.2}
-                            flipDelay={0.5}
-                            skipAnimation={skipCardAnim}
-                          />
-                        ))
-                      ) : (
-                        <>
-                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
-                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
-                        </>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Banker Cards */}
-                  <div className="flex flex-col items-center">
-                    {/* Third card - above, rotated 90 degrees */}
-                    <div className="h-[55px]">
-                      {bankerCards.length > 2 && (
-                        <div className="mb-1">
-                          <AnimatedPlayingCard
-                            card={bankerCards[2]}
-                            size="sm"
-                            flyFrom={{ x: 0, y: -180 }}
-                            flyDelay={4.5}
-                            flipDelay={0.5}
-                            rotation={90}
-                            skipAnimation={skipCardAnim}
-                          />
-                        </div>
-                      )}
+                    {/* Center divider */}
+                    <div className="flex flex-col items-center gap-1 pb-8">
+                      <div className="w-px h-12 bg-gradient-to-b from-transparent via-[#d4af37]/30 to-transparent" />
+                      <div className="text-[10px] text-[#d4af37]/40 font-bold">VS</div>
+                      <div className="w-px h-12 bg-gradient-to-b from-transparent via-[#d4af37]/30 to-transparent" />
                     </div>
-                    {/* First two cards - horizontal */}
-                    <div className="flex gap-1">
-                      {bankerCards.length > 0 ? (
-                        bankerCards.slice(0, 2).map((card, i) => (
-                          <AnimatedPlayingCard
-                            key={`banker-${i}-${card.rank}-${card.suit}`}
-                            card={card}
-                            flyFrom={{ x: -60, y: -200 }}
-                            flyDelay={0.6 + i * 1.2}
-                            flipDelay={0.5}
-                            skipAnimation={skipCardAnim}
-                          />
-                        ))
-                      ) : (
-                        <>
-                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
-                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
-                        </>
-                      )}
+
+                    {/* Banker Zone */}
+                    <div className="flex flex-col items-center">
+                      {/* Banker label */}
+                      <div className="mb-2 px-3 py-0.5 rounded-full bg-red-600/20 border border-red-500/30">
+                        <span className="text-[10px] font-bold tracking-widest text-red-400 uppercase">banker</span>
+                      </div>
+                      {/* Third card - above, rotated 90 degrees */}
+                      <div className="h-[55px]">
+                        {bankerCards.length > 2 && (
+                          <div className="mb-1">
+                            <AnimatedPlayingCard
+                              card={bankerCards[2]}
+                              size="sm"
+                              flyFrom={{ x: 0, y: -180 }}
+                              flyDelay={4.5}
+                              flipDelay={0.5}
+                              rotation={90}
+                              skipAnimation={skipCardAnim}
+                            />
+                          </div>
+                        )}
+                      </div>
+                      {/* First two cards */}
+                      <div className="flex gap-1">
+                        {bankerCards.length > 0 ? (
+                          bankerCards.slice(0, 2).map((card, i) => (
+                            <AnimatedPlayingCard
+                              key={`banker-${i}-${card.rank}-${card.suit}`}
+                              card={card}
+                              flyFrom={{ x: -60, y: -200 }}
+                              flyDelay={0.6 + i * 1.2}
+                              flipDelay={0.5}
+                              skipAnimation={skipCardAnim}
+                            />
+                          ))
+                        ) : (
+                          <>
+                            <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
+                            <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                {/* Bottom decorative line */}
+                <div className="absolute bottom-4 left-8 right-8 h-px bg-gradient-to-r from-transparent via-[#d4af37]/20 to-transparent" />
               </div>
             </div>
 
