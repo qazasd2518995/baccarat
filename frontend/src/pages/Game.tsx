@@ -366,17 +366,18 @@ function buildBigRoad(data: Array<{ result: GameResult; playerPair?: boolean; ba
 }
 
 // Get a sliding window of the rightmost DISPLAY_COLS columns from a big road grid
-function getBigRoadWindow(grid: BigRoadGrid, displayCols: number): BigRoadGrid {
+// Returns { window, startCol } so caller knows the offset
+function getBigRoadWindow(grid: BigRoadGrid, displayCols: number, extraRoom: number = 1): { window: BigRoadGrid; startCol: number } {
   const maxCol = getMaxCol(grid);
-  // Start from the rightmost columns, ensuring we show at least displayCols
-  const startCol = Math.max(0, maxCol - displayCols + 2); // +2 to leave room for prediction
+  // Leave extraRoom columns on the right for prediction
+  const startCol = Math.max(0, maxCol - displayCols + 1 + extraRoom);
   const window: BigRoadGrid = Array(6).fill(null).map(() => Array(displayCols).fill(null));
   for (let row = 0; row < 6; row++) {
     for (let c = 0; c < displayCols; c++) {
       window[row][c] = grid[row]?.[startCol + c] || null;
     }
   }
-  return window;
+  return { window, startCol };
 }
 
 // Phase display text
@@ -631,27 +632,20 @@ export default function Game() {
   const BIG_ROAD_DISPLAY_COLS = 20;
   const DERIVED_DISPLAY_CELLS = 32; // 8 cols x 4 rows
 
-  // Sliding window for Big Road display
-  const bigRoadWindow = getBigRoadWindow(bigRoadFull, BIG_ROAD_DISPLAY_COLS);
-
-  // Sliding window for derived roads: show last N entries
-  const bigEyeBoyData = bigEyeBoyDataFull.slice(-DERIVED_DISPLAY_CELLS);
-  const smallRoadData = smallRoadDataFull.slice(-DERIVED_DISPLAY_CELLS);
-  const cockroachPigData = cockroachDataFull.slice(-DERIVED_DISPLAY_CELLS);
-
   // Calculate Ask Roads (問路) - predict what happens if next result is banker/player
   const bankerAskRoad = buildAskRoad(roadmapData, 'banker');
   const playerAskRoad = buildAskRoad(roadmapData, 'player');
 
-  // Compute predicted Big Road position for blinking (in the display window)
-  const getAskRoadBigRoadPrediction = (hypothetical: 'banker' | 'player'): { row: number; col: number; result: 'banker' | 'player' } | null => {
+  // Find predicted Big Road position on the FULL grid (not windowed)
+  const getAskRoadBigRoadPredictionFull = (hypothetical: 'banker' | 'player'): { row: number; col: number; result: 'banker' | 'player' } | null => {
     const simData = [...roadmapData, { result: hypothetical as GameResult, playerPair: false, bankerPair: false }];
     const simGrid = buildBigRoad(simData);
-    const simWindow = getBigRoadWindow(simGrid, BIG_ROAD_DISPLAY_COLS);
-    // Find the cell in simWindow that doesn't exist in bigRoadWindow
-    for (let col = 0; col < BIG_ROAD_DISPLAY_COLS; col++) {
+    const simMaxCol = getMaxCol(simGrid);
+    const curMaxCol = getMaxCol(bigRoadFull);
+    // Find the NEW cell: scan from curMaxCol to simMaxCol
+    for (let col = Math.max(0, curMaxCol); col <= simMaxCol; col++) {
       for (let row = 0; row < 6; row++) {
-        if (simWindow[row]?.[col] && !bigRoadWindow[row]?.[col]) {
+        if (simGrid[row]?.[col] && !bigRoadFull[row]?.[col]) {
           return { row, col, result: hypothetical };
         }
       }
@@ -659,15 +653,46 @@ export default function Game() {
     return null;
   };
 
-  const askBigRoadPrediction = askRoadMode !== 'none'
-    ? getAskRoadBigRoadPrediction(askRoadMode)
+  const askPredFull = askRoadMode !== 'none'
+    ? getAskRoadBigRoadPredictionFull(askRoadMode)
     : null;
 
-  // Get active ask road derived predictions (also windowed for comparison)
+  // Sliding window: make sure predicted cell is visible if ask mode active
+  const { window: bigRoadWindow, startCol: bigRoadStartCol } = (() => {
+    if (askPredFull) {
+      // Ensure the prediction column is visible in the window
+      const predCol = askPredFull.col;
+      const maxCol = Math.max(getMaxCol(bigRoadFull), predCol);
+      const startCol = Math.max(0, maxCol - BIG_ROAD_DISPLAY_COLS + 1);
+      const win: BigRoadGrid = Array(6).fill(null).map(() => Array(BIG_ROAD_DISPLAY_COLS).fill(null));
+      for (let row = 0; row < 6; row++) {
+        for (let c = 0; c < BIG_ROAD_DISPLAY_COLS; c++) {
+          win[row][c] = bigRoadFull[row]?.[startCol + c] || null;
+        }
+      }
+      return { window: win, startCol };
+    }
+    return getBigRoadWindow(bigRoadFull, BIG_ROAD_DISPLAY_COLS);
+  })();
+
+  // Convert predicted full-grid position to window position
+  const askBigRoadPrediction = (() => {
+    if (!askPredFull) return null;
+    const displayCol = askPredFull.col - bigRoadStartCol;
+    if (displayCol < 0 || displayCol >= BIG_ROAD_DISPLAY_COLS) return null;
+    return { row: askPredFull.row, col: displayCol, result: askPredFull.result };
+  })();
+
+  // Sliding window for derived roads: show last N entries, leave 1 slot for prediction
+  const bigEyeBoyData = bigEyeBoyDataFull.slice(-(DERIVED_DISPLAY_CELLS - 1));
+  const smallRoadData = smallRoadDataFull.slice(-(DERIVED_DISPLAY_CELLS - 1));
+  const cockroachPigData = cockroachDataFull.slice(-(DERIVED_DISPLAY_CELLS - 1));
+
+  // Get active ask road derived predictions
   const activeAskRoad = (() => {
     if (askRoadMode === 'none') return null;
     const askData = askRoadMode === 'banker' ? bankerAskRoad : playerAskRoad;
-    // Compute how many NEW entries the prediction adds beyond current data
+    // Compute how many NEW entries the prediction adds beyond current full data
     const newBigEye = askData.bigEye.slice(bigEyeBoyDataFull.length);
     const newSmall = askData.smallRoad.slice(smallRoadDataFull.length);
     const newCockroach = askData.cockroach.slice(cockroachDataFull.length);
@@ -1237,31 +1262,51 @@ export default function Game() {
                     </button>
                   </div>
 
-                  {/* Bead Plate Grid (珠盤路) — shows full history as colored circles with 莊/閒/和 text */}
+                  {/* Bead Plate Grid (珠盤路) — shows history as colored circles with 莊/閒/和 text */}
+                  {/* Uses sliding window: show last (ROWS*COLS - 1) rounds + 1 empty slot for prediction */}
                   <div className="flex-1 grid grid-cols-5 grid-rows-6 gap-px" style={{ backgroundColor: '#D1D5DB' }}>
                     {(() => {
-                      // Show last 30 rounds in column-first order (fill top-to-bottom, then next column)
                       const ROWS = 6;
                       const COLS = 5;
-                      const latest = roadmapData.slice(-ROWS * COLS);
-                      const cells: (typeof roadmapData[0] | null)[] = Array(ROWS * COLS).fill(null);
+                      const TOTAL = ROWS * COLS; // 30 cells
+                      // Keep 1 slot empty for ask road prediction display
+                      const maxShow = TOTAL - 1; // 29
+                      const latest = roadmapData.slice(-maxShow);
+                      const cells: ({ data: typeof roadmapData[0] | null; predicted?: boolean })[] = Array(TOTAL).fill(null).map(() => ({ data: null }));
                       // Fill column by column
                       for (let i = 0; i < latest.length; i++) {
                         const col = Math.floor(i / ROWS);
                         const row = i % ROWS;
-                        cells[row * COLS + col] = latest[i];
+                        cells[row * COLS + col] = { data: latest[i] };
                       }
-                      return cells.map((round, i) => {
-                        if (!round) return <div key={`bead-${i}`} className="w-full h-full bg-white" />;
+                      // Add ask road prediction at next position
+                      if (askRoadMode !== 'none') {
+                        const predIdx = latest.length;
+                        if (predIdx < TOTAL) {
+                          const predCol = Math.floor(predIdx / ROWS);
+                          const predRow = predIdx % ROWS;
+                          const cellIdx = predRow * COLS + predCol;
+                          if (cellIdx < TOTAL) {
+                            cells[cellIdx] = {
+                              data: { result: askRoadMode as GameResult, playerPair: false, bankerPair: false },
+                              predicted: true,
+                            };
+                          }
+                        }
+                      }
+                      return cells.map((cell, i) => {
+                        if (!cell.data) return <div key={`bead-${i}`} className="w-full h-full bg-white" />;
+                        const round = cell.data;
                         const bgColor = round.result === 'banker' ? '#DC2626' : round.result === 'player' ? '#2563EB' : '#16A34A';
                         const label = round.result === 'banker' ? '莊' : round.result === 'player' ? '閒' : '和';
+                        const blinkStyle = cell.predicted ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
                         return (
                           <div key={`bead-${i}`} className="relative w-full h-full flex items-center justify-center bg-white">
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: bgColor, fontSize: '10px' }}>
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: bgColor, fontSize: '10px', ...blinkStyle }}>
                               {label}
                             </div>
-                            {round.bankerPair && <div className="absolute top-0 left-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#DC2626' }} />}
-                            {round.playerPair && <div className="absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#2563EB' }} />}
+                            {!cell.predicted && round.bankerPair && <div className="absolute top-0 left-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#DC2626' }} />}
+                            {!cell.predicted && round.playerPair && <div className="absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#2563EB' }} />}
                           </div>
                         );
                       });
