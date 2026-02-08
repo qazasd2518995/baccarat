@@ -64,7 +64,7 @@ interface PlayingCardProps {
 type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
 
 // Size configurations (maintaining 2.5:3.5 poker card ratio)
-const SIZES = {
+export const SIZES = {
   sm: { width: 50, height: 70 },
   md: { width: 65, height: 91 },
   lg: { width: 80, height: 112 },
@@ -131,17 +131,17 @@ const CARD_IMAGES: Record<string, string> = {
 };
 
 // Get card image URL
-function getCardImage(rank: string, suit: Suit): string {
+export function getCardImage(rank: string, suit: Suit): string {
   const key = `${rank}_${suit}`;
   return CARD_IMAGES[key] || ace_of_spades; // fallback
 }
 
 // Card Back Component
-function CardBack({ width, height }: { width: number; height: number }) {
+export function CardBack({ width, height }: { width: number; height: number }) {
   const patternId = `backPattern-${Math.random().toString(36).substr(2, 9)}`;
 
   return (
-    <motion.div
+    <div
       className="rounded-lg shadow-xl overflow-hidden"
       style={{ width, height }}
     >
@@ -198,7 +198,7 @@ function CardBack({ width, height }: { width: number; height: number }) {
           <circle cx="139" cy="215" r="4" fill="#d4af37" />
         </g>
       </svg>
-    </motion.div>
+    </div>
   );
 }
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Card } from '../../types';
-import PlayingCard from './PlayingCard';
+import { getCardImage, CardBack, SIZES } from './PlayingCard';
 
 interface AnimatedPlayingCardProps {
   card: Card;
@@ -28,12 +28,6 @@ interface AnimatedPlayingCardProps {
   onFlipComplete?: () => void;
 }
 
-const SIZES = {
-  sm: { width: 50, height: 70 },
-  md: { width: 65, height: 91 },
-  lg: { width: 80, height: 112 },
-};
-
 export default function AnimatedPlayingCard({
   card,
   size = 'md',
@@ -55,12 +49,14 @@ export default function AnimatedPlayingCard({
   useEffect(() => {
     if (skipAnimation) {
       setFlipped(true);
+      onFlipComplete?.();
       return;
     }
     const timer = setTimeout(() => {
       setFlipped(true);
     }, totalFlipDelay * 1000);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalFlipDelay, skipAnimation]);
 
   const handleFlipAnimationComplete = () => {
@@ -68,6 +64,28 @@ export default function AnimatedPlayingCard({
       onFlipComplete();
     }
   };
+
+  const cardImage = getCardImage(card.rank, card.suit as 'hearts' | 'diamonds' | 'clubs' | 'spades');
+
+  // Card front face content (no motion.div wrapper, no overflow-hidden)
+  const frontFace = (
+    <div
+      className="rounded-lg shadow-xl bg-white"
+      style={{ width: sizeConfig.width, height: sizeConfig.height }}
+    >
+      <img
+        src={cardImage}
+        alt={`${card.rank} of ${card.suit}`}
+        className="w-full h-full object-contain rounded-lg"
+        draggable={false}
+      />
+    </div>
+  );
+
+  // Card back face content
+  const backFace = (
+    <CardBack width={sizeConfig.width} height={sizeConfig.height} />
+  );
 
   if (skipAnimation) {
     return (
@@ -80,7 +98,7 @@ export default function AnimatedPlayingCard({
           '--glow-color': glowColor,
         } as React.CSSProperties}
       >
-        <PlayingCard card={card} size={size} />
+        {frontFace}
       </div>
     );
   }
@@ -108,53 +126,55 @@ export default function AnimatedPlayingCard({
       }}
       className={glowing ? 'card-glow' : ''}
       style={{
-        perspective: 800,
         width: sizeConfig.width,
         height: sizeConfig.height,
         '--glow-color': glowColor,
       } as React.CSSProperties}
     >
-      {/* 3D Flip Container */}
-      <motion.div
-        animate={{ rotateY: flipped ? 0 : 180 }}
-        initial={{ rotateY: 180 }}
-        transition={{
-          duration: flipDuration,
-          ease: [0.4, 0, 0.2, 1],
-        }}
-        onAnimationComplete={handleFlipAnimationComplete}
-        style={{
-          transformStyle: 'preserve-3d',
-          width: '100%',
-          height: '100%',
-          position: 'relative',
-        }}
-      >
-        {/* Front face (card image) */}
-        <div
+      {/* Perspective wrapper — perspective must be on the PARENT of the rotating element */}
+      <div style={{ perspective: 800, width: '100%', height: '100%' }}>
+        {/* 3D Flip Container */}
+        <motion.div
+          animate={{ rotateY: flipped ? 0 : 180 }}
+          initial={{ rotateY: 180 }}
+          transition={{
+            duration: flipDuration,
+            ease: [0.4, 0, 0.2, 1],
+          }}
+          onAnimationComplete={handleFlipAnimationComplete}
           style={{
-            backfaceVisibility: 'hidden',
-            position: 'absolute',
+            transformStyle: 'preserve-3d',
             width: '100%',
             height: '100%',
+            position: 'relative',
           }}
         >
-          <PlayingCard card={card} size={size} />
-        </div>
+          {/* Front face (card image) — at rotateY=0 this faces forward */}
+          <div
+            style={{
+              backfaceVisibility: 'hidden',
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+            }}
+          >
+            {frontFace}
+          </div>
 
-        {/* Back face (card back) */}
-        <div
-          style={{
-            backfaceVisibility: 'hidden',
-            transform: 'rotateY(180deg)',
-            position: 'absolute',
-            width: '100%',
-            height: '100%',
-          }}
-        >
-          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size={size} />
-        </div>
-      </motion.div>
+          {/* Back face (card back) — pre-rotated 180deg so it faces forward when container is at 180deg */}
+          <div
+            style={{
+              backfaceVisibility: 'hidden',
+              transform: 'rotateY(180deg)',
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+            }}
+          >
+            {backFace}
+          </div>
+        </motion.div>
+      </div>
     </motion.div>
   );
 }
