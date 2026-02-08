@@ -134,30 +134,31 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
       const tableId = data?.tableId || getTableIdFromSocket(socket);
       const state = getTableGameState(tableId, userId);
 
-      // Fetch user balance
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { balance: true },
-      });
-
-      // Fetch recent rounds for this table
-      const recentRounds = await prisma.gameRound.findMany({
-        where: {
-          result: { in: ['player', 'banker', 'tie'] },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 100,
-        select: {
-          roundNumber: true,
-          result: true,
-          playerPair: true,
-          bankerPair: true,
-          playerPoints: true,
-          bankerPoints: true,
-          playerCards: true,
-          bankerCards: true,
-        },
-      });
+      // Fetch user balance and recent rounds in parallel
+      const [user, recentRounds] = await Promise.all([
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { balance: true },
+        }),
+        prisma.gameRound.findMany({
+          where: {
+            tableId,
+            result: { in: ['player', 'banker', 'tie'] },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 100,
+          select: {
+            roundNumber: true,
+            result: true,
+            playerPair: true,
+            bankerPair: true,
+            playerPoints: true,
+            bankerPoints: true,
+            playerCards: true,
+            bankerCards: true,
+          },
+        }),
+      ]);
 
       const formattedRounds = recentRounds.reverse().map(round => ({
         roundNumber: round.roundNumber,

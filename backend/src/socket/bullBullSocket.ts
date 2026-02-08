@@ -132,27 +132,28 @@ export function handleBullBullEvents(io: TypedServer, socket: AuthenticatedSocke
       const tableId = data?.tableId || getTableIdFromSocket(socket);
       const state = getBBTableGameState(tableId, userId);
 
-      // Fetch user balance
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { balance: true },
-      });
-
-      // Fetch recent rounds for roadmap
-      const recentRounds = await prisma.bullBullRound.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 100,
-        select: {
-          roundNumber: true,
-          bankerRank: true,
-          player1Rank: true,
-          player2Rank: true,
-          player3Rank: true,
-          player1Result: true,
-          player2Result: true,
-          player3Result: true,
-        },
-      });
+      // Fetch user balance and recent rounds in parallel
+      const [user, recentRounds] = await Promise.all([
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { balance: true },
+        }),
+        prisma.bullBullRound.findMany({
+          where: { tableId },
+          orderBy: { createdAt: 'desc' },
+          take: 100,
+          select: {
+            roundNumber: true,
+            bankerRank: true,
+            player1Rank: true,
+            player2Rank: true,
+            player3Rank: true,
+            player1Result: true,
+            player2Result: true,
+            player3Result: true,
+          },
+        }),
+      ]);
 
       const formattedRounds = recentRounds.reverse().map(round => ({
         roundNumber: round.roundNumber,

@@ -204,6 +204,7 @@ model DragonTigerRound {
 
   bets Bet[]
 
+  @@index([tableId, createdAt])
   @@map("dragon_tiger_rounds")
 }
 
@@ -229,6 +230,7 @@ model BullBullRound {
 
   bets Bet[]
 
+  @@index([tableId, createdAt])
   @@map("bull_bull_rounds")
 }
 

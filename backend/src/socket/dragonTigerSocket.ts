@@ -138,24 +138,25 @@ export function handleDragonTigerEvents(io: TypedServer, socket: AuthenticatedSo
       const tableId = data?.tableId || getTableIdFromSocket(socket);
       const state = getDTTableGameState(tableId, userId);
 
-      // Fetch user balance
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { balance: true },
-      });
-
-      // Fetch recent rounds for roadmap
-      const recentRounds = await prisma.dragonTigerRound.findMany({
-        orderBy: { createdAt: 'desc' },
-        take: 100,
-        select: {
-          roundNumber: true,
-          result: true,
-          isSuitedTie: true,
-          dragonValue: true,
-          tigerValue: true,
-        },
-      });
+      // Fetch user balance and recent rounds in parallel
+      const [user, recentRounds] = await Promise.all([
+        prisma.user.findUnique({
+          where: { id: userId },
+          select: { balance: true },
+        }),
+        prisma.dragonTigerRound.findMany({
+          where: { tableId },
+          orderBy: { createdAt: 'desc' },
+          take: 100,
+          select: {
+            roundNumber: true,
+            result: true,
+            isSuitedTie: true,
+            dragonValue: true,
+            tigerValue: true,
+          },
+        }),
+      ]);
 
       const formattedRounds = recentRounds.reverse().map(round => ({
         roundNumber: round.roundNumber,
