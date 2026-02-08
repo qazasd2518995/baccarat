@@ -94,6 +94,12 @@ body {
   letter-spacing: 0.1em;
 }
 
+/* Ask road blinking prediction */
+@keyframes askBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+
 /* Login form input styles */
 .login-input {
   background: linear-gradient(135deg, rgba(20, 20, 35, 0.9) 0%, rgba(15, 15, 28, 0.95) 100%) !important;

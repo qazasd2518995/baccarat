@@ -140,7 +140,7 @@ function buildAskRoad(
 // Perfect circles: Red = Banker, Blue = Player
 // Tie count shown as green line or number
 // Pairs shown as dots: top-left red = banker pair, bottom-right blue = player pair
-function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair }: { result?: 'player' | 'banker'; tieCount?: number; bankerPair?: boolean; playerPair?: boolean }) {
+function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair, blink }: { result?: 'player' | 'banker'; tieCount?: number; bankerPair?: boolean; playerPair?: boolean; blink?: boolean }) {
   if (!result) {
     return <div className="w-full h-full bg-white" />;
   }
@@ -156,7 +156,7 @@ function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair }: { result?
       {/* Main circle - perfect circle, hollow */}
       <div
         className="w-5 h-5 rounded-full"
-        style={{ border: `2px solid ${color.border}` }}
+        style={{ border: `2px solid ${color.border}`, ...(blink ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {}) }}
       />
 
       {/* Banker pair indicator - red dot at top-left */}
@@ -196,7 +196,7 @@ function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair }: { result?
 }
 
 // Derived Road Cell (大眼仔, 小路, 蟑螂路) - Different styles matching reference
-function DerivedRoadCell({ value, type }: { value?: 'red' | 'blue'; type: 'big_eye' | 'small' | 'cockroach' }) {
+function DerivedRoadCell({ value, type, blink }: { value?: 'red' | 'blue'; type: 'big_eye' | 'small' | 'cockroach'; blink?: boolean }) {
   if (!value) {
     return <div className="w-full h-full bg-white" />;
   }
@@ -207,13 +207,15 @@ function DerivedRoadCell({ value, type }: { value?: 'red' | 'blue'; type: 'big_e
   };
   const color = colors[value];
 
+  const blinkStyle = blink ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
+
   // Big Eye Boy: hollow circles (border only)
   if (type === 'big_eye') {
     return (
       <div className="w-full h-full flex items-center justify-center p-px bg-white">
         <div
           className="w-2.5 h-2.5 rounded-full"
-          style={{ border: `1.5px solid ${color.border}` }}
+          style={{ border: `1.5px solid ${color.border}`, ...blinkStyle }}
         />
       </div>
     );
@@ -225,7 +227,7 @@ function DerivedRoadCell({ value, type }: { value?: 'red' | 'blue'; type: 'big_e
       <div className="w-full h-full flex items-center justify-center p-px bg-white">
         <div
           className="w-2.5 h-2.5 rounded-full"
-          style={{ backgroundColor: color.fill }}
+          style={{ backgroundColor: color.fill, ...blinkStyle }}
         />
       </div>
     );
@@ -234,7 +236,7 @@ function DerivedRoadCell({ value, type }: { value?: 'red' | 'blue'; type: 'big_e
   // Cockroach Pig: diagonal slashes
   return (
     <div className="w-full h-full flex items-center justify-center bg-white">
-      <svg viewBox="0 0 10 10" className="w-3 h-3">
+      <svg viewBox="0 0 10 10" className="w-3 h-3" style={blinkStyle}>
         <line x1="2" y1="8" x2="8" y2="2" stroke={color.fill} strokeWidth="2" strokeLinecap="round" />
       </svg>
     </div>
@@ -465,6 +467,9 @@ export default function Game() {
   // Chip settings modal
   const [isChipSettingsOpen, setIsChipSettingsOpen] = useState(false);
 
+  // Ask Road mode: 'none' | 'banker' | 'player'
+  const [askRoadMode, setAskRoadMode] = useState<'none' | 'banker' | 'player'>('none');
+
   // Bet success notification
   const [betNotification, setBetNotification] = useState<{
     show: boolean;
@@ -664,6 +669,28 @@ export default function Game() {
   // Calculate Ask Roads (問路) - predict what happens if next result is banker/player
   const bankerAskRoad = buildAskRoad(roadmapData, 'banker');
   const playerAskRoad = buildAskRoad(roadmapData, 'player');
+
+  // Compute predicted Big Road position for blinking
+  const getAskRoadBigRoadPrediction = (hypothetical: 'banker' | 'player'): { row: number; col: number; result: 'banker' | 'player' } | null => {
+    const simData = [...roadmapData, { result: hypothetical as GameResult, playerPair: false, bankerPair: false }];
+    const simGrid = buildBigRoad(simData);
+    // Find the cell in simGrid that doesn't exist in bigRoadGrid
+    for (let col = 0; col < 20; col++) {
+      for (let row = 0; row < 6; row++) {
+        if (simGrid[row]?.[col] && !bigRoadGrid[row]?.[col]) {
+          return { row, col, result: hypothetical };
+        }
+      }
+    }
+    return null;
+  };
+
+  const askBigRoadPrediction = askRoadMode !== 'none'
+    ? getAskRoadBigRoadPrediction(askRoadMode)
+    : null;
+
+  // Get active ask road derived predictions
+  const activeAskRoad = askRoadMode === 'banker' ? bankerAskRoad : askRoadMode === 'player' ? playerAskRoad : null;
 
   // Bet type labels (Chinese)
   const betTypeLabels: Record<string, string> = {
@@ -1171,87 +1198,92 @@ export default function Game() {
 
             {/* Betting Areas - Full Width - Exact match to reference image */}
             <div className="flex flex-col lg:flex-row lg:items-stretch min-h-[200px] lg:h-[360px] pb-16 xl:pb-0" style={{ backgroundColor: '#FFFFFF' }}>
-              {/* Left: Ask Roads (莊問路 / 閒問路) + Stats - Hidden on mobile */}
+              {/* Left: Bead Plate (珠盤路) + Ask Road buttons - Hidden on mobile */}
               <div className="hidden lg:flex lg:w-[22%] flex-col">
-                {/* 莊問路 - If next result is Banker: 3 prediction circles */}
-                <div className="flex items-center border-b border-gray-400 bg-white px-2 py-2">
-                  <div
-                    className="px-2 py-1 rounded text-white text-xs font-bold mr-3"
-                    style={{ backgroundColor: '#DC2626' }}
-                  >
-                    莊問路
+                <div className="flex flex-1">
+                  {/* 莊問路 / 閒問路 buttons on left edge */}
+                  <div className="w-8 flex flex-col border-r border-gray-400">
+                    {/* 莊問路 button */}
+                    <button
+                      onClick={() => setAskRoadMode(prev => prev === 'banker' ? 'none' : 'banker')}
+                      className={`flex-1 flex flex-col items-center justify-center text-white text-xs font-bold border-b border-gray-400 transition-opacity ${askRoadMode === 'banker' ? 'opacity-100 ring-2 ring-yellow-400 ring-inset' : 'opacity-70 hover:opacity-100'}`}
+                      style={{ backgroundColor: '#DC2626' }}
+                    >
+                      <span className="writing-vertical tracking-wider text-[10px]">莊問路</span>
+                      <div className="flex gap-0.5 mt-1">
+                        {(() => {
+                          const be = bankerAskRoad.bigEye.slice(bigEyeBoyData.length);
+                          const sr = bankerAskRoad.smallRoad.slice(smallRoadData.length);
+                          const cp = bankerAskRoad.cockroach.slice(cockroachPigData.length);
+                          const beC = be.length > 0 ? be[be.length - 1] : null;
+                          const srC = sr.length > 0 ? sr[sr.length - 1] : null;
+                          const cpC = cp.length > 0 ? cp[cp.length - 1] : null;
+                          return (
+                            <>
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: beC ? (beC === 'red' ? '#FCA5A5' : '#93C5FD') : '#FFFFFF50' }} />
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: srC ? (srC === 'red' ? '#FCA5A5' : '#93C5FD') : '#FFFFFF50' }} />
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cpC ? (cpC === 'red' ? '#FCA5A5' : '#93C5FD') : '#FFFFFF50' }} />
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </button>
+                    {/* 閒問路 button */}
+                    <button
+                      onClick={() => setAskRoadMode(prev => prev === 'player' ? 'none' : 'player')}
+                      className={`flex-1 flex flex-col items-center justify-center text-white text-xs font-bold transition-opacity ${askRoadMode === 'player' ? 'opacity-100 ring-2 ring-yellow-400 ring-inset' : 'opacity-70 hover:opacity-100'}`}
+                      style={{ backgroundColor: '#2563EB' }}
+                    >
+                      <span className="writing-vertical tracking-wider text-[10px]">閒問路</span>
+                      <div className="flex gap-0.5 mt-1">
+                        {(() => {
+                          const be = playerAskRoad.bigEye.slice(bigEyeBoyData.length);
+                          const sr = playerAskRoad.smallRoad.slice(smallRoadData.length);
+                          const cp = playerAskRoad.cockroach.slice(cockroachPigData.length);
+                          const beC = be.length > 0 ? be[be.length - 1] : null;
+                          const srC = sr.length > 0 ? sr[sr.length - 1] : null;
+                          const cpC = cp.length > 0 ? cp[cp.length - 1] : null;
+                          return (
+                            <>
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: beC ? (beC === 'red' ? '#FCA5A5' : '#93C5FD') : '#FFFFFF50' }} />
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: srC ? (srC === 'red' ? '#FCA5A5' : '#93C5FD') : '#FFFFFF50' }} />
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cpC ? (cpC === 'red' ? '#FCA5A5' : '#93C5FD') : '#FFFFFF50' }} />
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </button>
                   </div>
-                  <div className="flex gap-1.5">
-                    {(() => {
-                      const be = bankerAskRoad.bigEye.slice(bigEyeBoyData.length);
-                      const sr = bankerAskRoad.smallRoad.slice(smallRoadData.length);
-                      const cp = bankerAskRoad.cockroach.slice(cockroachPigData.length);
-                      const beColor = be.length > 0 ? be[be.length - 1] : null;
-                      const srColor = sr.length > 0 ? sr[sr.length - 1] : null;
-                      const cpColor = cp.length > 0 ? cp[cp.length - 1] : null;
-                      return (
-                        <>
-                          <div className="w-5 h-5 rounded-full border-2" style={{ borderColor: beColor ? (beColor === 'red' ? '#DC2626' : '#2563EB') : '#D1D5DB', backgroundColor: beColor ? (beColor === 'red' ? '#DC2626' : '#2563EB') : 'transparent' }} />
-                          <div className="w-5 h-5 rounded-full border-2" style={{ borderColor: srColor ? (srColor === 'red' ? '#DC2626' : '#2563EB') : '#D1D5DB', backgroundColor: srColor ? (srColor === 'red' ? '#DC2626' : '#2563EB') : 'transparent' }} />
-                          <div className="w-5 h-5 rounded-full border-2" style={{ borderColor: cpColor ? (cpColor === 'red' ? '#DC2626' : '#2563EB') : '#D1D5DB', backgroundColor: cpColor ? (cpColor === 'red' ? '#DC2626' : '#2563EB') : 'transparent' }} />
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
 
-                {/* 閒問路 - If next result is Player: 3 prediction circles */}
-                <div className="flex items-center border-b border-gray-400 bg-white px-2 py-2">
-                  <div
-                    className="px-2 py-1 rounded text-white text-xs font-bold mr-3"
-                    style={{ backgroundColor: '#2563EB' }}
-                  >
-                    閒問路
-                  </div>
-                  <div className="flex gap-1.5">
+                  {/* Bead Plate Grid (珠盤路) — shows full history as colored circles with 莊/閒/和 text */}
+                  <div className="flex-1 grid grid-cols-5 grid-rows-6 gap-px" style={{ backgroundColor: '#D1D5DB' }}>
                     {(() => {
-                      const be = playerAskRoad.bigEye.slice(bigEyeBoyData.length);
-                      const sr = playerAskRoad.smallRoad.slice(smallRoadData.length);
-                      const cp = playerAskRoad.cockroach.slice(cockroachPigData.length);
-                      const beColor = be.length > 0 ? be[be.length - 1] : null;
-                      const srColor = sr.length > 0 ? sr[sr.length - 1] : null;
-                      const cpColor = cp.length > 0 ? cp[cp.length - 1] : null;
-                      return (
-                        <>
-                          <div className="w-5 h-5 rounded-full border-2" style={{ borderColor: beColor ? (beColor === 'red' ? '#DC2626' : '#2563EB') : '#D1D5DB', backgroundColor: beColor ? (beColor === 'red' ? '#DC2626' : '#2563EB') : 'transparent' }} />
-                          <div className="w-5 h-5 rounded-full border-2" style={{ borderColor: srColor ? (srColor === 'red' ? '#DC2626' : '#2563EB') : '#D1D5DB', backgroundColor: srColor ? (srColor === 'red' ? '#DC2626' : '#2563EB') : 'transparent' }} />
-                          <div className="w-5 h-5 rounded-full border-2" style={{ borderColor: cpColor ? (cpColor === 'red' ? '#DC2626' : '#2563EB') : '#D1D5DB', backgroundColor: cpColor ? (cpColor === 'red' ? '#DC2626' : '#2563EB') : 'transparent' }} />
-                        </>
-                      );
+                      // Show last 30 rounds in column-first order (fill top-to-bottom, then next column)
+                      const ROWS = 6;
+                      const COLS = 5;
+                      const latest = roadmapData.slice(-ROWS * COLS);
+                      const cells: (typeof roadmapData[0] | null)[] = Array(ROWS * COLS).fill(null);
+                      // Fill column by column
+                      for (let i = 0; i < latest.length; i++) {
+                        const col = Math.floor(i / ROWS);
+                        const row = i % ROWS;
+                        cells[row * COLS + col] = latest[i];
+                      }
+                      return cells.map((round, i) => {
+                        if (!round) return <div key={`bead-${i}`} className="w-full h-full bg-white" />;
+                        const bgColor = round.result === 'banker' ? '#DC2626' : round.result === 'player' ? '#2563EB' : '#16A34A';
+                        const label = round.result === 'banker' ? '莊' : round.result === 'player' ? '閒' : '和';
+                        return (
+                          <div key={`bead-${i}`} className="relative w-full h-full flex items-center justify-center bg-white">
+                            <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: bgColor, fontSize: '10px' }}>
+                              {label}
+                            </div>
+                            {round.bankerPair && <div className="absolute top-0 left-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#DC2626' }} />}
+                            {round.playerPair && <div className="absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#2563EB' }} />}
+                          </div>
+                        );
+                      });
                     })()}
-                  </div>
-                </div>
-
-                {/* Stats summary */}
-                <div className="flex-1 flex flex-col justify-center bg-white px-3 py-2 gap-1.5 border-b border-gray-400">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600">總局數</span>
-                    <span className="text-xs font-bold">{total}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-red-600 font-bold">{t('roadBanker')}</span>
-                    <span className="text-xs font-bold">{bankerWins} <span className="text-gray-400 font-normal">({total > 0 ? Math.round(bankerWins / total * 100) : 0}%)</span></span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-blue-600 font-bold">{t('roadPlayer')}</span>
-                    <span className="text-xs font-bold">{playerWins} <span className="text-gray-400 font-normal">({total > 0 ? Math.round(playerWins / total * 100) : 0}%)</span></span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-green-600 font-bold">{t('roadTie')}</span>
-                    <span className="text-xs font-bold">{ties} <span className="text-gray-400 font-normal">({total > 0 ? Math.round(ties / total * 100) : 0}%)</span></span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600">莊對</span>
-                    <span className="text-xs font-bold">{bankerPairCount}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-600">閒對</span>
-                    <span className="text-xs font-bold">{playerPairCount}</span>
                   </div>
                 </div>
 
@@ -1442,6 +1474,16 @@ export default function Game() {
                     {Array(6).fill(null).flatMap((_, rowIndex) =>
                       Array(10).fill(null).map((_, colIndex) => {
                         const cell = bigRoadGrid[rowIndex]?.[colIndex];
+                        const isPredicted = askBigRoadPrediction && askBigRoadPrediction.row === rowIndex && askBigRoadPrediction.col === colIndex;
+                        if (isPredicted) {
+                          return (
+                            <BigRoadCell
+                              key={`${rowIndex}-${colIndex}`}
+                              result={askBigRoadPrediction.result}
+                              blink={true}
+                            />
+                          );
+                        }
                         return (
                           <BigRoadCell
                             key={`${rowIndex}-${colIndex}`}
@@ -1461,27 +1503,51 @@ export default function Game() {
                   {/* Big Eye Boy - hollow circles */}
                   <div className="flex-1 border-r border-gray-400" style={{ backgroundColor: '#FFFFFF' }}>
                     <div className="grid grid-cols-8 grid-rows-4 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
-                      {Array(32).fill(null).map((_, i) => (
-                        <DerivedRoadCell key={`bigEye-${i}`} value={bigEyeBoyData[i]} type="big_eye" />
-                      ))}
+                      {Array(32).fill(null).map((_, i) => {
+                        const isPredicted = activeAskRoad && i >= bigEyeBoyData.length && i < activeAskRoad.bigEye.length;
+                        return (
+                          <DerivedRoadCell
+                            key={`bigEye-${i}`}
+                            value={isPredicted ? activeAskRoad.bigEye[i] : bigEyeBoyData[i]}
+                            type="big_eye"
+                            blink={!!isPredicted}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
 
                   {/* Small Road - filled circles */}
                   <div className="flex-1 border-r border-gray-400" style={{ backgroundColor: '#FFFFFF' }}>
                     <div className="grid grid-cols-8 grid-rows-4 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
-                      {Array(32).fill(null).map((_, i) => (
-                        <DerivedRoadCell key={`small-${i}`} value={smallRoadData[i]} type="small" />
-                      ))}
+                      {Array(32).fill(null).map((_, i) => {
+                        const isPredicted = activeAskRoad && i >= smallRoadData.length && i < activeAskRoad.smallRoad.length;
+                        return (
+                          <DerivedRoadCell
+                            key={`small-${i}`}
+                            value={isPredicted ? activeAskRoad.smallRoad[i] : smallRoadData[i]}
+                            type="small"
+                            blink={!!isPredicted}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
 
                   {/* Cockroach Pig - slashes */}
                   <div className="flex-1" style={{ backgroundColor: '#FFFFFF' }}>
                     <div className="grid grid-cols-8 grid-rows-4 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
-                      {Array(32).fill(null).map((_, i) => (
-                        <DerivedRoadCell key={`cockroach-${i}`} value={cockroachPigData[i]} type="cockroach" />
-                      ))}
+                      {Array(32).fill(null).map((_, i) => {
+                        const isPredicted = activeAskRoad && i >= cockroachPigData.length && i < activeAskRoad.cockroach.length;
+                        return (
+                          <DerivedRoadCell
+                            key={`cockroach-${i}`}
+                            value={isPredicted ? activeAskRoad.cockroach[i] : cockroachPigData[i]}
+                            type="cockroach"
+                            blink={!!isPredicted}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
