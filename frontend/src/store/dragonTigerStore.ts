@@ -14,7 +14,12 @@ export type DragonTigerBetType =
   | 'dragon_red'       // 龍紅 1:0.9 (紅心/方塊)
   | 'dragon_black'     // 龍黑 1:0.9 (黑桃/梅花)
   | 'tiger_red'        // 虎紅 1:0.9
-  | 'tiger_black';     // 虎黑 1:0.9
+  | 'tiger_black'      // 虎黑 1:0.9
+  | 'dt_suited_tie'    // 同花和 1:50
+  | 'dragon_big'       // 龍大 1:1 (8-13)
+  | 'dragon_small'     // 龍小 1:1 (1-6)
+  | 'tiger_big'        // 虎大 1:1 (8-13)
+  | 'tiger_small';     // 虎小 1:1 (1-6)
 
 export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
 
