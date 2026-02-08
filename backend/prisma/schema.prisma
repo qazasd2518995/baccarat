@@ -164,6 +164,7 @@ model GameRound {
 
   bets Bet[]
 
+  @@index([tableId, createdAt])
   @@map("game_rounds")
 }
 
@@ -399,6 +400,7 @@ model GameTable {
   bullBullRounds     BullBullRound[]
   gameTableState     GameTableState?
 
+  @@index([gameType, isActive])
   @@map("game_tables")
 }
 

@@ -29,22 +29,38 @@ export async function getTables(req: Request, res: Response) {
       where.isActive = true; // Default to active tables only
     }
 
-    // Fetch tables with their recent rounds
+    // Fetch tables (no JOIN — fast query)
     const tables = await prisma.gameTable.findMany({
       where,
       orderBy: [
         { sortOrder: 'asc' },
         { createdAt: 'asc' },
       ],
-      include: {
-        // Include last 20 rounds for this table
-        gameRounds: {
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-          select: { result: true },
-        },
-      },
     });
+
+    // Batch-fetch last 8 results per table in parallel
+    const tableIds = tables.map((t) => t.id);
+    const roundsByTable = new Map<string, string[]>();
+
+    if (tableIds.length > 0) {
+      // Single query: fetch recent rounds for all tables at once
+      const recentRounds = await prisma.gameRound.findMany({
+        where: { tableId: { in: tableIds } },
+        orderBy: { createdAt: 'desc' },
+        select: { tableId: true, result: true },
+        take: tableIds.length * 8,
+      });
+
+      // Group by tableId, keep max 8 per table
+      for (const round of recentRounds) {
+        if (!round.tableId) continue;
+        const existing = roundsByTable.get(round.tableId) || [];
+        if (existing.length < 8) {
+          existing.push(round.result);
+          roundsByTable.set(round.tableId, existing);
+        }
+      }
+    }
 
     const formattedTables = tables.map((table) => {
       const roadmap = {
@@ -52,9 +68,6 @@ export async function getTables(req: Request, res: Response) {
         player: table.playerWins,
         tie: table.tieCount,
       };
-
-      // Get last results from this table's rounds
-      const lastResults = table.gameRounds.map((r) => r.result);
 
       return {
         id: table.id,
@@ -69,7 +82,7 @@ export async function getTables(req: Request, res: Response) {
         shoeNumber: table.shoeNumber,
         roundNumber: table.roundNumber,
         roadmap,
-        lastResults,
+        lastResults: roundsByTable.get(table.id) || [],
         status: getPhase(),
         countdown: getTimeRemaining(),
         hasGoodRoad: calculateGoodRoad(roadmap),
