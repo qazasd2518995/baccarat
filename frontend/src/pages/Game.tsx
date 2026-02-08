@@ -120,40 +120,20 @@ function Chip({ value, selected, onClick, disabled }: { value: number | string; 
   );
 }
 
-// Ask Road Cell (問路) - Shows 莊/閒/和 in circles with colored borders
-function AskRoadCell({ result, labels }: { result?: GameResult; labels: { banker: string; player: string; tie: string } }) {
-  if (!result) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-white">
-        {/* Empty cell */}
-      </div>
-    );
-  }
+// Build Ask Road predictions: simulate appending a hypothetical result, then compute derived roads
+function buildAskRoad(
+  roadmapData: Array<{ result: GameResult; playerPair?: boolean; bankerPair?: boolean }>,
+  hypotheticalResult: 'banker' | 'player'
+): { bigEye: ('red' | 'blue')[]; smallRoad: ('red' | 'blue')[]; cockroach: ('red' | 'blue')[] } {
+  // Append hypothetical result to the data
+  const simulatedData = [...roadmapData, { result: hypotheticalResult, playerPair: false, bankerPair: false }];
+  const simulatedGrid = buildBigRoad(simulatedData);
 
-  // Circle style: colored border and text
-  const styles = {
-    banker: { border: '#DC2626', text: '#FFFFFF', bg: '#DC2626' },  // Red filled for 莊
-    player: { border: '#2563EB', text: '#FFFFFF', bg: '#2563EB' },  // Blue filled for 閒
-    tie: { border: '#16A34A', text: '#FFFFFF', bg: '#16A34A' },     // Green filled for 和
+  return {
+    bigEye: calculateBigEyeBoy(simulatedGrid),
+    smallRoad: calculateSmallRoad(simulatedGrid),
+    cockroach: calculateCockroachPig(simulatedGrid),
   };
-
-  const style = styles[result];
-
-  return (
-    <div className="w-full h-full flex items-center justify-center bg-white">
-      <div
-        className="w-6 h-6 rounded-full flex items-center justify-center font-bold"
-        style={{
-          border: `2px solid ${style.border}`,
-          color: style.text,
-          backgroundColor: style.bg,
-          fontSize: '11px'
-        }}
-      >
-        {labels[result]}
-      </div>
-    </div>
-  );
 }
 
 // Big Road Cell (大路) - Standard baccarat big road display
@@ -681,6 +661,10 @@ export default function Game() {
   const smallRoadData = calculateSmallRoad(bigRoadGrid);
   const cockroachPigData = calculateCockroachPig(bigRoadGrid);
 
+  // Calculate Ask Roads (問路) - predict what happens if next result is banker/player
+  const bankerAskRoad = buildAskRoad(roadmapData, 'banker');
+  const playerAskRoad = buildAskRoad(roadmapData, 'player');
+
   // Bet type labels (Chinese)
   const betTypeLabels: Record<string, string> = {
     player: '闲',
@@ -1023,20 +1007,22 @@ export default function Game() {
                 </div>
 
                 {/* Cards Display - Responsive positioning for mobile */}
-                <div className="absolute -bottom-8 sm:-bottom-16 lg:-bottom-24 left-1/2 -translate-x-1/2 flex gap-8 sm:gap-16 lg:gap-24">
+                <div className="absolute -bottom-8 sm:-bottom-16 lg:-bottom-24 left-1/2 -translate-x-1/2 flex items-end gap-8 sm:gap-16 lg:gap-24">
                   {/* Player Cards */}
                   <div className="flex flex-col items-center">
                     {/* Third card - above, rotated 90 degrees */}
-                    {playerCards.length > 2 && (
-                      <motion.div
-                        className="mb-1"
-                        initial={{ rotateY: 180, opacity: 0 }}
-                        animate={{ rotateY: 0, rotateZ: 90, opacity: 1 }}
-                        transition={{ delay: 0.5, duration: 0.5 }}
-                      >
-                        <PlayingCard card={playerCards[2]} size="sm" />
-                      </motion.div>
-                    )}
+                    <div className="h-[55px]">
+                      {playerCards.length > 2 && (
+                        <motion.div
+                          className="mb-1"
+                          initial={{ rotateY: 180, opacity: 0 }}
+                          animate={{ rotateY: 0, rotateZ: 90, opacity: 1 }}
+                          transition={{ delay: 0.5, duration: 0.5 }}
+                        >
+                          <PlayingCard card={playerCards[2]} size="sm" />
+                        </motion.div>
+                      )}
+                    </div>
                     {/* First two cards - horizontal */}
                     <div className="flex gap-1">
                       {playerCards.length > 0 ? (
@@ -1062,16 +1048,18 @@ export default function Game() {
                   {/* Banker Cards */}
                   <div className="flex flex-col items-center">
                     {/* Third card - above, rotated 90 degrees */}
-                    {bankerCards.length > 2 && (
-                      <motion.div
-                        className="mb-1"
-                        initial={{ rotateY: 180, opacity: 0 }}
-                        animate={{ rotateY: 0, rotateZ: 90, opacity: 1 }}
-                        transition={{ delay: 0.5, duration: 0.5 }}
-                      >
-                        <PlayingCard card={bankerCards[2]} size="sm" />
-                      </motion.div>
-                    )}
+                    <div className="h-[55px]">
+                      {bankerCards.length > 2 && (
+                        <motion.div
+                          className="mb-1"
+                          initial={{ rotateY: 180, opacity: 0 }}
+                          animate={{ rotateY: 0, rotateZ: 90, opacity: 1 }}
+                          transition={{ delay: 0.5, duration: 0.5 }}
+                        >
+                          <PlayingCard card={bankerCards[2]} size="sm" />
+                        </motion.div>
+                      )}
+                    </div>
                     {/* First two cards - horizontal */}
                     <div className="flex gap-1">
                       {bankerCards.length > 0 ? (
@@ -1185,7 +1173,7 @@ export default function Game() {
             <div className="flex flex-col lg:flex-row lg:items-stretch min-h-[200px] lg:h-[360px] pb-16 xl:pb-0" style={{ backgroundColor: '#FFFFFF' }}>
               {/* Left: Ask Roads (莊問路 / 閒問路) - Hidden on mobile */}
               <div className="hidden lg:flex lg:w-[22%] flex-col">
-                {/* 莊問路 */}
+                {/* 莊問路 - Predict: if next result is Banker */}
                 <div className="flex flex-1 border-b border-gray-400">
                   {/* Vertical red label */}
                   <div
@@ -1193,21 +1181,49 @@ export default function Game() {
                     style={{ backgroundColor: '#DC2626' }}
                   >
                     <span className="writing-vertical tracking-wider">莊問路</span>
-                    <div className="flex gap-0.5 mt-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#FCA5A5' }} />
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#FCA5A5' }} />
-                    </div>
                   </div>
-                  {/* Grid cells - single line grid using gap with gray background */}
-                  <div className="flex-1 grid grid-cols-8 grid-rows-4 gap-px" style={{ backgroundColor: '#D1D5DB' }}>
-                    {Array(32).fill(null).map((_, i) => {
-                      const round = roadmapData[i];
-                      return <AskRoadCell key={`ask-b-${i}`} result={round?.result} labels={{ banker: t('roadBanker'), player: t('roadPlayer'), tie: t('roadTie') }} />;
-                    })}
+                  {/* Prediction: 3 rows for Big Eye Boy / Small Road / Cockroach Pig */}
+                  <div className="flex-1 flex flex-col" style={{ backgroundColor: '#D1D5DB' }}>
+                    {/* Big Eye Boy prediction */}
+                    <div className="flex-1 flex items-center gap-px bg-white border-b border-gray-300 px-1">
+                      <span className="text-[9px] text-gray-500 w-5 shrink-0">大眼</span>
+                      {(() => {
+                        const prev = bigEyeBoyData;
+                        const next = bankerAskRoad.bigEye;
+                        const newEntries = next.slice(prev.length);
+                        return newEntries.length > 0
+                          ? newEntries.map((c, i) => <div key={`bask-be-${i}`} className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: c === 'red' ? '#DC2626' : '#2563EB' }} />)
+                          : <span className="text-[9px] text-gray-400">-</span>;
+                      })()}
+                    </div>
+                    {/* Small Road prediction */}
+                    <div className="flex-1 flex items-center gap-px bg-white border-b border-gray-300 px-1">
+                      <span className="text-[9px] text-gray-500 w-5 shrink-0">小路</span>
+                      {(() => {
+                        const prev = smallRoadData;
+                        const next = bankerAskRoad.smallRoad;
+                        const newEntries = next.slice(prev.length);
+                        return newEntries.length > 0
+                          ? newEntries.map((c, i) => <div key={`bask-sr-${i}`} className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: c === 'red' ? '#DC2626' : '#2563EB' }} />)
+                          : <span className="text-[9px] text-gray-400">-</span>;
+                      })()}
+                    </div>
+                    {/* Cockroach Pig prediction */}
+                    <div className="flex-1 flex items-center gap-px bg-white px-1">
+                      <span className="text-[9px] text-gray-500 w-5 shrink-0">蟑螂</span>
+                      {(() => {
+                        const prev = cockroachPigData;
+                        const next = bankerAskRoad.cockroach;
+                        const newEntries = next.slice(prev.length);
+                        return newEntries.length > 0
+                          ? newEntries.map((c, i) => <div key={`bask-cp-${i}`} className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: c === 'red' ? '#DC2626' : '#2563EB' }} />)
+                          : <span className="text-[9px] text-gray-400">-</span>;
+                      })()}
+                    </div>
                   </div>
                 </div>
 
-                {/* 閒問路 */}
+                {/* 閒問路 - Predict: if next result is Player */}
                 <div className="flex flex-1 border-b border-gray-400">
                   {/* Vertical blue label */}
                   <div
@@ -1215,17 +1231,45 @@ export default function Game() {
                     style={{ backgroundColor: '#2563EB' }}
                   >
                     <span className="writing-vertical tracking-wider">閒問路</span>
-                    <div className="flex gap-0.5 mt-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#93C5FD' }} />
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#93C5FD' }} />
-                    </div>
                   </div>
-                  {/* Grid cells - single line grid using gap with gray background */}
-                  <div className="flex-1 grid grid-cols-8 grid-rows-4 gap-px" style={{ backgroundColor: '#D1D5DB' }}>
-                    {Array(32).fill(null).map((_, i) => {
-                      const round = roadmapData[i];
-                      return <AskRoadCell key={`ask-p-${i}`} result={round?.result} labels={{ banker: t('roadBanker'), player: t('roadPlayer'), tie: t('roadTie') }} />;
-                    })}
+                  {/* Prediction: 3 rows for Big Eye Boy / Small Road / Cockroach Pig */}
+                  <div className="flex-1 flex flex-col" style={{ backgroundColor: '#D1D5DB' }}>
+                    {/* Big Eye Boy prediction */}
+                    <div className="flex-1 flex items-center gap-px bg-white border-b border-gray-300 px-1">
+                      <span className="text-[9px] text-gray-500 w-5 shrink-0">大眼</span>
+                      {(() => {
+                        const prev = bigEyeBoyData;
+                        const next = playerAskRoad.bigEye;
+                        const newEntries = next.slice(prev.length);
+                        return newEntries.length > 0
+                          ? newEntries.map((c, i) => <div key={`pask-be-${i}`} className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: c === 'red' ? '#DC2626' : '#2563EB' }} />)
+                          : <span className="text-[9px] text-gray-400">-</span>;
+                      })()}
+                    </div>
+                    {/* Small Road prediction */}
+                    <div className="flex-1 flex items-center gap-px bg-white border-b border-gray-300 px-1">
+                      <span className="text-[9px] text-gray-500 w-5 shrink-0">小路</span>
+                      {(() => {
+                        const prev = smallRoadData;
+                        const next = playerAskRoad.smallRoad;
+                        const newEntries = next.slice(prev.length);
+                        return newEntries.length > 0
+                          ? newEntries.map((c, i) => <div key={`pask-sr-${i}`} className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: c === 'red' ? '#DC2626' : '#2563EB' }} />)
+                          : <span className="text-[9px] text-gray-400">-</span>;
+                      })()}
+                    </div>
+                    {/* Cockroach Pig prediction */}
+                    <div className="flex-1 flex items-center gap-px bg-white px-1">
+                      <span className="text-[9px] text-gray-500 w-5 shrink-0">蟑螂</span>
+                      {(() => {
+                        const prev = cockroachPigData;
+                        const next = playerAskRoad.cockroach;
+                        const newEntries = next.slice(prev.length);
+                        return newEntries.length > 0
+                          ? newEntries.map((c, i) => <div key={`pask-cp-${i}`} className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: c === 'red' ? '#DC2626' : '#2563EB' }} />)
+                          : <span className="text-[9px] text-gray-400">-</span>;
+                      })()}
+                    </div>
                   </div>
                 </div>
 
