@@ -1171,109 +1171,91 @@ export default function Game() {
 
             {/* Betting Areas - Full Width - Exact match to reference image */}
             <div className="flex flex-col lg:flex-row lg:items-stretch min-h-[200px] lg:h-[360px] pb-16 xl:pb-0" style={{ backgroundColor: '#FFFFFF' }}>
-              {/* Left: Ask Roads (莊問路 / 閒問路) - Hidden on mobile */}
+              {/* Left: Ask Roads (莊問路 / 閒問路) + Stats - Hidden on mobile */}
               <div className="hidden lg:flex lg:w-[22%] flex-col">
-                {/* 莊問路 - Predict: if next result is Banker */}
-                <div className="flex flex-1 border-b border-gray-400">
-                  {/* Vertical red label */}
+                {/* 莊問路 - If next result is Banker: 3 prediction circles */}
+                <div className="flex items-center border-b border-gray-400 bg-white px-2 py-2">
                   <div
-                    className="w-7 flex flex-col items-center justify-center text-white text-xs font-bold"
+                    className="px-2 py-1 rounded text-white text-xs font-bold mr-3"
                     style={{ backgroundColor: '#DC2626' }}
                   >
-                    <span className="writing-vertical tracking-wider">莊問路</span>
+                    莊問路
                   </div>
-                  {/* Prediction: 3 rows for Big Eye Boy / Small Road / Cockroach Pig */}
-                  <div className="flex-1 flex flex-col" style={{ backgroundColor: '#D1D5DB' }}>
-                    {/* Big Eye Boy prediction */}
-                    <div className="flex-1 flex items-center gap-px bg-white border-b border-gray-300 px-1">
-                      <span className="text-[9px] text-gray-500 w-5 shrink-0">大眼</span>
-                      {(() => {
-                        const prev = bigEyeBoyData;
-                        const next = bankerAskRoad.bigEye;
-                        const newEntries = next.slice(prev.length);
-                        return newEntries.length > 0
-                          ? newEntries.map((c, i) => <div key={`bask-be-${i}`} className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: c === 'red' ? '#DC2626' : '#2563EB' }} />)
-                          : <span className="text-[9px] text-gray-400">-</span>;
-                      })()}
-                    </div>
-                    {/* Small Road prediction */}
-                    <div className="flex-1 flex items-center gap-px bg-white border-b border-gray-300 px-1">
-                      <span className="text-[9px] text-gray-500 w-5 shrink-0">小路</span>
-                      {(() => {
-                        const prev = smallRoadData;
-                        const next = bankerAskRoad.smallRoad;
-                        const newEntries = next.slice(prev.length);
-                        return newEntries.length > 0
-                          ? newEntries.map((c, i) => <div key={`bask-sr-${i}`} className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: c === 'red' ? '#DC2626' : '#2563EB' }} />)
-                          : <span className="text-[9px] text-gray-400">-</span>;
-                      })()}
-                    </div>
-                    {/* Cockroach Pig prediction */}
-                    <div className="flex-1 flex items-center gap-px bg-white px-1">
-                      <span className="text-[9px] text-gray-500 w-5 shrink-0">蟑螂</span>
-                      {(() => {
-                        const prev = cockroachPigData;
-                        const next = bankerAskRoad.cockroach;
-                        const newEntries = next.slice(prev.length);
-                        return newEntries.length > 0
-                          ? newEntries.map((c, i) => <div key={`bask-cp-${i}`} className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: c === 'red' ? '#DC2626' : '#2563EB' }} />)
-                          : <span className="text-[9px] text-gray-400">-</span>;
-                      })()}
-                    </div>
+                  <div className="flex gap-1.5">
+                    {(() => {
+                      const be = bankerAskRoad.bigEye.slice(bigEyeBoyData.length);
+                      const sr = bankerAskRoad.smallRoad.slice(smallRoadData.length);
+                      const cp = bankerAskRoad.cockroach.slice(cockroachPigData.length);
+                      const beColor = be.length > 0 ? be[be.length - 1] : null;
+                      const srColor = sr.length > 0 ? sr[sr.length - 1] : null;
+                      const cpColor = cp.length > 0 ? cp[cp.length - 1] : null;
+                      return (
+                        <>
+                          <div className="w-5 h-5 rounded-full border-2" style={{ borderColor: beColor ? (beColor === 'red' ? '#DC2626' : '#2563EB') : '#D1D5DB', backgroundColor: beColor ? (beColor === 'red' ? '#DC2626' : '#2563EB') : 'transparent' }} />
+                          <div className="w-5 h-5 rounded-full border-2" style={{ borderColor: srColor ? (srColor === 'red' ? '#DC2626' : '#2563EB') : '#D1D5DB', backgroundColor: srColor ? (srColor === 'red' ? '#DC2626' : '#2563EB') : 'transparent' }} />
+                          <div className="w-5 h-5 rounded-full border-2" style={{ borderColor: cpColor ? (cpColor === 'red' ? '#DC2626' : '#2563EB') : '#D1D5DB', backgroundColor: cpColor ? (cpColor === 'red' ? '#DC2626' : '#2563EB') : 'transparent' }} />
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
 
-                {/* 閒問路 - Predict: if next result is Player */}
-                <div className="flex flex-1 border-b border-gray-400">
-                  {/* Vertical blue label */}
+                {/* 閒問路 - If next result is Player: 3 prediction circles */}
+                <div className="flex items-center border-b border-gray-400 bg-white px-2 py-2">
                   <div
-                    className="w-7 flex flex-col items-center justify-center text-white text-xs font-bold"
+                    className="px-2 py-1 rounded text-white text-xs font-bold mr-3"
                     style={{ backgroundColor: '#2563EB' }}
                   >
-                    <span className="writing-vertical tracking-wider">閒問路</span>
+                    閒問路
                   </div>
-                  {/* Prediction: 3 rows for Big Eye Boy / Small Road / Cockroach Pig */}
-                  <div className="flex-1 flex flex-col" style={{ backgroundColor: '#D1D5DB' }}>
-                    {/* Big Eye Boy prediction */}
-                    <div className="flex-1 flex items-center gap-px bg-white border-b border-gray-300 px-1">
-                      <span className="text-[9px] text-gray-500 w-5 shrink-0">大眼</span>
-                      {(() => {
-                        const prev = bigEyeBoyData;
-                        const next = playerAskRoad.bigEye;
-                        const newEntries = next.slice(prev.length);
-                        return newEntries.length > 0
-                          ? newEntries.map((c, i) => <div key={`pask-be-${i}`} className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: c === 'red' ? '#DC2626' : '#2563EB' }} />)
-                          : <span className="text-[9px] text-gray-400">-</span>;
-                      })()}
-                    </div>
-                    {/* Small Road prediction */}
-                    <div className="flex-1 flex items-center gap-px bg-white border-b border-gray-300 px-1">
-                      <span className="text-[9px] text-gray-500 w-5 shrink-0">小路</span>
-                      {(() => {
-                        const prev = smallRoadData;
-                        const next = playerAskRoad.smallRoad;
-                        const newEntries = next.slice(prev.length);
-                        return newEntries.length > 0
-                          ? newEntries.map((c, i) => <div key={`pask-sr-${i}`} className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: c === 'red' ? '#DC2626' : '#2563EB' }} />)
-                          : <span className="text-[9px] text-gray-400">-</span>;
-                      })()}
-                    </div>
-                    {/* Cockroach Pig prediction */}
-                    <div className="flex-1 flex items-center gap-px bg-white px-1">
-                      <span className="text-[9px] text-gray-500 w-5 shrink-0">蟑螂</span>
-                      {(() => {
-                        const prev = cockroachPigData;
-                        const next = playerAskRoad.cockroach;
-                        const newEntries = next.slice(prev.length);
-                        return newEntries.length > 0
-                          ? newEntries.map((c, i) => <div key={`pask-cp-${i}`} className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: c === 'red' ? '#DC2626' : '#2563EB' }} />)
-                          : <span className="text-[9px] text-gray-400">-</span>;
-                      })()}
-                    </div>
+                  <div className="flex gap-1.5">
+                    {(() => {
+                      const be = playerAskRoad.bigEye.slice(bigEyeBoyData.length);
+                      const sr = playerAskRoad.smallRoad.slice(smallRoadData.length);
+                      const cp = playerAskRoad.cockroach.slice(cockroachPigData.length);
+                      const beColor = be.length > 0 ? be[be.length - 1] : null;
+                      const srColor = sr.length > 0 ? sr[sr.length - 1] : null;
+                      const cpColor = cp.length > 0 ? cp[cp.length - 1] : null;
+                      return (
+                        <>
+                          <div className="w-5 h-5 rounded-full border-2" style={{ borderColor: beColor ? (beColor === 'red' ? '#DC2626' : '#2563EB') : '#D1D5DB', backgroundColor: beColor ? (beColor === 'red' ? '#DC2626' : '#2563EB') : 'transparent' }} />
+                          <div className="w-5 h-5 rounded-full border-2" style={{ borderColor: srColor ? (srColor === 'red' ? '#DC2626' : '#2563EB') : '#D1D5DB', backgroundColor: srColor ? (srColor === 'red' ? '#DC2626' : '#2563EB') : 'transparent' }} />
+                          <div className="w-5 h-5 rounded-full border-2" style={{ borderColor: cpColor ? (cpColor === 'red' ? '#DC2626' : '#2563EB') : '#D1D5DB', backgroundColor: cpColor ? (cpColor === 'red' ? '#DC2626' : '#2563EB') : 'transparent' }} />
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
 
-                {/* Bottom Stats - 莊/閒/和 counts */}
+                {/* Stats summary */}
+                <div className="flex-1 flex flex-col justify-center bg-white px-3 py-2 gap-1.5 border-b border-gray-400">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">總局數</span>
+                    <span className="text-xs font-bold">{total}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-red-600 font-bold">{t('roadBanker')}</span>
+                    <span className="text-xs font-bold">{bankerWins} <span className="text-gray-400 font-normal">({total > 0 ? Math.round(bankerWins / total * 100) : 0}%)</span></span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-blue-600 font-bold">{t('roadPlayer')}</span>
+                    <span className="text-xs font-bold">{playerWins} <span className="text-gray-400 font-normal">({total > 0 ? Math.round(playerWins / total * 100) : 0}%)</span></span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-green-600 font-bold">{t('roadTie')}</span>
+                    <span className="text-xs font-bold">{ties} <span className="text-gray-400 font-normal">({total > 0 ? Math.round(ties / total * 100) : 0}%)</span></span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">莊對</span>
+                    <span className="text-xs font-bold">{bankerPairCount}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-600">閒對</span>
+                    <span className="text-xs font-bold">{playerPairCount}</span>
+                  </div>
+                </div>
+
+                {/* Bottom Stats bar */}
                 <div className="flex items-center justify-around py-1.5 bg-[#1a1f2e]">
                   <span className="text-red-500 font-bold text-sm">{t('roadBanker')} <span className="text-white">{bankerWins}</span></span>
                   <span className="text-blue-500 font-bold text-sm">{t('roadPlayer')} <span className="text-white">{playerWins}</span></span>
