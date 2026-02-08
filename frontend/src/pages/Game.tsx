@@ -1015,9 +1015,9 @@ export default function Game() {
                       {playerCards.length > 2 && (
                         <motion.div
                           className="mb-1"
-                          initial={{ rotateY: 180, opacity: 0 }}
-                          animate={{ rotateY: 0, rotateZ: 90, opacity: 1 }}
-                          transition={{ delay: 0.5, duration: 0.5 }}
+                          initial={{ scale: 0, opacity: 0, rotateZ: 90 }}
+                          animate={{ scale: 1, opacity: 1, rotateZ: 90 }}
+                          transition={{ duration: 0.3 }}
                         >
                           <PlayingCard card={playerCards[2]} size="sm" />
                         </motion.div>
@@ -1029,9 +1029,9 @@ export default function Game() {
                         playerCards.slice(0, 2).map((card, i) => (
                           <motion.div
                             key={`player-${i}`}
-                            initial={{ rotateY: 180, opacity: 0, y: -50 }}
-                            animate={{ rotateY: 0, opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1, duration: 0.5 }}
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: i * 0.1, duration: 0.3 }}
                           >
                             <PlayingCard card={card} />
                           </motion.div>
@@ -1052,9 +1052,9 @@ export default function Game() {
                       {bankerCards.length > 2 && (
                         <motion.div
                           className="mb-1"
-                          initial={{ rotateY: 180, opacity: 0 }}
-                          animate={{ rotateY: 0, rotateZ: 90, opacity: 1 }}
-                          transition={{ delay: 0.5, duration: 0.5 }}
+                          initial={{ scale: 0, opacity: 0, rotateZ: 90 }}
+                          animate={{ scale: 1, opacity: 1, rotateZ: 90 }}
+                          transition={{ duration: 0.3 }}
                         >
                           <PlayingCard card={bankerCards[2]} size="sm" />
                         </motion.div>
@@ -1066,9 +1066,9 @@ export default function Game() {
                         bankerCards.slice(0, 2).map((card, i) => (
                           <motion.div
                             key={`banker-${i}`}
-                            initial={{ rotateY: 180, opacity: 0, y: -50 }}
-                            animate={{ rotateY: 0, opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1, duration: 0.5 }}
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: i * 0.1, duration: 0.3 }}
                           >
                             <PlayingCard card={card} />
                           </motion.div>
