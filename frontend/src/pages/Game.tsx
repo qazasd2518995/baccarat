@@ -832,7 +832,23 @@ export default function Game() {
 
   // Net result from last settlement
   const netResult = lastSettlement?.netResult || 0;
-  const showResult = phase === 'result' && lastResult !== null;
+
+  // Delay showing result overlay to let card animations finish
+  // When game:result arrives, the last card just landed — it still needs ~1.6s to flip
+  const [resultReady, setResultReady] = useState(false);
+  useEffect(() => {
+    if (phase === 'result' && lastResult !== null) {
+      if (skipCardAnim) {
+        // Reconnect — show immediately
+        setResultReady(true);
+        return;
+      }
+      const timer = setTimeout(() => setResultReady(true), 2000);
+      return () => clearTimeout(timer);
+    }
+    setResultReady(false);
+  }, [phase, lastResult, skipCardAnim]);
+  const showResult = resultReady;
 
   return (
     <div className="h-screen bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
@@ -1021,248 +1037,210 @@ export default function Game() {
         {/* Center - Game Area */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Video Area - Takes remaining space */}
-          <div className="flex-1 relative bg-gradient-to-br from-[#2d1f4e] via-[#1a1535] to-[#0f1525] overflow-hidden">
-            {/* Background decorative elements */}
+          <div className="flex-1 relative bg-gradient-to-b from-[#0c1a12] via-[#0a1610] to-[#07120d] overflow-hidden">
+            {/* Background decorative glow */}
             <div className="absolute inset-0">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-[#d4af37]/3 rounded-full blur-[120px]" />
             </div>
 
-            {/* Card Preview Icons - Above Score */}
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 flex items-center gap-12 z-20">
-              {/* Player Cards Preview */}
-              <div className="flex gap-1 bg-blue-900/80 rounded px-2 py-1">
-                {playerCards.length > 0 ? (
-                  playerCards.slice(0, 2).map((card, i) => (
-                    <div key={i} className="flex items-center text-xs font-bold">
-                      <span className={card.suit === 'hearts' || card.suit === 'diamonds' ? 'text-red-500' : 'text-white'}>
-                        {SUIT_SYMBOLS[card.suit]}{card.rank}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <span className="text-gray-500 text-xs">--</span>
-                )}
+            {/* Integrated Electronic Dealing Table — fills entire game area */}
+            <div className="absolute inset-0 flex flex-col">
+              {/* Table felt background — full area */}
+              <div className="absolute inset-0 bg-gradient-to-b from-[#0d2818]/90 via-[#0a2015]/95 to-[#071a10]/90 overflow-hidden">
+                {/* Subtle radial glow */}
+                <div className="absolute inset-0 bg-radial-[ellipse_at_center] from-[#d4af37]/4 via-transparent to-transparent" />
+                {/* Felt texture overlay */}
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)' }} />
+                {/* Gold border — inner frame */}
+                <div className="absolute inset-2 sm:inset-3 rounded-xl border border-[#d4af37]/15" />
+                <div className="absolute inset-4 sm:inset-5 rounded-lg border border-[#d4af37]/8" />
+                {/* Corner ornaments */}
+                <div className="absolute top-4 left-4 sm:top-5 sm:left-5 w-6 h-6 border-t-2 border-l-2 border-[#d4af37]/25 rounded-tl" />
+                <div className="absolute top-4 right-4 sm:top-5 sm:right-5 w-6 h-6 border-t-2 border-r-2 border-[#d4af37]/25 rounded-tr" />
+                <div className="absolute bottom-4 left-4 sm:bottom-5 sm:left-5 w-6 h-6 border-b-2 border-l-2 border-[#d4af37]/25 rounded-bl" />
+                <div className="absolute bottom-4 right-4 sm:bottom-5 sm:right-5 w-6 h-6 border-b-2 border-r-2 border-[#d4af37]/25 rounded-br" />
               </div>
 
-              {/* Banker Cards Preview */}
-              <div className="flex gap-1 bg-red-900/80 rounded px-2 py-1">
-                {bankerCards.length > 0 ? (
-                  bankerCards.slice(0, 2).map((card, i) => (
-                    <div key={i} className="flex items-center text-xs font-bold">
-                      <span className={card.suit === 'hearts' || card.suit === 'diamonds' ? 'text-red-500' : 'text-white'}>
-                        {SUIT_SYMBOLS[card.suit]}{card.rank}
-                      </span>
-                    </div>
-                  ))
-                ) : (
-                  <span className="text-gray-500 text-xs">--</span>
-                )}
-              </div>
-            </div>
-
-            {/* Score Display - Below Card Preview */}
-            <div className="absolute top-10 left-1/2 -translate-x-1/2 flex items-center gap-4 z-20">
-              {/* Player Score */}
-              <div className="flex items-center">
-                <div className="bg-blue-600 text-white px-3 py-1 rounded-l font-bold">
-                  P <span className="text-xs">{t('player').toUpperCase()}</span>
-                </div>
-                <div key={`pp-${pointsPulseKey}`} className={`bg-black/80 text-white px-4 py-1 text-2xl font-bold min-w-[50px] text-center ${playerPoints !== null ? 'points-pulse' : ''}`}>
-                  {playerPoints ?? '-'}
+              {/* Top info bar — integrated into table */}
+              <div className="relative z-10 flex items-center justify-center pt-3 pb-1">
+                <div className="flex items-center gap-2 bg-black/30 rounded-full px-4 py-1 border border-[#d4af37]/10">
+                  <span className="text-[11px] text-[#d4af37]/70 font-mono">{t('baccarat')} {shoeNumber}</span>
+                  <span className="text-[#d4af37]/20">|</span>
+                  <span className={`text-[11px] font-bold ${phaseDisplay.color}`}>{roundNumber} — {phaseDisplay.text}</span>
                 </div>
               </div>
 
-              {/* Banker Score */}
-              <div className="flex items-center">
-                <div key={`bp-${pointsPulseKey}`} className={`bg-black/80 text-white px-4 py-1 text-2xl font-bold min-w-[50px] text-center ${bankerPoints !== null ? 'points-pulse' : ''}`}>
-                  {bankerPoints ?? '-'}
-                </div>
-                <div className="bg-red-600 text-white px-3 py-1 rounded-r font-bold">
-                  <span className="text-xs">{t('banker').toUpperCase()}</span> B
-                </div>
-              </div>
-            </div>
-
-            {/* Round Info */}
-            <div className="absolute top-20 left-1/2 -translate-x-1/2 bg-black/60 rounded px-3 py-1 text-sm z-20">
-              <span className="text-gray-400">{t('baccarat')} {shoeNumber}</span>
-              <span className="text-white ml-2">{new Date().toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-              <span className={`ml-2 font-bold ${phaseDisplay.color}`}>{roundNumber} - {phaseDisplay.text}</span>
-            </div>
-
-            {/* Premium Electronic Dealing Table */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              {/* Felt table surface */}
-              <div className="relative w-full max-w-[600px] mx-auto" style={{ height: '70%', maxHeight: 320 }}>
-                {/* Table felt background with subtle texture */}
-                <div className="absolute inset-0 bg-gradient-to-b from-[#1a3a2a]/60 via-[#0d2818]/80 to-[#0a1f14]/60 rounded-2xl border border-[#d4af37]/20 overflow-hidden">
-                  {/* Radial glow center */}
-                  <div className="absolute inset-0 bg-radial-[ellipse_at_center] from-[#d4af37]/5 via-transparent to-transparent" />
-                  {/* Corner accent lines */}
-                  <div className="absolute top-3 left-3 w-8 h-8 border-t border-l border-[#d4af37]/30 rounded-tl" />
-                  <div className="absolute top-3 right-3 w-8 h-8 border-t border-r border-[#d4af37]/30 rounded-tr" />
-                  <div className="absolute bottom-3 left-3 w-8 h-8 border-b border-l border-[#d4af37]/30 rounded-bl" />
-                  <div className="absolute bottom-3 right-3 w-8 h-8 border-b border-r border-[#d4af37]/30 rounded-br" />
-                </div>
-
-                {/* Card Shoe - top center, fly-from origin */}
-                <div ref={shoeRef} className="absolute top-3 left-1/2 -translate-x-1/2 z-10">
-                  <div className="relative flex items-center gap-2">
-                    {/* Shoe stack */}
-                    <div className="relative w-10 h-7">
-                      {[0, 1, 2].map(i => (
-                        <div
-                          key={i}
-                          className="absolute rounded-sm bg-gradient-to-br from-[#1e3a5f] to-[#0f2744] border border-[#d4af37]/40"
-                          style={{
-                            width: 26, height: 36,
-                            top: -i * 2, left: i * 2,
-                            boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <span className="text-[10px] text-[#d4af37]/60 font-mono tracking-wider">SHOE</span>
+              {/* Main dealing area — fills remaining space */}
+              <div className="flex-1 relative flex items-center justify-center">
+                {/* Card Shoe — fly-from origin, top center */}
+                <div ref={shoeRef} className="absolute top-2 left-1/2 -translate-x-1/2 z-10">
+                  <div className="relative w-10 h-7">
+                    {[0, 1, 2].map(i => (
+                      <div
+                        key={i}
+                        className="absolute rounded-sm bg-gradient-to-br from-[#1e3a5f] to-[#0f2744] border border-[#d4af37]/40"
+                        style={{
+                          width: 26, height: 36,
+                          top: -i * 2, left: i * 2,
+                          boxShadow: '0 1px 4px rgba(0,0,0,0.4)',
+                        }}
+                      />
+                    ))}
                   </div>
                 </div>
 
-                {/* Dealing zones - PLAYER left, BANKER right */}
-                <div ref={cardAreaRef} className="absolute inset-0 flex items-center justify-center">
-                  <div className="flex items-end gap-6 sm:gap-14 lg:gap-20">
-                    {/* Player Zone */}
-                    <div className="flex flex-col items-center">
-                      {/* Player label */}
-                      <div className="mb-2 px-3 py-0.5 rounded-full bg-blue-600/20 border border-blue-500/30">
-                        <span className="text-[10px] font-bold tracking-widest text-blue-400 uppercase">player</span>
+                {/* Player & Banker zones */}
+                <div ref={cardAreaRef} className="flex items-stretch gap-4 sm:gap-8 lg:gap-12">
+                  {/* ——— PLAYER ZONE ——— */}
+                  <div className="flex flex-col items-center min-w-[140px] sm:min-w-[180px]">
+                    {/* Player header + score */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="bg-blue-600 text-white px-2.5 py-0.5 rounded-l text-xs font-bold tracking-wide">
+                        P {t('player').toUpperCase()}
                       </div>
-                      {/* Third card - above, rotated 90 degrees */}
-                      <div className="h-[55px]">
-                        {playerCards.length > 2 && (
-                          <div className="mb-1">
-                            <AnimatedPlayingCard
-                              card={playerCards[2]}
-                              size="sm"
-                              flyFrom={{ x: 0, y: -180 }}
-                              flyDelay={3.5}
-                              flipDelay={0.5}
-                              rotation={90}
-                              skipAnimation={skipCardAnim}
-                            />
+                      <div key={`pp-${pointsPulseKey}`} className={`bg-black/60 text-white px-3 py-0.5 rounded-r text-xl font-bold min-w-[40px] text-center border border-blue-500/20 ${playerPoints !== null ? 'points-pulse' : ''}`}>
+                        {playerPoints ?? '-'}
+                      </div>
+                    </div>
+                    {/* Third card */}
+                    <div className="h-[55px]">
+                      {playerCards.length > 2 && (
+                        <div className="mb-1">
+                          <AnimatedPlayingCard
+                            card={playerCards[2]}
+                            size="sm"
+                            flyFrom={{ x: 0, y: -180 }}
+                            flyDelay={3.5}
+                            flipDelay={0.5}
+                            rotation={90}
+                            skipAnimation={skipCardAnim}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {/* First two cards */}
+                    <div className="flex gap-1">
+                      {playerCards.length > 0 ? (
+                        playerCards.slice(0, 2).map((card, i) => (
+                          <AnimatedPlayingCard
+                            key={`player-${i}-${card.rank}-${card.suit}`}
+                            card={card}
+                            flyFrom={{ x: 60, y: -200 }}
+                            flyDelay={i * 1.2}
+                            flipDelay={0.5}
+                            skipAnimation={skipCardAnim}
+                          />
+                        ))
+                      ) : (
+                        <>
+                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
+                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
+                        </>
+                      )}
+                    </div>
+                    {/* Card text preview */}
+                    <div className="mt-2 flex gap-1 text-[10px] font-mono text-blue-300/60">
+                      {playerCards.length > 0 ? playerCards.map((c, i) => (
+                        <span key={i} className={c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}>
+                          {SUIT_SYMBOLS[c.suit]}{c.rank}
+                        </span>
+                      )) : <span className="text-gray-600">--</span>}
+                    </div>
+                  </div>
+
+                  {/* ——— Center VS ——— */}
+                  <div className="flex flex-col items-center justify-center gap-1 px-2">
+                    <div className="w-px h-10 bg-gradient-to-b from-transparent via-[#d4af37]/25 to-transparent" />
+                    <div className="text-sm text-[#d4af37]/30 font-bold">VS</div>
+                    <div className="w-px h-10 bg-gradient-to-b from-transparent via-[#d4af37]/25 to-transparent" />
+                  </div>
+
+                  {/* ——— BANKER ZONE ——— */}
+                  <div className="flex flex-col items-center min-w-[140px] sm:min-w-[180px]">
+                    {/* Banker header + score */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <div key={`bp-${pointsPulseKey}`} className={`bg-black/60 text-white px-3 py-0.5 rounded-l text-xl font-bold min-w-[40px] text-center border border-red-500/20 ${bankerPoints !== null ? 'points-pulse' : ''}`}>
+                        {bankerPoints ?? '-'}
+                      </div>
+                      <div className="bg-red-600 text-white px-2.5 py-0.5 rounded-r text-xs font-bold tracking-wide">
+                        {t('banker').toUpperCase()} B
+                      </div>
+                    </div>
+                    {/* Third card */}
+                    <div className="h-[55px]">
+                      {bankerCards.length > 2 && (
+                        <div className="mb-1">
+                          <AnimatedPlayingCard
+                            card={bankerCards[2]}
+                            size="sm"
+                            flyFrom={{ x: 0, y: -180 }}
+                            flyDelay={4.5}
+                            flipDelay={0.5}
+                            rotation={90}
+                            skipAnimation={skipCardAnim}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {/* First two cards */}
+                    <div className="flex gap-1">
+                      {bankerCards.length > 0 ? (
+                        bankerCards.slice(0, 2).map((card, i) => (
+                          <AnimatedPlayingCard
+                            key={`banker-${i}-${card.rank}-${card.suit}`}
+                            card={card}
+                            flyFrom={{ x: -60, y: -200 }}
+                            flyDelay={0.6 + i * 1.2}
+                            flipDelay={0.5}
+                            skipAnimation={skipCardAnim}
+                          />
+                        ))
+                      ) : (
+                        <>
+                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
+                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
+                        </>
+                      )}
+                    </div>
+                    {/* Card text preview */}
+                    <div className="mt-2 flex gap-1 text-[10px] font-mono text-red-300/60">
+                      {bankerCards.length > 0 ? bankerCards.map((c, i) => (
+                        <span key={i} className={c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}>
+                          {SUIT_SYMBOLS[c.suit]}{c.rank}
+                        </span>
+                      )) : <span className="text-gray-600">--</span>}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Result Overlay — delayed to allow animations to finish */}
+                <AnimatePresence>
+                  {showResult && (
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.8, opacity: 0 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                      className="absolute inset-0 flex items-center justify-center z-30 bg-black/40 rounded-xl"
+                    >
+                      <div className="text-center">
+                        <div className={`text-3xl sm:text-4xl font-bold mb-2 drop-shadow-lg ${
+                          lastResult === 'player' ? 'text-blue-400' :
+                          lastResult === 'banker' ? 'text-red-400' : 'text-green-400'
+                        }`}>
+                          {lastResult === 'player' ? t('playerWins') :
+                           lastResult === 'banker' ? t('bankerWins') : t('tieResult')}
+                        </div>
+                        {lastSettlement && netResult !== 0 && (
+                          <div className={`text-xl sm:text-2xl font-bold ${netResult > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {netResult > 0 ? '+' : ''}{netResult.toLocaleString()}
                           </div>
                         )}
                       </div>
-                      {/* First two cards */}
-                      <div className="flex gap-1">
-                        {playerCards.length > 0 ? (
-                          playerCards.slice(0, 2).map((card, i) => (
-                            <AnimatedPlayingCard
-                              key={`player-${i}-${card.rank}-${card.suit}`}
-                              card={card}
-                              flyFrom={{ x: 60, y: -200 }}
-                              flyDelay={i * 1.2}
-                              flipDelay={0.5}
-                              skipAnimation={skipCardAnim}
-                            />
-                          ))
-                        ) : (
-                          <>
-                            <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
-                            <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Center divider */}
-                    <div className="flex flex-col items-center gap-1 pb-8">
-                      <div className="w-px h-12 bg-gradient-to-b from-transparent via-[#d4af37]/30 to-transparent" />
-                      <div className="text-[10px] text-[#d4af37]/40 font-bold">VS</div>
-                      <div className="w-px h-12 bg-gradient-to-b from-transparent via-[#d4af37]/30 to-transparent" />
-                    </div>
-
-                    {/* Banker Zone */}
-                    <div className="flex flex-col items-center">
-                      {/* Banker label */}
-                      <div className="mb-2 px-3 py-0.5 rounded-full bg-red-600/20 border border-red-500/30">
-                        <span className="text-[10px] font-bold tracking-widest text-red-400 uppercase">banker</span>
-                      </div>
-                      {/* Third card - above, rotated 90 degrees */}
-                      <div className="h-[55px]">
-                        {bankerCards.length > 2 && (
-                          <div className="mb-1">
-                            <AnimatedPlayingCard
-                              card={bankerCards[2]}
-                              size="sm"
-                              flyFrom={{ x: 0, y: -180 }}
-                              flyDelay={4.5}
-                              flipDelay={0.5}
-                              rotation={90}
-                              skipAnimation={skipCardAnim}
-                            />
-                          </div>
-                        )}
-                      </div>
-                      {/* First two cards */}
-                      <div className="flex gap-1">
-                        {bankerCards.length > 0 ? (
-                          bankerCards.slice(0, 2).map((card, i) => (
-                            <AnimatedPlayingCard
-                              key={`banker-${i}-${card.rank}-${card.suit}`}
-                              card={card}
-                              flyFrom={{ x: -60, y: -200 }}
-                              flyDelay={0.6 + i * 1.2}
-                              flipDelay={0.5}
-                              skipAnimation={skipCardAnim}
-                            />
-                          ))
-                        ) : (
-                          <>
-                            <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
-                            <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown />
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom decorative line */}
-                <div className="absolute bottom-4 left-8 right-8 h-px bg-gradient-to-r from-transparent via-[#d4af37]/20 to-transparent" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-            </div>
-
-            {/* Result Overlay - Fixed position on mobile to avoid being covered */}
-            <AnimatePresence>
-              {showResult && (
-                <motion.div
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  className="fixed inset-0 flex items-center justify-center z-[60] bg-black/50"
-                >
-                  <div className="text-center">
-                    <div className={`text-4xl font-bold mb-4 ${
-                      lastResult === 'player' ? 'text-blue-400' :
-                      lastResult === 'banker' ? 'text-red-400' : 'text-green-400'
-                    }`}>
-                      {lastResult === 'player' ? t('playerWins') :
-                       lastResult === 'banker' ? t('bankerWins') : t('tieResult')}
-                    </div>
-                    {lastSettlement && netResult !== 0 && (
-                      <div className={`text-2xl font-bold ${netResult > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                        {netResult > 0 ? '+' : ''}{netResult.toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Zoom controls */}
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
-              <button className="w-8 h-8 bg-black/50 rounded flex items-center justify-center text-gray-400 hover:text-white">+</button>
-              <button className="w-8 h-8 bg-black/50 rounded flex items-center justify-center text-gray-400 hover:text-white">-</button>
             </div>
           </div>
 
