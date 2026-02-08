@@ -15,6 +15,7 @@ import { MobileNavBar } from '../components/layout/MobileNavBar';
 import { useBullBullStore, type BullBullBetType, CHIP_VALUES, RANK_NAMES } from '../store/bullBullStore';
 import { useBullBullSocket } from '../hooks/useBullBullSocket';
 import PlayingCard from '../components/game/PlayingCard';
+import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
 
 // Chip component - Casino style with edge notches (matches ChipSettingsModal)
 function Chip({ value, selected, onClick, disabled }: { value: number; selected: boolean; onClick: () => void; disabled?: boolean }) {
@@ -86,7 +87,7 @@ function Chip({ value, selected, onClick, disabled }: { value: number; selected:
   );
 }
 
-// Hand display component
+// Hand display component with dealing + reveal animations
 function HandDisplay({
   position,
   hand,
@@ -95,6 +96,10 @@ function HandDisplay({
   betAmount,
   onBet,
   canBet,
+  dealCount,
+  isRevealed,
+  revealDelay,
+  skipAnimation,
 }: {
   position: string;
   hand: { cards: any[]; rank: string; rankName: string } | null;
@@ -103,6 +108,10 @@ function HandDisplay({
   betAmount: number;
   onBet: () => void;
   canBet: boolean;
+  dealCount: number;
+  isRevealed: boolean;
+  revealDelay: number;
+  skipAnimation: boolean;
 }) {
   const bgColor = isBanker
     ? 'from-yellow-900/50 to-yellow-950/50 border-yellow-600'
@@ -111,6 +120,8 @@ function HandDisplay({
       : result === 'lose'
         ? 'from-red-900/50 to-red-950/50 border-red-500'
         : 'from-blue-900/50 to-blue-950/50 border-blue-600';
+
+  const isHighRank = hand?.rank === 'five_face' || hand?.rank === 'bull_bull';
 
   return (
     <div
@@ -133,11 +144,38 @@ function HandDisplay({
 
       {/* Cards */}
       <div className="flex justify-center gap-1 mb-2">
-        {hand?.cards ? (
+        {hand?.cards && isRevealed ? (
           hand.cards.map((card, i) => (
             <div key={i} className="transform scale-75">
-              <PlayingCard card={card} size="sm" />
+              {skipAnimation ? (
+                <PlayingCard card={card} size="sm" />
+              ) : (
+                <AnimatedPlayingCard
+                  card={card}
+                  size="sm"
+                  flyFrom={{ x: 0, y: -60 }}
+                  flyDelay={revealDelay + i * 0.1}
+                  flyDuration={0.3}
+                  flipDelay={0.2}
+                  flipDuration={0.4}
+                  glowing={isHighRank}
+                  glowColor="rgba(251, 191, 36, 0.5)"
+                  skipAnimation={skipAnimation}
+                />
+              )}
             </div>
+          ))
+        ) : dealCount > 0 ? (
+          Array.from({ length: Math.min(dealCount, 5) }).map((_, i) => (
+            <motion.div
+              key={`dealing-${i}`}
+              className="transform scale-75"
+              initial={skipAnimation ? {} : { y: -40, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: skipAnimation ? 0 : i * 0.08, duration: 0.3 }}
+            >
+              <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size="sm" />
+            </motion.div>
           ))
         ) : (
           Array.from({ length: 5 }).map((_, i) => (
@@ -147,25 +185,39 @@ function HandDisplay({
       </div>
 
       {/* Rank */}
-      {hand?.rankName && (
-        <div className="text-center">
-          <span className={`font-bold text-lg ${
-            hand.rank === 'five_face' || hand.rank === 'bull_bull' ? 'text-yellow-400' :
-            hand.rank.startsWith('bull_') ? 'text-green-400' : 'text-gray-400'
-          }`}>
-            {hand.rankName}
-          </span>
-        </div>
-      )}
+      <AnimatePresence>
+        {hand?.rankName && isRevealed && (
+          <motion.div
+            initial={skipAnimation ? {} : { y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: skipAnimation ? 0 : revealDelay + 0.6 }}
+            className="text-center"
+          >
+            <span className={`font-bold text-lg ${
+              hand.rank === 'five_face' || hand.rank === 'bull_bull' ? 'text-yellow-400' :
+              hand.rank.startsWith('bull_') ? 'text-green-400' : 'text-gray-400'
+            }`}>
+              {hand.rankName}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Result indicator */}
-      {result && !isBanker && (
-        <div className={`absolute -top-2 -right-2 px-2 py-1 rounded text-xs font-bold ${
-          result === 'win' ? 'bg-green-500' : 'bg-red-500'
-        }`}>
-          {result === 'win' ? '贏' : '輸'}
-        </div>
-      )}
+      <AnimatePresence>
+        {result && !isBanker && isRevealed && (
+          <motion.div
+            initial={skipAnimation ? {} : { scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', delay: skipAnimation ? 0 : revealDelay + 0.8 }}
+            className={`absolute -top-2 -right-2 px-2 py-1 rounded text-xs font-bold ${
+              result === 'win' ? 'bg-green-500' : 'bg-red-500'
+            }`}
+          >
+            {result === 'win' ? '贏' : '輸'}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -208,6 +260,8 @@ export default function BullBullGame() {
     player1Result,
     player2Result,
     player3Result,
+    dealingCards,
+    revealedPositions,
     lastSettlement,
     roadmapData,
     shoeNumber,
@@ -215,6 +269,27 @@ export default function BullBullGame() {
   } = useBullBullStore();
 
   const [showRules, setShowRules] = useState(false);
+
+  // Skip animation if reconnecting mid-round
+  const [skipBBCardAnim, setSkipBBCardAnim] = useState(false);
+  const prevBankerRef = useRef(banker);
+  useEffect(() => {
+    if (banker && !prevBankerRef.current) {
+      if (phase === 'dealing' || phase === 'result') {
+        setSkipBBCardAnim(true);
+      } else {
+        setSkipBBCardAnim(false);
+      }
+    }
+    if (!banker) {
+      setSkipBBCardAnim(false);
+    }
+    prevBankerRef.current = banker;
+  }, [banker, phase]);
+
+  // Count dealt cards per position
+  const getDealCount = (target: string) =>
+    dealingCards.filter(c => c.target === target).length;
 
   // Bet success notification
   const [betNotification, setBetNotification] = useState<{
@@ -368,6 +443,10 @@ export default function BullBullGame() {
               betAmount={getBetAmount('bb_banker')}
               onBet={() => handleBet('bb_banker')}
               canBet={canBet}
+              dealCount={getDealCount('banker')}
+              isRevealed={revealedPositions.has('banker')}
+              revealDelay={0}
+              skipAnimation={skipBBCardAnim}
             />
           </div>
 
@@ -380,6 +459,10 @@ export default function BullBullGame() {
               betAmount={getBetAmount('bb_player1')}
               onBet={() => handleBet('bb_player1')}
               canBet={canBet}
+              dealCount={getDealCount('player1')}
+              isRevealed={revealedPositions.has('player1')}
+              revealDelay={0.8}
+              skipAnimation={skipBBCardAnim}
             />
             <HandDisplay
               position="閒2"
@@ -388,6 +471,10 @@ export default function BullBullGame() {
               betAmount={getBetAmount('bb_player2')}
               onBet={() => handleBet('bb_player2')}
               canBet={canBet}
+              dealCount={getDealCount('player2')}
+              isRevealed={revealedPositions.has('player2')}
+              revealDelay={1.6}
+              skipAnimation={skipBBCardAnim}
             />
             <HandDisplay
               position="閒3"
@@ -396,6 +483,10 @@ export default function BullBullGame() {
               betAmount={getBetAmount('bb_player3')}
               onBet={() => handleBet('bb_player3')}
               canBet={canBet}
+              dealCount={getDealCount('player3')}
+              isRevealed={revealedPositions.has('player3')}
+              revealDelay={2.4}
+              skipAnimation={skipBBCardAnim}
             />
           </div>
         </div>

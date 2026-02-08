@@ -37,7 +37,7 @@ import { useDragonTigerStore, type DragonTigerBetType } from '../store/dragonTig
 import { useGameStore, ALL_CHIP_OPTIONS } from '../store/gameStore';
 import { useDragonTigerSocket } from '../hooks/useDragonTigerSocket';
 import { useAuthStore } from '../store/authStore';
-import PlayingCard from '../components/game/PlayingCard';
+import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
 import ChipSettingsModal from '../components/game/ChipSettingsModal';
 import {
   GameSettingsModal,
@@ -620,12 +620,47 @@ export default function DragonTigerGame() {
     tigerCard,
     dragonValue,
     tigerValue,
+    dragonFlipped,
+    tigerFlipped,
+    setDragonFlipped,
+    setTigerFlipped,
     lastResult,
     lastSettlement,
     roadmapData,
     shoeNumber,
     lastBets,
   } = useDragonTigerStore();
+
+  // Card animation: track reconnection to skip animation
+  const [skipCardAnim, setSkipCardAnim] = useState(false);
+  const [vsPulse, setVsPulse] = useState(false);
+  const prevDragonCardRef = useRef(dragonCard);
+
+  useEffect(() => {
+    // If dragon card appears and we're already in dealing/result phase → reconnect
+    if (dragonCard && !prevDragonCardRef.current) {
+      if (phase === 'dealing' || phase === 'result') {
+        setSkipCardAnim(true);
+        // When skipping animation, mark cards as flipped immediately
+        setDragonFlipped(true);
+        if (tigerCard) setTigerFlipped(true);
+      } else {
+        setSkipCardAnim(false);
+      }
+    }
+    if (!dragonCard) {
+      setSkipCardAnim(false);
+      setVsPulse(false);
+    }
+    prevDragonCardRef.current = dragonCard;
+  }, [dragonCard, tigerCard, phase, setDragonFlipped, setTigerFlipped]);
+
+  // Trigger VS pulse when both cards are flipped
+  useEffect(() => {
+    if (dragonFlipped && tigerFlipped && !skipCardAnim) {
+      setVsPulse(true);
+    }
+  }, [dragonFlipped, tigerFlipped, skipCardAnim]);
 
   // Bet success notification
   const [betNotification, setBetNotification] = useState<{
@@ -936,51 +971,75 @@ export default function DragonTigerGame() {
                   <div className="text-2xl font-bold text-red-400 mb-4">{t('dtDragon')}</div>
                   <div className="relative">
                     {dragonCard ? (
-                      <motion.div
-                        initial={{ rotateY: 180, opacity: 0 }}
-                        animate={{ rotateY: 0, opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        <PlayingCard card={dragonCard} size="lg" />
-                      </motion.div>
+                      <AnimatedPlayingCard
+                        card={dragonCard}
+                        size="lg"
+                        flyFrom={{ x: 100, y: -150 }}
+                        flyDelay={0}
+                        flyDuration={0.6}
+                        flipDelay={0.5}
+                        flipDuration={0.8}
+                        glowing={!!lastResult && lastResult === 'dragon'}
+                        glowColor="rgba(239, 68, 68, 0.6)"
+                        skipAnimation={skipCardAnim}
+                        onFlipComplete={() => setDragonFlipped(true)}
+                      />
                     ) : (
                       <div className="w-24 h-32 bg-gradient-to-br from-red-900 to-red-950 rounded-lg border-2 border-red-700 flex items-center justify-center">
                         <span className="text-red-400 text-4xl">{t('dtDragon')}</span>
                       </div>
                     )}
-                    {dragonValue !== null && (
-                      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-1 rounded-full font-bold text-lg">
-                        {dragonValue}
-                      </div>
-                    )}
+                    <AnimatePresence>
+                      {dragonValue !== null && dragonFlipped && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-1 rounded-full font-bold text-lg"
+                        >
+                          {dragonValue}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 
                 {/* VS */}
-                <div className="text-4xl font-bold text-gray-500">VS</div>
+                <div className={`text-4xl font-bold text-gray-500 ${vsPulse ? 'vs-flash' : ''}`}>VS</div>
 
                 {/* Tiger Side */}
                 <div className="text-center">
                   <div className="text-2xl font-bold text-blue-400 mb-4">{t('dtTiger')}</div>
                   <div className="relative">
                     {tigerCard ? (
-                      <motion.div
-                        initial={{ rotateY: 180, opacity: 0 }}
-                        animate={{ rotateY: 0, opacity: 1 }}
-                        transition={{ duration: 0.5 }}
-                      >
-                        <PlayingCard card={tigerCard} size="lg" />
-                      </motion.div>
+                      <AnimatedPlayingCard
+                        card={tigerCard}
+                        size="lg"
+                        flyFrom={{ x: -100, y: -150 }}
+                        flyDelay={0.8}
+                        flyDuration={0.6}
+                        flipDelay={0.5}
+                        flipDuration={0.8}
+                        glowing={!!lastResult && lastResult === 'tiger'}
+                        glowColor="rgba(59, 130, 246, 0.6)"
+                        skipAnimation={skipCardAnim}
+                        onFlipComplete={() => setTigerFlipped(true)}
+                      />
                     ) : (
                       <div className="w-24 h-32 bg-gradient-to-br from-blue-900 to-blue-950 rounded-lg border-2 border-blue-700 flex items-center justify-center">
                         <span className="text-blue-400 text-4xl">{t('dtTiger')}</span>
                       </div>
                     )}
-                    {tigerValue !== null && (
-                      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full font-bold text-lg">
-                        {tigerValue}
-                      </div>
-                    )}
+                    <AnimatePresence>
+                      {tigerValue !== null && tigerFlipped && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full font-bold text-lg"
+                        >
+                          {tigerValue}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
               </div>

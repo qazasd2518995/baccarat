@@ -140,3 +140,36 @@ input:-webkit-autofill:active {
 input::placeholder {
   color: rgba(212, 175, 55, 0.3);
 }
+
+/* Card glow animation (winner highlight) */
+@keyframes cardGlow {
+  0%, 100% { box-shadow: 0 0 8px 2px var(--glow-color, rgba(212, 175, 55, 0.6)); }
+  50% { box-shadow: 0 0 20px 6px var(--glow-color, rgba(212, 175, 55, 0.6)); }
+}
+
+.card-glow {
+  animation: cardGlow 1.5s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+/* Points pulse animation */
+@keyframes pointsPulse {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.3); }
+  60% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.points-pulse {
+  animation: pointsPulse 0.5s ease-out;
+}
+
+/* VS flash animation */
+@keyframes vsFlash {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); text-shadow: 0 0 20px rgba(255,255,255,0.8); }
+}
+
+.vs-flash {
+  animation: vsFlash 0.8s ease-in-out 2;
+}

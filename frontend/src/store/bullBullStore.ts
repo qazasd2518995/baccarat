@@ -90,7 +90,9 @@ interface BullBullStore {
   setPlayer: (position: 1 | 2 | 3, hand: HandResult, result: PositionResult) => void;
   clearHands: () => void;
 
-  // Dealing animation state (cards being revealed)
+  // Dealing animation state (cards being dealt and revealed)
+  dealingCards: Array<{ target: string; cardIndex: number }>;
+  addDealingCard: (target: string, cardIndex: number) => void;
   revealedPositions: Set<string>;
   revealPosition: (position: string) => void;
   clearRevealed: () => void;
@@ -293,12 +295,18 @@ export const useBullBullStore = create<BullBullStore>((set, get) => ({
     player3Result: null,
   }),
 
+  // Dealing animation state
+  dealingCards: [],
+  addDealingCard: (target, cardIndex) => set((state) => ({
+    dealingCards: [...state.dealingCards, { target, cardIndex }],
+  })),
+
   // Revealed positions for animation
   revealedPositions: new Set(),
   revealPosition: (position) => set((state) => ({
     revealedPositions: new Set([...state.revealedPositions, position]),
   })),
-  clearRevealed: () => set({ revealedPositions: new Set() }),
+  clearRevealed: () => set({ revealedPositions: new Set(), dealingCards: [] }),
 
   // Settlement
   lastSettlement: null,
@@ -325,6 +333,7 @@ export const useBullBullStore = create<BullBullStore>((set, get) => ({
       player1Result: null,
       player2Result: null,
       player3Result: null,
+      dealingCards: [],
       revealedPositions: new Set(),
       lastSettlement: null,
     }),
@@ -349,6 +358,7 @@ export const useBullBullStore = create<BullBullStore>((set, get) => ({
       player1Result: null,
       player2Result: null,
       player3Result: null,
+      dealingCards: [],
       revealedPositions: new Set(),
       lastSettlement: null,
       roadmapData: [],

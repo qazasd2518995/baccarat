@@ -77,6 +77,7 @@ export function useBullBullSocket(tableId?: string) {
     saveLastBets,
     revealPosition,
     clearRevealed,
+    addDealingCard,
     pendingBets,
     phase,
   } = useBullBullStore();
@@ -158,7 +159,7 @@ export function useBullBullSocket(tableId?: string) {
 
     const handleCard = (data: any) => {
       console.log('[useBullBullSocket] Card dealt:', data.target, data.cardIndex);
-      // Cards are dealt face down initially, we track positions later
+      addDealingCard(data.target, data.cardIndex);
     };
 
     const handleReveal = (data: any) => {

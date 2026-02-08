@@ -79,8 +79,12 @@ interface DragonTigerStore {
   tigerCard: Card | null;
   dragonValue: number | null;
   tigerValue: number | null;
+  dragonFlipped: boolean;
+  tigerFlipped: boolean;
   setDragonCard: (card: Card, value: number) => void;
   setTigerCard: (card: Card, value: number) => void;
+  setDragonFlipped: (v: boolean) => void;
+  setTigerFlipped: (v: boolean) => void;
   clearCards: () => void;
 
   // Result display
@@ -234,14 +238,20 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
   tigerCard: null,
   dragonValue: null,
   tigerValue: null,
+  dragonFlipped: false,
+  tigerFlipped: false,
 
   setDragonCard: (card, value) => set({ dragonCard: card, dragonValue: value }),
   setTigerCard: (card, value) => set({ tigerCard: card, tigerValue: value }),
+  setDragonFlipped: (v) => set({ dragonFlipped: v }),
+  setTigerFlipped: (v) => set({ tigerFlipped: v }),
   clearCards: () => set({
     dragonCard: null,
     tigerCard: null,
     dragonValue: null,
     tigerValue: null,
+    dragonFlipped: false,
+    tigerFlipped: false,
   }),
 
   // Result
@@ -269,6 +279,8 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
       tigerCard: null,
       dragonValue: null,
       tigerValue: null,
+      dragonFlipped: false,
+      tigerFlipped: false,
       lastResult: null,
       isSuitedTie: false,
       lastSettlement: null,
@@ -291,6 +303,8 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
       tigerCard: null,
       dragonValue: null,
       tigerValue: null,
+      dragonFlipped: false,
+      tigerFlipped: false,
       lastResult: null,
       isSuitedTie: false,
       lastSettlement: null,
