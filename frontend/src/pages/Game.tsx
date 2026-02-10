@@ -36,6 +36,7 @@ import { MobileNavBar } from '../components/layout/MobileNavBar';
 import { useGameStore } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
 import { useGameSocket } from '../hooks/useGameSocket';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 import type { BetType, GameResult } from '../types';
 import {
   GameSettingsModal,
@@ -587,6 +588,19 @@ export default function Game() {
   const [skipCardAnim, setSkipCardAnim] = useState(false);
   const [pointsPulseKey, setPointsPulseKey] = useState(0);
   const shoeRef = useRef<HTMLDivElement>(null);
+
+  // Responsive breakpoint
+  const bp = useBreakpoint();
+  const cardSize = bp === 'mobile' ? 'sm' : bp === 'tablet' ? 'lg' : 'xxl';
+  const thirdCardHeight = bp === 'mobile' ? 55 : bp === 'tablet' ? 90 : 175;
+  const shoeWidth = bp === 'mobile' ? 40 : bp === 'tablet' ? 60 : 90;
+  const shoeHeight = bp === 'mobile' ? 56 : bp === 'tablet' ? 84 : 120;
+  const shoeCardW = bp === 'mobile' ? 35 : bp === 'tablet' ? 53 : 80;
+  const shoeCardH = bp === 'mobile' ? 49 : bp === 'tablet' ? 74 : 112;
+  const flyY = bp === 'mobile' ? -120 : bp === 'tablet' ? -250 : -400;
+  const flyX = bp === 'mobile' ? 40 : bp === 'tablet' ? 80 : 120;
+  const thirdFlyY = bp === 'mobile' ? -100 : bp === 'tablet' ? -200 : -350;
+  const shoeStackOffset = bp === 'mobile' ? 1 : bp === 'tablet' ? 2 : 3;
   const cardAreaRef = useRef<HTMLDivElement>(null);
   const expectingCardsRef = useRef(false);
 
@@ -1205,47 +1219,47 @@ export default function Game() {
                 {/* Card Shoe — fly-from origin, top center */}
                 <div ref={shoeRef} className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
                   <div className="flex items-end gap-2">
-                    <div className="relative" style={{ width: 90, height: 120 }}>
+                    <div className="relative" style={{ width: shoeWidth, height: shoeHeight }}>
                       {[0, 1, 2, 3, 4].map(i => (
                         <div
                           key={i}
                           className="absolute rounded-md bg-gradient-to-br from-[#1e3a5f] to-[#0f2744] border border-[#d4af37]/30"
                           style={{
-                            width: 80, height: 112,
-                            top: -i * 3, left: i * 2,
+                            width: shoeCardW, height: shoeCardH,
+                            top: -i * shoeStackOffset, left: i * (shoeStackOffset > 1 ? 2 : 1),
                             boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
                           }}
                         />
                       ))}
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                        <div className="w-5 h-5 rotate-45 border-2 border-[#d4af37]/50 bg-[#d4af37]/10" />
+                        <div className={`rotate-45 border-2 border-[#d4af37]/50 bg-[#d4af37]/10 ${bp === 'mobile' ? 'w-3 h-3' : 'w-5 h-5'}`} />
                       </div>
                     </div>
-                    <span className="text-xs text-[#d4af37]/40 font-mono tracking-widest mb-2">SHOE</span>
+                    <span className={`text-[#d4af37]/40 font-mono tracking-widest mb-2 ${bp === 'mobile' ? 'text-[8px]' : 'text-xs'}`}>SHOE</span>
                   </div>
                 </div>
 
                 {/* Player & Banker zones */}
-                <div ref={cardAreaRef} className="flex items-stretch gap-8 sm:gap-16 lg:gap-24">
+                <div ref={cardAreaRef} className="flex items-stretch gap-2 sm:gap-8 lg:gap-16 xl:gap-24">
                   {/* ——— PLAYER ZONE ——— */}
                   <div className="flex flex-col items-center">
                     {/* Player header + score */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="bg-blue-600 text-white px-5 py-2 rounded-l text-xl font-bold tracking-wide">
+                    <div className="flex items-center gap-1 mb-2 sm:gap-3 sm:mb-4">
+                      <div className="bg-blue-600 text-white text-xs px-2 py-1 sm:text-xl sm:px-5 sm:py-2 rounded-l font-bold tracking-wide">
                         P {t('player').toUpperCase()}
                       </div>
-                      <div key={`pp-${pointsPulseKey}`} className={`bg-black/60 text-white px-6 py-2 rounded-r text-5xl font-bold min-w-[80px] text-center border border-blue-500/20 ${renderPlayerPoints !== null ? 'points-pulse' : ''}`}>
+                      <div key={`pp-${pointsPulseKey}`} className={`bg-black/60 text-white text-2xl px-3 py-1 min-w-[40px] sm:text-5xl sm:px-6 sm:py-2 sm:min-w-[80px] rounded-r font-bold text-center border border-blue-500/20 ${renderPlayerPoints !== null ? 'points-pulse' : ''}`}>
                         {renderPlayerPoints ?? '-'}
                       </div>
                     </div>
-                    {/* Third card — same xxl size, rotated 90°, enough height for rotated card */}
-                    <div style={{ height: 175 }}>
+                    {/* Third card — rotated 90°, enough height for rotated card */}
+                    <div style={{ height: thirdCardHeight }}>
                       {renderPlayerCards.length > 2 && (
-                        <div className="mb-3">
+                        <div className="mb-1 sm:mb-3">
                           <AnimatedPlayingCard
                             card={renderPlayerCards[2]}
-                            size="xxl"
-                            flyFrom={{ x: 0, y: -350 }}
+                            size={cardSize}
+                            flyFrom={{ x: 0, y: thirdFlyY }}
                             flyDelay={3.5}
                             flipDelay={0.5}
                             rotation={90}
@@ -1255,15 +1269,15 @@ export default function Game() {
                         </div>
                       )}
                     </div>
-                    {/* First two cards — xxl size */}
-                    <div className="flex gap-3">
+                    {/* First two cards */}
+                    <div className="flex gap-1 sm:gap-3">
                       {renderPlayerCards.length > 0 ? (
                         renderPlayerCards.slice(0, 2).map((card, i) => (
                           <AnimatedPlayingCard
                             key={`player-${i}-${card.rank}-${card.suit}`}
                             card={card}
-                            size="xxl"
-                            flyFrom={{ x: 120, y: -400 }}
+                            size={cardSize}
+                            flyFrom={{ x: flyX, y: flyY }}
                             flyDelay={i * 1.2}
                             flipDelay={0.5}
                             skipAnimation={skipCardAnim}
@@ -1272,13 +1286,13 @@ export default function Game() {
                         ))
                       ) : (
                         <>
-                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size="xxl" />
-                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size="xxl" />
+                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size={cardSize} />
+                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size={cardSize} />
                         </>
                       )}
                     </div>
                     {/* Card text preview — only show after each card flips */}
-                    <div className="mt-3 flex gap-2 text-base font-mono text-blue-300/60">
+                    <div className="mt-1 sm:mt-3 flex gap-2 text-[10px] sm:text-base font-mono text-blue-300/60">
                       {renderPlayerCards.length > 0 ? renderPlayerCards.map((c, i) => (
                         <span key={i} className={`transition-opacity duration-300 ${revealedPlayerCards.has(i) ? 'opacity-100' : 'opacity-0'} ${c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}`}>
                           {SUIT_SYMBOLS[c.suit]}{c.rank}
@@ -1288,31 +1302,31 @@ export default function Game() {
                   </div>
 
                   {/* ——— Center VS ——— */}
-                  <div className="flex flex-col items-center justify-center gap-2 px-4">
-                    <div className="w-px h-20 bg-gradient-to-b from-transparent via-[#d4af37]/25 to-transparent" />
-                    <div className="text-2xl text-[#d4af37]/30 font-bold">VS</div>
-                    <div className="w-px h-20 bg-gradient-to-b from-transparent via-[#d4af37]/25 to-transparent" />
+                  <div className="flex flex-col items-center justify-center gap-1 sm:gap-2 px-1 sm:px-2 lg:px-4">
+                    <div className="w-px h-6 sm:h-12 lg:h-20 bg-gradient-to-b from-transparent via-[#d4af37]/25 to-transparent" />
+                    <div className="text-sm sm:text-xl lg:text-2xl text-[#d4af37]/30 font-bold">VS</div>
+                    <div className="w-px h-6 sm:h-12 lg:h-20 bg-gradient-to-b from-transparent via-[#d4af37]/25 to-transparent" />
                   </div>
 
                   {/* ——— BANKER ZONE ——— */}
                   <div className="flex flex-col items-center">
                     {/* Banker header + score */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <div key={`bp-${pointsPulseKey}`} className={`bg-black/60 text-white px-6 py-2 rounded-l text-5xl font-bold min-w-[80px] text-center border border-red-500/20 ${renderBankerPoints !== null ? 'points-pulse' : ''}`}>
+                    <div className="flex items-center gap-1 mb-2 sm:gap-3 sm:mb-4">
+                      <div key={`bp-${pointsPulseKey}`} className={`bg-black/60 text-white text-2xl px-3 py-1 min-w-[40px] sm:text-5xl sm:px-6 sm:py-2 sm:min-w-[80px] rounded-l font-bold text-center border border-red-500/20 ${renderBankerPoints !== null ? 'points-pulse' : ''}`}>
                         {renderBankerPoints ?? '-'}
                       </div>
-                      <div className="bg-red-600 text-white px-5 py-2 rounded-r text-xl font-bold tracking-wide">
+                      <div className="bg-red-600 text-white text-xs px-2 py-1 sm:text-xl sm:px-5 sm:py-2 rounded-r font-bold tracking-wide">
                         {t('banker').toUpperCase()} B
                       </div>
                     </div>
-                    {/* Third card — same xxl size, rotated 90° */}
-                    <div style={{ height: 175 }}>
+                    {/* Third card — rotated 90° */}
+                    <div style={{ height: thirdCardHeight }}>
                       {renderBankerCards.length > 2 && (
-                        <div className="mb-3">
+                        <div className="mb-1 sm:mb-3">
                           <AnimatedPlayingCard
                             card={renderBankerCards[2]}
-                            size="xxl"
-                            flyFrom={{ x: 0, y: -350 }}
+                            size={cardSize}
+                            flyFrom={{ x: 0, y: thirdFlyY }}
                             flyDelay={4.5}
                             flipDelay={0.5}
                             rotation={90}
@@ -1322,15 +1336,15 @@ export default function Game() {
                         </div>
                       )}
                     </div>
-                    {/* First two cards — xxl size */}
-                    <div className="flex gap-3">
+                    {/* First two cards */}
+                    <div className="flex gap-1 sm:gap-3">
                       {renderBankerCards.length > 0 ? (
                         renderBankerCards.slice(0, 2).map((card, i) => (
                           <AnimatedPlayingCard
                             key={`banker-${i}-${card.rank}-${card.suit}`}
                             card={card}
-                            size="xxl"
-                            flyFrom={{ x: -120, y: -400 }}
+                            size={cardSize}
+                            flyFrom={{ x: -flyX, y: flyY }}
                             flyDelay={0.6 + i * 1.2}
                             flipDelay={0.5}
                             skipAnimation={skipCardAnim}
@@ -1339,13 +1353,13 @@ export default function Game() {
                         ))
                       ) : (
                         <>
-                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size="xxl" />
-                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size="xxl" />
+                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size={cardSize} />
+                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size={cardSize} />
                         </>
                       )}
                     </div>
                     {/* Card text preview — only show after each card flips */}
-                    <div className="mt-3 flex gap-2 text-base font-mono text-red-300/60">
+                    <div className="mt-1 sm:mt-3 flex gap-2 text-[10px] sm:text-base font-mono text-red-300/60">
                       {renderBankerCards.length > 0 ? renderBankerCards.map((c, i) => (
                         <span key={i} className={`transition-opacity duration-300 ${revealedBankerCards.has(i) ? 'opacity-100' : 'opacity-0'} ${c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}`}>
                           {SUIT_SYMBOLS[c.suit]}{c.rank}
