@@ -866,8 +866,31 @@ export default function Game() {
   // Net result from last settlement
   const netResult = lastSettlement?.netResult || 0;
 
-  // Show result only after ALL card flips complete
-  const showResult = phase === 'result' && lastResult !== null && allFlipsDone;
+  // Show result for at least 3 seconds after all card flips complete.
+  // Problem: result phase (5s) starts counting when game:result is sent,
+  // but card animations may eat up most of that time, leaving only ~1s visible.
+  // Fix: once allFlipsDone, keep showing for a guaranteed 3 seconds.
+  const [showResult, setShowResult] = useState(false);
+  const showResultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (lastResult !== null && allFlipsDone && !showResult) {
+      // All flips done — show result now
+      setShowResult(true);
+      // Guarantee at least 3 seconds visible
+      showResultTimerRef.current = setTimeout(() => {
+        setShowResult(false);
+      }, 3000);
+    }
+    if (lastResult === null) {
+      // New round — clear immediately
+      if (showResultTimerRef.current) {
+        clearTimeout(showResultTimerRef.current);
+        showResultTimerRef.current = null;
+      }
+      setShowResult(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastResult, allFlipsDone]);
 
   return (
     <div className="h-screen bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
