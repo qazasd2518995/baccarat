@@ -106,12 +106,8 @@ export function MobileNavBar({
           <Home className="w-5 h-5" />
         </button>
 
-        {/* Balance & Total Bet */}
+        {/* Total Bet */}
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 text-amber-400">
-            <Wallet className="w-4 h-4 shrink-0" />
-            <span className="font-bold text-sm truncate">${balance.toLocaleString()}</span>
-          </div>
           {totalBet > 0 && (
             <div className="text-gray-400 text-sm">
               {t('bet') || '下注'}: <span className="text-white font-medium">${totalBet.toLocaleString()}</span>
