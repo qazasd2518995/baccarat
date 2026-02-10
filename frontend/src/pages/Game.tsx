@@ -896,25 +896,30 @@ export default function Game() {
   const showResultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resultShownRef = useRef(false); // prevent re-triggering within same round
 
+  // Hold a snapshot of the result so it survives resetForNewRound clearing lastResult
+  const [frozenResult, setFrozenResult] = useState<string | null>(null);
+
   useEffect(() => {
     if (lastResult !== null && allFlipsDone && !resultShownRef.current) {
       resultShownRef.current = true;
+      setFrozenResult(lastResult);
       // Wait 2 seconds after all flips complete, then show result for 2 seconds
       showResultTimerRef.current = setTimeout(() => {
         setShowResult(true);
         showResultTimerRef.current = setTimeout(() => {
           setShowResult(false);
+          setFrozenResult(null);
         }, 2000);
       }, 2000);
     }
   }, [lastResult, allFlipsDone]);
 
-  // Reset the "shown" flag only when a genuinely new round starts (cards cleared)
+  // Reset the "shown" flag only when frozenResult is cleared (result display fully complete)
   useEffect(() => {
-    if (playerCards.length === 0 && bankerCards.length === 0) {
+    if (playerCards.length === 0 && bankerCards.length === 0 && frozenResult === null) {
       resultShownRef.current = false;
     }
-  }, [playerCards.length, bankerCards.length]);
+  }, [playerCards.length, bankerCards.length, frozenResult]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -1312,11 +1317,11 @@ export default function Game() {
                     >
                       <div className="text-center">
                         <div className={`text-3xl sm:text-4xl font-bold mb-2 drop-shadow-lg ${
-                          lastResult === 'player' ? 'text-blue-400' :
-                          lastResult === 'banker' ? 'text-red-400' : 'text-green-400'
+                          frozenResult === 'player' ? 'text-blue-400' :
+                          frozenResult === 'banker' ? 'text-red-400' : 'text-green-400'
                         }`}>
-                          {lastResult === 'player' ? t('playerWins') :
-                           lastResult === 'banker' ? t('bankerWins') : t('tieResult')}
+                          {frozenResult === 'player' ? t('playerWins') :
+                           frozenResult === 'banker' ? t('bankerWins') : t('tieResult')}
                         </div>
                         {lastSettlement && netResult !== 0 && (
                           <div className={`text-xl sm:text-2xl font-bold ${netResult > 0 ? 'text-green-400' : 'text-red-400'}`}>
