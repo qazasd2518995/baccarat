@@ -2071,6 +2071,14 @@ export default function Game() {
         onClear={clearPendingBets}
         canBet={canBet}
         hasBets={pendingBets.length > 0}
+        menuActions={[
+          { icon: <Heart className="w-5 h-5" />, label: t('followingList'), onClick: () => setIsFollowingOpen(true), color: 'text-pink-400' },
+          { icon: <BarChart2 className="w-5 h-5" />, label: t('resultsProportion'), onClick: () => setIsProportionOpen(true) },
+          { icon: <FileText className="w-5 h-5" />, label: t('gameReport'), onClick: () => setIsReportOpen(true) },
+          { icon: <Settings className="w-5 h-5" />, label: t('gameSettings'), onClick: () => setIsSettingsOpen(true) },
+          { icon: <HelpCircle className="w-5 h-5" />, label: t('gameRules'), onClick: () => setIsRulesOpen(true) },
+          { icon: <Coins className="w-5 h-5" />, label: t('chipSettings') || '籌碼設定', onClick: () => setIsChipSettingsOpen(true) },
+        ]}
       />
     </div>
   );

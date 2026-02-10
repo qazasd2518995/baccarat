@@ -1,6 +1,14 @@
 import { Home, Menu, X, Check, RotateCcw, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+
+interface MenuAction {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  color?: string;
+}
 
 interface MobileNavBarProps {
   variant: 'lobby' | 'game';
@@ -12,6 +20,7 @@ interface MobileNavBarProps {
   canBet?: boolean;
   hasBets?: boolean;
   className?: string;
+  menuActions?: MenuAction[];
 }
 
 export function MobileNavBar({
@@ -24,8 +33,10 @@ export function MobileNavBar({
   canBet = false,
   hasBets = false,
   className = '',
+  menuActions = [],
 }: MobileNavBarProps) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
 
   if (variant === 'lobby') {
@@ -68,6 +79,24 @@ export function MobileNavBar({
   // Game variant
   return (
     <nav className={`fixed bottom-0 left-0 right-0 bg-[#0d1117] border-t border-gray-800 pb-safe z-50 ${className}`}>
+      {/* Expandable menu panel */}
+      {menuOpen && menuActions.length > 0 && (
+        <div className="absolute bottom-full left-0 right-0 bg-[#0d1117]/95 backdrop-blur-sm border-t border-gray-800 p-3">
+          <div className="grid grid-cols-3 gap-2">
+            {menuActions.map((action, i) => (
+              <button
+                key={i}
+                onClick={() => { action.onClick(); setMenuOpen(false); }}
+                className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors"
+              >
+                <span className={action.color || 'text-gray-400'}>{action.icon}</span>
+                <span className="text-[11px] text-gray-300">{action.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between h-14 px-3 gap-2">
         {/* Back button */}
         <button
@@ -85,13 +114,23 @@ export function MobileNavBar({
           </div>
           {totalBet > 0 && (
             <div className="text-gray-400 text-sm">
-              下注: <span className="text-white font-medium">${totalBet.toLocaleString()}</span>
+              {t('bet') || '下注'}: <span className="text-white font-medium">${totalBet.toLocaleString()}</span>
             </div>
           )}
         </div>
 
         {/* Action buttons */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* Menu toggle */}
+          {menuActions.length > 0 && (
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className={`p-2 rounded-lg transition-colors ${menuOpen ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'}`}
+            >
+              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          )}
+
           {/* Clear button */}
           {hasBets && onClear && (
             <button
@@ -126,7 +165,7 @@ export function MobileNavBar({
               }`}
             >
               <Check className="w-4 h-4" />
-              確認
+              {t('confirm') || '確認'}
             </button>
           )}
         </div>
