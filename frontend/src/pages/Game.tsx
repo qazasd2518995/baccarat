@@ -604,12 +604,13 @@ export default function Game() {
   // When phase changes to dealing, mark that we expect animated cards
   const prevPhaseRef = useRef(phase);
   useEffect(() => {
+    console.log(`[Game] Phase changed: ${prevPhaseRef.current} → ${phase}`);
     if (phase === 'dealing' && prevPhaseRef.current !== 'dealing') {
-      // Phase just transitioned to dealing — normal flow, expect animated cards
       expectingCardsRef.current = true;
+      console.log('[Game] Phase→dealing: expecting animated cards');
     }
     if (phase === 'betting') {
-      // New round reset
+      console.log('[Game] Phase→betting: resetting round state');
       expectingCardsRef.current = false;
       setSkipCardAnim(false);
       setDisplayPlayerPoints(null);
@@ -650,11 +651,14 @@ export default function Game() {
   // Track total expected cards (player + banker) for flip completion
   useEffect(() => {
     expectedCardsRef.current = playerCards.length + bankerCards.length;
+    console.log(`[Game] Cards updated: player=${playerCards.length} banker=${bankerCards.length} expected=${expectedCardsRef.current} flipped=${flippedCountRef.current}`);
   }, [playerCards.length, bankerCards.length]);
 
   // Check if all flips are truly done (all cards dealt AND all flipped)
   const checkAllFlipsDone = useCallback(() => {
+    console.log(`[Game] checkAllFlipsDone: lastResult=${lastResult} flipped=${flippedCountRef.current} expected=${expectedCardsRef.current}`);
     if (lastResult !== null && flippedCountRef.current >= expectedCardsRef.current) {
+      console.log('[Game] ✅ ALL FLIPS DONE');
       setAllFlipsDone(true);
     }
   }, [lastResult]);
@@ -662,32 +666,34 @@ export default function Game() {
   // When lastResult arrives (server done sending cards), re-check flip completion
   useEffect(() => {
     if (lastResult !== null) {
+      console.log(`[Game] lastResult arrived: ${lastResult}, re-checking flips`);
       checkAllFlipsDone();
     }
   }, [lastResult, checkAllFlipsDone]);
 
   // Callback when a player card flip completes
   const onPlayerCardFlipped = useCallback((cardIndex: number) => {
-    // Mark this card as visually revealed
+    console.log(`[Game] 🃏 Player card ${cardIndex} flipped`);
     setRevealedPlayerCards(prev => new Set(prev).add(cardIndex));
-    // Calculate points for cards revealed so far (up to cardIndex+1)
     const revealedCards = playerCards.slice(0, cardIndex + 1);
     const pts = revealedCards.reduce((sum, c) => sum + c.value, 0) % 10;
     setDisplayPlayerPoints(pts);
     setPointsPulseKey(k => k + 1);
     flippedCountRef.current += 1;
+    console.log(`[Game] Player flip done — flipped=${flippedCountRef.current} expected=${expectedCardsRef.current}`);
     checkAllFlipsDone();
   }, [playerCards, checkAllFlipsDone]);
 
   // Callback when a banker card flip completes
   const onBankerCardFlipped = useCallback((cardIndex: number) => {
-    // Mark this card as visually revealed
+    console.log(`[Game] 🃏 Banker card ${cardIndex} flipped`);
     setRevealedBankerCards(prev => new Set(prev).add(cardIndex));
     const revealedCards = bankerCards.slice(0, cardIndex + 1);
     const pts = revealedCards.reduce((sum, c) => sum + c.value, 0) % 10;
     setDisplayBankerPoints(pts);
     setPointsPulseKey(k => k + 1);
     flippedCountRef.current += 1;
+    console.log(`[Game] Banker flip done — flipped=${flippedCountRef.current} expected=${expectedCardsRef.current}`);
     checkAllFlipsDone();
   }, [bankerCards, checkAllFlipsDone]);
 
@@ -900,13 +906,16 @@ export default function Game() {
   const [frozenResult, setFrozenResult] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log(`[Game] Result display check: lastResult=${lastResult} allFlipsDone=${allFlipsDone} resultShown=${resultShownRef.current} showResult=${showResult}`);
     if (lastResult !== null && allFlipsDone && !resultShownRef.current) {
       resultShownRef.current = true;
       setFrozenResult(lastResult);
-      // Wait 2 seconds after all flips complete, then show result for 2 seconds
+      console.log(`[Game] ⏳ Starting 2s wait before showing result: ${lastResult}`);
       showResultTimerRef.current = setTimeout(() => {
+        console.log(`[Game] 🏆 Showing result overlay NOW`);
         setShowResult(true);
         showResultTimerRef.current = setTimeout(() => {
+          console.log(`[Game] 🔚 Hiding result overlay after 2s display`);
           setShowResult(false);
           setFrozenResult(null);
         }, 2000);
@@ -917,6 +926,7 @@ export default function Game() {
   // Reset the "shown" flag only when frozenResult is cleared (result display fully complete)
   useEffect(() => {
     if (playerCards.length === 0 && bankerCards.length === 0 && frozenResult === null) {
+      console.log('[Game] 🔄 resultShownRef reset (cards cleared + frozenResult null)');
       resultShownRef.current = false;
     }
   }, [playerCards.length, bankerCards.length, frozenResult]);
