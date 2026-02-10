@@ -47,6 +47,7 @@ import {
   TableSwitchModal,
   GiftModal,
   ResultsProportionModal,
+  RoadmapModal,
 } from '../components/game/modals';
 import PlayingCard from '../components/game/PlayingCard';
 import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
@@ -416,6 +417,7 @@ export default function Game() {
   const [isTableSwitchOpen, setIsTableSwitchOpen] = useState(false);
   const [isGiftOpen, setIsGiftOpen] = useState(false);
   const [isProportionOpen, setIsProportionOpen] = useState(false);
+  const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
 
   // UI states
   const [isMuted, setIsMuted] = useState(false);
@@ -1232,24 +1234,21 @@ export default function Game() {
               <div className="flex-1 relative flex items-center justify-center">
                 {/* Card Shoe — fly-from origin, top center */}
                 <div ref={shoeRef} className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
-                  <div className="flex items-end gap-2">
-                    <div className="relative" style={{ width: shoeWidth, height: shoeHeight }}>
-                      {[0, 1, 2, 3, 4].map(i => (
-                        <div
-                          key={i}
-                          className="absolute rounded-md bg-gradient-to-br from-[#1e3a5f] to-[#0f2744] border border-[#d4af37]/30"
-                          style={{
-                            width: shoeCardW, height: shoeCardH,
-                            top: -i * shoeStackOffset, left: i * (shoeStackOffset > 1 ? 2 : 1),
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
-                          }}
-                        />
-                      ))}
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                        <div className={`rotate-45 border-2 border-[#d4af37]/50 bg-[#d4af37]/10 ${bp === 'mobile' ? 'w-3 h-3' : 'w-5 h-5'}`} />
-                      </div>
+                  <div className="relative" style={{ width: shoeWidth, height: shoeHeight }}>
+                    {[0, 1, 2, 3, 4].map(i => (
+                      <div
+                        key={i}
+                        className="absolute rounded-md bg-gradient-to-br from-[#1e3a5f] to-[#0f2744] border border-[#d4af37]/30"
+                        style={{
+                          width: shoeCardW, height: shoeCardH,
+                          top: -i * shoeStackOffset, left: i * (shoeStackOffset > 1 ? 2 : 1),
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                        }}
+                      />
+                    ))}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                      <div className={`rotate-45 border-2 border-[#d4af37]/50 bg-[#d4af37]/10 ${bp === 'mobile' ? 'w-3 h-3' : 'w-5 h-5'}`} />
                     </div>
-                    <span className={`text-[#d4af37]/40 font-mono tracking-widest mb-2 ${bp === 'mobile' ? 'text-[8px]' : 'text-xs'}`}>SHOE</span>
                   </div>
                 </div>
 
@@ -1381,6 +1380,19 @@ export default function Game() {
                       )) : <span className="text-gray-600">--</span>}
                     </div>
                   </div>
+                </div>
+
+                {/* Mobile Bead Road — simple vertical list, visible below lg */}
+                <div className="lg:hidden absolute right-1 top-1 bottom-1 w-6 flex flex-col items-center gap-0.5 overflow-y-auto z-10 scrollbar-hide">
+                  {roadmapData.slice(-20).map((r, i) => {
+                    const bg = r.result === 'banker' ? '#DC2626' : r.result === 'player' ? '#2563EB' : '#16A34A';
+                    const label = r.result === 'banker' ? '莊' : r.result === 'player' ? '閒' : '和';
+                    return (
+                      <div key={i} className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{ backgroundColor: bg, fontSize: '8px' }}>
+                        {label}
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Result Overlay — delayed to allow animations to finish */}
@@ -2039,6 +2051,7 @@ export default function Game() {
         balance={balance}
       />
       <ResultsProportionModal isOpen={isProportionOpen} onClose={() => setIsProportionOpen(false)} />
+      <RoadmapModal isOpen={isRoadmapOpen} onClose={() => setIsRoadmapOpen(false)} data={roadmapData} />
       <ChipSettingsModal isOpen={isChipSettingsOpen} onClose={() => setIsChipSettingsOpen(false)} />
 
       {/* Bet Success Notification Toast */}
@@ -2086,6 +2099,7 @@ export default function Game() {
         canBet={canBet}
         hasBets={pendingBets.length > 0}
         menuActions={[
+          { icon: <MapPin className="w-5 h-5" />, label: t('roadmap') || '路單', onClick: () => setIsRoadmapOpen(true), color: 'text-amber-400' },
           { icon: <Heart className="w-5 h-5" />, label: t('followingList'), onClick: () => setIsFollowingOpen(true), color: 'text-pink-400' },
           { icon: <BarChart2 className="w-5 h-5" />, label: t('resultsProportion'), onClick: () => setIsProportionOpen(true) },
           { icon: <FileText className="w-5 h-5" />, label: t('gameReport'), onClick: () => setIsReportOpen(true) },
