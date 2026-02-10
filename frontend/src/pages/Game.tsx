@@ -866,31 +866,42 @@ export default function Game() {
   // Net result from last settlement
   const netResult = lastSettlement?.netResult || 0;
 
-  // Show result for at least 3 seconds after all card flips complete.
-  // Problem: result phase (5s) starts counting when game:result is sent,
-  // but card animations may eat up most of that time, leaving only ~1s visible.
-  // Fix: once allFlipsDone, keep showing for a guaranteed 3 seconds.
+  // Show result for exactly 3 seconds after all card flips complete.
+  // Problem: result phase (5s) starts on the server when game:result is sent,
+  // but card animations eat most of that time. Then when phase becomes 'betting',
+  // resetForNewRound() sets lastResult=null which was killing the timer.
+  // Fix: once triggered, the 3s timer runs to completion regardless of state changes.
   const [showResult, setShowResult] = useState(false);
   const showResultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resultShownRef = useRef(false); // prevent re-triggering within same round
+
   useEffect(() => {
-    if (lastResult !== null && allFlipsDone && !showResult) {
-      // All flips done — show result now
+    if (lastResult !== null && allFlipsDone && !resultShownRef.current) {
+      // All flips done — show result now, mark as shown for this round
+      resultShownRef.current = true;
       setShowResult(true);
-      // Guarantee at least 3 seconds visible
+      // Guarantee exactly 3 seconds visible — NOT cancelled by phase changes
       showResultTimerRef.current = setTimeout(() => {
         setShowResult(false);
       }, 3000);
     }
-    if (lastResult === null) {
-      // New round — clear immediately
+  }, [lastResult, allFlipsDone]);
+
+  // Reset the "shown" flag only when a genuinely new round starts (cards cleared)
+  useEffect(() => {
+    if (playerCards.length === 0 && bankerCards.length === 0) {
+      resultShownRef.current = false;
+    }
+  }, [playerCards.length, bankerCards.length]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
       if (showResultTimerRef.current) {
         clearTimeout(showResultTimerRef.current);
-        showResultTimerRef.current = null;
       }
-      setShowResult(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastResult, allFlipsDone]);
+    };
+  }, []);
 
   return (
     <div className="h-screen bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
