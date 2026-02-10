@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { X, Calendar, ChevronLeft, ChevronRight, Search, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
-import { gameApi, transactionApi, giftApi } from '../../../services/api';
+import { gameApi, transactionApi } from '../../../services/api';
 import PlayingCard from '../PlayingCard';
 import type { Card } from '../../../types';
 
@@ -11,7 +11,7 @@ interface GameReportModalProps {
   onClose: () => void;
 }
 
-type ReportTab = 'betting' | 'balance' | 'tips';
+type ReportTab = 'betting' | 'balance';
 
 interface BetDetail {
   type: string;
@@ -70,17 +70,6 @@ interface BalanceRecord {
   note: string;
 }
 
-interface TipsRecord {
-  orderId: string;
-  settleTime: string;
-  tableName: string;
-  item: string;
-  price: number;
-  quantity: number;
-  total: number;
-  dealer: string;
-}
-
 export default function GameReportModal({ isOpen, onClose }: GameReportModalProps) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<ReportTab>('betting');
@@ -94,12 +83,9 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
   // Real data states
   const [bettingRecords, setBettingRecords] = useState<BettingRecord[]>([]);
   const [balanceRecords, setBalanceRecords] = useState<BalanceRecord[]>([]);
-  const [tipsRecords, setTipsRecords] = useState<TipsRecord[]>([]);
-
   const tabs: { id: ReportTab; labelKey: string }[] = [
     { id: 'betting', labelKey: 'bettingReport' },
     { id: 'balance', labelKey: 'balanceReport' },
-    { id: 'tips', labelKey: 'tipsReport' },
   ];
 
   // Helper to translate bet type
@@ -381,42 +367,6 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
     }
   }, [currentPage, startDate, endDate, i18n.language]);
 
-  // Fetch tips history
-  const fetchTipsHistory = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: { page: number; limit: number; from?: string; to?: string } = {
-        page: currentPage,
-        limit: 20,
-      };
-      if (startDate) params.from = startDate;
-      if (endDate) params.to = endDate;
-
-      const response = await giftApi.getHistory(params);
-      const gifts = response.data?.records || [];
-
-      // Map backend data to TipsRecord format
-      const records: TipsRecord[] = gifts.map((gift: any) => ({
-        orderId: gift.id.slice(0, 8).toUpperCase(),
-        settleTime: new Date(gift.createdAt).toLocaleString(i18n.language === 'zh' ? 'zh-TW' : 'en-US'),
-        tableName: i18n.language === 'zh' ? '默认桌' : 'Default Table',
-        item: gift.giftName,
-        price: Number(gift.price),
-        quantity: gift.quantity,
-        total: Number(gift.total),
-        dealer: gift.dealerName,
-      }));
-
-      setTipsRecords(records);
-      setTotalPages(response.data?.pagination?.totalPages || 1);
-    } catch (error) {
-      console.error('Failed to fetch tips history:', error);
-      setTipsRecords([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentPage, startDate, endDate, i18n.language]);
-
   // Fetch data when tab or page changes
   useEffect(() => {
     if (!isOpen) return;
@@ -425,10 +375,8 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
       fetchBettingHistory();
     } else if (activeTab === 'balance') {
       fetchBalanceHistory();
-    } else if (activeTab === 'tips') {
-      fetchTipsHistory();
     }
-  }, [isOpen, activeTab, currentPage, fetchBettingHistory, fetchBalanceHistory, fetchTipsHistory]);
+  }, [isOpen, activeTab, currentPage, fetchBettingHistory, fetchBalanceHistory]);
 
   // Reset page when switching tabs
   useEffect(() => {
@@ -443,8 +391,6 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
       fetchBettingHistory();
     } else if (activeTab === 'balance') {
       fetchBalanceHistory();
-    } else if (activeTab === 'tips') {
-      fetchTipsHistory();
     }
   };
 
@@ -817,41 +763,9 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                   </table>
                 )}
 
-                {activeTab === 'tips' && (
-                  <table className="w-full text-sm">
-                    <thead className="bg-[#2a3548] text-gray-400">
-                      <tr>
-                        <th className="px-3 py-3 text-left">{t('orderId')}</th>
-                        <th className="px-3 py-3 text-left">{t('settleTime')}</th>
-                        <th className="px-3 py-3 text-left">{t('tableName')}</th>
-                        <th className="px-3 py-3 text-left">{t('item')}</th>
-                        <th className="px-3 py-3 text-right">{t('price')}</th>
-                        <th className="px-3 py-3 text-center">{t('quantity')}</th>
-                        <th className="px-3 py-3 text-right">{t('total')}</th>
-                        <th className="px-3 py-3 text-left">{t('dealer')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tipsRecords.map((record) => (
-                        <tr key={record.orderId} className="border-b border-gray-700/30 hover:bg-gray-800/30">
-                          <td className="px-3 py-3 text-gray-300">{record.orderId}</td>
-                          <td className="px-3 py-3 text-gray-400">{record.settleTime}</td>
-                          <td className="px-3 py-3 text-gray-300">{record.tableName}</td>
-                          <td className="px-3 py-3 text-gray-300">{record.item}</td>
-                          <td className="px-3 py-3 text-right text-gray-300">{record.price.toLocaleString()}</td>
-                          <td className="px-3 py-3 text-center text-gray-400">{record.quantity}</td>
-                          <td className="px-3 py-3 text-right text-yellow-400 font-medium">{record.total.toLocaleString()}</td>
-                          <td className="px-3 py-3 text-pink-400">{record.dealer}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-
                 {/* Empty State */}
                 {((activeTab === 'betting' && bettingRecords.length === 0) ||
-                  (activeTab === 'balance' && balanceRecords.length === 0) ||
-                  (activeTab === 'tips' && tipsRecords.length === 0)) && (
+                  (activeTab === 'balance' && balanceRecords.length === 0)) && (
                   <div className="flex flex-col items-center justify-center py-16 text-gray-500">
                     <div className="text-4xl mb-4">📋</div>
                     <p>{t('noRecords')}</p>
