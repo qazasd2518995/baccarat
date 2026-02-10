@@ -37,6 +37,7 @@ import { useGameStore } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { useBreakpoint } from '../hooks/useBreakpoint';
+import { useTTS } from '../hooks/useTTS';
 import type { BetType, GameResult } from '../types';
 import {
   GameSettingsModal,
@@ -418,6 +419,7 @@ export default function Game() {
 
   // UI states
   const [isMuted, setIsMuted] = useState(false);
+  const { play: playSound } = useTTS(isMuted);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isFollowingDealer, setIsFollowingDealer] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -640,6 +642,13 @@ export default function Game() {
       expectingCardsRef.current = true;
       console.log('[Game] Phase→dealing: expecting animated cards');
     }
+    // TTS: 請下注 / 停止下注
+    if (phase === 'betting' && prevPhaseRef.current !== 'betting') {
+      playSound('placeBets');
+    }
+    if (phase === 'sealed' && prevPhaseRef.current !== 'sealed') {
+      playSound('stopBets');
+    }
     if (phase === 'betting') {
       // If result timer is running (resultShownRef=true means timer started), defer the reset
       if (resultShownRef.current) {
@@ -651,7 +660,7 @@ export default function Game() {
       }
     }
     prevPhaseRef.current = phase;
-  }, [phase, doRoundReset]);
+  }, [phase, doRoundReset, playSound]);
 
   // When cards appear, decide whether to animate
   const prevPlayerCardsLenRef = useRef(playerCards.length);
@@ -866,6 +875,7 @@ export default function Game() {
 
     // Only show notification when bets are newly confirmed (count increased)
     if (currentCount > 0 && currentCount > prevCount && phase === 'betting') {
+      playSound('betSuccess');
       const total = confirmedBets.reduce((sum, b) => sum + b.amount, 0);
       setBetNotification({
         show: true,
@@ -950,6 +960,10 @@ export default function Game() {
       console.log(`[Game] ⏳ Starting 2s wait before showing result: ${lastResult} (froze ${playerCards.length}+${bankerCards.length} cards)`);
       showResultTimerRef.current = setTimeout(() => {
         console.log(`[Game] 🏆 Showing result overlay NOW`);
+        // TTS: announce winner
+        if (lastResult === 'player') playSound('playerWins');
+        else if (lastResult === 'banker') playSound('bankerWins');
+        else if (lastResult === 'tie') playSound('tie');
         setShowResult(true);
         showResultTimerRef.current = setTimeout(() => {
           console.log(`[Game] 🔚 Hiding result overlay after 2s display`);
@@ -963,7 +977,7 @@ export default function Game() {
         }, 2000);
       }, 2000);
     }
-  }, [lastResult, allFlipsDone]);
+  }, [lastResult, allFlipsDone, playSound]);
 
   // Use frozen data when store has been reset but we're still displaying result
   const renderPlayerCards = frozenResult !== null && playerCards.length === 0 ? frozenPlayerCards : playerCards;
