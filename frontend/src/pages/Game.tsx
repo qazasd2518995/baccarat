@@ -597,6 +597,9 @@ export default function Game() {
   const [allFlipsDone, setAllFlipsDone] = useState(false);
   const flippedCountRef = useRef(0);
   const expectedCardsRef = useRef(0);
+  // Track which individual cards have been visually revealed (for text preview)
+  const [revealedPlayerCards, setRevealedPlayerCards] = useState<Set<number>>(new Set());
+  const [revealedBankerCards, setRevealedBankerCards] = useState<Set<number>>(new Set());
 
   // When phase changes to dealing, mark that we expect animated cards
   const prevPhaseRef = useRef(phase);
@@ -614,6 +617,8 @@ export default function Game() {
       setAllFlipsDone(false);
       flippedCountRef.current = 0;
       expectedCardsRef.current = 0;
+      setRevealedPlayerCards(new Set());
+      setRevealedBankerCards(new Set());
     }
     prevPhaseRef.current = phase;
   }, [phase]);
@@ -628,10 +633,12 @@ export default function Game() {
       } else {
         // Cards appeared without a phase transition to dealing — reconnect/state restore
         setSkipCardAnim(true);
-        // Show points immediately on reconnect
+        // Show points and all card texts immediately on reconnect
         setDisplayPlayerPoints(playerPoints);
         setDisplayBankerPoints(bankerPoints);
         setAllFlipsDone(true);
+        setRevealedPlayerCards(new Set(playerCards.map((_, i) => i)));
+        setRevealedBankerCards(new Set(bankerCards.map((_, i) => i)));
       }
     }
     if (playerCards.length === 0) {
@@ -647,6 +654,8 @@ export default function Game() {
 
   // Callback when a player card flip completes
   const onPlayerCardFlipped = useCallback((cardIndex: number) => {
+    // Mark this card as visually revealed
+    setRevealedPlayerCards(prev => new Set(prev).add(cardIndex));
     // Calculate points for cards revealed so far (up to cardIndex+1)
     const revealedCards = playerCards.slice(0, cardIndex + 1);
     const pts = revealedCards.reduce((sum, c) => sum + c.value, 0) % 10;
@@ -660,6 +669,8 @@ export default function Game() {
 
   // Callback when a banker card flip completes
   const onBankerCardFlipped = useCallback((cardIndex: number) => {
+    // Mark this card as visually revealed
+    setRevealedBankerCards(prev => new Set(prev).add(cardIndex));
     const revealedCards = bankerCards.slice(0, cardIndex + 1);
     const pts = revealedCards.reduce((sum, c) => sum + c.value, 0) % 10;
     setDisplayBankerPoints(pts);
@@ -1200,10 +1211,10 @@ export default function Game() {
                         </>
                       )}
                     </div>
-                    {/* Card text preview */}
+                    {/* Card text preview — only show after each card flips */}
                     <div className="mt-3 flex gap-2 text-base font-mono text-blue-300/60">
                       {playerCards.length > 0 ? playerCards.map((c, i) => (
-                        <span key={i} className={c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}>
+                        <span key={i} className={`transition-opacity duration-300 ${revealedPlayerCards.has(i) ? 'opacity-100' : 'opacity-0'} ${c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}`}>
                           {SUIT_SYMBOLS[c.suit]}{c.rank}
                         </span>
                       )) : <span className="text-gray-600">--</span>}
@@ -1267,10 +1278,10 @@ export default function Game() {
                         </>
                       )}
                     </div>
-                    {/* Card text preview */}
+                    {/* Card text preview — only show after each card flips */}
                     <div className="mt-3 flex gap-2 text-base font-mono text-red-300/60">
                       {bankerCards.length > 0 ? bankerCards.map((c, i) => (
-                        <span key={i} className={c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}>
+                        <span key={i} className={`transition-opacity duration-300 ${revealedBankerCards.has(i) ? 'opacity-100' : 'opacity-0'} ${c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}`}>
                           {SUIT_SYMBOLS[c.suit]}{c.rank}
                         </span>
                       )) : <span className="text-gray-600">--</span>}
