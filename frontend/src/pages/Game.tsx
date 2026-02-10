@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -590,6 +590,14 @@ export default function Game() {
   const cardAreaRef = useRef<HTMLDivElement>(null);
   const expectingCardsRef = useRef(false);
 
+  // Displayed points — only update when card flip animation completes (not on socket event)
+  const [displayPlayerPoints, setDisplayPlayerPoints] = useState<number | null>(null);
+  const [displayBankerPoints, setDisplayBankerPoints] = useState<number | null>(null);
+  // Track how many cards have finished flipping for result timing
+  const [allFlipsDone, setAllFlipsDone] = useState(false);
+  const flippedCountRef = useRef(0);
+  const expectedCardsRef = useRef(0);
+
   // When phase changes to dealing, mark that we expect animated cards
   const prevPhaseRef = useRef(phase);
   useEffect(() => {
@@ -601,6 +609,11 @@ export default function Game() {
       // New round reset
       expectingCardsRef.current = false;
       setSkipCardAnim(false);
+      setDisplayPlayerPoints(null);
+      setDisplayBankerPoints(null);
+      setAllFlipsDone(false);
+      flippedCountRef.current = 0;
+      expectedCardsRef.current = 0;
     }
     prevPhaseRef.current = phase;
   }, [phase]);
@@ -615,6 +628,10 @@ export default function Game() {
       } else {
         // Cards appeared without a phase transition to dealing — reconnect/state restore
         setSkipCardAnim(true);
+        // Show points immediately on reconnect
+        setDisplayPlayerPoints(playerPoints);
+        setDisplayBankerPoints(bankerPoints);
+        setAllFlipsDone(true);
       }
     }
     if (playerCards.length === 0) {
@@ -623,19 +640,35 @@ export default function Game() {
     prevPlayerCardsLenRef.current = playerCards.length;
   }, [playerCards.length]);
 
-  // Trigger points pulse when points change
-  const prevPlayerPointsRef = useRef(playerPoints);
-  const prevBankerPointsRef = useRef(bankerPoints);
+  // Track total expected cards (player + banker) for flip completion
   useEffect(() => {
-    if (
-      (playerPoints !== null && playerPoints !== prevPlayerPointsRef.current) ||
-      (bankerPoints !== null && bankerPoints !== prevBankerPointsRef.current)
-    ) {
-      setPointsPulseKey(k => k + 1);
+    expectedCardsRef.current = playerCards.length + bankerCards.length;
+  }, [playerCards.length, bankerCards.length]);
+
+  // Callback when a player card flip completes
+  const onPlayerCardFlipped = useCallback((cardIndex: number) => {
+    // Calculate points for cards revealed so far (up to cardIndex+1)
+    const revealedCards = playerCards.slice(0, cardIndex + 1);
+    const pts = revealedCards.reduce((sum, c) => sum + c.value, 0) % 10;
+    setDisplayPlayerPoints(pts);
+    setPointsPulseKey(k => k + 1);
+    flippedCountRef.current += 1;
+    if (flippedCountRef.current >= expectedCardsRef.current) {
+      setAllFlipsDone(true);
     }
-    prevPlayerPointsRef.current = playerPoints;
-    prevBankerPointsRef.current = bankerPoints;
-  }, [playerPoints, bankerPoints]);
+  }, [playerCards]);
+
+  // Callback when a banker card flip completes
+  const onBankerCardFlipped = useCallback((cardIndex: number) => {
+    const revealedCards = bankerCards.slice(0, cardIndex + 1);
+    const pts = revealedCards.reduce((sum, c) => sum + c.value, 0) % 10;
+    setDisplayBankerPoints(pts);
+    setPointsPulseKey(k => k + 1);
+    flippedCountRef.current += 1;
+    if (flippedCountRef.current >= expectedCardsRef.current) {
+      setAllFlipsDone(true);
+    }
+  }, [bankerCards]);
 
   // Calculate totals
   const totalBet = getPendingTotal() + getConfirmedTotal();
@@ -833,22 +866,8 @@ export default function Game() {
   // Net result from last settlement
   const netResult = lastSettlement?.netResult || 0;
 
-  // Delay showing result overlay to let card animations finish
-  // When game:result arrives, the last card just landed — it still needs ~1.6s to flip
-  const [resultReady, setResultReady] = useState(false);
-  useEffect(() => {
-    if (phase === 'result' && lastResult !== null) {
-      if (skipCardAnim) {
-        // Reconnect — show immediately
-        setResultReady(true);
-        return;
-      }
-      const timer = setTimeout(() => setResultReady(true), 2000);
-      return () => clearTimeout(timer);
-    }
-    setResultReady(false);
-  }, [phase, lastResult, skipCardAnim]);
-  const showResult = resultReady;
+  // Show result only after ALL card flips complete
+  const showResult = phase === 'result' && lastResult !== null && allFlipsDone;
 
   return (
     <div className="h-screen bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
@@ -1106,8 +1125,8 @@ export default function Game() {
                       <div className="bg-blue-600 text-white px-3 py-1 rounded-l text-sm font-bold tracking-wide">
                         P {t('player').toUpperCase()}
                       </div>
-                      <div key={`pp-${pointsPulseKey}`} className={`bg-black/60 text-white px-4 py-1 rounded-r text-2xl font-bold min-w-[48px] text-center border border-blue-500/20 ${playerPoints !== null ? 'points-pulse' : ''}`}>
-                        {playerPoints ?? '-'}
+                      <div key={`pp-${pointsPulseKey}`} className={`bg-black/60 text-white px-4 py-1 rounded-r text-2xl font-bold min-w-[48px] text-center border border-blue-500/20 ${displayPlayerPoints !== null ? 'points-pulse' : ''}`}>
+                        {displayPlayerPoints ?? '-'}
                       </div>
                     </div>
                     {/* Third card — md size */}
@@ -1122,6 +1141,7 @@ export default function Game() {
                             flipDelay={0.5}
                             rotation={90}
                             skipAnimation={skipCardAnim}
+                            onFlipComplete={() => onPlayerCardFlipped(2)}
                           />
                         </div>
                       )}
@@ -1138,6 +1158,7 @@ export default function Game() {
                             flyDelay={i * 1.2}
                             flipDelay={0.5}
                             skipAnimation={skipCardAnim}
+                            onFlipComplete={() => onPlayerCardFlipped(i)}
                           />
                         ))
                       ) : (
@@ -1168,8 +1189,8 @@ export default function Game() {
                   <div className="flex flex-col items-center">
                     {/* Banker header + score */}
                     <div className="flex items-center gap-2 mb-4">
-                      <div key={`bp-${pointsPulseKey}`} className={`bg-black/60 text-white px-4 py-1 rounded-l text-2xl font-bold min-w-[48px] text-center border border-red-500/20 ${bankerPoints !== null ? 'points-pulse' : ''}`}>
-                        {bankerPoints ?? '-'}
+                      <div key={`bp-${pointsPulseKey}`} className={`bg-black/60 text-white px-4 py-1 rounded-l text-2xl font-bold min-w-[48px] text-center border border-red-500/20 ${displayBankerPoints !== null ? 'points-pulse' : ''}`}>
+                        {displayBankerPoints ?? '-'}
                       </div>
                       <div className="bg-red-600 text-white px-3 py-1 rounded-r text-sm font-bold tracking-wide">
                         {t('banker').toUpperCase()} B
@@ -1187,6 +1208,7 @@ export default function Game() {
                             flipDelay={0.5}
                             rotation={90}
                             skipAnimation={skipCardAnim}
+                            onFlipComplete={() => onBankerCardFlipped(2)}
                           />
                         </div>
                       )}
@@ -1203,6 +1225,7 @@ export default function Game() {
                             flyDelay={0.6 + i * 1.2}
                             flipDelay={0.5}
                             skipAnimation={skipCardAnim}
+                            onFlipComplete={() => onBankerCardFlipped(i)}
                           />
                         ))
                       ) : (
