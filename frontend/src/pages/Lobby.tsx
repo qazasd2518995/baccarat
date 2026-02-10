@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { leaderboardApi, tablesApi, reportApi } from '../services/api';
+import { leaderboardApi, tablesApi } from '../services/api';
 import { useLobbySocket } from '../hooks/useLobbySocket';
-import { useChatSocket } from '../hooks/useChatSocket';
 import {
   Bell,
   Settings,
@@ -12,12 +11,10 @@ import {
   Users,
   Spade,
   LayoutGrid,
-  Gift,
   Heart,
   BarChart2,
   FileText,
   HelpCircle,
-  Video,
   Maximize,
   ChevronRight,
   Globe,
@@ -25,8 +22,6 @@ import {
   RefreshCw,
   ArrowUpDown,
   Volume2,
-  Smile,
-  Send,
   LogOut,
   Menu,
   X,
@@ -119,57 +114,6 @@ export default function Lobby() {
     const interval = setInterval(fetchLeaderboard, 60000);
     return () => clearInterval(interval);
   }, [leaderboardPeriod]);
-
-  // Chat with useChatSocket hook
-  const { messages: chatMessages, loading: chatLoading, sendMessage } = useChatSocket();
-  const [chatInput, setChatInput] = useState('');
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-
-  // User's total bet amount today (for chat permission)
-  const [userTotalBet, setUserTotalBet] = useState(0);
-  const canChat = userTotalBet >= 100;
-
-  // Fetch user's today bet amount
-  useEffect(() => {
-    const fetchTodayBets = async () => {
-      try {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const res = await reportApi.getMemberReport({
-          from: today.toISOString().split('T')[0],
-          to: today.toISOString().split('T')[0],
-        });
-        setUserTotalBet(res.data?.totalBet || 0);
-      } catch (err) {
-        console.error('[Lobby] Failed to fetch today bets:', err);
-      }
-    };
-
-    fetchTodayBets();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchTodayBets, 60000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Auto-scroll chat to bottom
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [chatMessages]);
-
-  // Handle send chat
-  const handleSendChat = () => {
-    if (!chatInput.trim() || !canChat) return;
-    sendMessage(chatInput);
-    setChatInput('');
-  };
-
-  // Format chat time
-  const formatChatTime = (isoString: string) => {
-    const date = new Date(isoString);
-    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-  };
 
   // Tables state
   const [tables, setTables] = useState<Table[]>([]);
@@ -342,9 +286,6 @@ export default function Lobby() {
         <div className="hidden md:flex items-center gap-4">
           <button className="text-gray-400 hover:text-white">
             <Bell className="w-5 h-5" />
-          </button>
-          <button className="text-gray-400 hover:text-white">
-            <Gift className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
@@ -545,14 +486,6 @@ export default function Lobby() {
               ))}
             </div>
 
-            <button className="hidden lg:flex items-center gap-1.5 px-3 py-1 text-gray-500 hover:text-gray-300 text-sm">
-              <Globe className="w-4 h-4" /> {t('asia')}
-            </button>
-
-            <button className="hidden lg:flex items-center gap-1.5 px-3 py-1 text-gray-500 hover:text-gray-300 text-sm">
-              <LayoutGrid className="w-4 h-4" /> {t('multiTables')}
-            </button>
-
             <div className="hidden sm:block flex-1" />
 
             {/* View Mode Toggle */}
@@ -604,22 +537,14 @@ export default function Lobby() {
                       onClick={() => handleJoinTable(table.id, table.gameType)}
                       className="bg-[#1a1f2e] rounded-lg overflow-hidden border border-gray-800/50 hover:border-orange-500/50 cursor-pointer group transition-all"
                     >
-                      {/* Table Preview */}
-                      <div className="relative h-36 bg-gradient-to-b from-[#2d1f4e] to-[#1a1535] flex items-center justify-center overflow-hidden">
-                        {/* Background effect */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-purple-900/20 to-blue-900/20" />
-
+                      {/* Table Header */}
+                      <div className="relative h-24 bg-gradient-to-b from-[#1e2a3a] to-[#141922] flex items-center justify-center overflow-hidden">
                         {/* Good Road indicator */}
                         {table.hasGoodRoad && (
                           <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-orange-500/80 text-white text-[10px] font-bold flex items-center gap-1">
                             <span>🔥</span> {t('goodRoad')}
                           </div>
                         )}
-
-                        {/* Dealer avatar */}
-                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-pink-300 to-pink-500 flex items-center justify-center border-2 border-pink-400/50 shadow-lg">
-                          <User className="w-10 h-10 text-white" />
-                        </div>
 
                         {/* Status badge */}
                         <div className={`absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold ${
@@ -631,31 +556,31 @@ export default function Lobby() {
                            table.status === 'dealing' ? t('dealing') : t('waiting')}
                         </div>
 
-                        {/* Players count */}
+                        {/* Roadmap stats or Percentage display */}
+                        <div className="flex items-center gap-4 text-sm">
+                          {showResultsProportion ? (
+                            <>
+                              <span className="text-red-400 font-bold">{t('banker')} {percentages.banker}%</span>
+                              <span className="text-blue-400 font-bold">{t('player')} {percentages.player}%</span>
+                              <span className="text-green-400 font-bold">{t('tie')} {percentages.tie}%</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-red-400 font-bold">B{table.roadmap.banker}</span>
+                              <span className="text-blue-400 font-bold">P{table.roadmap.player}</span>
+                              <span className="text-green-400 font-bold">T{table.roadmap.tie}</span>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Bottom info */}
                         <div className="absolute bottom-2 left-2 flex items-center gap-1 text-xs text-gray-300 bg-black/40 px-2 py-0.5 rounded">
                           <Users className="w-3 h-3" />
                           <span>{table.players.toLocaleString()}</span>
                         </div>
-
-                        {/* Shoe/Round info */}
                         <div className="absolute bottom-2 right-2 text-[10px] text-gray-400 bg-black/40 px-2 py-0.5 rounded">
                           {t('shoe')} {table.shoeNumber} / {t('round')} {table.roundNumber}
                         </div>
-
-                        {/* Roadmap stats or Percentage display */}
-                        {showResultsProportion ? (
-                          <div className="absolute top-8 right-2 text-[10px] text-right bg-black/60 rounded px-2 py-1">
-                            <div className="text-red-400">{t('banker')} {percentages.banker}%</div>
-                            <div className="text-blue-400">{t('player')} {percentages.player}%</div>
-                            <div className="text-green-400">{t('tie')} {percentages.tie}%</div>
-                          </div>
-                        ) : (
-                          <div className="absolute top-8 right-2 text-[10px] text-right">
-                            <div className="text-red-400">B{table.roadmap.banker}</div>
-                            <div className="text-blue-400">P{table.roadmap.player}</div>
-                            <div className="text-green-400">T{table.roadmap.tie}</div>
-                          </div>
-                        )}
 
                         {/* Hover overlay */}
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -667,7 +592,6 @@ export default function Lobby() {
                       <div className="p-2 bg-[#141922]">
                         <div className="flex items-center justify-between mb-1">
                           <span className="font-bold text-white text-sm">{table.name}</span>
-                          <span className="text-[10px] text-gray-400">{t('dealer')}: <span className="text-gray-300">{table.dealer}</span></span>
                         </div>
 
                         {/* Roadmap preview */}
@@ -724,9 +648,6 @@ export default function Lobby() {
             >
               <HelpCircle className="w-4 h-4" /> {t('gameRules')}
             </button>
-            <button className="w-full text-left text-sm text-gray-400 flex items-center gap-2 py-2 px-3 hover:bg-gray-800/30 rounded transition-colors">
-              <Video className="w-4 h-4" /> {t('liveScene')}
-            </button>
           </div>
 
           {/* Promotion Banner */}
@@ -738,55 +659,6 @@ export default function Lobby() {
                 <div className="text-white font-bold text-sm">Epic Bonuses!</div>
               </div>
               <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-yellow-400/20 rounded-full blur-xl" />
-            </div>
-          </div>
-
-          {/* Live Chat */}
-          <div className="border-t border-gray-800/50 p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-sm font-bold text-white">{t('liveChat')}</div>
-              {!canChat && (
-                <div className="text-[10px] text-gray-500">
-                  {t('betOver100')} ({userTotalBet}/100)
-                </div>
-              )}
-            </div>
-            <div ref={chatContainerRef} className="space-y-2 text-xs max-h-32 overflow-y-auto">
-              {chatLoading ? (
-                <div className="text-center text-gray-500">{t('loading')}...</div>
-              ) : chatMessages.length === 0 ? (
-                <div className="text-center text-gray-500">{t('noData')}</div>
-              ) : (
-                chatMessages.slice(-10).map((msg) => (
-                  <div key={msg.id} className="flex gap-2">
-                    <span className="text-pink-400 shrink-0">{msg.username}</span>
-                    <span className="text-gray-300 truncate flex-1">{msg.message}</span>
-                    <span className="text-gray-500 shrink-0">{formatChatTime(msg.createdAt)}</span>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="mt-2 flex items-center gap-2">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
-                placeholder={canChat ? t('typeMessage') : t('betOver100')}
-                className={`flex-1 bg-[#1e2a3a] text-white text-xs px-3 py-2 rounded outline-none ${
-                  !canChat ? 'opacity-50 cursor-not-allowed' : 'focus:ring-1 focus:ring-yellow-500/50'
-                }`}
-                disabled={!canChat}
-              />
-              <button className="text-gray-500 hover:text-gray-300"><Gift className="w-4 h-4" /></button>
-              <button className="text-gray-500 hover:text-gray-300"><Smile className="w-4 h-4" /></button>
-              <button
-                onClick={handleSendChat}
-                disabled={!canChat || !chatInput.trim()}
-                className={`${canChat && chatInput.trim() ? 'text-yellow-400 hover:text-yellow-300' : 'text-gray-600 cursor-not-allowed'}`}
-              >
-                <Send className="w-4 h-4" />
-              </button>
             </div>
           </div>
         </div>
