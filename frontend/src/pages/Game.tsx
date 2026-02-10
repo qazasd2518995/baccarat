@@ -652,6 +652,20 @@ export default function Game() {
     expectedCardsRef.current = playerCards.length + bankerCards.length;
   }, [playerCards.length, bankerCards.length]);
 
+  // Check if all flips are truly done (all cards dealt AND all flipped)
+  const checkAllFlipsDone = useCallback(() => {
+    if (lastResult !== null && flippedCountRef.current >= expectedCardsRef.current) {
+      setAllFlipsDone(true);
+    }
+  }, [lastResult]);
+
+  // When lastResult arrives (server done sending cards), re-check flip completion
+  useEffect(() => {
+    if (lastResult !== null) {
+      checkAllFlipsDone();
+    }
+  }, [lastResult, checkAllFlipsDone]);
+
   // Callback when a player card flip completes
   const onPlayerCardFlipped = useCallback((cardIndex: number) => {
     // Mark this card as visually revealed
@@ -662,10 +676,8 @@ export default function Game() {
     setDisplayPlayerPoints(pts);
     setPointsPulseKey(k => k + 1);
     flippedCountRef.current += 1;
-    if (flippedCountRef.current >= expectedCardsRef.current) {
-      setAllFlipsDone(true);
-    }
-  }, [playerCards]);
+    checkAllFlipsDone();
+  }, [playerCards, checkAllFlipsDone]);
 
   // Callback when a banker card flip completes
   const onBankerCardFlipped = useCallback((cardIndex: number) => {
@@ -676,10 +688,8 @@ export default function Game() {
     setDisplayBankerPoints(pts);
     setPointsPulseKey(k => k + 1);
     flippedCountRef.current += 1;
-    if (flippedCountRef.current >= expectedCardsRef.current) {
-      setAllFlipsDone(true);
-    }
-  }, [bankerCards]);
+    checkAllFlipsDone();
+  }, [bankerCards, checkAllFlipsDone]);
 
   // Calculate totals
   const totalBet = getPendingTotal() + getConfirmedTotal();
@@ -888,13 +898,14 @@ export default function Game() {
 
   useEffect(() => {
     if (lastResult !== null && allFlipsDone && !resultShownRef.current) {
-      // All flips done — show result now, mark as shown for this round
       resultShownRef.current = true;
-      setShowResult(true);
-      // Guarantee exactly 3 seconds visible — NOT cancelled by phase changes
+      // Wait 2 seconds after all flips complete, then show result for 2 seconds
       showResultTimerRef.current = setTimeout(() => {
-        setShowResult(false);
-      }, 3000);
+        setShowResult(true);
+        showResultTimerRef.current = setTimeout(() => {
+          setShowResult(false);
+        }, 2000);
+      }, 2000);
     }
   }, [lastResult, allFlipsDone]);
 
