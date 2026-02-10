@@ -601,6 +601,23 @@ export default function Game() {
   const [revealedPlayerCards, setRevealedPlayerCards] = useState<Set<number>>(new Set());
   const [revealedBankerCards, setRevealedBankerCards] = useState<Set<number>>(new Set());
 
+  // Deferred reset: when betting phase arrives but result display is pending/showing, delay the reset
+  const pendingResetRef = useRef(false);
+
+  const doRoundReset = useCallback(() => {
+    console.log('[Game] 🧹 Executing round reset NOW');
+    pendingResetRef.current = false;
+    expectingCardsRef.current = false;
+    setSkipCardAnim(false);
+    setDisplayPlayerPoints(null);
+    setDisplayBankerPoints(null);
+    setAllFlipsDone(false);
+    flippedCountRef.current = 0;
+    expectedCardsRef.current = 0;
+    setRevealedPlayerCards(new Set());
+    setRevealedBankerCards(new Set());
+  }, []);
+
   // When phase changes to dealing, mark that we expect animated cards
   const prevPhaseRef = useRef(phase);
   useEffect(() => {
@@ -610,19 +627,17 @@ export default function Game() {
       console.log('[Game] Phase→dealing: expecting animated cards');
     }
     if (phase === 'betting') {
-      console.log('[Game] Phase→betting: resetting round state');
-      expectingCardsRef.current = false;
-      setSkipCardAnim(false);
-      setDisplayPlayerPoints(null);
-      setDisplayBankerPoints(null);
-      setAllFlipsDone(false);
-      flippedCountRef.current = 0;
-      expectedCardsRef.current = 0;
-      setRevealedPlayerCards(new Set());
-      setRevealedBankerCards(new Set());
+      // If result timer is running (resultShownRef=true means timer started), defer the reset
+      if (resultShownRef.current) {
+        console.log('[Game] Phase→betting: result still displaying, deferring reset');
+        pendingResetRef.current = true;
+      } else {
+        console.log('[Game] Phase→betting: resetting round state');
+        doRoundReset();
+      }
     }
     prevPhaseRef.current = phase;
-  }, [phase]);
+  }, [phase, doRoundReset]);
 
   // When cards appear, decide whether to animate
   const prevPlayerCardsLenRef = useRef(playerCards.length);
@@ -890,9 +905,6 @@ export default function Game() {
     }
   };
 
-  // Net result from last settlement
-  const netResult = lastSettlement?.netResult || 0;
-
   // Show result for exactly 3 seconds after all card flips complete.
   // Problem: result phase (5s) starts on the server when game:result is sent,
   // but card animations eat most of that time. Then when phase becomes 'betting',
@@ -902,15 +914,26 @@ export default function Game() {
   const showResultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resultShownRef = useRef(false); // prevent re-triggering within same round
 
-  // Hold a snapshot of the result so it survives resetForNewRound clearing lastResult
+  // Hold a snapshot of the entire display so it survives resetForNewRound clearing store data
   const [frozenResult, setFrozenResult] = useState<string | null>(null);
+  const [frozenNetResult, setFrozenNetResult] = useState<number>(0);
+  const [frozenPlayerCards, setFrozenPlayerCards] = useState<typeof playerCards>([]);
+  const [frozenBankerCards, setFrozenBankerCards] = useState<typeof bankerCards>([]);
+  const [frozenPlayerPoints, setFrozenPlayerPoints] = useState<number | null>(null);
+  const [frozenBankerPoints, setFrozenBankerPoints] = useState<number | null>(null);
 
   useEffect(() => {
     console.log(`[Game] Result display check: lastResult=${lastResult} allFlipsDone=${allFlipsDone} resultShown=${resultShownRef.current} showResult=${showResult}`);
     if (lastResult !== null && allFlipsDone && !resultShownRef.current) {
       resultShownRef.current = true;
+      // Freeze all display data before store gets reset
       setFrozenResult(lastResult);
-      console.log(`[Game] ⏳ Starting 2s wait before showing result: ${lastResult}`);
+      setFrozenNetResult(lastSettlement?.netResult || 0);
+      setFrozenPlayerCards([...playerCards]);
+      setFrozenBankerCards([...bankerCards]);
+      setFrozenPlayerPoints(displayPlayerPoints);
+      setFrozenBankerPoints(displayBankerPoints);
+      console.log(`[Game] ⏳ Starting 2s wait before showing result: ${lastResult} (froze ${playerCards.length}+${bankerCards.length} cards)`);
       showResultTimerRef.current = setTimeout(() => {
         console.log(`[Game] 🏆 Showing result overlay NOW`);
         setShowResult(true);
@@ -918,18 +941,35 @@ export default function Game() {
           console.log(`[Game] 🔚 Hiding result overlay after 2s display`);
           setShowResult(false);
           setFrozenResult(null);
+          setFrozenNetResult(0);
+          setFrozenPlayerCards([]);
+          setFrozenBankerCards([]);
+          setFrozenPlayerPoints(null);
+          setFrozenBankerPoints(null);
         }, 2000);
       }, 2000);
     }
   }, [lastResult, allFlipsDone]);
 
-  // Reset the "shown" flag only when frozenResult is cleared (result display fully complete)
+  // Use frozen data when store has been reset but we're still displaying result
+  const renderPlayerCards = frozenResult !== null && playerCards.length === 0 ? frozenPlayerCards : playerCards;
+  const renderBankerCards = frozenResult !== null && bankerCards.length === 0 ? frozenBankerCards : bankerCards;
+  const renderPlayerPoints = frozenResult !== null && displayPlayerPoints === null ? frozenPlayerPoints : displayPlayerPoints;
+  const renderBankerPoints = frozenResult !== null && displayBankerPoints === null ? frozenBankerPoints : displayBankerPoints;
+
+  // When frozenResult clears (result display fully done), reset flags and execute deferred reset
   useEffect(() => {
-    if (playerCards.length === 0 && bankerCards.length === 0 && frozenResult === null) {
-      console.log('[Game] 🔄 resultShownRef reset (cards cleared + frozenResult null)');
-      resultShownRef.current = false;
+    if (frozenResult === null && !showResult) {
+      if (resultShownRef.current) {
+        console.log('[Game] 🔄 resultShownRef reset (frozenResult null)');
+        resultShownRef.current = false;
+      }
+      if (pendingResetRef.current) {
+        console.log('[Game] 🔄 Executing deferred round reset');
+        doRoundReset();
+      }
     }
-  }, [playerCards.length, bankerCards.length, frozenResult]);
+  }, [frozenResult, showResult, doRoundReset]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -1194,16 +1234,16 @@ export default function Game() {
                       <div className="bg-blue-600 text-white px-5 py-2 rounded-l text-xl font-bold tracking-wide">
                         P {t('player').toUpperCase()}
                       </div>
-                      <div key={`pp-${pointsPulseKey}`} className={`bg-black/60 text-white px-6 py-2 rounded-r text-5xl font-bold min-w-[80px] text-center border border-blue-500/20 ${displayPlayerPoints !== null ? 'points-pulse' : ''}`}>
-                        {displayPlayerPoints ?? '-'}
+                      <div key={`pp-${pointsPulseKey}`} className={`bg-black/60 text-white px-6 py-2 rounded-r text-5xl font-bold min-w-[80px] text-center border border-blue-500/20 ${renderPlayerPoints !== null ? 'points-pulse' : ''}`}>
+                        {renderPlayerPoints ?? '-'}
                       </div>
                     </div>
                     {/* Third card — same xxl size, rotated 90°, enough height for rotated card */}
                     <div style={{ height: 175 }}>
-                      {playerCards.length > 2 && (
+                      {renderPlayerCards.length > 2 && (
                         <div className="mb-3">
                           <AnimatedPlayingCard
-                            card={playerCards[2]}
+                            card={renderPlayerCards[2]}
                             size="xxl"
                             flyFrom={{ x: 0, y: -350 }}
                             flyDelay={3.5}
@@ -1217,8 +1257,8 @@ export default function Game() {
                     </div>
                     {/* First two cards — xxl size */}
                     <div className="flex gap-3">
-                      {playerCards.length > 0 ? (
-                        playerCards.slice(0, 2).map((card, i) => (
+                      {renderPlayerCards.length > 0 ? (
+                        renderPlayerCards.slice(0, 2).map((card, i) => (
                           <AnimatedPlayingCard
                             key={`player-${i}-${card.rank}-${card.suit}`}
                             card={card}
@@ -1239,7 +1279,7 @@ export default function Game() {
                     </div>
                     {/* Card text preview — only show after each card flips */}
                     <div className="mt-3 flex gap-2 text-base font-mono text-blue-300/60">
-                      {playerCards.length > 0 ? playerCards.map((c, i) => (
+                      {renderPlayerCards.length > 0 ? renderPlayerCards.map((c, i) => (
                         <span key={i} className={`transition-opacity duration-300 ${revealedPlayerCards.has(i) ? 'opacity-100' : 'opacity-0'} ${c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}`}>
                           {SUIT_SYMBOLS[c.suit]}{c.rank}
                         </span>
@@ -1258,8 +1298,8 @@ export default function Game() {
                   <div className="flex flex-col items-center">
                     {/* Banker header + score */}
                     <div className="flex items-center gap-3 mb-4">
-                      <div key={`bp-${pointsPulseKey}`} className={`bg-black/60 text-white px-6 py-2 rounded-l text-5xl font-bold min-w-[80px] text-center border border-red-500/20 ${displayBankerPoints !== null ? 'points-pulse' : ''}`}>
-                        {displayBankerPoints ?? '-'}
+                      <div key={`bp-${pointsPulseKey}`} className={`bg-black/60 text-white px-6 py-2 rounded-l text-5xl font-bold min-w-[80px] text-center border border-red-500/20 ${renderBankerPoints !== null ? 'points-pulse' : ''}`}>
+                        {renderBankerPoints ?? '-'}
                       </div>
                       <div className="bg-red-600 text-white px-5 py-2 rounded-r text-xl font-bold tracking-wide">
                         {t('banker').toUpperCase()} B
@@ -1267,10 +1307,10 @@ export default function Game() {
                     </div>
                     {/* Third card — same xxl size, rotated 90° */}
                     <div style={{ height: 175 }}>
-                      {bankerCards.length > 2 && (
+                      {renderBankerCards.length > 2 && (
                         <div className="mb-3">
                           <AnimatedPlayingCard
-                            card={bankerCards[2]}
+                            card={renderBankerCards[2]}
                             size="xxl"
                             flyFrom={{ x: 0, y: -350 }}
                             flyDelay={4.5}
@@ -1284,8 +1324,8 @@ export default function Game() {
                     </div>
                     {/* First two cards — xxl size */}
                     <div className="flex gap-3">
-                      {bankerCards.length > 0 ? (
-                        bankerCards.slice(0, 2).map((card, i) => (
+                      {renderBankerCards.length > 0 ? (
+                        renderBankerCards.slice(0, 2).map((card, i) => (
                           <AnimatedPlayingCard
                             key={`banker-${i}-${card.rank}-${card.suit}`}
                             card={card}
@@ -1306,7 +1346,7 @@ export default function Game() {
                     </div>
                     {/* Card text preview — only show after each card flips */}
                     <div className="mt-3 flex gap-2 text-base font-mono text-red-300/60">
-                      {bankerCards.length > 0 ? bankerCards.map((c, i) => (
+                      {renderBankerCards.length > 0 ? renderBankerCards.map((c, i) => (
                         <span key={i} className={`transition-opacity duration-300 ${revealedBankerCards.has(i) ? 'opacity-100' : 'opacity-0'} ${c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}`}>
                           {SUIT_SYMBOLS[c.suit]}{c.rank}
                         </span>
@@ -1333,9 +1373,9 @@ export default function Game() {
                           {frozenResult === 'player' ? t('playerWins') :
                            frozenResult === 'banker' ? t('bankerWins') : t('tieResult')}
                         </div>
-                        {lastSettlement && netResult !== 0 && (
-                          <div className={`text-xl sm:text-2xl font-bold ${netResult > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {netResult > 0 ? '+' : ''}{netResult.toLocaleString()}
+                        {frozenNetResult !== 0 && (
+                          <div className={`text-xl sm:text-2xl font-bold ${frozenNetResult > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {frozenNetResult > 0 ? '+' : ''}{frozenNetResult.toLocaleString()}
                           </div>
                         )}
                       </div>
