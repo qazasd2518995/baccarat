@@ -335,16 +335,8 @@ export default function Lobby() {
           </div>
         </div>
 
-        {/* Center - Balance & Deposit */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-teal-500 flex items-center justify-center text-[10px] sm:text-xs font-bold">T</div>
-            <span className="text-green-400 font-bold text-sm sm:text-base">{Number(user?.balance || 10000).toLocaleString()}</span>
-          </div>
-          <button className="bg-green-500 hover:bg-green-400 text-white px-2 sm:px-4 py-1 rounded text-xs sm:text-sm font-bold transition">
-            {t('deposit')}
-          </button>
-        </div>
+        {/* Center spacer */}
+        <div />
 
         {/* Right - User Info (desktop) */}
         <div className="hidden md:flex items-center gap-4">
