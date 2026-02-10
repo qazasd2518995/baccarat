@@ -58,7 +58,7 @@ import king_of_spades from '../../assets/cards/king_of_spades.svg';
 interface PlayingCardProps {
   card: Card;
   faceDown?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 }
 
 type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
@@ -68,6 +68,8 @@ export const SIZES = {
   sm: { width: 50, height: 70 },
   md: { width: 65, height: 91 },
   lg: { width: 80, height: 112 },
+  xl: { width: 120, height: 168 },
+  xxl: { width: 160, height: 224 },
 };
 
 // Card image mapping
