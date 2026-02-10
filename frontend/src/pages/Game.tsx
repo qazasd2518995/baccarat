@@ -1142,7 +1142,7 @@ export default function Game() {
                   {/* ——— PLAYER ZONE ——— */}
                   <div className="flex flex-col items-center">
                     {/* Player header + score */}
-                    <div className="flex items-center gap-3 mb-5">
+                    <div className="flex items-center gap-3 mb-4">
                       <div className="bg-blue-600 text-white px-5 py-2 rounded-l text-xl font-bold tracking-wide">
                         P {t('player').toUpperCase()}
                       </div>
@@ -1150,14 +1150,14 @@ export default function Game() {
                         {displayPlayerPoints ?? '-'}
                       </div>
                     </div>
-                    {/* Third card — xl size */}
-                    <div className="h-[130px]">
+                    {/* Third card — same xxl size, rotated 90°, enough height for rotated card */}
+                    <div style={{ height: 175 }}>
                       {playerCards.length > 2 && (
-                        <div className="mb-2">
+                        <div className="mb-3">
                           <AnimatedPlayingCard
                             card={playerCards[2]}
-                            size="xl"
-                            flyFrom={{ x: 0, y: -300 }}
+                            size="xxl"
+                            flyFrom={{ x: 0, y: -350 }}
                             flyDelay={3.5}
                             flipDelay={0.5}
                             rotation={90}
@@ -1209,7 +1209,7 @@ export default function Game() {
                   {/* ——— BANKER ZONE ——— */}
                   <div className="flex flex-col items-center">
                     {/* Banker header + score */}
-                    <div className="flex items-center gap-3 mb-5">
+                    <div className="flex items-center gap-3 mb-4">
                       <div key={`bp-${pointsPulseKey}`} className={`bg-black/60 text-white px-6 py-2 rounded-l text-5xl font-bold min-w-[80px] text-center border border-red-500/20 ${displayBankerPoints !== null ? 'points-pulse' : ''}`}>
                         {displayBankerPoints ?? '-'}
                       </div>
@@ -1217,14 +1217,14 @@ export default function Game() {
                         {t('banker').toUpperCase()} B
                       </div>
                     </div>
-                    {/* Third card — xl size */}
-                    <div className="h-[130px]">
+                    {/* Third card — same xxl size, rotated 90° */}
+                    <div style={{ height: 175 }}>
                       {bankerCards.length > 2 && (
-                        <div className="mb-2">
+                        <div className="mb-3">
                           <AnimatedPlayingCard
                             card={bankerCards[2]}
-                            size="xl"
-                            flyFrom={{ x: 0, y: -300 }}
+                            size="xxl"
+                            flyFrom={{ x: 0, y: -350 }}
                             flyDelay={4.5}
                             flipDelay={0.5}
                             rotation={90}
