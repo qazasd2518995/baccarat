@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -106,8 +106,8 @@ export default function Lobby() {
   const [tables, setTables] = useState<Table[]>([]);
   const [_tablesLoading, setTablesLoading] = useState(true);
 
-  // Real-time table update handler
-  const handleTableUpdate = useCallback((update: {
+  // Batch socket updates to avoid 30+ setTables calls per second
+  type TableUpdatePayload = {
     tableId: string;
     phase: 'betting' | 'sealed' | 'dealing' | 'result';
     timeRemaining: number;
@@ -121,10 +121,21 @@ export default function Lobby() {
       bankerPair: boolean;
     };
     roadmap: { banker: number; player: number; tie: number };
-  }) => {
+  };
+  const pendingUpdatesRef = useRef<Map<string, TableUpdatePayload>>(new Map());
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushUpdates = useCallback(() => {
+    flushTimerRef.current = null;
+    const updates = pendingUpdatesRef.current;
+    if (updates.size === 0) return;
+    const batch = new Map(updates);
+    updates.clear();
+
     setTables(prevTables =>
       prevTables.map(table => {
-        if (table.id !== update.tableId) return table;
+        const update = batch.get(table.id);
+        if (!update) return table;
 
         // Map phase to status
         let status: 'betting' | 'dealing' | 'waiting' = 'waiting';
@@ -171,6 +182,21 @@ export default function Lobby() {
         };
       })
     );
+  }, []);
+
+  // Real-time table update handler — accumulates into batch, flushes every 1s
+  const handleTableUpdate = useCallback((update: TableUpdatePayload) => {
+    pendingUpdatesRef.current.set(update.tableId, update);
+    if (!flushTimerRef.current) {
+      flushTimerRef.current = setTimeout(flushUpdates, 1000);
+    }
+  }, [flushUpdates]);
+
+  // Clean up flush timer on unmount
+  useEffect(() => {
+    return () => {
+      if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
+    };
   }, []);
 
   // Connect to lobby socket for real-time updates
@@ -224,11 +250,20 @@ export default function Lobby() {
             bankerPair: r.bankerPair ?? false,
           })),
         }));
-        setTables(mappedTables);
+        // Merge with existing state: keep existing roadHistory if API returns empty
+        setTables(prevTables => {
+          if (prevTables.length === 0) return mappedTables;
+          const prevMap = new Map(prevTables.map(t => [t.id, t]));
+          return mappedTables.map(t => {
+            const prev = prevMap.get(t.id);
+            if (prev && t.roadHistory.length === 0 && prev.roadHistory.length > 0) {
+              return { ...t, roadHistory: prev.roadHistory };
+            }
+            return t;
+          });
+        });
       } catch (err) {
         console.error('[Lobby] Failed to fetch tables:', err);
-        // Show empty state when API fails
-        setTables([]);
       } finally {
         setTablesLoading(false);
       }
