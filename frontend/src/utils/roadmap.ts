@@ -87,6 +87,12 @@ export function buildBigRoadGrid(columns: BigRoadCell[][], rows: number, maxCols
 }
 
 // Build derived road using Big Road column structure analysis (2D grid)
+// Derived road rules (Big Eye Boy offset=1, Small Road offset=2, Cockroach Pig offset=3):
+//   New column (i=0): compare columns[colIdx-1].length vs columns[colIdx-1-offset].length
+//     Same depth → red (pattern), different → blue (chaos)
+//   Continuing (i>0): at depth i in compare column (colIdx-offset):
+//     Both (i) and (i-1) same status (both exist or both empty) → red
+//     Different → blue. Equivalently: compareColLen === i → blue, else → red
 export function buildDerivedRoad(columns: BigRoadCell[][], offset: number, maxRows: number = 6, maxCols: number = 20): ('red' | 'blue' | null)[][] {
   const grid: ('red' | 'blue' | null)[][] = Array(maxRows).fill(null).map(() => Array(maxCols).fill(null));
 
@@ -103,13 +109,17 @@ export function buildDerivedRoad(columns: BigRoadCell[][], offset: number, maxRo
     for (let i = 0; i < currColLen; i++) {
       if (colIdx === offset && i === 0) continue;
 
-      const depthSoFar = i + 1;
-
       let color: 'red' | 'blue';
-      if (depthSoFar === 1) {
-        color = compareColLen === 1 ? 'red' : 'blue';
+      if (i === 0) {
+        // New column: compare previous column depth with the column (offset) before it
+        const prevColLen = columns[colIdx - 1].length;
+        const refColIdx = colIdx - 1 - offset;
+        const refColLen = refColIdx >= 0 ? columns[refColIdx].length : 0;
+        color = prevColLen === refColLen ? 'red' : 'blue';
       } else {
-        color = depthSoFar <= compareColLen ? 'red' : 'blue';
+        // Continuing: check cells at depth i and i-1 in the compare column
+        // Both exist or both absent → red (pattern); one exists one absent → blue
+        color = compareColLen === i ? 'blue' : 'red';
       }
 
       if (lastColor !== null && color !== lastColor) {
@@ -142,12 +152,14 @@ export function buildDerivedRoadFlat(columns: BigRoadCell[][], offset: number): 
     const compareColLen = columns[colIdx - offset].length;
     for (let i = 0; i < currColLen; i++) {
       if (colIdx === offset && i === 0) continue;
-      const depthSoFar = i + 1;
       let color: 'red' | 'blue';
-      if (depthSoFar === 1) {
-        color = compareColLen === 1 ? 'red' : 'blue';
+      if (i === 0) {
+        const prevColLen = columns[colIdx - 1].length;
+        const refColIdx = colIdx - 1 - offset;
+        const refColLen = refColIdx >= 0 ? columns[refColIdx].length : 0;
+        color = prevColLen === refColLen ? 'red' : 'blue';
       } else {
-        color = depthSoFar <= compareColLen ? 'red' : 'blue';
+        color = compareColLen === i ? 'blue' : 'red';
       }
       results.push(color);
     }
