@@ -648,7 +648,7 @@ export default function Lobby() {
                         </div>
 
                         {/* Roadmap grids */}
-                        <div className="flex-1 min-w-0 overflow-hidden p-0.5">
+                        <div className="flex-1 min-w-0 overflow-hidden">
                           <LobbyRoadmap roadHistory={table.roadHistory} />
                         </div>
 
