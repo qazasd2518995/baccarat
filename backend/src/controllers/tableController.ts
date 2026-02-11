@@ -57,14 +57,27 @@ export async function getTables(req: Request, res: Response) {
       }
 
       if (cached.length > 0) {
-        roadHistoryMap.set(table.id, cached.map((r: any) => ({
-          roundNumber: r.roundNumber,
-          result: table.gameType === 'dragonTiger'
-            ? (r.result === 'dragon' ? 'banker' : r.result === 'tiger' ? 'player' : (r.result === 'dt_tie' ? 'tie' : r.result))
-            : (r.result || 'tie'),
-          playerPair: r.playerPair ?? false,
-          bankerPair: r.bankerPair ?? false,
-        })));
+        roadHistoryMap.set(table.id, cached.map((r: any) => {
+          let result: string;
+          if (table.gameType === 'dragonTiger') {
+            result = r.result === 'dragon' ? 'banker' : r.result === 'tiger' ? 'player' : (r.result === 'dt_tie' ? 'tie' : r.result);
+          } else if (table.gameType === 'bullBull') {
+            // Bull Bull cache has player1Result/player2Result/player3Result instead of result
+            let bankerWins = 0;
+            if (r.player1Result === 'lose') bankerWins++;
+            if (r.player2Result === 'lose') bankerWins++;
+            if (r.player3Result === 'lose') bankerWins++;
+            result = bankerWins >= 2 ? 'banker' : 'player';
+          } else {
+            result = r.result || 'tie';
+          }
+          return {
+            roundNumber: r.roundNumber,
+            result,
+            playerPair: r.playerPair ?? false,
+            bankerPair: r.bankerPair ?? false,
+          };
+        }));
       }
     }
 
@@ -120,6 +133,40 @@ export async function getTables(req: Request, res: Response) {
           existing.push({
             roundNumber: round.roundNumber,
             result: mappedResult,
+            playerPair: false,
+            bankerPair: false,
+          });
+          roadHistoryMap.set(round.tableId, existing);
+        }
+      }
+
+      // Also try BullBull rounds for uncached BB tables
+      const uncachedBBIds = uncachedTableIds.filter((id) =>
+        tables.find((t) => t.id === id)?.gameType === 'bullBull'
+      );
+      if (uncachedBBIds.length > 0) {
+        const bbRounds = await prisma.bullBullRound.findMany({
+          where: { tableId: { in: uncachedBBIds } },
+          orderBy: { createdAt: 'asc' },
+          select: {
+            tableId: true,
+            roundNumber: true,
+            player1Result: true,
+            player2Result: true,
+            player3Result: true,
+          },
+          take: uncachedBBIds.length * 100,
+        });
+        for (const round of bbRounds) {
+          if (!round.tableId) continue;
+          const existing = roadHistoryMap.get(round.tableId) || [];
+          let bankerWins = 0;
+          if (round.player1Result === 'lose') bankerWins++;
+          if (round.player2Result === 'lose') bankerWins++;
+          if (round.player3Result === 'lose') bankerWins++;
+          existing.push({
+            roundNumber: round.roundNumber,
+            result: bankerWins >= 2 ? 'banker' : 'player',
             playerPair: false,
             bankerPair: false,
           });
