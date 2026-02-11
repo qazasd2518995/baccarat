@@ -158,7 +158,25 @@ export async function startDTTableLoop(io: TypedServer, tableId: string, startDe
 
   // Preload roadmap cache from DB
   state.cachedRoadmap = await getDTTableRecentRounds(tableId, 100);
-  console.log(`[DT Table ${tableId}] Shoe ready with ${state.cardsRemaining} cards, roadmap cached (${state.cachedRoadmap.length} rounds)`);
+
+  // Recalculate stats from current shoe's actual rounds and sync to DB
+  // DT results: dragon → banker, tiger → player, dt_tie/tie → tie
+  const shoeRounds = state.cachedRoadmap;
+  const bankerWins = shoeRounds.filter(r => r.result === 'dragon').length;
+  const playerWins = shoeRounds.filter(r => r.result === 'tiger').length;
+  const tieCount = shoeRounds.filter(r => r.result === 'dt_tie' || r.result === 'tie').length;
+  state.roundNumber = shoeRounds.length;
+  await prisma.gameTable.update({
+    where: { id: tableId },
+    data: {
+      shoeNumber: state.shoeNumber,
+      roundNumber: state.roundNumber,
+      bankerWins,
+      playerWins,
+      tieCount,
+    },
+  });
+  console.log(`[DT Table ${tableId}] Shoe ready with ${state.cardsRemaining} cards, roadmap cached (${shoeRounds.length} rounds), stats synced: D${bankerWins} T${playerWins} Tie${tieCount}`);
 
   runTablePhase(io, tableId, 'betting');
 }

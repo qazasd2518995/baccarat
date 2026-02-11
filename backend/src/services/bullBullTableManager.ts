@@ -159,7 +159,29 @@ export async function startBBTableLoop(io: TypedServer, tableId: string, startDe
 
   // Preload roadmap cache from DB
   state.cachedRoadmap = await getBBTableRecentRounds(tableId, 100);
-  console.log(`[BB Table ${tableId}] Shoe ready with ${state.cardsRemaining} cards, roadmap cached (${state.cachedRoadmap.length} rounds)`);
+
+  // Recalculate stats from current shoe's actual rounds and sync to DB
+  const shoeRounds = state.cachedRoadmap;
+  let bankerWins = 0, playerWins = 0;
+  for (const r of shoeRounds) {
+    let bWins = 0;
+    if (r.player1Result === 'lose') bWins++;
+    if (r.player2Result === 'lose') bWins++;
+    if (r.player3Result === 'lose') bWins++;
+    if (bWins >= 2) bankerWins++; else playerWins++;
+  }
+  state.roundNumber = shoeRounds.length;
+  await prisma.gameTable.update({
+    where: { id: tableId },
+    data: {
+      shoeNumber: state.shoeNumber,
+      roundNumber: state.roundNumber,
+      bankerWins,
+      playerWins,
+      tieCount: 0,
+    },
+  });
+  console.log(`[BB Table ${tableId}] Shoe ready with ${state.cardsRemaining} cards, roadmap cached (${shoeRounds.length} rounds), stats synced: B${bankerWins} P${playerWins}`);
 
   runTablePhase(io, tableId, 'betting');
 }
