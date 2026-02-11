@@ -123,6 +123,12 @@ export interface TableUpdateEvent {
   roundNumber: number;
   shoeNumber: number;
   lastResult?: GameResult;
+  lastRoundEntry?: {
+    roundNumber: number;
+    result: string;
+    playerPair: boolean;
+    bankerPair: boolean;
+  };
   roadmap: {
     banker: number;
     player: number;

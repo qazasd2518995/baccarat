@@ -565,13 +565,20 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
       });
 
       // Broadcast table update to lobby
+      const bbResult = bankerWinCount >= 2 ? 'banker' : 'player';
       io.to('lobby').emit('lobby:tableUpdate', {
         tableId: updatedTable.id,
         phase: 'result',
         timeRemaining: Math.floor(duration / 1000),
         roundNumber: updatedTable.roundNumber,
         shoeNumber: updatedTable.shoeNumber,
-        lastResult: bankerWinCount >= 2 ? 'banker' : 'player',
+        lastResult: bbResult,
+        lastRoundEntry: {
+          roundNumber: round.roundNumber,
+          result: bbResult,
+          playerPair: false,
+          bankerPair: false,
+        },
         roadmap: {
           banker: updatedTable.bankerWins,
           player: updatedTable.playerWins,

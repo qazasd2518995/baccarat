@@ -522,13 +522,20 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
       });
 
       // Broadcast table update to lobby
+      const mappedResult = round.result === 'dragon' ? 'banker' : round.result === 'tiger' ? 'player' : 'tie';
       io.to('lobby').emit('lobby:tableUpdate', {
         tableId: updatedTable.id,
         phase: 'result',
         timeRemaining: Math.floor(duration / 1000),
         roundNumber: updatedTable.roundNumber,
         shoeNumber: updatedTable.shoeNumber,
-        lastResult: round.result === 'dragon' ? 'banker' : round.result === 'tiger' ? 'player' : 'tie',
+        lastResult: mappedResult,
+        lastRoundEntry: {
+          roundNumber: round.roundNumber,
+          result: mappedResult,
+          playerPair: false,
+          bankerPair: false,
+        },
         roadmap: {
           banker: updatedTable.bankerWins,
           player: updatedTable.playerWins,

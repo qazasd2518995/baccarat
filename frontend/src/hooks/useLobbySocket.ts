@@ -13,6 +13,12 @@ interface TableUpdate {
   roundNumber: number;
   shoeNumber: number;
   lastResult?: 'player' | 'banker' | 'tie';
+  lastRoundEntry?: {
+    roundNumber: number;
+    result: string;
+    playerPair: boolean;
+    bankerPair: boolean;
+  };
   roadmap: {
     banker: number;
     player: number;
@@ -45,6 +51,7 @@ export function useLobbySocket(onTableUpdate: (update: TableUpdate) => void) {
         roundNumber: data.roundNumber,
         shoeNumber: data.shoeNumber,
         lastResult: data.lastResult,
+        lastRoundEntry: data.lastRoundEntry,
         roadmap: data.roadmap,
       });
     };

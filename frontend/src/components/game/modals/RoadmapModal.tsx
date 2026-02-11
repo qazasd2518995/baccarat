@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import type { GameResult } from '../../../types';
+import { buildBigRoadColumns, buildBigRoadGrid, buildDerivedRoadFlat } from '../../../utils/roadmap';
 
 type RoadmapEntry = {
   roundNumber: number;
@@ -21,77 +22,6 @@ interface RoadmapModalProps {
 }
 
 type RoadType = 'bead' | 'big' | 'bigEye' | 'small' | 'cockroach';
-
-interface BigRoadCell {
-  result: 'player' | 'banker';
-  tieCount: number;
-  playerPair: boolean;
-  bankerPair: boolean;
-}
-
-function buildBigRoadColumns(data: RoadmapEntry[]): BigRoadCell[][] {
-  const columns: BigRoadCell[][] = [];
-  let currentCol: BigRoadCell[] = [];
-  let lastResult: 'player' | 'banker' | null = null;
-
-  for (const round of data) {
-    if (round.result === 'tie') {
-      if (currentCol.length > 0) {
-        currentCol[currentCol.length - 1].tieCount++;
-      } else if (columns.length > 0) {
-        const prevCol = columns[columns.length - 1];
-        prevCol[prevCol.length - 1].tieCount++;
-      }
-      continue;
-    }
-    const result = round.result as 'player' | 'banker';
-    if (lastResult === null || result !== lastResult) {
-      if (currentCol.length > 0) columns.push(currentCol);
-      currentCol = [{ result, tieCount: 0, playerPair: round.playerPair, bankerPair: round.bankerPair }];
-      lastResult = result;
-    } else {
-      currentCol.push({ result, tieCount: 0, playerPair: round.playerPair, bankerPair: round.bankerPair });
-    }
-  }
-  if (currentCol.length > 0) columns.push(currentCol);
-  return columns;
-}
-
-function buildBigRoadGrid(columns: BigRoadCell[][], rows: number, maxCols: number): (BigRoadCell | null)[][] {
-  const grid: (BigRoadCell | null)[][] = Array(rows).fill(null).map(() => Array(maxCols).fill(null));
-  let gridCol = 0;
-  for (const column of columns) {
-    let row = 0;
-    for (const cell of column) {
-      if (row >= rows) { row = rows - 1; gridCol++; }
-      if (gridCol < maxCols) grid[row][gridCol] = cell;
-      row++;
-    }
-    gridCol++;
-  }
-  return grid;
-}
-
-function buildDerivedRoad(columns: BigRoadCell[][], offset: number): ('red' | 'blue')[] {
-  if (columns.length < offset + 1) return [];
-  const results: ('red' | 'blue')[] = [];
-  for (let colIdx = offset; colIdx < columns.length; colIdx++) {
-    const currColLen = columns[colIdx].length;
-    const compareColLen = columns[colIdx - offset].length;
-    for (let i = 0; i < currColLen; i++) {
-      if (colIdx === offset && i === 0) continue;
-      const depthSoFar = i + 1;
-      let color: 'red' | 'blue';
-      if (depthSoFar === 1) {
-        color = compareColLen === 1 ? 'red' : 'blue';
-      } else {
-        color = depthSoFar <= compareColLen ? 'red' : 'blue';
-      }
-      results.push(color);
-    }
-  }
-  return results;
-}
 
 export default function RoadmapModal({ isOpen, onClose, data }: RoadmapModalProps) {
   const { t } = useTranslation();
@@ -172,7 +102,7 @@ export default function RoadmapModal({ isOpen, onClose, data }: RoadmapModalProp
   };
 
   const renderDerivedRoad = (type: 'bigEye' | 'small' | 'cockroach') => {
-    const results = buildDerivedRoad(bigRoadColumns, type === 'bigEye' ? 1 : type === 'small' ? 2 : 3);
+    const results = buildDerivedRoadFlat(bigRoadColumns, type === 'bigEye' ? 1 : type === 'small' ? 2 : 3);
     const ROWS = 6;
     const cols = Math.max(Math.ceil(results.length / ROWS), 8);
     return (

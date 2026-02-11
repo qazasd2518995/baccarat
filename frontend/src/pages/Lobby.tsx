@@ -34,6 +34,8 @@ import {
   GameReportModal,
   FollowingListModal,
 } from '../components/game/modals';
+import LobbyRoadmap from '../components/lobby/LobbyRoadmap';
+import type { RoadHistoryEntry } from '../utils/roadmap';
 
 interface Table {
   id: string;
@@ -51,29 +53,14 @@ interface Table {
   shoeNumber: number;
   roundNumber: number;
   hasGoodRoad?: boolean;
+  roadHistory: RoadHistoryEntry[];
 }
 
-
-// Bead Road Cell
-function BeadRoadCell({ result }: { result?: 'player' | 'banker' | 'tie' }) {
-  if (!result) {
-    return <div className="w-5 h-5 rounded-full bg-gray-700/30" />;
-  }
-
-  const styles = {
-    banker: 'bg-red-600 text-white',
-    player: 'bg-blue-600 text-white',
-    tie: 'bg-green-600 text-white',
-  };
-
-  const labels = { banker: 'B', player: 'P', tie: 'T' };
-
-  return (
-    <div className={`w-5 h-5 rounded-full ${styles[result]} flex items-center justify-center text-[10px] font-bold`}>
-      {labels[result]}
-    </div>
-  );
-}
+const GAME_TYPE_LABELS: Record<string, string> = {
+  baccarat: '百家樂',
+  dragonTiger: '龍虎',
+  bullBull: '牛牛',
+};
 
 export default function Lobby() {
   const { t, i18n } = useTranslation();
@@ -127,6 +114,12 @@ export default function Lobby() {
     roundNumber: number;
     shoeNumber: number;
     lastResult?: 'player' | 'banker' | 'tie';
+    lastRoundEntry?: {
+      roundNumber: number;
+      result: string;
+      playerPair: boolean;
+      bankerPair: boolean;
+    };
     roadmap: { banker: number; player: number; tie: number };
   }) => {
     setTables(prevTables =>
@@ -145,6 +138,27 @@ export default function Lobby() {
           lastResults = [update.lastResult, ...table.lastResults].slice(0, 20);
         }
 
+        // Reset roadHistory on shoe change
+        let roadHistory = table.roadHistory;
+        if (update.shoeNumber !== table.shoeNumber) {
+          roadHistory = [];
+        }
+
+        // Append to roadHistory if we got a new round entry (with deduplication)
+        if (update.lastRoundEntry && update.phase === 'result') {
+          const alreadyExists = roadHistory.some(
+            r => r.roundNumber === update.lastRoundEntry!.roundNumber
+          );
+          if (!alreadyExists) {
+            roadHistory = [...roadHistory, {
+              roundNumber: update.lastRoundEntry.roundNumber,
+              result: update.lastRoundEntry.result as 'player' | 'banker' | 'tie',
+              playerPair: update.lastRoundEntry.playerPair,
+              bankerPair: update.lastRoundEntry.bankerPair,
+            }];
+          }
+        }
+
         return {
           ...table,
           status,
@@ -153,6 +167,7 @@ export default function Lobby() {
           shoeNumber: update.shoeNumber,
           roadmap: update.roadmap,
           lastResults,
+          roadHistory,
         };
       })
     );
@@ -182,6 +197,7 @@ export default function Lobby() {
           roundNumber: number;
           roadmap: { banker: number; player: number; tie: number };
           lastResults?: string[];
+          roadHistory?: Array<{ roundNumber: number; result: string; playerPair: boolean; bankerPair: boolean }>;
           status?: string;
           countdown?: number;
           hasGoodRoad?: boolean;
@@ -201,6 +217,12 @@ export default function Lobby() {
           shoeNumber: t.shoeNumber,
           roundNumber: t.roundNumber,
           hasGoodRoad: t.hasGoodRoad || false,
+          roadHistory: (t.roadHistory || []).map(r => ({
+            roundNumber: r.roundNumber,
+            result: r.result as 'player' | 'banker' | 'tie',
+            playerPair: r.playerPair ?? false,
+            bankerPair: r.bankerPair ?? false,
+          })),
         }));
         setTables(mappedTables);
       } catch (err) {
@@ -248,17 +270,6 @@ export default function Lobby() {
 
     return true;
   });
-
-  // Calculate percentage for results proportion display
-  const getResultPercentages = (roadmap: { banker: number; player: number; tie: number }) => {
-    const total = roadmap.banker + roadmap.player + roadmap.tie;
-    if (total === 0) return { banker: 0, player: 0, tie: 0 };
-    return {
-      banker: Math.round((roadmap.banker / total) * 100),
-      player: Math.round((roadmap.player / total) * 100),
-      tie: Math.round((roadmap.tie / total) * 100),
-    };
-  };
 
   return (
     <div className="h-screen bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
@@ -525,85 +536,83 @@ export default function Lobby() {
                 <p className="text-sm sm:text-base">{t('noTablesAvailable')}</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
                 {filteredTables.map((table, index) => {
-                  const percentages = getResultPercentages(table.roadmap);
+                  const gameLabel = GAME_TYPE_LABELS[table.gameType] || table.gameType;
+                  // Extract table number from name (e.g., "百家樂 1" -> "1")
+                  const tableNumber = table.name.replace(/[^\dA-Za-z]/g, '').trim() || (index + 1).toString();
                   return (
                     <motion.div
                       key={table.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
+                      transition={{ delay: index * 0.03 }}
                       onClick={() => handleJoinTable(table.id, table.gameType)}
-                      className="bg-[#1a1f2e] rounded-lg overflow-hidden border border-gray-800/50 hover:border-orange-500/50 cursor-pointer group transition-all"
+                      className="bg-white rounded-sm overflow-hidden border border-gray-300 hover:border-orange-500 cursor-pointer group transition-all"
                     >
-                      {/* Table Header */}
-                      <div className="relative h-24 bg-gradient-to-b from-[#1e2a3a] to-[#141922] flex items-center justify-center overflow-hidden">
+                      {/* Header Bar — dark gradient */}
+                      <div className="h-7 bg-gradient-to-r from-[#1a2332] to-[#0d1825] flex items-center px-2 gap-2">
+                        <span className="text-white text-xs font-bold">{gameLabel}</span>
+                        <span className="text-amber-400 text-xs font-bold">{tableNumber}</span>
+                        <div className="flex items-center gap-1 ml-1">
+                          <Users className="w-3 h-3 text-gray-400" />
+                          <span className="text-white text-xs">{table.players.toLocaleString()}</span>
+                        </div>
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded-sm ml-0.5 ${
+                          table.roadHistory.length > 0 ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                        }`} style={{ fontSize: '10px', lineHeight: 1 }}>
+                          {table.roadHistory.length}
+                        </span>
+
                         {/* Good Road indicator */}
                         {table.hasGoodRoad && (
-                          <div className="absolute top-2 left-2 px-2 py-0.5 rounded bg-orange-500/80 text-white text-[10px] font-bold flex items-center gap-1">
-                            <span>🔥</span> {t('goodRoad')}
+                          <span className="text-yellow-400 text-xs" title={t('goodRoad')}>⚡</span>
+                        )}
+
+                        <div className="flex-1" />
+
+                        {/* Banker/Player/Tie stats */}
+                        <span className="text-red-400 text-xs font-bold">{t('roadBanker') || '莊'}{table.roadmap.banker}</span>
+                        <span className="text-blue-400 text-xs font-bold ml-1">{t('roadPlayer') || '閒'}{table.roadmap.player}</span>
+                        <span className="text-green-400 text-xs font-bold ml-1">{t('roadTie') || '和'}{table.roadmap.tie}</span>
+                      </div>
+
+                      {/* Body — dealer + roadmaps */}
+                      <div className="flex relative" style={{ minHeight: 148 }}>
+                        {/* Dealer section */}
+                        <div className="shrink-0 flex flex-col items-center justify-center bg-gray-100 border-r border-gray-300" style={{ width: 100 }}>
+                          {table.dealerAvatar ? (
+                            <img
+                              src={table.dealerAvatar}
+                              alt={table.dealer}
+                              className="w-[88px] h-[88px] object-cover rounded"
+                            />
+                          ) : (
+                            <div className="w-[88px] h-[88px] bg-gradient-to-br from-pink-300 to-purple-400 rounded flex items-center justify-center">
+                              <User className="w-10 h-10 text-white/80" />
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-[10px] bg-blue-600 text-white px-1 rounded" style={{ fontSize: '9px' }}>中文</span>
+                            <span className="text-xs text-gray-700 font-bold truncate" style={{ maxWidth: 60 }}>{table.dealer}</span>
+                          </div>
+                        </div>
+
+                        {/* Roadmap grids */}
+                        <div className="flex-1 min-w-0 overflow-hidden p-0.5">
+                          <LobbyRoadmap roadHistory={table.roadHistory} />
+                        </div>
+
+                        {/* Status badge overlay */}
+                        {table.status === 'betting' && table.countdown && table.countdown > 0 && (
+                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-green-600 text-white text-[10px] font-bold rounded-sm">
+                            {table.countdown}s
                           </div>
                         )}
 
-                        {/* Status badge */}
-                        <div className={`absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold ${
-                          table.status === 'betting' ? 'bg-green-500 text-white' :
-                          table.status === 'dealing' ? 'bg-yellow-500 text-black' :
-                          'bg-gray-500 text-white'
-                        }`}>
-                          {table.status === 'betting' ? `${t('betting')} ${table.countdown}s` :
-                           table.status === 'dealing' ? t('dealing') : t('waiting')}
-                        </div>
-
-                        {/* Roadmap stats or Percentage display */}
-                        <div className="flex items-center gap-4 text-sm">
-                          {showResultsProportion ? (
-                            <>
-                              <span className="text-red-400 font-bold">{t('banker')} {percentages.banker}%</span>
-                              <span className="text-blue-400 font-bold">{t('player')} {percentages.player}%</span>
-                              <span className="text-green-400 font-bold">{t('tie')} {percentages.tie}%</span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="text-red-400 font-bold">B{table.roadmap.banker}</span>
-                              <span className="text-blue-400 font-bold">P{table.roadmap.player}</span>
-                              <span className="text-green-400 font-bold">T{table.roadmap.tie}</span>
-                            </>
-                          )}
-                        </div>
-
-                        {/* Bottom info */}
-                        <div className="absolute bottom-2 left-2 flex items-center gap-1 text-xs text-gray-300 bg-black/40 px-2 py-0.5 rounded">
-                          <Users className="w-3 h-3" />
-                          <span>{table.players.toLocaleString()}</span>
-                        </div>
-                        <div className="absolute bottom-2 right-2 text-[10px] text-gray-400 bg-black/40 px-2 py-0.5 rounded">
-                          {t('shoe')} {table.shoeNumber} / {t('round')} {table.roundNumber}
-                        </div>
-
                         {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <span className="bg-orange-500 text-white px-6 py-2 rounded-lg font-bold text-sm">{t('joinTable')}</span>
-                        </div>
-                      </div>
-
-                      {/* Table Info */}
-                      <div className="p-2 bg-[#141922]">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="font-bold text-white text-sm">{table.name}</span>
-                        </div>
-
-                        {/* Roadmap preview */}
-                        <div className="flex gap-0.5 mb-1">
-                          {table.lastResults.slice(0, 8).map((result, i) => (
-                            <BeadRoadCell key={i} result={result} />
-                          ))}
-                        </div>
-
-                        {/* Bet limits */}
-                        <div className="text-[10px] text-gray-500">
-                          ${table.minBet.toLocaleString()} - ${table.maxBet.toLocaleString()}
                         </div>
                       </div>
                     </motion.div>

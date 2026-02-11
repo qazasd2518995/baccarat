@@ -561,6 +561,12 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
         roundNumber: updatedTable.roundNumber,
         shoeNumber: updatedTable.shoeNumber,
         lastResult: round.result,
+        lastRoundEntry: {
+          roundNumber: round.roundNumber,
+          result: round.result,
+          playerPair: round.playerPair,
+          bankerPair: round.bankerPair,
+        },
         roadmap: {
           banker: updatedTable.bankerWins,
           player: updatedTable.playerWins,
