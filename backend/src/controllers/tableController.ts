@@ -41,6 +41,93 @@ export async function getTables(req: Request, res: Response) {
       ],
     });
 
+    // Build road history for each table — try cache first, fallback to DB
+    const tableIds = tables.map((t) => t.id);
+    const roadHistoryMap = new Map<string, Array<{ roundNumber: number; result: string; playerPair: boolean; bankerPair: boolean }>>();
+
+    // First, try to get from in-memory cache
+    for (const table of tables) {
+      let cached: any[] = [];
+      if (table.gameType === 'baccarat') {
+        cached = getTableCachedRoadmap(table.id);
+      } else if (table.gameType === 'dragonTiger') {
+        cached = getDTTableCachedRoadmap(table.id);
+      } else if (table.gameType === 'bullBull') {
+        cached = getBBTableCachedRoadmap(table.id);
+      }
+
+      if (cached.length > 0) {
+        roadHistoryMap.set(table.id, cached.map((r: any) => ({
+          roundNumber: r.roundNumber,
+          result: table.gameType === 'dragonTiger'
+            ? (r.result === 'dragon' ? 'banker' : r.result === 'tiger' ? 'player' : (r.result === 'dt_tie' ? 'tie' : r.result))
+            : (r.result || 'tie'),
+          playerPair: r.playerPair ?? false,
+          bankerPair: r.bankerPair ?? false,
+        })));
+      }
+    }
+
+    // For tables with empty cache, batch-fetch from DB
+    const uncachedTableIds = tableIds.filter((id) => !roadHistoryMap.has(id));
+    if (uncachedTableIds.length > 0) {
+      // Fetch last 100 rounds per uncached table
+      const dbRounds = await prisma.gameRound.findMany({
+        where: { tableId: { in: uncachedTableIds } },
+        orderBy: { createdAt: 'asc' },
+        select: {
+          tableId: true,
+          roundNumber: true,
+          result: true,
+          playerPair: true,
+          bankerPair: true,
+        },
+        take: uncachedTableIds.length * 100,
+      });
+
+      // Group by tableId
+      for (const round of dbRounds) {
+        if (!round.tableId) continue;
+        const existing = roadHistoryMap.get(round.tableId) || [];
+        existing.push({
+          roundNumber: round.roundNumber,
+          result: round.result,
+          playerPair: round.playerPair,
+          bankerPair: round.bankerPair,
+        });
+        roadHistoryMap.set(round.tableId, existing);
+      }
+
+      // Also try DragonTiger rounds for uncached DT tables
+      const uncachedDTIds = uncachedTableIds.filter((id) =>
+        tables.find((t) => t.id === id)?.gameType === 'dragonTiger'
+      );
+      if (uncachedDTIds.length > 0) {
+        const dtRounds = await prisma.dragonTigerRound.findMany({
+          where: { tableId: { in: uncachedDTIds } },
+          orderBy: { createdAt: 'asc' },
+          select: {
+            tableId: true,
+            roundNumber: true,
+            result: true,
+          },
+          take: uncachedDTIds.length * 100,
+        });
+        for (const round of dtRounds) {
+          if (!round.tableId) continue;
+          const existing = roadHistoryMap.get(round.tableId) || [];
+          const mappedResult = round.result === 'dragon' ? 'banker' : round.result === 'tiger' ? 'player' : 'tie';
+          existing.push({
+            roundNumber: round.roundNumber,
+            result: mappedResult,
+            playerPair: false,
+            bankerPair: false,
+          });
+          roadHistoryMap.set(round.tableId, existing);
+        }
+      }
+    }
+
     const formattedTables = tables.map((table) => {
       const roadmap = {
         banker: table.bankerWins,
@@ -48,30 +135,7 @@ export async function getTables(req: Request, res: Response) {
         tie: table.tieCount,
       };
 
-      // Get cached roadmap from in-memory table manager (no DB query)
-      let roadHistory: Array<{ roundNumber: number; result: string; playerPair: boolean; bankerPair: boolean }> = [];
-      if (table.gameType === 'baccarat') {
-        roadHistory = getTableCachedRoadmap(table.id).map((r: any) => ({
-          roundNumber: r.roundNumber,
-          result: r.result,
-          playerPair: r.playerPair ?? false,
-          bankerPair: r.bankerPair ?? false,
-        }));
-      } else if (table.gameType === 'dragonTiger') {
-        roadHistory = getDTTableCachedRoadmap(table.id).map((r: any) => ({
-          roundNumber: r.roundNumber,
-          result: r.result,
-          playerPair: false,
-          bankerPair: false,
-        }));
-      } else if (table.gameType === 'bullBull') {
-        roadHistory = getBBTableCachedRoadmap(table.id).map((r: any) => ({
-          roundNumber: r.roundNumber,
-          result: r.result || 'tie',
-          playerPair: false,
-          bankerPair: false,
-        }));
-      }
+      const roadHistory = roadHistoryMap.get(table.id) || [];
 
       // Derive lastResults from roadHistory for backward compatibility
       const lastResults = roadHistory.slice(-8).map((r) => r.result);
