@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, memo } from 'react';
 import {
   buildBigRoadColumns,
   buildBigRoadGrid,
@@ -302,7 +302,7 @@ function CockroachRoadDisplay({ grid }: { grid: ('red' | 'blue' | null)[][] }) {
   );
 }
 
-export default function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
+function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
   const bigRoadColumns = useMemo(() => buildBigRoadColumns(roadHistory), [roadHistory]);
   const bigRoadGrid = useMemo(() => buildBigRoadGrid(bigRoadColumns, 6, 40), [bigRoadColumns]);
   const bigEyeGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 1, 6, 40), [bigRoadColumns]);
@@ -349,3 +349,5 @@ export default function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
     </div>
   );
 }
+
+export default memo(LobbyRoadmap);

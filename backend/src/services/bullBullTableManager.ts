@@ -309,11 +309,38 @@ async function handleTableDealingPhase(io: TypedServer, tableId: string): Promis
   // Check for reshuffle (need at least 30 cards)
   if (state.currentShoe.length < 30) {
     state.shoeNumber++;
+    state.roundNumber = 0;
+    state.cachedRoadmap = [];
     state.currentShoe = createShoe();
     burnCards(state.currentShoe);
     state.cardsRemaining = state.currentShoe.length;
+
+    // Reset GameTable statistics in DB
+    await prisma.gameTable.update({
+      where: { id: tableId },
+      data: {
+        shoeNumber: state.shoeNumber,
+        roundNumber: 0,
+        bankerWins: 0,
+        playerWins: 0,
+        tieCount: 0,
+      },
+    });
+
     await saveTableState(tableId);
-    console.log(`[BB Table ${tableId}] New shoe #${state.shoeNumber} created`);
+
+    // Notify lobby of new shoe
+    io.to('lobby').emit('lobby:tableUpdate', {
+      tableId,
+      phase: 'dealing' as const,
+      timeRemaining: 0,
+      roundNumber: 0,
+      shoeNumber: state.shoeNumber,
+      roadmap: { banker: 0, player: 0, tie: 0 },
+      newShoe: true,
+    });
+
+    console.log(`[BB Table ${tableId}] New shoe #${state.shoeNumber} — stats reset`);
   }
 
   io.to(roomName).emit('bb:phase' as any, {
@@ -609,8 +636,9 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
 
 // Get recent rounds for roadmap (table-specific)
 async function getBBTableRecentRounds(tableId: string, limit: number = 100) {
+  const state = getTableState(tableId);
   const rounds = await prisma.bullBullRound.findMany({
-    where: { tableId },
+    where: { tableId, shoeNumber: state.shoeNumber },
     orderBy: { createdAt: 'desc' },
     take: limit,
     select: {

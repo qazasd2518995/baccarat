@@ -130,6 +130,7 @@ export interface TableUpdateEvent {
     player: number;
     tie: number;
   };
+  newShoe?: boolean;
 }
 
 // Server to Client Events Interface

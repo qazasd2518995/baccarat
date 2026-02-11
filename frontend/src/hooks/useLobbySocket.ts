@@ -24,6 +24,7 @@ interface TableUpdate {
     player: number;
     tie: number;
   };
+  newShoe?: boolean;
 }
 
 export function useLobbySocket(onTableUpdate: (update: TableUpdate) => void) {
@@ -53,6 +54,7 @@ export function useLobbySocket(onTableUpdate: (update: TableUpdate) => void) {
         lastResult: data.lastResult,
         lastRoundEntry: data.lastRoundEntry,
         roadmap: data.roadmap,
+        newShoe: data.newShoe,
       });
     };
 

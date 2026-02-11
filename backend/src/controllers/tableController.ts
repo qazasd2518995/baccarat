@@ -81,34 +81,44 @@ export async function getTables(req: Request, res: Response) {
       }
     }
 
-    // For tables with empty cache, batch-fetch from DB
+    // For tables with empty cache, batch-fetch from DB (filtered by current shoe)
     const uncachedTableIds = tableIds.filter((id) => !roadHistoryMap.has(id));
+    const shoeMap = new Map(tables.map((t) => [t.id, t.shoeNumber]));
     if (uncachedTableIds.length > 0) {
-      // Fetch last 100 rounds per uncached table
-      const dbRounds = await prisma.gameRound.findMany({
-        where: { tableId: { in: uncachedTableIds } },
-        orderBy: { createdAt: 'asc' },
-        select: {
-          tableId: true,
-          roundNumber: true,
-          result: true,
-          playerPair: true,
-          bankerPair: true,
-        },
-        take: uncachedTableIds.length * 100,
-      });
-
-      // Group by tableId
-      for (const round of dbRounds) {
-        if (!round.tableId) continue;
-        const existing = roadHistoryMap.get(round.tableId) || [];
-        existing.push({
-          roundNumber: round.roundNumber,
-          result: round.result,
-          playerPair: round.playerPair,
-          bankerPair: round.bankerPair,
+      // Fetch baccarat rounds filtered by current shoeNumber
+      const uncachedBaccaratIds = uncachedTableIds.filter((id) =>
+        tables.find((t) => t.id === id)?.gameType === 'baccarat'
+      );
+      if (uncachedBaccaratIds.length > 0) {
+        const dbRounds = await prisma.gameRound.findMany({
+          where: {
+            OR: uncachedBaccaratIds.map((id) => ({
+              tableId: id,
+              shoeNumber: shoeMap.get(id) || 1,
+            })),
+          },
+          orderBy: { createdAt: 'asc' },
+          select: {
+            tableId: true,
+            roundNumber: true,
+            result: true,
+            playerPair: true,
+            bankerPair: true,
+          },
+          take: uncachedBaccaratIds.length * 100,
         });
-        roadHistoryMap.set(round.tableId, existing);
+
+        for (const round of dbRounds) {
+          if (!round.tableId) continue;
+          const existing = roadHistoryMap.get(round.tableId) || [];
+          existing.push({
+            roundNumber: round.roundNumber,
+            result: round.result,
+            playerPair: round.playerPair,
+            bankerPair: round.bankerPair,
+          });
+          roadHistoryMap.set(round.tableId, existing);
+        }
       }
 
       // Also try DragonTiger rounds for uncached DT tables
@@ -117,7 +127,12 @@ export async function getTables(req: Request, res: Response) {
       );
       if (uncachedDTIds.length > 0) {
         const dtRounds = await prisma.dragonTigerRound.findMany({
-          where: { tableId: { in: uncachedDTIds } },
+          where: {
+            OR: uncachedDTIds.map((id) => ({
+              tableId: id,
+              shoeNumber: shoeMap.get(id) || 1,
+            })),
+          },
           orderBy: { createdAt: 'asc' },
           select: {
             tableId: true,
@@ -146,7 +161,12 @@ export async function getTables(req: Request, res: Response) {
       );
       if (uncachedBBIds.length > 0) {
         const bbRounds = await prisma.bullBullRound.findMany({
-          where: { tableId: { in: uncachedBBIds } },
+          where: {
+            OR: uncachedBBIds.map((id) => ({
+              tableId: id,
+              shoeNumber: shoeMap.get(id) || 1,
+            })),
+          },
           orderBy: { createdAt: 'asc' },
           select: {
             tableId: true,

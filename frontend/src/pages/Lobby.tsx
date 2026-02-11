@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -121,6 +121,7 @@ export default function Lobby() {
       bankerPair: boolean;
     };
     roadmap: { banker: number; player: number; tie: number };
+    newShoe?: boolean;
   };
   const pendingUpdatesRef = useRef<Map<string, TableUpdatePayload>>(new Map());
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -149,14 +150,15 @@ export default function Lobby() {
           lastResults = [update.lastResult, ...table.lastResults].slice(0, 20);
         }
 
-        // Reset roadHistory on shoe change
+        // Reset roadHistory on new shoe or shoe number change
         let roadHistory = table.roadHistory;
-        if (update.shoeNumber !== table.shoeNumber) {
+        if (update.newShoe || update.shoeNumber !== table.shoeNumber) {
           roadHistory = [];
         }
 
         // Append to roadHistory if we got a new round entry (with deduplication)
-        if (update.lastRoundEntry && update.phase === 'result') {
+        // Note: lastRoundEntry may be preserved from a result-phase even if current phase is betting
+        if (update.lastRoundEntry) {
           const alreadyExists = roadHistory.some(
             r => r.roundNumber === update.lastRoundEntry!.roundNumber
           );
@@ -186,6 +188,18 @@ export default function Lobby() {
 
   // Real-time table update handler — accumulates into batch, flushes every 1s
   const handleTableUpdate = useCallback((update: TableUpdatePayload) => {
+    // Preserve lastRoundEntry/lastResult/newShoe from a prior event
+    // that would otherwise be overwritten by a subsequent event
+    const existing = pendingUpdatesRef.current.get(update.tableId);
+    if (existing?.lastRoundEntry && !update.lastRoundEntry) {
+      update = { ...update, lastRoundEntry: existing.lastRoundEntry };
+    }
+    if (existing?.lastResult && !update.lastResult) {
+      update = { ...update, lastResult: existing.lastResult };
+    }
+    if (existing?.newShoe && !update.newShoe) {
+      update = { ...update, newShoe: existing.newShoe };
+    }
     pendingUpdatesRef.current.set(update.tableId, update);
     if (!flushTimerRef.current) {
       flushTimerRef.current = setTimeout(flushUpdates, 1000);
@@ -292,7 +306,7 @@ export default function Lobby() {
   };
 
   // Filter tables based on selected category and view mode
-  const filteredTables = tables.filter((table) => {
+  const filteredTables = useMemo(() => tables.filter((table) => {
     // Filter by game type
     if (selectedCategory !== 'all') {
       if (selectedCategory === 'baccarat' && table.gameType !== 'baccarat') return false;
@@ -304,7 +318,7 @@ export default function Lobby() {
     if (viewMode === 'good_road' && !table.hasGoodRoad) return false;
 
     return true;
-  });
+  }), [tables, selectedCategory, viewMode]);
 
   return (
     <div className="h-screen bg-[#1a1f2e] text-white flex flex-col overflow-hidden">

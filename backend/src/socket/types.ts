@@ -134,6 +134,7 @@ export interface TableUpdateEvent {
     player: number;
     tie: number;
   };
+  newShoe?: boolean;
 }
 
 // ============================================

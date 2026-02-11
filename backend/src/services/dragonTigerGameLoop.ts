@@ -207,7 +207,28 @@ async function handleDealingPhase(io: Server): Promise<void> {
     setShuffledDeck(currentShoe);
     setCardsRemaining(currentShoe.length);
     await savePersistedState();
-    console.log(`[DragonTiger] New shoe #${getShoeNumber()} created with ${currentShoe.length} cards`);
+
+    // Reset all dragonTiger table statistics in DB
+    const resetTables = await prisma.gameTable.findMany({
+      where: { gameType: 'dragonTiger', isActive: true },
+    });
+    for (const table of resetTables) {
+      await prisma.gameTable.update({
+        where: { id: table.id },
+        data: { shoeNumber: getShoeNumber(), roundNumber: 0, bankerWins: 0, playerWins: 0, tieCount: 0 },
+      });
+      io.to('lobby').emit('lobby:tableUpdate', {
+        tableId: table.id,
+        phase: 'dealing' as any,
+        timeRemaining: 0,
+        roundNumber: 0,
+        shoeNumber: getShoeNumber(),
+        roadmap: { banker: 0, player: 0, tie: 0 },
+        newShoe: true,
+      });
+    }
+
+    console.log(`[DragonTiger] New shoe #${getShoeNumber()} created with ${currentShoe.length} cards — stats reset`);
   }
 
   // Broadcast phase change
