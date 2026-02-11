@@ -415,7 +415,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-[#1a2235] rounded-xl w-[950px] max-h-[85vh] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
+          className="bg-[#1a2235] rounded-xl w-[1100px] max-w-[95vw] max-h-[85vh] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700/50">
@@ -495,16 +495,16 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                     <thead className="bg-[#2a3548] text-gray-400">
                       <tr>
                         <th className="px-2 py-3 text-left w-8"></th>
-                        <th className="px-2 py-3 text-left">{t('roundId')}</th>
-                        <th className="px-2 py-3 text-left">{t('game')}</th>
-                        <th className="px-2 py-3 text-left">{t('settleTime')}</th>
-                        <th className="px-2 py-3 text-left">{t('table')}</th>
-                        <th className="px-2 py-3 text-center">{t('shoeNum')}</th>
-                        <th className="px-2 py-3 text-center">{t('roundNum')}</th>
-                        <th className="px-2 py-3 text-right">{t('betAmount')}</th>
-                        <th className="px-2 py-3 text-right">{t('validBet')}</th>
-                        <th className="px-2 py-3 text-center">{t('result')}</th>
-                        <th className="px-2 py-3 text-right">{t('winLoss')}</th>
+                        <th className="px-2 py-3 text-left whitespace-nowrap">{t('roundId')}</th>
+                        <th className="px-2 py-3 text-left whitespace-nowrap">{t('game')}</th>
+                        <th className="px-2 py-3 text-left whitespace-nowrap">{t('settleTime')}</th>
+                        <th className="px-2 py-3 text-left whitespace-nowrap">{t('table')}</th>
+                        <th className="px-2 py-3 text-center whitespace-nowrap">{t('shoeNum')}</th>
+                        <th className="px-2 py-3 text-center whitespace-nowrap">{t('roundNum')}</th>
+                        <th className="px-2 py-3 text-right whitespace-nowrap">{t('betAmount')}</th>
+                        <th className="px-2 py-3 text-right whitespace-nowrap">{t('validBet')}</th>
+                        <th className="px-2 py-3 text-center whitespace-nowrap">{t('result')}</th>
+                        <th className="px-2 py-3 text-right whitespace-nowrap">{t('winLoss')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -517,22 +517,22 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                             }`}
                             onClick={() => toggleExpand(record.roundId)}
                           >
-                            <td className="px-2 py-3 text-gray-400">
+                            <td className="px-2 py-3 text-gray-400 whitespace-nowrap">
                               {expandedRow === record.roundId ? (
                                 <ChevronUp className="w-4 h-4" />
                               ) : (
                                 <ChevronDown className="w-4 h-4" />
                               )}
                             </td>
-                            <td className="px-2 py-3 text-gray-300 font-mono">{record.roundId}</td>
-                            <td className="px-2 py-3 text-gray-300">{record.game}</td>
-                            <td className="px-2 py-3 text-gray-400 text-xs">{record.settleTime}</td>
-                            <td className="px-2 py-3 text-gray-300">{record.table}</td>
-                            <td className="px-2 py-3 text-center text-gray-400">{record.shoe}</td>
-                            <td className="px-2 py-3 text-center text-gray-400">{record.round}</td>
-                            <td className="px-2 py-3 text-right text-gray-300">{record.betAmount.toLocaleString()}</td>
-                            <td className="px-2 py-3 text-right text-gray-300">{record.validBet.toLocaleString()}</td>
-                            <td className="px-2 py-3 text-center">
+                            <td className="px-2 py-3 text-gray-300 font-mono whitespace-nowrap">{record.roundId}</td>
+                            <td className="px-2 py-3 text-gray-300 whitespace-nowrap">{record.game}</td>
+                            <td className="px-2 py-3 text-gray-400 text-xs whitespace-nowrap">{record.settleTime}</td>
+                            <td className="px-2 py-3 text-gray-300 whitespace-nowrap">{record.table}</td>
+                            <td className="px-2 py-3 text-center text-gray-400 whitespace-nowrap">{record.shoe}</td>
+                            <td className="px-2 py-3 text-center text-gray-400 whitespace-nowrap">{record.round}</td>
+                            <td className="px-2 py-3 text-right text-gray-300 whitespace-nowrap">{record.betAmount.toLocaleString()}</td>
+                            <td className="px-2 py-3 text-right text-gray-300 whitespace-nowrap">{record.validBet.toLocaleString()}</td>
+                            <td className="px-2 py-3 text-center whitespace-nowrap">
                               <span className={`px-2 py-1 rounded text-xs ${
                                 record.result.includes('庄') || record.result === 'Banker' ? 'bg-red-500/20 text-red-400' :
                                 record.result.includes('闲') || record.result === 'Player' ? 'bg-blue-500/20 text-blue-400' :
@@ -541,7 +541,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                                 {record.result}
                               </span>
                             </td>
-                            <td className={`px-2 py-3 text-right font-medium ${
+                            <td className={`px-2 py-3 text-right font-medium whitespace-nowrap ${
                               record.winLoss > 0 ? 'text-green-400' :
                               record.winLoss < 0 ? 'text-red-400' :
                               'text-gray-400'
