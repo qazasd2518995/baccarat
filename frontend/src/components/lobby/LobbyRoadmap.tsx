@@ -11,17 +11,14 @@ interface LobbyRoadmapProps {
   roadHistory: RoadHistoryEntry[];
 }
 
-/* ── Grid-fill helper ──
-   Each road grid fills its container width by computing max columns */
+/* Grid line color between cells */
+const LINE = '#d4d4d4';
 
-const GRID_BG = '#d4d4d4';
-
-// Bead Road — colored circles with Chinese labels
+// Bead Road — colored circles with Chinese labels, uses 1fr columns to fill width
 function BeadRoad({ data, width }: { data: RoadHistoryEntry[]; width: number }) {
   const ROWS = 6;
   const CELL = 15;
-  const GAP = 1;
-  const cols = Math.max(Math.floor((width + GAP) / (CELL + GAP)), 1);
+  const cols = Math.max(Math.floor(width / (CELL + 1)), 1);
   const startIdx = Math.max(0, data.length - ROWS * cols);
   const visibleData = data.slice(startIdx);
 
@@ -38,18 +35,17 @@ function BeadRoad({ data, width }: { data: RoadHistoryEntry[]; width: number }) 
 
   return (
     <div
-      className="grid w-full"
+      className="grid h-full"
       style={{
-        gridTemplateRows: `repeat(${ROWS}, ${CELL}px)`,
-        gridTemplateColumns: `repeat(${cols}, ${CELL}px)`,
-        gap: `${GAP}px`,
-        backgroundColor: GRID_BG,
+        gridTemplateRows: `repeat(${ROWS}, 1fr)`,
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gap: '1px',
+        backgroundColor: LINE,
       }}
     >
       {Array.from({ length: ROWS * cols }, (_, i) => {
         const row = i % ROWS;
         const col = Math.floor(i / ROWS);
-        // Grid fills row-first, but bead road is column-first
         const dataIdx = col * ROWS + row;
         const entry = visibleData[dataIdx];
         const key = `b-${row}-${col}`;
@@ -59,8 +55,8 @@ function BeadRoad({ data, width }: { data: RoadHistoryEntry[]; width: number }) 
             <div
               className="rounded-full flex items-center justify-center text-white font-bold"
               style={{
-                width: CELL - 2,
-                height: CELL - 2,
+                width: 13,
+                height: 13,
                 backgroundColor: bgColors[entry.result],
                 fontSize: '7px',
                 lineHeight: 1,
@@ -85,8 +81,7 @@ function BeadRoad({ data, width }: { data: RoadHistoryEntry[]; width: number }) 
 function BigRoad({ grid, usedCols, width }: { grid: (BigRoadCell | null)[][]; usedCols: number; width: number }) {
   const ROWS = 6;
   const CELL = 13;
-  const GAP = 1;
-  const maxCols = Math.max(Math.floor((width + GAP) / (CELL + GAP)), 1);
+  const maxCols = Math.max(Math.floor(width / (CELL + 1)), 1);
   const displayCols = Math.max(usedCols, maxCols);
   const colOffset = Math.max(0, displayCols - maxCols);
   const visibleCols = Math.min(displayCols, maxCols);
@@ -128,10 +123,10 @@ function BigRoad({ grid, usedCols, width }: { grid: (BigRoadCell | null)[][]; us
     <div
       className="grid"
       style={{
-        gridTemplateRows: `repeat(${ROWS}, ${CELL}px)`,
-        gridTemplateColumns: `repeat(${visibleCols}, ${CELL}px)`,
-        gap: `${GAP}px`,
-        backgroundColor: GRID_BG,
+        gridTemplateRows: `repeat(${ROWS}, 1fr)`,
+        gridTemplateColumns: `repeat(${visibleCols}, 1fr)`,
+        gap: '1px',
+        backgroundColor: LINE,
       }}
     >
       {cells}
@@ -154,8 +149,7 @@ function DerivedRoad({
   width: number;
 }) {
   const ROWS = 6;
-  const GAP = 1;
-  const maxCols = Math.max(Math.floor((width + GAP) / (cellSize + GAP)), 1);
+  const maxCols = Math.max(Math.floor(width / (cellSize + 1)), 1);
   let usedCols = 0;
   for (let c = 0; c < (grid[0]?.length ?? 0); c++) {
     for (let r = 0; r < ROWS; r++) {
@@ -187,10 +181,10 @@ function DerivedRoad({
     <div
       className="grid"
       style={{
-        gridTemplateRows: `repeat(${ROWS}, ${cellSize}px)`,
-        gridTemplateColumns: `repeat(${visibleCols}, ${cellSize}px)`,
-        gap: `${GAP}px`,
-        backgroundColor: GRID_BG,
+        gridTemplateRows: `repeat(${ROWS}, 1fr)`,
+        gridTemplateColumns: `repeat(${visibleCols}, 1fr)`,
+        gap: '1px',
+        backgroundColor: LINE,
       }}
     >
       {cells}
@@ -227,9 +221,9 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
     }
   }
 
-  // Dynamic widths: bead road ~35%, right roads ~65%
+  // Bead road ~34%, right roads ~66%
   const beadWidth = Math.floor(containerWidth * 0.34);
-  const roadWidth = containerWidth - beadWidth - 1; // 1px gap
+  const roadWidth = containerWidth - beadWidth - 1;
   const halfRoadWidth = Math.floor((roadWidth - 1) / 2);
 
   const renderBigEye = (val: 'red' | 'blue') => {
@@ -255,32 +249,35 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
   };
 
   return (
-    <div ref={containerRef} className="flex h-full overflow-hidden" style={{ gap: 1, backgroundColor: GRID_BG }}>
+    <div ref={containerRef} className="flex h-full overflow-hidden bg-white" style={{ gap: 1 }}>
       {containerWidth > 0 && (
         <>
-          {/* Left: Bead Road */}
+          {/* Left: Bead Road — fills full height */}
           <div className="shrink-0 overflow-hidden" style={{ width: beadWidth }}>
             <BeadRoad data={roadHistory} width={beadWidth} />
           </div>
 
-          {/* Right: Stacked roads */}
-          <div className="flex-1 flex flex-col overflow-hidden" style={{ gap: 1 }}>
-            {/* Big Road */}
-            <div className="overflow-hidden">
+          {/* 1px vertical divider */}
+          <div style={{ width: 1, backgroundColor: LINE }} />
+
+          {/* Right: Stacked roads — each fills full width */}
+          <div className="flex-1 flex flex-col overflow-hidden" style={{ gap: 1, backgroundColor: LINE }}>
+            {/* Big Road — takes ~55% of height */}
+            <div className="flex-[3] overflow-hidden">
               <BigRoad grid={bigRoadGrid} usedCols={bigRoadUsedCols} width={roadWidth} />
             </div>
 
-            {/* Big Eye Boy */}
-            <div className="overflow-hidden">
+            {/* Big Eye Boy — takes ~22% of height */}
+            <div className="flex-[2] overflow-hidden">
               <DerivedRoad grid={bigEyeGrid} cellSize={7} renderCell={renderBigEye} keyPrefix="be" width={roadWidth} />
             </div>
 
-            {/* Small Road + Cockroach Pig side by side */}
-            <div className="flex overflow-hidden" style={{ gap: 1 }}>
-              <div className="overflow-hidden">
+            {/* Small Road + Cockroach Pig side by side — takes ~22% of height */}
+            <div className="flex-[2] flex overflow-hidden" style={{ gap: 1 }}>
+              <div className="flex-1 overflow-hidden">
                 <DerivedRoad grid={smallGrid} cellSize={7} renderCell={renderSmall} keyPrefix="sr" width={halfRoadWidth} />
               </div>
-              <div className="overflow-hidden">
+              <div className="flex-1 overflow-hidden">
                 <DerivedRoad grid={cockroachGrid} cellSize={7} renderCell={renderCockroach} keyPrefix="cr" width={halfRoadWidth} />
               </div>
             </div>
