@@ -75,6 +75,7 @@ export function useBullBullSocket(tableId?: string) {
     resetForNewRound,
     resetAll,
     saveLastBets,
+    setFakeBets,
     revealPosition,
     clearRevealed,
     addDealingCard,
@@ -245,6 +246,10 @@ export function useBullBullSocket(tableId?: string) {
       setRoadmapData(data.recentRounds);
     };
 
+    const handleFakeBets = (data: { bets: Record<string, number> }) => {
+      setFakeBets(data.bets);
+    };
+
     const handleError = (data: any) => {
       console.error('[useBullBullSocket] Error:', data.code, data.message);
     };
@@ -262,6 +267,7 @@ export function useBullBullSocket(tableId?: string) {
     socket.off('bb:settlement', handleSettlement);
     socket.off('user:balance', handleBalance);
     socket.off('bb:roadmap', handleRoadmap);
+    socket.off('bb:fakeBets', handleFakeBets);
     socket.off('error', handleError);
 
     // Add listeners
@@ -277,6 +283,7 @@ export function useBullBullSocket(tableId?: string) {
     socket.on('bb:settlement', handleSettlement);
     socket.on('user:balance', handleBalance);
     socket.on('bb:roadmap', handleRoadmap);
+    socket.on('bb:fakeBets', handleFakeBets);
     socket.on('error', handleError);
 
     // If socket is already connected, initialize immediately
@@ -299,6 +306,7 @@ export function useBullBullSocket(tableId?: string) {
       socket.off('bb:settlement', handleSettlement);
       socket.off('user:balance', handleBalance);
       socket.off('bb:roadmap', handleRoadmap);
+      socket.off('bb:fakeBets', handleFakeBets);
       socket.off('error', handleError);
       disconnectSocket();
       resetAll();

@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import { prisma } from '../lib/prisma.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
 import { startTableLoop } from './tableManager.js';
+import { initTablePlayerCount } from './fakePlayerCount.js';
 
 
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
@@ -57,6 +58,7 @@ export async function startMultiTableGameLoop(io: TypedServer): Promise<void> {
       const table = newTables[i];
       const delay = i * 7000; // 7 seconds stagger between tables
 
+      initTablePlayerCount(table.id);
       startTableLoop(io, table.id, delay).catch((error) => {
         console.error(`[MultiTable] Error in table ${table.name}:`, error);
       });
@@ -71,6 +73,7 @@ export async function startMultiTableGameLoop(io: TypedServer): Promise<void> {
       const table = tables[i];
       const delay = i * 7000; // 7 seconds stagger between tables
 
+      initTablePlayerCount(table.id);
       startTableLoop(io, table.id, delay).catch((error) => {
         console.error(`[MultiTable] Error in table ${table.name}:`, error);
       });

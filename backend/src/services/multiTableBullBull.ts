@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import { prisma } from '../lib/prisma.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
 import { startBBTableLoop } from './bullBullTableManager.js';
+import { initTablePlayerCount } from './fakePlayerCount.js';
 
 
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
@@ -55,6 +56,7 @@ export async function startMultiTableBullBull(io: TypedServer): Promise<void> {
       const table = newTables[i];
       const delay = i * 7000; // 7 seconds stagger between tables
 
+      initTablePlayerCount(table.id);
       startBBTableLoop(io, table.id, delay).catch((error) => {
         console.error(`[MultiTable-BB] Error in table ${table.name}:`, error);
       });
@@ -69,6 +71,7 @@ export async function startMultiTableBullBull(io: TypedServer): Promise<void> {
       const table = tables[i];
       const delay = i * 7000; // 7 seconds stagger between tables
 
+      initTablePlayerCount(table.id);
       startBBTableLoop(io, table.id, delay).catch((error) => {
         console.error(`[MultiTable-BB] Error in table ${table.name}:`, error);
       });

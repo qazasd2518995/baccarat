@@ -119,6 +119,10 @@ interface DragonTigerStore {
   cardsRemaining: number;
   setShoeInfo: (shoeNumber: number, cardsRemaining: number) => void;
 
+  // Fake bets (visual only)
+  fakeBets: Record<string, number>;
+  setFakeBets: (bets: Record<string, number>) => void;
+
   // Reset for new round
   resetForNewRound: () => void;
 
@@ -270,6 +274,10 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
   cardsRemaining: 416,
   setShoeInfo: (shoeNumber, cardsRemaining) => set({ shoeNumber, cardsRemaining }),
 
+  // Fake bets (visual only)
+  fakeBets: {},
+  setFakeBets: (bets) => set({ fakeBets: bets }),
+
   // Reset for new round
   resetForNewRound: () =>
     set({
@@ -284,6 +292,7 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
       lastResult: null,
       isSuitedTie: false,
       lastSettlement: null,
+      fakeBets: {},
     }),
 
   // Full reset
@@ -311,5 +320,6 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
       roadmapData: [],
       shoeNumber: 1,
       cardsRemaining: 416,
+      fakeBets: {},
     }),
 }));

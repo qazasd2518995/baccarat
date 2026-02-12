@@ -16,73 +16,24 @@ import { useBullBullStore, type BullBullBetType, CHIP_VALUES, RANK_NAMES } from 
 import { useBullBullSocket } from '../hooks/useBullBullSocket';
 import PlayingCard from '../components/game/PlayingCard';
 import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
+import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
+import CountdownTimer from '../components/game/CountdownTimer';
+import { formatAmount } from '../utils/format';
 
-// Chip component - Casino style with edge notches (matches ChipSettingsModal)
+// Chip component - uses CasinoChip SVG
 function Chip({ value, selected, onClick, disabled }: { value: number; selected: boolean; onClick: () => void; disabled?: boolean }) {
-  // Chip colors matching ALL_CHIP_OPTIONS from gameStore.ts
-  const chipColors: Record<number, string> = {
-    10: 'from-slate-400 to-slate-600',
-    50: 'from-green-500 to-green-700',
-    100: 'from-red-500 to-red-700',
-    500: 'from-purple-500 to-purple-700',
-    1000: 'from-amber-500 to-amber-700',
-    5000: 'from-cyan-500 to-cyan-700',
-    10000: 'from-fuchsia-500 to-fuchsia-700',
-    20000: 'from-rose-500 to-rose-700',
-    50000: 'from-indigo-500 to-indigo-700',
-    100000: 'from-yellow-500 to-yellow-700',
-  };
-
-  const color = chipColors[value] || 'from-gray-500 to-gray-700';
-
-  // Format chip value display
-  const formatValue = (v: number) => {
-    if (v >= 1000) {
-      const k = v / 1000;
-      return k >= 1000 ? `${k / 1000}M` : `${k}K`;
-    }
-    return v.toString();
-  };
-
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className={`
-        relative w-14 h-14 rounded-full flex items-center justify-center font-bold
-        bg-gradient-to-br ${color}
-        border-4 border-white/30
+        relative rounded-full
         shadow-lg transition-all duration-200
         ${selected ? 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900' : ''}
         ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}
       `}
     >
-      {/* Inner circle decoration */}
-      <div className="absolute inset-2 rounded-full border-2 border-white/20" />
-
-      {/* Chip value */}
-      <span className="relative z-10 text-white font-black drop-shadow-lg text-[10px]">
-        {formatValue(value)}
-      </span>
-
-      {/* Glossy effect */}
-      <div
-        className="absolute inset-0 rounded-full pointer-events-none"
-        style={{
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%)',
-        }}
-      />
-
-      {/* Edge notches (casino chip style) */}
-      {[...Array(8)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-1 h-2 bg-white/30 rounded-sm"
-          style={{
-            transform: `rotate(${i * 45}deg) translateY(-24px)`,
-          }}
-        />
-      ))}
+      <CasinoChip size={56} value={value} label={formatChipValue(value)} />
     </button>
   );
 }
@@ -94,6 +45,7 @@ function HandDisplay({
   result,
   isBanker = false,
   betAmount,
+  fakeBetAmount = 0,
   onBet,
   canBet,
   dealCount,
@@ -106,6 +58,7 @@ function HandDisplay({
   result?: 'win' | 'lose' | null;
   isBanker?: boolean;
   betAmount: number;
+  fakeBetAmount?: number;
   onBet: () => void;
   canBet: boolean;
   dealCount: number;
@@ -135,6 +88,9 @@ function HandDisplay({
         <span className={`font-bold ${isBanker ? 'text-yellow-400' : 'text-blue-400'}`}>
           {position}
         </span>
+        {!isBanker && fakeBetAmount > 0 && (
+          <span className="ml-2 text-gray-400 text-[10px]">{formatAmount(fakeBetAmount)}</span>
+        )}
         {!isBanker && betAmount > 0 && (
           <span className="ml-2 bg-yellow-400 text-black px-2 py-0.5 rounded text-xs font-bold">
             ${betAmount}
@@ -266,6 +222,7 @@ export default function BullBullGame() {
     roadmapData,
     shoeNumber,
     lastBets,
+    fakeBets,
   } = useBullBullStore();
 
   const [showRules, setShowRules] = useState(false);
@@ -394,7 +351,7 @@ export default function BullBullGame() {
   const phaseDisplay = getPhaseDisplay();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#1a1f2e] to-[#0d1117] text-white">
+    <div className="min-h-screen bg-gradient-to-b from-[#1a5c2e] to-[#0f4025] text-white">
       {/* Header */}
       <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 bg-[#0d1117]/80 border-b border-gray-800">
         <div className="flex items-center gap-2 sm:gap-3">
@@ -435,17 +392,15 @@ export default function BullBullGame() {
       </div>
 
       {/* Main game area */}
-      <div className="p-2 sm:p-4 pb-32 sm:pb-36">
+      <div className="relative p-2 sm:p-4 pb-32 sm:pb-36">
+        {/* Countdown timer — top left */}
+        <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
+
         {/* Phase and timer */}
         <div className="text-center mb-4 sm:mb-6">
           <div className={`text-xl sm:text-2xl font-bold ${phaseDisplay.color}`}>
             {phaseDisplay.text}
           </div>
-          {phase === 'betting' && (
-            <div className="text-3xl sm:text-4xl font-bold text-white mt-1 sm:mt-2">
-              {timeRemaining}
-            </div>
-          )}
         </div>
 
         {/* Hands display */}
@@ -473,6 +428,7 @@ export default function BullBullGame() {
               hand={player1}
               result={player1Result}
               betAmount={getBetAmount('bb_player1')}
+              fakeBetAmount={fakeBets.bb_player1 || 0}
               onBet={() => handleBet('bb_player1')}
               canBet={canBet}
               dealCount={getDealCount('player1')}
@@ -485,6 +441,7 @@ export default function BullBullGame() {
               hand={player2}
               result={player2Result}
               betAmount={getBetAmount('bb_player2')}
+              fakeBetAmount={fakeBets.bb_player2 || 0}
               onBet={() => handleBet('bb_player2')}
               canBet={canBet}
               dealCount={getDealCount('player2')}
@@ -497,6 +454,7 @@ export default function BullBullGame() {
               hand={player3}
               result={player3Result}
               betAmount={getBetAmount('bb_player3')}
+              fakeBetAmount={fakeBets.bb_player3 || 0}
               onBet={() => handleBet('bb_player3')}
               canBet={canBet}
               dealCount={getDealCount('player3')}

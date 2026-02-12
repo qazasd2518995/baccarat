@@ -135,6 +135,12 @@ export interface TableUpdateEvent {
     tie: number;
   };
   newShoe?: boolean;
+  playerCount?: number;
+}
+
+// Fake bets event (visual only)
+export interface FakeBetsEvent {
+  bets: Record<string, number>;
 }
 
 // ============================================
@@ -178,6 +184,9 @@ export interface ServerToClientEvents {
   'user:balance': (data: BalanceUpdateEvent) => void;
   'chat:message': (data: ChatMessageEvent) => void;
   'lobby:tableUpdate': (data: TableUpdateEvent) => void;
+  'game:fakeBets': (data: FakeBetsEvent) => void;
+  'dt:fakeBets': (data: FakeBetsEvent) => void;
+  'bb:fakeBets': (data: FakeBetsEvent) => void;
   error: (data: ErrorEvent) => void;
 }
 

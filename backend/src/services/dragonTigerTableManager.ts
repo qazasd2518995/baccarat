@@ -3,6 +3,8 @@ import { prisma } from '../lib/prisma.js';
 import { createShoe, burnCards, playDragonTigerRound, calculateDTBetResult, type Card, type DragonTigerRoundResult, type DragonTigerBetType } from '../utils/dragonTigerLogic.js';
 import { applyWinCap } from '../utils/winCapCheck.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
+import { generateFakeBets } from './fakeBetGenerator.js';
+import { fluctuatePlayerCount } from './fakePlayerCount.js';
 
 
 // Type-safe Socket.io server
@@ -13,7 +15,7 @@ type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
 
 // Phase durations in milliseconds
 const PHASE_DURATIONS: Record<GamePhase, number> = {
-  betting: 35000,    // 35 seconds
+  betting: 15000,    // 15 seconds
   sealed: 3000,      // 3 seconds
   dealing: 5000,     // 5 seconds
   result: 5000,      // 5 seconds
@@ -241,6 +243,9 @@ async function handleTableBettingPhase(
     roundId: state.roundId,
   });
 
+  // Broadcast fake bets for visual display
+  io.to(roomName).emit('dt:fakeBets', { bets: generateFakeBets('dragonTiger') });
+
   // Get table from database for lobby updates
   const dbTable = await prisma.gameTable.findFirst({
     where: { id: tableId },
@@ -255,10 +260,11 @@ async function handleTableBettingPhase(
       roundNumber: state.roundNumber,
       shoeNumber: state.shoeNumber,
       roadmap: {
-        banker: dbTable.bankerWins, // dragon wins
-        player: dbTable.playerWins, // tiger wins
+        banker: dbTable.bankerWins,
+        player: dbTable.playerWins,
         tie: dbTable.tieCount,
       },
+      playerCount: fluctuatePlayerCount(tableId),
     });
   }
 

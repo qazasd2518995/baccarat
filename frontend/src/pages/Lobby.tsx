@@ -122,6 +122,7 @@ export default function Lobby() {
     };
     roadmap: { banker: number; player: number; tie: number };
     newShoe?: boolean;
+    playerCount?: number;
   };
   const pendingUpdatesRef = useRef<Map<string, TableUpdatePayload>>(new Map());
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -181,6 +182,7 @@ export default function Lobby() {
           roadmap: update.roadmap,
           lastResults,
           roadHistory,
+          players: update.playerCount ?? table.players,
         };
       })
     );
@@ -199,6 +201,9 @@ export default function Lobby() {
     }
     if (existing?.newShoe && !update.newShoe) {
       update = { ...update, newShoe: existing.newShoe };
+    }
+    if (existing?.playerCount && !update.playerCount) {
+      update = { ...update, playerCount: existing.playerCount };
     }
     pendingUpdatesRef.current.set(update.tableId, update);
     if (!flushTimerRef.current) {

@@ -44,6 +44,7 @@ export function useGameSocket(tableId?: string) {
     resetAll,
     saveLastBets,
     setBettingLimits,
+    setFakeBets,
     pendingBets,
     phase,
   } = useGameStore();
@@ -192,6 +193,10 @@ export function useGameSocket(tableId?: string) {
       setRoadmapData(data.recentRounds);
     };
 
+    const handleFakeBets = (data: { bets: Record<string, number> }) => {
+      setFakeBets(data.bets);
+    };
+
     const handleError = (data: ErrorEvent) => {
       console.error('[useGameSocket] Error:', data.code, data.message);
     };
@@ -208,6 +213,7 @@ export function useGameSocket(tableId?: string) {
     socket.off('bet:settlement', handleSettlement);
     socket.off('user:balance', handleBalance);
     socket.off('game:roadmap', handleRoadmap);
+    socket.off('game:fakeBets', handleFakeBets);
     socket.off('error', handleError);
 
     // Add listeners
@@ -222,6 +228,7 @@ export function useGameSocket(tableId?: string) {
     socket.on('bet:settlement', handleSettlement);
     socket.on('user:balance', handleBalance);
     socket.on('game:roadmap', handleRoadmap);
+    socket.on('game:fakeBets', handleFakeBets);
     socket.on('error', handleError);
 
     // If socket is already connected, initialize immediately
@@ -243,6 +250,7 @@ export function useGameSocket(tableId?: string) {
       socket.off('bet:settlement', handleSettlement);
       socket.off('user:balance', handleBalance);
       socket.off('game:roadmap', handleRoadmap);
+      socket.off('game:fakeBets', handleFakeBets);
       socket.off('error', handleError);
       disconnectSocket();
       resetAll();

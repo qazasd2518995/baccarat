@@ -52,74 +52,26 @@ import {
 import PlayingCard from '../components/game/PlayingCard';
 import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
 import ChipSettingsModal from '../components/game/ChipSettingsModal';
+import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
+import CountdownTimer from '../components/game/CountdownTimer';
 
-// Chip component - Casino style with edge notches (matches ChipSettingsModal)
+// Chip component - uses CasinoChip SVG
 function Chip({ value, selected, onClick, disabled }: { value: number | string; selected: boolean; onClick: () => void; disabled?: boolean }) {
-  // Chip colors matching ALL_CHIP_OPTIONS from gameStore.ts
-  const chipColors: Record<number, string> = {
-    10: 'from-slate-400 to-slate-600',
-    50: 'from-green-500 to-green-700',
-    100: 'from-red-500 to-red-700',
-    500: 'from-purple-500 to-purple-700',
-    1000: 'from-amber-500 to-amber-700',
-    5000: 'from-cyan-500 to-cyan-700',
-    10000: 'from-fuchsia-500 to-fuchsia-700',
-    20000: 'from-rose-500 to-rose-700',
-    50000: 'from-indigo-500 to-indigo-700',
-    100000: 'from-yellow-500 to-yellow-700',
-  };
-
-  const color = typeof value === 'number' ? (chipColors[value] || 'from-gray-500 to-gray-700') : 'from-gray-500 to-gray-700';
-
-  // Format chip value display
-  const formatValue = (v: number | string) => {
-    if (typeof v === 'string') return v;
-    if (v >= 1000) {
-      const k = v / 1000;
-      return k >= 1000 ? `${k / 1000}M` : `${k}K`;
-    }
-    return v.toString();
-  };
+  const numValue = typeof value === 'number' ? value : undefined;
+  const label = typeof value === 'string' ? value : formatChipValue(value);
 
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className={`
-        relative w-14 h-14 rounded-full flex items-center justify-center font-bold
-        bg-gradient-to-br ${color}
-        border-4 border-white/30
+        relative rounded-full
         shadow-lg transition-all duration-200
         ${selected ? 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900' : ''}
         ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}
       `}
     >
-      {/* Inner circle decoration */}
-      <div className="absolute inset-2 rounded-full border-2 border-white/20" />
-
-      {/* Chip value */}
-      <span className="relative z-10 text-white font-black drop-shadow-lg text-[10px]">
-        {formatValue(value)}
-      </span>
-
-      {/* Glossy effect */}
-      <div
-        className="absolute inset-0 rounded-full pointer-events-none"
-        style={{
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%)',
-        }}
-      />
-
-      {/* Edge notches (casino chip style) */}
-      {[...Array(8)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-1 h-2 bg-white/30 rounded-sm"
-          style={{
-            transform: `rotate(${i * 45}deg) translateY(-24px)`,
-          }}
-        />
-      ))}
+      <CasinoChip size={56} value={numValue} label={label} />
     </button>
   );
 }
@@ -1197,7 +1149,7 @@ export default function Game() {
         {/* Center - Game Area */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Video Area - Takes remaining space */}
-          <div className="flex-1 relative bg-gradient-to-b from-[#0c1a12] via-[#0a1610] to-[#07120d] overflow-hidden">
+          <div className="flex-1 relative bg-gradient-to-b from-[#1a5c2e] via-[#14532d] to-[#0f4025] overflow-hidden">
             {/* Background decorative glow */}
             <div className="absolute inset-0">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-[#d4af37]/3 rounded-full blur-[120px]" />
@@ -1206,7 +1158,7 @@ export default function Game() {
             {/* Integrated Electronic Dealing Table — fills entire game area */}
             <div className="absolute inset-0 flex flex-col">
               {/* Table felt background — full area */}
-              <div className="absolute inset-0 bg-gradient-to-b from-[#0d2818]/90 via-[#0a2015]/95 to-[#071a10]/90 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-b from-[#1e6b35]/90 via-[#185c2e]/95 to-[#124a24]/90 overflow-hidden">
                 {/* Subtle radial glow */}
                 <div className="absolute inset-0 bg-radial-[ellipse_at_center] from-[#d4af37]/4 via-transparent to-transparent" />
                 {/* Felt texture overlay */}
@@ -1220,6 +1172,9 @@ export default function Game() {
                 <div className="absolute bottom-4 left-4 sm:bottom-5 sm:left-5 w-6 h-6 border-b-2 border-l-2 border-[#d4af37]/25 rounded-bl" />
                 <div className="absolute bottom-4 right-4 sm:bottom-5 sm:right-5 w-6 h-6 border-b-2 border-r-2 border-[#d4af37]/25 rounded-br" />
               </div>
+
+              {/* Countdown timer — top left */}
+              <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
 
               {/* Top info bar — integrated into table */}
               <div className="relative z-10 flex items-center justify-center pt-3 pb-1">
@@ -1735,33 +1690,10 @@ export default function Game() {
                   {/* Chip Settings Button */}
                   <button
                     onClick={() => setIsChipSettingsOpen(true)}
-                    className="relative w-14 h-14 rounded-full flex items-center justify-center font-bold bg-gradient-to-br from-gray-500 to-gray-700 border-4 border-white/30 shadow-lg transition-all duration-200 cursor-pointer hover:scale-105"
+                    className="relative w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-br from-gray-500 to-gray-700 border-2 border-white/20 shadow-lg transition-all duration-200 cursor-pointer hover:scale-105"
                     title={t('chipSettings') || '籌碼設置'}
                   >
-                    {/* Inner circle decoration */}
-                    <div className="absolute inset-2 rounded-full border-2 border-white/20" />
-
-                    {/* Icon */}
                     <Coins className="relative z-10 w-6 h-6 text-white drop-shadow-lg" />
-
-                    {/* Glossy effect */}
-                    <div
-                      className="absolute inset-0 rounded-full pointer-events-none"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%)',
-                      }}
-                    />
-
-                    {/* Edge notches */}
-                    {[...Array(8)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="absolute w-1 h-2 bg-white/30 rounded-sm"
-                        style={{
-                          transform: `rotate(${i * 45}deg) translateY(-24px)`,
-                        }}
-                      />
-                    ))}
                   </button>
                 </div>
               </div>

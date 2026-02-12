@@ -3,18 +3,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ALL_CHIP_OPTIONS, useGameStore } from '../../store/gameStore';
+import CasinoChip, { formatChipValue } from './CasinoChip';
 
 interface ChipSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-function formatChipValue(value: number): string {
-  if (value >= 1000) {
-    const k = value / 1000;
-    return k >= 1000 ? `${k / 1000}M` : `${k}K`;
-  }
-  return value.toLocaleString();
 }
 
 export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModalProps) {
@@ -105,40 +98,13 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
                     onClick={() => toggleChip(chip.value)}
                     disabled={isDisabled}
                     className={`
-                      relative w-14 h-14 rounded-full flex items-center justify-center font-bold text-xs
-                      bg-gradient-to-br ${chip.color}
-                      border-4 border-white/30
+                      relative rounded-full
                       shadow-lg transition-all duration-200
                       ${isSelected ? 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900' : ''}
                       ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
                     `}
                   >
-                    {/* Inner circle decoration */}
-                    <div className="absolute inset-2 rounded-full border-2 border-white/20" />
-
-                    {/* Chip value */}
-                    <span className="relative z-10 text-white font-black drop-shadow-lg text-[10px]">
-                      {formatChipValue(chip.value)}
-                    </span>
-
-                    {/* Glossy effect */}
-                    <div
-                      className="absolute inset-0 rounded-full pointer-events-none"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%)',
-                      }}
-                    />
-
-                    {/* Edge notches (casino chip style) */}
-                    {[...Array(8)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="absolute w-1 h-2 bg-white/30 rounded-sm"
-                        style={{
-                          transform: `rotate(${i * 45}deg) translateY(-24px)`,
-                        }}
-                      />
-                    ))}
+                    <CasinoChip size={56} value={chip.value} label={formatChipValue(chip.value)} />
 
                     {/* Check indicator */}
                     {isSelected && (

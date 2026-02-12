@@ -3,6 +3,8 @@ import { prisma } from '../lib/prisma.js';
 import { createShoe, burnCards, playBullBullRound, calculateBBBetResult, getRankDisplayName, type Card, type BullBullRoundResult, type BullBullBetType, type HandResult } from '../utils/bullBullLogic.js';
 import { applyWinCap } from '../utils/winCapCheck.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
+import { generateFakeBets } from './fakeBetGenerator.js';
+import { fluctuatePlayerCount } from './fakePlayerCount.js';
 
 
 // Type-safe Socket.io server
@@ -13,7 +15,7 @@ type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
 
 // Phase durations in milliseconds
 const PHASE_DURATIONS: Record<GamePhase, number> = {
-  betting: 35000,    // 35 seconds
+  betting: 15000,    // 15 seconds
   sealed: 3000,      // 3 seconds
   dealing: 15000,    // 15 seconds (20 cards total)
   result: 5000,      // 5 seconds
@@ -247,6 +249,9 @@ async function handleTableBettingPhase(
     roundId: state.roundId,
   });
 
+  // Broadcast fake bets for visual display
+  io.to(roomName).emit('bb:fakeBets', { bets: generateFakeBets('bullBull') });
+
   // Get table from database for lobby updates
   const dbTable = await prisma.gameTable.findFirst({
     where: { id: tableId },
@@ -265,6 +270,7 @@ async function handleTableBettingPhase(
         player: dbTable.playerWins,
         tie: dbTable.tieCount,
       },
+      playerCount: fluctuatePlayerCount(tableId),
     });
   }
 

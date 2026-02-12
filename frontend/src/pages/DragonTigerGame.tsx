@@ -34,11 +34,14 @@ import {
 } from 'lucide-react';
 import { MobileNavBar } from '../components/layout/MobileNavBar';
 import { useDragonTigerStore, type DragonTigerBetType } from '../store/dragonTigerStore';
-import { useGameStore, ALL_CHIP_OPTIONS } from '../store/gameStore';
+import { useGameStore } from '../store/gameStore';
 import { useDragonTigerSocket } from '../hooks/useDragonTigerSocket';
 import { useAuthStore } from '../store/authStore';
 import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
 import ChipSettingsModal from '../components/game/ChipSettingsModal';
+import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
+import CountdownTimer from '../components/game/CountdownTimer';
+import { formatAmount } from '../utils/format';
 import {
   GameSettingsModal,
   GameRulesModal,
@@ -49,52 +52,20 @@ import {
   ResultsProportionModal,
 } from '../components/game/modals';
 
-// Chip component - Casino style with edge notches (matches ChipSettingsModal)
+// Chip component - uses CasinoChip SVG
 function Chip({ value, selected, onClick, disabled }: { value: number; selected: boolean; onClick: () => void; disabled?: boolean }) {
-  // Get color from ALL_CHIP_OPTIONS to match ChipSettingsModal
-  const chipOption = ALL_CHIP_OPTIONS.find(c => c.value === value);
-  const color = chipOption?.color || 'from-gray-500 to-gray-700';
-
-  const formatValue = (v: number) => {
-    if (v >= 1000) {
-      const k = v / 1000;
-      return k >= 1000 ? `${k / 1000}M` : `${k}K`;
-    }
-    return v.toString();
-  };
-
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className={`
-        relative w-14 h-14 rounded-full flex items-center justify-center font-bold
-        bg-gradient-to-br ${color}
-        border-4 border-white/30
+        relative rounded-full
         shadow-lg transition-all duration-200
         ${selected ? 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900' : ''}
         ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}
       `}
     >
-      <div className="absolute inset-2 rounded-full border-2 border-white/20" />
-      <span className="relative z-10 text-white font-black drop-shadow-lg text-[10px]">
-        {formatValue(value)}
-      </span>
-      <div
-        className="absolute inset-0 rounded-full pointer-events-none"
-        style={{
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%)',
-        }}
-      />
-      {[...Array(8)].map((_, i) => (
-        <div
-          key={i}
-          className="absolute w-1 h-2 bg-white/30 rounded-sm"
-          style={{
-            transform: `rotate(${i * 45}deg) translateY(-24px)`,
-          }}
-        />
-      ))}
+      <CasinoChip size={56} value={value} label={formatChipValue(value)} />
     </button>
   );
 }
@@ -501,6 +472,7 @@ export default function DragonTigerGame() {
     roadmapData,
     shoeNumber,
     lastBets,
+    fakeBets,
   } = useDragonTigerStore();
 
   // Card animation: track reconnection to skip animation
@@ -906,12 +878,15 @@ export default function DragonTigerGame() {
         {/* Center - Game Area */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Video Area - Card Display */}
-          <div className="flex-1 relative bg-gradient-to-br from-[#2d1f4e] via-[#1a1535] to-[#0f1525] overflow-hidden">
+          <div className="flex-1 relative bg-gradient-to-br from-[#1a5c2e] via-[#14532d] to-[#0f4025] overflow-hidden">
             {/* Background decorative elements */}
             <div className="absolute inset-0">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl" />
+              <div className="absolute top-0 right-0 w-96 h-96 bg-green-400/8 rounded-full blur-3xl" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400/8 rounded-full blur-3xl" />
             </div>
+
+            {/* Countdown timer — top left */}
+            <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
 
             {/* Round Info */}
             <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 rounded px-3 py-1 text-sm z-20">
@@ -1194,6 +1169,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonBig')}</span>
                     <span className="text-red-600 text-[10px] sm:text-xs">1:1</span>
+                    {fakeBets.dragon_big > 0 && <span className="text-gray-400 text-[9px]">{formatAmount(fakeBets.dragon_big)}</span>}
                     {getBetAmount('dragon_big') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_big')}</div>
                     )}
@@ -1206,6 +1182,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonSmall')}</span>
                     <span className="text-red-600 text-[10px] sm:text-xs">1:1</span>
+                    {fakeBets.dragon_small > 0 && <span className="text-gray-400 text-[9px]">{formatAmount(fakeBets.dragon_small)}</span>}
                     {getBetAmount('dragon_small') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_small')}</div>
                     )}
@@ -1218,6 +1195,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-amber-700 text-xs sm:text-sm font-bold">{t('dtSuitedTie')}</span>
                     <span className="text-red-600 text-[10px] sm:text-xs">1:50</span>
+                    {fakeBets.dt_suited_tie > 0 && <span className="text-gray-400 text-[9px]">{formatAmount(fakeBets.dt_suited_tie)}</span>}
                     {getBetAmount('dt_suited_tie') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dt_suited_tie')}</div>
                     )}
@@ -1230,6 +1208,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerSmall')}</span>
                     <span className="text-red-600 text-[10px] sm:text-xs">1:1</span>
+                    {fakeBets.tiger_small > 0 && <span className="text-gray-400 text-[9px]">{formatAmount(fakeBets.tiger_small)}</span>}
                     {getBetAmount('tiger_small') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_small')}</div>
                     )}
@@ -1242,6 +1221,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerBig')}</span>
                     <span className="text-red-600 text-[10px] sm:text-xs">1:1</span>
+                    {fakeBets.tiger_big > 0 && <span className="text-gray-400 text-[9px]">{formatAmount(fakeBets.tiger_big)}</span>}
                     {getBetAmount('tiger_big') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_big')}</div>
                     )}
@@ -1258,6 +1238,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonEven')}</span>
                     <span className="text-red-600 text-[10px] sm:text-xs">1:1.05</span>
+                    {fakeBets.dragon_even > 0 && <span className="text-gray-400 text-[9px]">{formatAmount(fakeBets.dragon_even)}</span>}
                     {getBetAmount('dragon_even') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_even')}</div>
                     )}
@@ -1270,6 +1251,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonOdd')}</span>
                     <span className="text-red-600 text-[10px] sm:text-xs">1:0.75</span>
+                    {fakeBets.dragon_odd > 0 && <span className="text-gray-400 text-[9px]">{formatAmount(fakeBets.dragon_odd)}</span>}
                     {getBetAmount('dragon_odd') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_odd')}</div>
                     )}
@@ -1282,6 +1264,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerOdd')}</span>
                     <span className="text-red-600 text-[10px] sm:text-xs">1:0.75</span>
+                    {fakeBets.tiger_odd > 0 && <span className="text-gray-400 text-[9px]">{formatAmount(fakeBets.tiger_odd)}</span>}
                     {getBetAmount('tiger_odd') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_odd')}</div>
                     )}
@@ -1294,6 +1277,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerEven')}</span>
                     <span className="text-red-600 text-[10px] sm:text-xs">1:1.05</span>
+                    {fakeBets.tiger_even > 0 && <span className="text-gray-400 text-[9px]">{formatAmount(fakeBets.tiger_even)}</span>}
                     {getBetAmount('tiger_even') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_even')}</div>
                     )}
@@ -1310,6 +1294,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonBlack')}</span>
                     <span className="text-red-600 text-[10px] sm:text-xs">1:0.9</span>
+                    {fakeBets.dragon_black > 0 && <span className="text-gray-400 text-[9px]">{formatAmount(fakeBets.dragon_black)}</span>}
                     {getBetAmount('dragon_black') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_black')}</div>
                     )}
@@ -1322,6 +1307,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonRed')}</span>
                     <span className="text-red-600 text-[10px] sm:text-xs">1:0.9</span>
+                    {fakeBets.dragon_red > 0 && <span className="text-gray-400 text-[9px]">{formatAmount(fakeBets.dragon_red)}</span>}
                     {getBetAmount('dragon_red') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_red')}</div>
                     )}
@@ -1334,6 +1320,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerRed')}</span>
                     <span className="text-red-600 text-[10px] sm:text-xs">1:0.9</span>
+                    {fakeBets.tiger_red > 0 && <span className="text-gray-400 text-[9px]">{formatAmount(fakeBets.tiger_red)}</span>}
                     {getBetAmount('tiger_red') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_red')}</div>
                     )}
@@ -1346,6 +1333,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerBlack')}</span>
                     <span className="text-red-600 text-[10px] sm:text-xs">1:0.9</span>
+                    {fakeBets.tiger_black > 0 && <span className="text-gray-400 text-[9px]">{formatAmount(fakeBets.tiger_black)}</span>}
                     {getBetAmount('tiger_black') > 0 && (
                       <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_black')}</div>
                     )}
@@ -1363,6 +1351,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-blue-700 text-3xl sm:text-4xl lg:text-5xl font-black">{t('dtDragon')}</span>
                     <span className="text-red-600 text-base sm:text-lg lg:text-xl font-bold mt-1">1:1</span>
+                    {fakeBets.dragon > 0 && <span className="text-gray-400 text-xs mt-0.5">{formatAmount(fakeBets.dragon)}</span>}
                     {getBetAmount('dragon') > 0 && (
                       <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-yellow-500 text-black text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full shadow">{getBetAmount('dragon')}</div>
                     )}
@@ -1377,6 +1366,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-green-700 text-3xl sm:text-4xl lg:text-5xl font-black">{t('dtTie')}</span>
                     <span className="text-red-600 text-base sm:text-lg lg:text-xl font-bold mt-1">1:8</span>
+                    {fakeBets.dt_tie > 0 && <span className="text-gray-400 text-xs mt-0.5">{formatAmount(fakeBets.dt_tie)}</span>}
                     {getBetAmount('dt_tie') > 0 && (
                       <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-yellow-500 text-black text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full shadow">{getBetAmount('dt_tie')}</div>
                     )}
@@ -1391,6 +1381,7 @@ export default function DragonTigerGame() {
                   >
                     <span className="text-red-700 text-3xl sm:text-4xl lg:text-5xl font-black">{t('dtTiger')}</span>
                     <span className="text-red-600 text-base sm:text-lg lg:text-xl font-bold mt-1">1:1</span>
+                    {fakeBets.tiger > 0 && <span className="text-gray-400 text-xs mt-0.5">{formatAmount(fakeBets.tiger)}</span>}
                     {getBetAmount('tiger') > 0 && (
                       <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-yellow-500 text-black text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full shadow">{getBetAmount('tiger')}</div>
                     )}
@@ -1411,33 +1402,10 @@ export default function DragonTigerGame() {
                   {/* Chip Settings Button */}
                   <button
                     onClick={() => setIsChipSettingsOpen(true)}
-                    className="relative w-14 h-14 rounded-full flex items-center justify-center font-bold bg-gradient-to-br from-gray-500 to-gray-700 border-4 border-white/30 shadow-lg transition-all duration-200 cursor-pointer hover:scale-105"
+                    className="relative w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-br from-gray-500 to-gray-700 border-2 border-white/20 shadow-lg transition-all duration-200 cursor-pointer hover:scale-105"
                     title={t('chipSettings') || '籌碼設置'}
                   >
-                    {/* Inner circle decoration */}
-                    <div className="absolute inset-2 rounded-full border-2 border-white/20" />
-
-                    {/* Icon */}
                     <Coins className="relative z-10 w-6 h-6 text-white drop-shadow-lg" />
-
-                    {/* Glossy effect */}
-                    <div
-                      className="absolute inset-0 rounded-full pointer-events-none"
-                      style={{
-                        background: 'linear-gradient(135deg, rgba(255,255,255,0.3) 0%, transparent 50%)',
-                      }}
-                    />
-
-                    {/* Edge notches */}
-                    {[...Array(8)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="absolute w-1 h-2 bg-white/30 rounded-sm"
-                        style={{
-                          transform: `rotate(${i * 45}deg) translateY(-24px)`,
-                        }}
-                      />
-                    ))}
                   </button>
                 </div>
               </div>

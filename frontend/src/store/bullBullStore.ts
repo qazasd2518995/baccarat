@@ -132,6 +132,10 @@ interface BullBullStore {
   cardsRemaining: number;
   setShoeInfo: (shoeNumber: number, cardsRemaining: number) => void;
 
+  // Fake bets (visual only)
+  fakeBets: Record<string, number>;
+  setFakeBets: (bets: Record<string, number>) => void;
+
   // Reset for new round
   resetForNewRound: () => void;
 
@@ -321,6 +325,10 @@ export const useBullBullStore = create<BullBullStore>((set, get) => ({
   cardsRemaining: 416,
   setShoeInfo: (shoeNumber, cardsRemaining) => set({ shoeNumber, cardsRemaining }),
 
+  // Fake bets (visual only)
+  fakeBets: {},
+  setFakeBets: (bets) => set({ fakeBets: bets }),
+
   // Reset for new round
   resetForNewRound: () =>
     set({
@@ -336,6 +344,7 @@ export const useBullBullStore = create<BullBullStore>((set, get) => ({
       dealingCards: [],
       revealedPositions: new Set(),
       lastSettlement: null,
+      fakeBets: {},
     }),
 
   // Full reset
@@ -364,5 +373,6 @@ export const useBullBullStore = create<BullBullStore>((set, get) => ({
       roadmapData: [],
       shoeNumber: 1,
       cardsRemaining: 416,
+      fakeBets: {},
     }),
 }));

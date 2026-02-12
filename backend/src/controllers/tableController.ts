@@ -4,6 +4,7 @@ import { getPhase, getTimeRemaining } from '../services/gameState.js';
 import { getTableCachedRoadmap } from '../services/tableManager.js';
 import { getDTTableCachedRoadmap } from '../services/dragonTigerTableManager.js';
 import { getBBTableCachedRoadmap } from '../services/bullBullTableManager.js';
+import { getTablePlayerCount } from '../services/fakePlayerCount.js';
 
 
 // Calculate if a table has "good road" based on consecutive results
@@ -215,7 +216,7 @@ export async function getTables(req: Request, res: Response) {
         gameType: table.gameType,
         minBet: Number(table.minBet),
         maxBet: Number(table.maxBet),
-        players: table.currentPlayers,
+        players: getTablePlayerCount(table.id),
         isActive: table.isActive,
         shoeNumber: table.shoeNumber,
         roundNumber: table.roundNumber,
@@ -276,7 +277,7 @@ export async function getTable(req: Request, res: Response) {
       gameType: table.gameType,
       minBet: Number(table.minBet),
       maxBet: Number(table.maxBet),
-      players: table.currentPlayers,
+      players: getTablePlayerCount(table.id),
       isActive: table.isActive,
       shoeNumber: table.shoeNumber,
       roundNumber: table.roundNumber,

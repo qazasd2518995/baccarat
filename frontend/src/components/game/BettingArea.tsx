@@ -1,6 +1,9 @@
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useGameStore } from '../../store/gameStore';
+import CasinoChip from './CasinoChip';
+import { formatAmount } from '../../utils/format';
 import type { BetType } from '../../types';
 
 interface BetSpotConfig {
@@ -110,15 +113,34 @@ interface BettingAreaProps {
   disabled?: boolean;
 }
 
+interface FlyingChip {
+  id: number;
+  betType: BetType;
+  value: number;
+}
+
+let flyIdCounter = 0;
+
 export default function BettingArea({ disabled }: BettingAreaProps) {
   const { t } = useTranslation();
-  const { pendingBets, confirmedBets, addPendingBet, selectedChip } = useGameStore();
+  const { pendingBets, confirmedBets, addPendingBet, selectedChip, fakeBets } = useGameStore();
+  const [flyingChips, setFlyingChips] = useState<FlyingChip[]>([]);
 
   const getBetAmount = (type: BetType) => {
     const pending = pendingBets.find((b) => b.type === type)?.amount || 0;
     const confirmed = confirmedBets.find((b) => b.type === type)?.amount || 0;
     return pending + confirmed;
   };
+
+  const handleBet = useCallback((type: BetType) => {
+    if (disabled) return;
+    addPendingBet(type);
+    const id = ++flyIdCounter;
+    setFlyingChips(prev => [...prev, { id, betType: type, value: selectedChip }]);
+    setTimeout(() => {
+      setFlyingChips(prev => prev.filter(c => c.id !== id));
+    }, 500);
+  }, [disabled, addPendingBet, selectedChip]);
 
   return (
     <div className="px-4 py-4">
@@ -128,6 +150,8 @@ export default function BettingArea({ disabled }: BettingAreaProps) {
           const hasBet = betAmount > 0;
           const isMainBet = spot.type === 'player' || spot.type === 'banker' || spot.type === 'tie';
 
+          const fakeBetAmount = fakeBets[spot.type] || 0;
+
           return (
             <motion.button
               key={spot.type}
@@ -136,7 +160,7 @@ export default function BettingArea({ disabled }: BettingAreaProps) {
               transition={{ delay: index * 0.05 }}
               whileHover={!disabled ? { scale: 1.02, y: -2 } : {}}
               whileTap={!disabled ? { scale: 0.98 } : {}}
-              onClick={() => !disabled && addPendingBet(spot.type)}
+              onClick={() => handleBet(spot.type)}
               disabled={disabled}
               className={`
                 relative overflow-hidden rounded-2xl
@@ -157,6 +181,23 @@ export default function BettingArea({ disabled }: BettingAreaProps) {
                 }}
               />
 
+              {/* Fake bet chips decorations */}
+              {fakeBetAmount > 0 && (
+                <div className="absolute top-1 right-1 z-10 flex flex-col items-center">
+                  <div className="relative" style={{ width: 20, height: 20 }}>
+                    {[...Array(Math.min(3, Math.ceil(fakeBetAmount / 10_000_000)))].map((_, i) => (
+                      <div
+                        key={i}
+                        className="absolute left-0"
+                        style={{ bottom: i * 2, zIndex: 10 - i, opacity: 0.6 }}
+                      >
+                        <CasinoChip size={20} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Content */}
               <div className="relative z-10 h-full flex flex-col items-center justify-center p-2">
                 {/* Label */}
@@ -169,6 +210,11 @@ export default function BettingArea({ disabled }: BettingAreaProps) {
 
                 {/* Payout */}
                 <div className="text-xs text-slate-400 mt-1">{spot.payout}</div>
+
+                {/* Fake bet amount */}
+                {fakeBetAmount > 0 && (
+                  <div className="text-[10px] text-white/50 mt-0.5">{formatAmount(fakeBetAmount)}</div>
+                )}
 
                 {/* Bet Amount Display */}
                 <AnimatePresence>
@@ -184,7 +230,7 @@ export default function BettingArea({ disabled }: BettingAreaProps) {
                   )}
                 </AnimatePresence>
 
-                {/* Stacked Chips Visual */}
+                {/* Stacked Casino Chips */}
                 <AnimatePresence>
                   {hasBet && (
                     <motion.div
@@ -193,23 +239,37 @@ export default function BettingArea({ disabled }: BettingAreaProps) {
                       exit={{ scale: 0, y: 20 }}
                       className="absolute -bottom-1 left-1/2 transform -translate-x-1/2"
                     >
-                      <div className="relative">
-                        {/* Stack of chips */}
+                      <div className="relative" style={{ width: 28, height: 28 }}>
                         {[...Array(Math.min(3, Math.ceil(betAmount / 500)))].map((_, i) => (
                           <div
                             key={i}
-                            className="absolute w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 border-2 border-amber-300 shadow-md"
-                            style={{
-                              bottom: i * 3,
-                              zIndex: 10 - i,
-                            }}
+                            className="absolute left-0"
+                            style={{ bottom: i * 3, zIndex: 10 - i }}
                           >
-                            <div className="absolute inset-1 rounded-full border border-white/20" />
+                            <CasinoChip size={28} value={selectedChip} />
                           </div>
                         ))}
                       </div>
                     </motion.div>
                   )}
+                </AnimatePresence>
+
+                {/* Flying chip animation */}
+                <AnimatePresence>
+                  {flyingChips
+                    .filter(c => c.betType === spot.type)
+                    .map(chip => (
+                      <motion.div
+                        key={chip.id}
+                        initial={{ opacity: 1, y: 60, scale: 0.5, rotate: 0 }}
+                        animate={{ opacity: 1, y: 0, scale: 0.8, rotate: 180 }}
+                        exit={{ opacity: 0, scale: 0.6 }}
+                        transition={{ duration: 0.4, ease: 'easeOut' }}
+                        className="absolute z-20 pointer-events-none"
+                      >
+                        <CasinoChip size={28} value={chip.value} />
+                      </motion.div>
+                    ))}
                 </AnimatePresence>
               </div>
 
@@ -218,15 +278,6 @@ export default function BettingArea({ disabled }: BettingAreaProps) {
                 <motion.div
                   className="absolute inset-0 bg-white/5 opacity-0 hover:opacity-100 transition-opacity"
                 />
-              )}
-
-              {/* Selected chip preview on hover */}
-              {!disabled && !hasBet && (
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-50 transition-opacity">
-                  <div className="px-2 py-0.5 rounded bg-black/50 text-xs text-white">
-                    +{selectedChip}
-                  </div>
-                </div>
               )}
             </motion.button>
           );

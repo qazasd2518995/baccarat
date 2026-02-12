@@ -4,6 +4,8 @@ import { createShoe, burnCards, playRound, calculateBetResult, type Card, type R
 import { applyWinCap } from '../utils/winCapCheck.js';
 import type { GamePhase, BetEntry, BetType } from '../socket/types.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
+import { generateFakeBets } from './fakeBetGenerator.js';
+import { fluctuatePlayerCount } from './fakePlayerCount.js';
 
 
 // Type-safe Socket.io server
@@ -11,7 +13,7 @@ type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 
 // Phase durations in milliseconds
 const PHASE_DURATIONS: Record<GamePhase, number> = {
-  betting: 35000,    // 35 seconds
+  betting: 15000,    // 15 seconds
   sealed: 3000,      // 3 seconds
   dealing: 10000,    // 10 seconds
   result: 5000,      // 5 seconds
@@ -237,6 +239,9 @@ async function handleTableBettingPhase(
     roundId: state.roundId,
   });
 
+  // Broadcast fake bets for visual display
+  io.to(roomName).emit('game:fakeBets', { bets: generateFakeBets('baccarat') });
+
   // Get table from database for lobby updates
   const dbTable = await prisma.gameTable.findFirst({
     where: { id: tableId },
@@ -255,6 +260,7 @@ async function handleTableBettingPhase(
         player: dbTable.playerWins,
         tie: dbTable.tieCount,
       },
+      playerCount: fluctuatePlayerCount(tableId),
     });
   }
 

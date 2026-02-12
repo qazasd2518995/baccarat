@@ -25,7 +25,7 @@ import {
 
 // Phase durations in milliseconds (Bull Bull has more cards to show)
 const PHASE_DURATIONS: Record<GamePhase, number> = {
-  betting: 35000,    // 35 seconds
+  betting: 15000,    // 15 seconds
   sealed: 3000,      // 3 seconds
   dealing: 15000,    // 15 seconds (20 cards total, need more time)
   result: 5000,      // 5 seconds

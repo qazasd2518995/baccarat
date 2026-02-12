@@ -25,7 +25,7 @@ import {
 
 // Phase durations in milliseconds (Dragon Tiger is faster than Baccarat)
 const PHASE_DURATIONS: Record<GamePhase, number> = {
-  betting: 35000,    // 35 seconds
+  betting: 15000,    // 15 seconds
   sealed: 3000,      // 3 seconds
   dealing: 5000,     // 5 seconds (only 2 cards, faster than baccarat)
   result: 5000,      // 5 seconds

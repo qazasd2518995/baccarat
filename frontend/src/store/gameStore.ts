@@ -155,6 +155,10 @@ interface GameStore {
     super6: { min: number; max: number };
   } | null) => void;
 
+  // Fake bets (visual only)
+  fakeBets: Record<string, number>;
+  setFakeBets: (bets: Record<string, number>) => void;
+
   // Reset for new round
   resetForNewRound: () => void;
 
@@ -331,6 +335,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   bettingLimits: null,
   setBettingLimits: (limits) => set({ bettingLimits: limits }),
 
+  // Fake bets (visual only)
+  fakeBets: {},
+  setFakeBets: (bets) => set({ fakeBets: bets }),
+
   // Reset for new round (when betting phase starts)
   resetForNewRound: () =>
     set({
@@ -342,6 +350,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       bankerPoints: null,
       lastResult: null,
       lastSettlement: null,
+      fakeBets: {},
     }),
 
   // Full reset (on disconnect/logout)
@@ -355,7 +364,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       balance: 0,
       pendingBets: [],
       confirmedBets: [],
-      lastBets: [], // Reset last bets on full reset
+      lastBets: [],
       selectedChip: 100,
       playerCards: [],
       bankerCards: [],
@@ -367,6 +376,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       shoeNumber: 1,
       cardsRemaining: 416,
       bettingLimits: null,
+      fakeBets: {},
     }),
 
   // Chip preferences
