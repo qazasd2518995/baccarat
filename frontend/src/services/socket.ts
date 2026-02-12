@@ -131,6 +131,12 @@ export interface TableUpdateEvent {
     tie: number;
   };
   newShoe?: boolean;
+  playerCount?: number;
+}
+
+// Fake bets event
+export interface FakeBetsEvent {
+  bets: Record<string, number>;
 }
 
 // Server to Client Events Interface
@@ -141,6 +147,7 @@ interface ServerToClientEvents {
   'game:card': (data: CardDealtEvent) => void;
   'game:result': (data: RoundResultEvent) => void;
   'game:roadmap': (data: RoadmapUpdateEvent) => void;
+  'game:fakeBets': (data: FakeBetsEvent) => void;
   'bet:confirmed': (data: BetConfirmedEvent) => void;
   'bet:settlement': (data: BetSettlementEvent) => void;
   'user:balance': (data: BalanceUpdateEvent) => void;

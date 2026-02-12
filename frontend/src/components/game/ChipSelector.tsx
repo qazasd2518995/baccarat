@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Coins } from 'lucide-react';
 import { useGameStore } from '../../store/gameStore';
-import CasinoChip, { CHIP_COLORS, formatChipValue } from './CasinoChip';
+import CasinoChip, { formatChipValue } from './CasinoChip';
 import ChipSettingsModal from './ChipSettingsModal';
 
 interface ChipSelectorProps {
