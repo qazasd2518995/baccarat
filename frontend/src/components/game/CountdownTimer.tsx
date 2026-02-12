@@ -4,10 +4,11 @@ interface CountdownTimerProps {
   timeRemaining: number;
   totalTime?: number;
   phase: string;
+  hidden?: boolean;
 }
 
-function CountdownTimer({ timeRemaining, totalTime = 15, phase }: CountdownTimerProps) {
-  const showTimer = phase === 'betting' && timeRemaining > 0;
+function CountdownTimer({ timeRemaining, totalTime = 15, phase, hidden }: CountdownTimerProps) {
+  const showTimer = phase === 'betting' && timeRemaining > 0 && !hidden;
 
   if (!showTimer) return null;
 

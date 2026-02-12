@@ -1174,7 +1174,7 @@ export default function Game() {
               </div>
 
               {/* Countdown timer — top left */}
-              <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
+              <CountdownTimer timeRemaining={timeRemaining} phase={phase} hidden={frozenResult !== null || showResult} />
 
               {/* Top info bar — integrated into table */}
               <div className="relative z-10 flex items-center justify-center pt-3 pb-1">
