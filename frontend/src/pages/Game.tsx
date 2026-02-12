@@ -590,26 +590,28 @@ export default function Game() {
 
   // When phase changes to dealing, mark that we expect animated cards
   const prevPhaseRef = useRef(phase);
+  const pendingPlaceBetsSoundRef = useRef(false);
   useEffect(() => {
     console.log(`[Game] Phase changed: ${prevPhaseRef.current} → ${phase}`);
     if (phase === 'dealing' && prevPhaseRef.current !== 'dealing') {
       expectingCardsRef.current = true;
       console.log('[Game] Phase→dealing: expecting animated cards');
     }
-    // TTS: 請下注 / 停止下注
-    if (phase === 'betting' && prevPhaseRef.current !== 'betting') {
-      playSound('placeBets');
-    }
+    // TTS: 停止下注 (plays immediately, no conflict)
     if (phase === 'sealed' && prevPhaseRef.current !== 'sealed') {
       playSound('stopBets');
     }
     if (phase === 'betting') {
-      // If result timer is running (resultShownRef=true means timer started), defer the reset
+      // If result timer is running (resultShownRef=true means timer started), defer the reset AND sound
       if (resultShownRef.current) {
-        console.log('[Game] Phase→betting: result still displaying, deferring reset');
+        console.log('[Game] Phase→betting: result still displaying, deferring reset + sound');
         pendingResetRef.current = true;
+        pendingPlaceBetsSoundRef.current = true;
       } else {
         console.log('[Game] Phase→betting: resetting round state');
+        if (prevPhaseRef.current !== 'betting') {
+          playSound('placeBets');
+        }
         doRoundReset();
       }
     }
@@ -940,7 +942,7 @@ export default function Game() {
   const renderPlayerPoints = frozenResult !== null && displayPlayerPoints === null ? frozenPlayerPoints : displayPlayerPoints;
   const renderBankerPoints = frozenResult !== null && displayBankerPoints === null ? frozenBankerPoints : displayBankerPoints;
 
-  // When frozenResult clears (result display fully done), reset flags and execute deferred reset
+  // When frozenResult clears (result display fully done), reset flags and execute deferred reset + sound
   useEffect(() => {
     if (frozenResult === null && !showResult) {
       if (resultShownRef.current) {
@@ -951,8 +953,13 @@ export default function Game() {
         console.log('[Game] 🔄 Executing deferred round reset');
         doRoundReset();
       }
+      if (pendingPlaceBetsSoundRef.current) {
+        console.log('[Game] 🔊 Playing deferred placeBets sound');
+        pendingPlaceBetsSoundRef.current = false;
+        playSound('placeBets');
+      }
     }
-  }, [frozenResult, showResult, doRoundReset]);
+  }, [frozenResult, showResult, doRoundReset, playSound]);
 
   // Cleanup timer on unmount
   useEffect(() => {
