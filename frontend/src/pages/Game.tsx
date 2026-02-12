@@ -1367,7 +1367,7 @@ export default function Game() {
                 </div>
 
                 {/* Fake bet chip stacks on table — bottom of dealing area */}
-                <TableChipDisplay fakeBets={fakeBets} />
+                <TableChipDisplay targetBets={fakeBets} phase={phase} />
 
                 {/* Result Overlay — delayed to allow animations to finish */}
                 <AnimatePresence>
