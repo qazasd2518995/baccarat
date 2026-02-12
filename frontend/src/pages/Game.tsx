@@ -604,13 +604,15 @@ export default function Game() {
       playSound('stopBets');
     }
     if (phase === 'betting') {
-      // Defer if result display is active OR hasn't started yet (cards still flipping)
-      const resultPending = resultShownRef.current || lastResult !== null;
-      if (resultPending) {
-        console.log('[Game] Phase→betting: result pending/displaying, deferring reset + sound');
+      // Check if result display is currently active (frozen state or still showing overlay)
+      const resultDisplayActive = resultShownRef.current || frozenResult !== null || showResult;
+      if (resultDisplayActive) {
+        // Result still on screen — defer reset + sound until display finishes
+        console.log('[Game] Phase→betting: result still displaying, deferring reset + sound');
         pendingResetRef.current = true;
         pendingPlaceBetsSoundRef.current = true;
       } else {
+        // Result display already done (or never started) — reset immediately
         console.log('[Game] Phase→betting: resetting round state');
         if (prevPhaseRef.current !== 'betting') {
           playSound('placeBets');
@@ -946,24 +948,24 @@ export default function Game() {
   const renderPlayerPoints = frozenResult !== null && displayPlayerPoints === null ? frozenPlayerPoints : displayPlayerPoints;
   const renderBankerPoints = frozenResult !== null && displayBankerPoints === null ? frozenBankerPoints : displayBankerPoints;
 
-  // When frozenResult clears (result display fully done), reset flags and execute deferred reset + sound
+  // When result display is fully done AND we're in betting phase, do the round reset + sound
+  // This handles both cases:
+  //   A) phase=betting arrived WHILE displaying → pendingResetRef was set
+  //   B) display finished BEFORE phase=betting → phase effect will handle it directly
   useEffect(() => {
     if (frozenResult === null && !showResult) {
       if (resultShownRef.current) {
         console.log('[Game] 🔄 resultShownRef reset (frozenResult null)');
         resultShownRef.current = false;
       }
-      if (pendingResetRef.current) {
-        console.log('[Game] 🔄 Executing deferred round reset');
+      if (phase === 'betting' && (pendingResetRef.current || lastResult !== null)) {
+        console.log('[Game] 🔄 Result display done + betting phase active → reset + placeBets');
         doRoundReset();
-      }
-      if (pendingPlaceBetsSoundRef.current) {
-        console.log('[Game] 🔊 Playing deferred placeBets sound');
         pendingPlaceBetsSoundRef.current = false;
         playSound('placeBets');
       }
     }
-  }, [frozenResult, showResult, doRoundReset, playSound]);
+  }, [frozenResult, showResult, doRoundReset, playSound, phase, lastResult]);
 
   // Cleanup timer on unmount
   useEffect(() => {
