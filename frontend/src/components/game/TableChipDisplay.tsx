@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import CasinoChip, { CHIP_COLORS } from './CasinoChip';
+import CasinoChip from './CasinoChip';
 import { formatAmount } from '../../utils/format';
 
 interface TableChipDisplayProps {
