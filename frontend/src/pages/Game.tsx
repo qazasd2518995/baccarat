@@ -531,6 +531,7 @@ export default function Game() {
     bettingLimits,
     displayedChips,
     clearPendingBets,
+    resetForNewRound,
   } = useGameStore();
 
   // Can place bets only during betting phase
@@ -586,7 +587,8 @@ export default function Game() {
     expectedCardsRef.current = 0;
     setRevealedPlayerCards(new Set());
     setRevealedBankerCards(new Set());
-  }, []);
+    resetForNewRound(); // Clear store: cards, result, bets, etc.
+  }, [resetForNewRound]);
 
   // When phase changes to dealing, mark that we expect animated cards
   const prevPhaseRef = useRef(phase);
@@ -602,9 +604,10 @@ export default function Game() {
       playSound('stopBets');
     }
     if (phase === 'betting') {
-      // If result timer is running (resultShownRef=true means timer started), defer the reset AND sound
-      if (resultShownRef.current) {
-        console.log('[Game] Phase→betting: result still displaying, deferring reset + sound');
+      // Defer if result display is active OR hasn't started yet (cards still flipping)
+      const resultPending = resultShownRef.current || lastResult !== null;
+      if (resultPending) {
+        console.log('[Game] Phase→betting: result pending/displaying, deferring reset + sound');
         pendingResetRef.current = true;
         pendingPlaceBetsSoundRef.current = true;
       } else {
@@ -616,6 +619,7 @@ export default function Game() {
       }
     }
     prevPhaseRef.current = phase;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, doRoundReset, playSound]);
 
   // When cards appear, decide whether to animate
@@ -1182,7 +1186,7 @@ export default function Game() {
               </div>
 
               {/* Countdown timer — top left */}
-              <CountdownTimer timeRemaining={timeRemaining} phase={phase} hidden={frozenResult !== null || showResult} />
+              <CountdownTimer timeRemaining={timeRemaining} phase={phase} hidden={lastResult !== null || frozenResult !== null || showResult} />
 
               {/* Top info bar — integrated into table */}
               <div className="relative z-10 flex items-center justify-center pt-3 pb-1">

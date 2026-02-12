@@ -16,7 +16,7 @@ const PHASE_DURATIONS: Record<GamePhase, number> = {
   betting: 15000,    // 15 seconds
   sealed: 3000,      // 3 seconds
   dealing: 10000,    // 10 seconds
-  result: 5000,      // 5 seconds
+  result: 8000,      // 8 seconds (enough for frontend: flip ~1s + 2s wait + 2s display + buffer)
 };
 
 // Table state interface

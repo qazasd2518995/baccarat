@@ -40,7 +40,6 @@ export function useGameSocket(tableId?: string) {
     setLastSettlement,
     setRoadmapData,
     setShoeInfo,
-    resetForNewRound,
     resetAll,
     saveLastBets,
     setBettingLimits,
@@ -129,11 +128,9 @@ export function useGameSocket(tableId?: string) {
       setPhase(data.phase);
       setTimeRemaining(data.timeRemaining);
       setRoundId(data.roundId);
-
-      // Reset state when entering betting phase
-      if (data.phase === 'betting') {
-        resetForNewRound();
-      }
+      // Note: resetForNewRound() is NOT called here.
+      // Game.tsx handles the reset with deferred timing to avoid
+      // clearing result data before the result display finishes.
     };
 
     const handleTimer = (data: TimerEvent) => {
