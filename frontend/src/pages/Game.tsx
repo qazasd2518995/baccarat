@@ -54,6 +54,7 @@ import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
 import ChipSettingsModal from '../components/game/ChipSettingsModal';
 import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
 import CountdownTimer from '../components/game/CountdownTimer';
+import TableChipDisplay from '../components/game/TableChipDisplay';
 
 // Chip component - uses CasinoChip SVG
 function Chip({ value, selected, onClick, disabled }: { value: number | string; selected: boolean; onClick: () => void; disabled?: boolean }) {
@@ -532,6 +533,7 @@ export default function Game() {
     displayedChips,
     clearPendingBets,
     resetForNewRound,
+    fakeBets,
   } = useGameStore();
 
   // Can place bets only during betting phase
@@ -1363,6 +1365,9 @@ export default function Game() {
                     );
                   })}
                 </div>
+
+                {/* Fake bet chip stacks on table — bottom of dealing area */}
+                <TableChipDisplay fakeBets={fakeBets} />
 
                 {/* Result Overlay — delayed to allow animations to finish */}
                 <AnimatePresence>

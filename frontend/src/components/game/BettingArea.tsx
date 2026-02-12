@@ -181,23 +181,6 @@ export default function BettingArea({ disabled }: BettingAreaProps) {
                 }}
               />
 
-              {/* Fake bet chips decorations */}
-              {fakeBetAmount > 0 && (
-                <div className="absolute top-1 right-1 z-10 flex flex-col items-center">
-                  <div className="relative" style={{ width: 20, height: 20 }}>
-                    {[...Array(Math.min(3, Math.ceil(fakeBetAmount / 10_000_000)))].map((_, i) => (
-                      <div
-                        key={i}
-                        className="absolute left-0"
-                        style={{ bottom: i * 2, zIndex: 10 - i, opacity: 0.6 }}
-                      >
-                        <CasinoChip size={20} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Content */}
               <div className="relative z-10 h-full flex flex-col items-center justify-center p-2">
                 {/* Label */}
