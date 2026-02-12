@@ -823,6 +823,7 @@ export default function Game() {
   };
 
   // Show bet success notification when confirmedBets changes
+  const betNotifTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const currentCount = confirmedBets.length;
     const prevCount = prevConfirmedBetsRef.current;
@@ -837,12 +838,12 @@ export default function Game() {
         total,
       });
 
-      // Auto-hide after 3 seconds
-      const timer = setTimeout(() => {
+      // Clear any existing timer and start fresh 3s auto-hide
+      if (betNotifTimerRef.current) clearTimeout(betNotifTimerRef.current);
+      betNotifTimerRef.current = setTimeout(() => {
         setBetNotification(prev => ({ ...prev, show: false }));
+        betNotifTimerRef.current = null;
       }, 3000);
-
-      return () => clearTimeout(timer);
     }
 
     prevConfirmedBetsRef.current = currentCount;

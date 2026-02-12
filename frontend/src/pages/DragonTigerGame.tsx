@@ -532,6 +532,7 @@ export default function DragonTigerGame() {
   }>({ show: false, bets: [], total: 0 });
 
   const prevConfirmedBetsRef = useRef<number>(0);
+  const betNotifTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const currentCount = confirmedBets.length;
@@ -545,11 +546,11 @@ export default function DragonTigerGame() {
         total,
       });
 
-      const timer = setTimeout(() => {
+      if (betNotifTimerRef.current) clearTimeout(betNotifTimerRef.current);
+      betNotifTimerRef.current = setTimeout(() => {
         setBetNotification(prev => ({ ...prev, show: false }));
+        betNotifTimerRef.current = null;
       }, 3000);
-
-      return () => clearTimeout(timer);
     }
 
     prevConfirmedBetsRef.current = currentCount;

@@ -31,8 +31,8 @@ function CountdownTimer({ timeRemaining, totalTime = 15, phase, hidden }: Countd
   }
 
   // SVG circle parameters
-  const size = 80;
-  const strokeWidth = 5;
+  const size = 110;
+  const strokeWidth = 6;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const progress = timeRemaining / totalTime;
@@ -90,7 +90,7 @@ function CountdownTimer({ timeRemaining, totalTime = 15, phase, hidden }: Countd
         <span
           className="font-black tabular-nums"
           style={{
-            fontSize: timeRemaining >= 10 ? '28px' : '34px',
+            fontSize: timeRemaining >= 10 ? '38px' : '46px',
             color: textColor,
             textShadow: `0 0 10px ${glowColor}`,
           }}

@@ -273,6 +273,7 @@ export default function BullBullGame() {
 
   // Previous confirmed bets count to detect new confirmations
   const prevConfirmedBetsRef = useRef<number>(0);
+  const betNotifTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Show bet success notification when confirmedBets changes
   useEffect(() => {
@@ -288,12 +289,11 @@ export default function BullBullGame() {
         total,
       });
 
-      // Auto-hide after 3 seconds
-      const timer = setTimeout(() => {
+      if (betNotifTimerRef.current) clearTimeout(betNotifTimerRef.current);
+      betNotifTimerRef.current = setTimeout(() => {
         setBetNotification(prev => ({ ...prev, show: false }));
+        betNotifTimerRef.current = null;
       }, 3000);
-
-      return () => clearTimeout(timer);
     }
 
     prevConfirmedBetsRef.current = currentCount;
