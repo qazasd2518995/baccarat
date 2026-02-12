@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 
 const AUDIO_FILES = {
   placeBets: '/audio/place-bets.mp3',
@@ -11,8 +11,45 @@ const AUDIO_FILES = {
 
 type SoundKey = keyof typeof AUDIO_FILES;
 
+// Global unlock state — shared across all hook instances
+let audioUnlocked = false;
+
+function unlockAudio() {
+  if (audioUnlocked) return;
+  // Create a silent audio context interaction to unlock autoplay
+  const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const buffer = ctx.createBuffer(1, 1, 22050);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(ctx.destination);
+  source.start(0);
+  audioUnlocked = true;
+  // Remove listeners after unlock
+  document.removeEventListener('click', unlockAudio, true);
+  document.removeEventListener('touchstart', unlockAudio, true);
+  document.removeEventListener('keydown', unlockAudio, true);
+}
+
+// Register unlock listeners once
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', unlockAudio, true);
+  document.addEventListener('touchstart', unlockAudio, true);
+  document.addEventListener('keydown', unlockAudio, true);
+}
+
 export function useTTS(muted: boolean) {
   const audioCache = useRef<Map<string, HTMLAudioElement>>(new Map());
+
+  // Pre-load all audio files on mount so they're ready to play
+  useEffect(() => {
+    for (const src of Object.values(AUDIO_FILES)) {
+      if (!audioCache.current.has(src)) {
+        const audio = new Audio(src);
+        audio.preload = 'auto';
+        audioCache.current.set(src, audio);
+      }
+    }
+  }, []);
 
   const play = useCallback((key: SoundKey) => {
     if (muted) return;
