@@ -312,11 +312,13 @@ export default function Lobby() {
 
   // Filter tables based on selected category and view mode
   const filteredTables = useMemo(() => tables.filter((table) => {
+    // Hide Bull Bull tables
+    if (table.gameType === 'bullBull') return false;
+
     // Filter by game type
     if (selectedCategory !== 'all') {
       if (selectedCategory === 'baccarat' && table.gameType !== 'baccarat') return false;
       if (selectedCategory === 'dt' && table.gameType !== 'dragonTiger') return false;
-      if (selectedCategory === 'bullbull' && table.gameType !== 'bullBull') return false;
     }
 
     // Filter by good road mode
@@ -496,7 +498,6 @@ export default function Lobby() {
                 { id: 'all', labelKey: 'allGames', icon: LayoutGrid },
                 { id: 'baccarat', labelKey: 'baccarat', icon: Spade },
                 { id: 'dt', labelKey: 'dragonTiger', icon: null },
-                { id: 'bullbull', labelKey: 'bullBull', icon: null },
               ].map((tab) => (
                 <button
                   key={tab.id}
