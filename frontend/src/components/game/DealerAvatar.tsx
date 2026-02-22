@@ -91,6 +91,19 @@ export default function DealerAvatar({ isDealing, dealerName, size = 'lg' }: Dea
           <directionalLight position={[2, 3, 2]} intensity={1.3} color="#fff5e0" />
           <directionalLight position={[-2, 1, -1]} intensity={0.3} color="#c0d0ff" />
           <pointLight position={[0, 0.5, 1.5]} intensity={0.5} color="#ffd700" distance={5} />
+          {/* Debug: red cube at origin to verify camera */}
+          <mesh position={[0, 0, 0]}>
+            <boxGeometry args={[0.3, 0.3, 0.3]} />
+            <meshStandardMaterial color="red" />
+          </mesh>
+          <mesh position={[0, 0.5, 0]}>
+            <boxGeometry args={[0.2, 0.2, 0.2]} />
+            <meshStandardMaterial color="green" />
+          </mesh>
+          <mesh position={[0, -0.5, 0]}>
+            <boxGeometry args={[0.2, 0.2, 0.2]} />
+            <meshStandardMaterial color="blue" />
+          </mesh>
           <Suspense fallback={null}>
             <DealerModel isDealing={isDealing} onLoaded={() => setStatus('loaded')} />
           </Suspense>
