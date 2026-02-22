@@ -64,7 +64,7 @@ function DealerModel({ isDealing, onLoaded }: { isDealing: boolean; onLoaded: ()
 
   return (
     <group ref={groupRef}>
-      <primitive object={idle.scene} scale={2.8} position={[0, -0.85, 0]} />
+      <primitive object={idle.scene} scale={2.8} position={[0, -1.2, 0]} />
     </group>
   );
 }
@@ -81,7 +81,7 @@ export default function DealerAvatar({ isDealing, dealerName, size = 'lg' }: Dea
     <div className="relative flex flex-col items-center" style={{ height: h, width: '100%' }}>
       <div style={{ width: Math.min(h * 1.4, 500), height: h, border: '1px solid rgba(255,0,0,0.3)' }}>
         <Canvas
-          camera={{ position: [0, 0.25, 1.6], fov: 34 }}
+          camera={{ position: [0, 0.35, 1.8], fov: 36 }}
           gl={{ alpha: true, antialias: true, powerPreference: 'default' }}
           dpr={[1, 1.5]}
           style={{ background: 'transparent', pointerEvents: 'none' }}
