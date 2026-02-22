@@ -249,12 +249,25 @@ export default function BullBullGame() {
     if (phase === 'dealing' && prevBBPhaseRef.current !== 'dealing') {
       expectingBBCardsRef.current = true;
     }
-    if (phase === 'betting') {
+    // TTS: 請下注
+    if (phase === 'betting' && prevBBPhaseRef.current !== 'betting') {
+      playSound('placeBets');
+      expectingBBCardsRef.current = false;
+      setSkipBBCardAnim(false);
+    } else if (phase === 'betting') {
       expectingBBCardsRef.current = false;
       setSkipBBCardAnim(false);
     }
+    // TTS: 停止下注
+    if (phase === 'sealed' && prevBBPhaseRef.current !== 'sealed') {
+      playSound('stopBets');
+    }
+    // TTS: 結果語音 — 牛牛用 bankerWins 代表結果出來
+    if (phase === 'result' && prevBBPhaseRef.current !== 'result') {
+      playSound('bankerWins');
+    }
     prevBBPhaseRef.current = phase;
-  }, [phase]);
+  }, [phase, playSound]);
 
   const prevBankerRef = useRef(banker);
   useEffect(() => {

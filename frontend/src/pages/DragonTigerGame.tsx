@@ -496,13 +496,29 @@ export default function DragonTigerGame() {
     if (phase === 'dealing' && prevDTPhaseRef.current !== 'dealing') {
       expectingDTCardsRef.current = true;
     }
-    if (phase === 'betting') {
+    // TTS: 請下注
+    if (phase === 'betting' && prevDTPhaseRef.current !== 'betting') {
+      playSound('placeBets');
+      expectingDTCardsRef.current = false;
+      setSkipCardAnim(false);
+      setVsPulse(false);
+    } else if (phase === 'betting') {
       expectingDTCardsRef.current = false;
       setSkipCardAnim(false);
       setVsPulse(false);
     }
+    // TTS: 停止下注
+    if (phase === 'sealed' && prevDTPhaseRef.current !== 'sealed') {
+      playSound('stopBets');
+    }
+    // TTS: 結果語音 — 龍用 playerWins，虎用 bankerWins
+    if (phase === 'result' && prevDTPhaseRef.current !== 'result' && lastResult) {
+      if (lastResult === 'dragon') playSound('playerWins');
+      else if (lastResult === 'tiger') playSound('bankerWins');
+      else playSound('tie');
+    }
     prevDTPhaseRef.current = phase;
-  }, [phase]);
+  }, [phase, lastResult, playSound]);
 
   // When cards appear, decide whether to animate
   const prevDragonCardRef = useRef(dragonCard);
