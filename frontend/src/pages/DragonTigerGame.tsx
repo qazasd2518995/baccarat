@@ -956,7 +956,7 @@ export default function DragonTigerGame() {
             </div>
 
             {/* Cards Display - Dragon vs Tiger */}
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex-1 relative flex items-center justify-center">
               <div className="flex items-center gap-6 sm:gap-12 lg:gap-20">
                 {/* Dragon Side */}
                 <div className="text-center">
@@ -1035,19 +1035,18 @@ export default function DragonTigerGame() {
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Fake bet chips on table — map DT bets to player/tie/banker zones */}
-            <TableChipDisplay
-              targetBets={{
-                player: (fakeBets.dragon || 0) + (fakeBets.dragon_big || 0) + (fakeBets.dragon_small || 0),
-                tie: (fakeBets.dt_tie || 0) + (fakeBets.dt_suited_tie || 0),
-                banker: (fakeBets.tiger || 0) + (fakeBets.tiger_big || 0) + (fakeBets.tiger_small || 0),
-              }}
-              phase={phase}
-            />
+              {/* Fake bet chips on table */}
+              <TableChipDisplay
+                targetBets={{
+                  player: (fakeBets.dragon || 0) + (fakeBets.dragon_big || 0) + (fakeBets.dragon_small || 0) + (fakeBets.dragon_odd || 0) + (fakeBets.dragon_even || 0) + (fakeBets.dragon_red || 0) + (fakeBets.dragon_black || 0),
+                  tie: (fakeBets.dt_tie || 0) + (fakeBets.dt_suited_tie || 0),
+                  banker: (fakeBets.tiger || 0) + (fakeBets.tiger_big || 0) + (fakeBets.tiger_small || 0) + (fakeBets.tiger_odd || 0) + (fakeBets.tiger_even || 0) + (fakeBets.tiger_red || 0) + (fakeBets.tiger_black || 0),
+                }}
+                phase={phase}
+              />
 
-            {/* Result Overlay */}
+              {/* Result Overlay */}
             <AnimatePresence>
               {showResult && (
                 <motion.div
@@ -1073,6 +1072,7 @@ export default function DragonTigerGame() {
                 </motion.div>
               )}
             </AnimatePresence>
+            </div>
           </DealerTable3D>
 
           {/* Betting Panel */}
