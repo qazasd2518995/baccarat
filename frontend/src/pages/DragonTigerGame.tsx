@@ -46,7 +46,6 @@ import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
 import CountdownTimer from '../components/game/CountdownTimer';
 import DealerTable3D from '../components/game/DealerTable3D';
 import TableChipDisplay from '../components/game/TableChipDisplay';
-import { formatAmount } from '../utils/format';
 import {
   GameSettingsModal,
   GameRulesModal,
