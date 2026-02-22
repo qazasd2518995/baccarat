@@ -48,7 +48,7 @@ export default function DealerTable3D({
 
       {/* === Dealer — absolute positioned, overlaps into table === */}
       <div
-        className="absolute top-0 left-0 right-0 z-30 flex justify-center pointer-events-none"
+        className="absolute top-0 left-0 right-0 z-10 flex justify-center pointer-events-none"
         style={{ height: '50%' }}
       >
         {/* Ambient glow behind dealer */}

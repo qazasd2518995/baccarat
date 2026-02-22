@@ -56,7 +56,7 @@ function DealerModel({ isDealing }: { isDealing: boolean }) {
 
   return (
     <group ref={groupRef}>
-      <primitive object={idle.scene} scale={2.0} position={[0, -1.15, 0]} />
+      <primitive object={idle.scene} scale={2.4} position={[0, -1.4, 0]} />
     </group>
   );
 }
