@@ -18,7 +18,6 @@ import {
   HeartOff,
   BarChart2,
   FileText,
-  Info,
   X,
   RotateCcw,
   Check,
@@ -722,9 +721,6 @@ export default function DragonTigerGame() {
             className="p-1 text-gray-400 hover:text-white"
           >
             <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button className="hidden sm:block p-1 text-gray-400 hover:text-white">
-            <Info className="w-4 h-4" />
           </button>
           <button
             onClick={() => setIsRulesOpen(true)}

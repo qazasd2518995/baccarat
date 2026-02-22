@@ -13,7 +13,6 @@ import {
   Maximize,
   Minimize,
   HelpCircle,
-  Video,
   Heart,
   HeartOff,
   BarChart2,
@@ -26,7 +25,6 @@ import {
   WifiOff,
   ArrowUpDown,
   Gift,
-  Smile,
   Send,
   MapPin,
   CheckCircle,
@@ -1412,11 +1410,10 @@ export default function Game() {
                 </button>
               </div>
               <div className="hidden lg:flex items-center gap-3">
-                <button className="text-xs text-gray-400 hover:text-white">{t('signal')}</button>
-                <button className="text-xs text-gray-400 hover:text-white flex items-center gap-1">
-                  <Video className="w-3 h-3" /> {t('liveCheck')}
-                </button>
-                <button className="text-xs text-orange-400 hover:text-orange-300">{t('gifts')}</button>
+                <button
+                  onClick={() => setIsGiftOpen(true)}
+                  className="text-xs text-orange-400 hover:text-orange-300"
+                >{t('gifts')}</button>
               </div>
             </div>
 
@@ -1813,15 +1810,12 @@ export default function Game() {
               <span className="text-xs text-gray-500 flex items-center gap-0.5"><User className="w-3 h-3" /> 958</span>
               <span className="text-xs text-gray-500 flex items-center gap-0.5"><MapPin className="w-3 h-3" /> 1</span>
             </div>
-            <div className="flex gap-2 mt-2">
+            <div className="mt-2">
               <button
                 onClick={() => setIsTableSwitchOpen(true)}
-                className="flex-1 text-xs py-1 bg-[#1e2a3a] rounded text-gray-300 hover:bg-[#2a3a4a] transition"
+                className="w-full text-xs py-1 bg-[#1e2a3a] rounded text-gray-300 hover:bg-[#2a3a4a] transition"
               >
                 {t('switchTable')}
-              </button>
-              <button className="flex-1 text-xs py-1 bg-[#1e2a3a] rounded text-gray-300 hover:bg-[#2a3a4a] transition">
-                {t('multiTables')}
               </button>
             </div>
           </div>
@@ -1905,7 +1899,6 @@ export default function Game() {
               >
                 <Gift className="w-4 h-4" />
               </button>
-              <button className="text-gray-500 hover:text-gray-300"><Smile className="w-4 h-4" /></button>
               <button
                 onClick={handleSendChat}
                 disabled={!chatInput.trim()}
@@ -1947,9 +1940,6 @@ export default function Game() {
               className="w-full text-left text-xs text-gray-400 flex items-center gap-2 py-1 hover:bg-gray-800/50 rounded px-2 -mx-2"
             >
               <HelpCircle className="w-3 h-3" /> {t('gameRules')}
-            </button>
-            <button className="w-full text-left text-xs text-gray-400 flex items-center gap-2 py-1 hover:bg-gray-800/50 rounded px-2 -mx-2">
-              <Video className="w-3 h-3" /> {t('liveScene')}
             </button>
           </div>
         </div>

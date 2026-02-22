@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { leaderboardApi, tablesApi } from '../services/api';
 import { useLobbySocket } from '../hooks/useLobbySocket';
 import {
-  Bell,
   Settings,
   User,
   Users,
@@ -15,8 +14,6 @@ import {
   BarChart2,
   FileText,
   HelpCircle,
-  Maximize,
-  ChevronRight,
   Globe,
   Pencil,
   RefreshCw,
@@ -356,9 +353,6 @@ export default function Lobby() {
 
         {/* Right - User Info (desktop) */}
         <div className="hidden md:flex items-center gap-4">
-          <button className="text-gray-400 hover:text-white">
-            <Bell className="w-5 h-5" />
-          </button>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
               <User className="w-4 h-4 text-white" />
@@ -385,9 +379,6 @@ export default function Lobby() {
 
         {/* Right - Mobile icons */}
         <div className="flex md:hidden items-center gap-2">
-          <button className="text-gray-400 hover:text-white p-1">
-            <Bell className="w-5 h-5" />
-          </button>
           <button
             onClick={() => {
               logout();
@@ -458,13 +449,6 @@ export default function Lobby() {
           <div className="flex-1 p-4 overflow-y-auto">
             <div className="bg-gradient-to-b from-orange-500/20 to-transparent rounded-t-lg p-2 mb-2">
               <span className="text-orange-400 font-bold text-sm">{t('billboard')}</span>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex gap-1 mb-3">
-              <button className="flex-1 text-xs py-1.5 bg-[#1e2a3a] text-white rounded">{t('playerTab')}</button>
-              <button className="flex-1 text-xs py-1.5 bg-gray-700/50 text-gray-500 rounded border-b-2 border-orange-400">{t('dealerTab')}</button>
-              <button className="flex-1 text-xs py-1.5 bg-gray-700/50 text-gray-500 rounded">{t('giftsTab')}</button>
             </div>
 
             <div className="flex gap-2 mb-4">
@@ -594,13 +578,6 @@ export default function Lobby() {
               </button>
             </div>
 
-            {/* Action buttons */}
-            <button className="hidden sm:block p-1 text-gray-500 hover:text-white">
-              <Maximize className="w-4 h-4" />
-            </button>
-            <button className="hidden sm:block p-1 text-gray-500 hover:text-white">
-              <ChevronRight className="w-4 h-4" />
-            </button>
           </div>
 
           {/* Tables Grid */}
