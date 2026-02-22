@@ -1178,15 +1178,16 @@ export default function Game() {
         </div>
 
         {/* Center - Game Area */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 relative">
+          {/* Countdown timer — positioned over entire game area (above dealer + table) */}
+          <CountdownTimer timeRemaining={timeRemaining} phase={phase} hidden={lastResult !== null || frozenResult !== null || showResult} />
+
           {/* Video Area - 3D Dealer Table */}
           <DealerTable3D
             isDealing={phase === 'dealing'}
             dealerName={currentDealerName}
             gameType="baccarat"
           >
-              {/* Countdown timer */}
-              <CountdownTimer timeRemaining={timeRemaining} phase={phase} hidden={lastResult !== null || frozenResult !== null || showResult} />
 
               {/* Top info bar */}
               <div className="relative z-10 flex items-center justify-center pt-2 pb-1">

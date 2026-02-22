@@ -96,9 +96,9 @@ let chipIdCounter = 0;
 
 function createChip(): ChipData {
   const id = ++chipIdCounter;
-  // Scatter within zone: x 10-90%, y 10-75% (leave bottom for label)
-  const x = 10 + Math.random() * 80;
-  const y = 5 + Math.random() * 65;
+  // Scatter within zone: x 15-85%, y 5-55% (compact, leave bottom for label)
+  const x = 15 + Math.random() * 70;
+  const y = 5 + Math.random() * 50;
   const rotation = (Math.random() - 0.5) * 40;
   // Random fly-in from edges
   const angle = Math.random() * Math.PI * 2;
@@ -205,7 +205,7 @@ function TableChipDisplay({ targetBets, phase }: TableChipDisplayProps) {
   if (!has) return null;
 
   return (
-    <div className="absolute bottom-10 sm:bottom-14 left-8 right-8 h-[72px] sm:h-[90px] z-10 flex gap-2 pointer-events-none">
+    <div className="absolute bottom-2 sm:bottom-4 left-8 right-8 h-[60px] sm:h-[72px] z-10 flex gap-2 pointer-events-none">
       <ChipZone label="閒" labelColor="text-blue-400" chips={playerZone.chips} amount={playerZone.currentAmount} />
       <ChipZone label="和" labelColor="text-green-400" chips={tieZone.chips} amount={tieZone.currentAmount} />
       <ChipZone label="莊" labelColor="text-red-400" chips={bankerZone.chips} amount={bankerZone.currentAmount} />
