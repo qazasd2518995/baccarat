@@ -937,16 +937,16 @@ export default function DragonTigerGame() {
         </div>
 
         {/* Center - Game Area */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 relative">
+          {/* Countdown timer — over entire game area */}
+          <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
+
           {/* Video Area - 3D Dealer Table */}
           <DealerTable3D
             isDealing={phase === 'dealing'}
             dealerName={currentDealerName}
             gameType="dragonTiger"
           >
-            {/* Countdown timer */}
-            <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
-
             {/* Round Info */}
             <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 rounded px-3 py-1 text-sm z-20">
               <span className="text-gray-400">{t('dragonTiger')} {shoeNumber}</span>
@@ -955,7 +955,7 @@ export default function DragonTigerGame() {
             </div>
 
             {/* Cards Display - Dragon vs Tiger */}
-            <div className="flex-1 relative flex items-center justify-center">
+            <div className="flex-1 relative flex items-end justify-center pb-24 sm:pb-28">
               <div className="flex items-center gap-6 sm:gap-12 lg:gap-20">
                 {/* Dragon Side */}
                 <div className="text-center">
