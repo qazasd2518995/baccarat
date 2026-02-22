@@ -511,14 +511,9 @@ export default function DragonTigerGame() {
     if (phase === 'sealed' && prevDTPhaseRef.current !== 'sealed') {
       playSound('stopBets');
     }
-    // TTS: 結果語音
-    if (phase === 'result' && prevDTPhaseRef.current !== 'result' && lastResult) {
-      if (lastResult === 'dragon') playSound('dragonWins');
-      else if (lastResult === 'tiger') playSound('tigerWins');
-      else playSound('dtTie');
-    }
+    // Result sound is handled in the delayed result display effect
     prevDTPhaseRef.current = phase;
-  }, [phase, lastResult, playSound]);
+  }, [phase, playSound]);
 
   // When cards appear, decide whether to animate
   const prevDragonCardRef = useRef(dragonCard);
@@ -700,7 +695,43 @@ export default function DragonTigerGame() {
 
   // Net result from last settlement
   const netResult = lastSettlement?.netResult || 0;
-  const showResult = phase === 'result' && lastResult !== null;
+
+  // Delayed result display — wait for both cards flipped + 2s delay
+  const [showResult, setShowResult] = useState(false);
+  const resultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    // Both cards flipped AND we have a result → start 2s delay
+    if (dragonFlipped && tigerFlipped && lastResult && phase === 'result' && !showResult) {
+      // Play result sound
+      if (lastResult === 'dragon') playSound('dragonWins');
+      else if (lastResult === 'tiger') playSound('tigerWins');
+      else playSound('dtTie');
+
+      resultTimerRef.current = setTimeout(() => {
+        setShowResult(true);
+        // Auto-hide after 2.5s
+        resultTimerRef.current = setTimeout(() => {
+          setShowResult(false);
+        }, 2500);
+      }, 2000);
+    }
+    // Reset when new round starts
+    if (phase === 'betting') {
+      setShowResult(false);
+      if (resultTimerRef.current) {
+        clearTimeout(resultTimerRef.current);
+        resultTimerRef.current = null;
+      }
+    }
+  }, [dragonFlipped, tigerFlipped, lastResult, phase, showResult, playSound]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (resultTimerRef.current) clearTimeout(resultTimerRef.current);
+    };
+  }, []);
 
   // Bet type labels
   const betTypeLabels: Record<string, string> = {
