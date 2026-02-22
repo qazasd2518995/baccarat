@@ -623,7 +623,8 @@ export default function Lobby() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
                       onClick={() => handleJoinTable(table.id, table.gameType)}
-                      className="bg-white rounded-sm overflow-hidden border border-gray-300 hover:border-orange-500 cursor-pointer group transition-all"
+                      className="bg-[#161b26] rounded-lg overflow-hidden border border-[#2a3040] hover:border-[#d4af37] cursor-pointer group transition-all duration-200 hover:shadow-[0_0_16px_rgba(212,175,55,0.25)]"
+                      style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
                     >
                       {/* Header Bar — dark gradient */}
                       <div className="h-7 bg-gradient-to-r from-[#1a2332] to-[#0d1825] flex items-center px-2 gap-2">
@@ -665,16 +666,22 @@ export default function Lobby() {
                           <span className="text-[10px] text-white font-bold">{table.dealer}</span>
                         </div>
 
-                        {/* Status badge — bottom right */}
+                        {/* Status badge — bottom right with glow */}
                         {table.status === 'betting' && table.countdown && table.countdown > 0 && (
-                          <div className="absolute bottom-1 right-1 px-2 py-0.5 bg-green-600 text-white text-[10px] font-bold rounded">
+                          <div
+                            className="absolute bottom-1 right-1 px-2 py-0.5 text-white text-[10px] font-bold rounded"
+                            style={{
+                              backgroundColor: table.countdown <= 3 ? '#ef4444' : table.countdown <= 5 ? '#eab308' : '#22c55e',
+                              boxShadow: `0 0 8px ${table.countdown <= 3 ? 'rgba(239,68,68,0.5)' : table.countdown <= 5 ? 'rgba(234,179,8,0.5)' : 'rgba(34,197,94,0.5)'}`,
+                            }}
+                          >
                             {table.countdown}s
                           </div>
                         )}
 
-                        {/* Hover overlay */}
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <span className="bg-orange-500 text-white px-6 py-2 rounded-lg font-bold text-sm">{t('joinTable')}</span>
+                        {/* Hover overlay — subtle with enter badge */}
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-end p-2">
+                          <span className="bg-[#d4af37] text-black px-3 py-1 rounded text-xs font-bold">{t('joinTable')}</span>
                         </div>
                       </div>
                     </motion.div>
