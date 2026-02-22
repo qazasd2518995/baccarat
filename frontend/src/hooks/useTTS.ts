@@ -9,6 +9,12 @@ const AUDIO_FILES = {
   tie: '/audio/tie.mp3',
   chipPlace: '/audio/chip-place.mp3',
   betSuccessVoice: '/audio/bet-success-voice.mp3',
+  // Dragon Tiger
+  dragonWins: '/audio/dragon-wins.mp3',
+  tigerWins: '/audio/tiger-wins.mp3',
+  dtTie: '/audio/dt-tie.mp3',
+  // Bull Bull
+  bbResult: '/audio/bb-result.mp3',
 } as const;
 
 type SoundKey = keyof typeof AUDIO_FILES;

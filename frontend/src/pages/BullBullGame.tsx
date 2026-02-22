@@ -262,9 +262,9 @@ export default function BullBullGame() {
     if (phase === 'sealed' && prevBBPhaseRef.current !== 'sealed') {
       playSound('stopBets');
     }
-    // TTS: 結果語音 — 牛牛用 bankerWins 代表結果出來
+    // TTS: 結果語音 — 開牌
     if (phase === 'result' && prevBBPhaseRef.current !== 'result') {
-      playSound('bankerWins');
+      playSound('bbResult');
     }
     prevBBPhaseRef.current = phase;
   }, [phase, playSound]);

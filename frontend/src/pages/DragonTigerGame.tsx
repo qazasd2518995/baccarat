@@ -511,11 +511,11 @@ export default function DragonTigerGame() {
     if (phase === 'sealed' && prevDTPhaseRef.current !== 'sealed') {
       playSound('stopBets');
     }
-    // TTS: 結果語音 — 龍用 playerWins，虎用 bankerWins
+    // TTS: 結果語音
     if (phase === 'result' && prevDTPhaseRef.current !== 'result' && lastResult) {
-      if (lastResult === 'dragon') playSound('playerWins');
-      else if (lastResult === 'tiger') playSound('bankerWins');
-      else playSound('tie');
+      if (lastResult === 'dragon') playSound('dragonWins');
+      else if (lastResult === 'tiger') playSound('tigerWins');
+      else playSound('dtTie');
     }
     prevDTPhaseRef.current = phase;
   }, [phase, lastResult, playSound]);
