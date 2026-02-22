@@ -11,7 +11,6 @@ import {
   Spade,
   LayoutGrid,
   Heart,
-  BarChart2,
   FileText,
   HelpCircle,
   Globe,
@@ -68,7 +67,6 @@ export default function Lobby() {
   const { user, logout } = useAuthStore();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState<'normal' | 'good_road'>('normal');
-  const [showResultsProportion, setShowResultsProportion] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Modal states
@@ -641,12 +639,6 @@ export default function Lobby() {
               className="w-full text-left text-sm text-pink-400 flex items-center gap-2 py-2 px-3 hover:bg-gray-800/30 rounded transition-colors"
             >
               <Heart className="w-4 h-4" /> {t('followingList')}
-            </button>
-            <button
-              onClick={() => setShowResultsProportion(!showResultsProportion)}
-              className={`w-full text-left text-sm flex items-center gap-2 py-2 px-3 hover:bg-gray-800/30 rounded transition-colors ${showResultsProportion ? 'text-orange-400' : 'text-gray-400'}`}
-            >
-              <BarChart2 className="w-4 h-4" /> {t('resultsProportion')}
             </button>
             <button
               onClick={() => setShowReportModal(true)}
