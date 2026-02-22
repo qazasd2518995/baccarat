@@ -67,7 +67,7 @@ export function MobileNavBar({
                 className="w-full flex items-center gap-3 p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 transition-colors"
               >
                 <Home className="w-5 h-5 text-gray-400" />
-                <span className="text-white">遊戲大廳</span>
+                <span className="text-white">{t('gameLobby')}</span>
               </button>
             </div>
           </div>

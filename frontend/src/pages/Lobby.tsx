@@ -14,8 +14,6 @@ import {
   FileText,
   HelpCircle,
   Globe,
-  Pencil,
-  RefreshCw,
   ArrowUpDown,
   LogOut,
   Menu,
@@ -372,13 +370,11 @@ export default function Lobby() {
                 <div className="flex items-center gap-2 mb-1">
                   <User className="w-3 h-3 text-gray-500" />
                   <span className="text-sm text-gray-300">{user?.username || 'meta111698'}</span>
-                  <Pencil className="w-3 h-3 text-gray-600 cursor-pointer hover:text-gray-400" />
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500">$</span>
                   <span className="text-xs text-gray-400">USD</span>
                   <span className="text-yellow-400 font-bold">{Number(user?.balance || 0).toLocaleString()}</span>
-                  <RefreshCw className="w-3 h-3 text-gray-600 cursor-pointer hover:text-gray-400" />
                 </div>
               </div>
             </div>

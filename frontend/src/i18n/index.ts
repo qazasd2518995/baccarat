@@ -299,6 +299,7 @@ const resources = {
       follow: '关注',
 
       // Lobby
+      gameLobby: '遊戲大廳',
       allGames: '全部',
       baccarat: '百家乐',
       dragonTiger: '龙虎',
@@ -782,6 +783,7 @@ const resources = {
       follow: 'Follow',
 
       // Lobby
+      gameLobby: 'Game Lobby',
       allGames: 'All',
       baccarat: 'Baccarat',
       dragonTiger: 'DT',
