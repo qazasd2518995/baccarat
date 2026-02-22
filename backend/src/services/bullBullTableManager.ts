@@ -114,7 +114,7 @@ async function saveTableState(tableId: string): Promise<void> {
         shoeNumber: state.shoeNumber,
         roundCounter: state.roundNumber,
         cardsRemaining: state.cardsRemaining,
-        shuffledDeck: state.currentShoe as any,
+        shuffledDeck: undefined,
       },
       create: {
         tableId,
@@ -122,7 +122,7 @@ async function saveTableState(tableId: string): Promise<void> {
         shoeNumber: state.shoeNumber,
         roundCounter: state.roundNumber,
         cardsRemaining: state.cardsRemaining,
-        shuffledDeck: state.currentShoe as any,
+        shuffledDeck: undefined,
       },
     });
   } catch (error) {

@@ -26,6 +26,7 @@ import { startMultiTableGameLoop } from './services/multiTableGameLoop.js';
 import { startMultiTableDragonTiger } from './services/multiTableDragonTiger.js';
 import { startMultiTableBullBull } from './services/multiTableBullBull.js';
 import type { ServerToClientEvents, ClientToServerEvents } from './socket/types.js';
+import { prisma } from './lib/prisma.js';
 
 dotenv.config();
 
@@ -82,8 +83,29 @@ initializeSocket(io);
 // Set socket instance for other modules to use
 setSocketInstance(io);
 
+// Clean up old DB records to prevent disk space exhaustion
+async function cleanupOldRecords() {
+  const cutoff = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000); // 3 days ago
+  console.log(`[Cleanup] Deleting records older than ${cutoff.toISOString()}...`);
+  try {
+    // Delete bets first (FK references rounds)
+    const bets = await prisma.bet.deleteMany({ where: { createdAt: { lt: cutoff } } });
+    const rounds = await prisma.gameRound.deleteMany({ where: { createdAt: { lt: cutoff } } });
+    const dtRounds = await prisma.dragonTigerRound.deleteMany({ where: { createdAt: { lt: cutoff } } });
+    const bbRounds = await prisma.bullBullRound.deleteMany({ where: { createdAt: { lt: cutoff } } });
+    const txns = await prisma.transaction.deleteMany({ where: { createdAt: { lt: cutoff } } });
+    const chats = await prisma.chatMessage.deleteMany({ where: { createdAt: { lt: cutoff } } });
+    const logs = await prisma.operationLog.deleteMany({ where: { createdAt: { lt: cutoff } } });
+    console.log(`[Cleanup] Deleted: ${bets.count} bets, ${rounds.count} rounds, ${dtRounds.count} DT rounds, ${bbRounds.count} BB rounds, ${txns.count} transactions, ${chats.count} chats, ${logs.count} logs`);
+  } catch (error) {
+    console.error('[Cleanup] Failed:', error);
+  }
+}
+
 // Start the server and all game loops
 async function start() {
+  // Clean up old records before starting game loops
+  await cleanupOldRecords();
   // Start the multi-table baccarat system (each table has independent game loop)
   startMultiTableGameLoop(io);
 

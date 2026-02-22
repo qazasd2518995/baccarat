@@ -94,14 +94,14 @@ export async function savePersistedState(): Promise<void> {
         shoeNumber,
         roundCounter,
         cardsRemaining,
-        shuffledDeck: shuffledDeck as any,
+        shuffledDeck: undefined,
       },
       create: {
         id: SINGLETON_ID,
         shoeNumber,
         roundCounter,
         cardsRemaining,
-        shuffledDeck: shuffledDeck as any,
+        shuffledDeck: undefined,
       },
     });
   } catch (error) {
