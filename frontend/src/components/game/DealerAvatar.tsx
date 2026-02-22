@@ -1,6 +1,6 @@
-import { Suspense, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { useGLTF, OrbitControls } from '@react-three/drei';
+import { Suspense, useEffect, useRef } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { useGLTF, useAnimations } from '@react-three/drei';
 import type { Group } from 'three';
 
 interface DealerAvatarProps {
@@ -9,47 +9,47 @@ interface DealerAvatarProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-/** 3D dealer model with idle sway and dealing lean animation */
+const IDLE_URL = '/models/dealer-idle.glb';
+const CARDS_URL = '/models/dealer-cards.glb';
+
+/** 3D dealer with Mixamo idle + dealing animations */
 function DealerModel({ isDealing }: { isDealing: boolean }) {
-  const { scene } = useGLTF('/models/dealer.glb');
   const groupRef = useRef<Group>(null);
-  const timeRef = useRef(0);
-  const dealPhaseRef = useRef(0);
 
-  useFrame((_, delta) => {
-    if (!groupRef.current) return;
-    timeRef.current += delta;
+  // Load both models (same mesh, different animations)
+  const idle = useGLTF(IDLE_URL);
+  const cards = useGLTF(CARDS_URL);
 
-    // Idle: gentle breathing sway
-    const idleY = Math.sin(timeRef.current * 1.2) * 0.005;
-    const idleRotZ = Math.sin(timeRef.current * 0.8) * 0.008;
+  // Get animation actions from both
+  const { actions: idleActions } = useAnimations(idle.animations, groupRef);
+  const { actions: cardsActions } = useAnimations(cards.animations, groupRef);
 
-    if (isDealing) {
-      // Dealing: lean forward smoothly
-      dealPhaseRef.current = Math.min(dealPhaseRef.current + delta * 3, 1);
-      const lean = Math.sin(dealPhaseRef.current * Math.PI) * 0.08;
-      groupRef.current.rotation.x = lean;
-      groupRef.current.position.y = idleY - lean * 0.3;
-      groupRef.current.rotation.z = idleRotZ;
-    } else {
-      // Return to idle
-      dealPhaseRef.current = Math.max(dealPhaseRef.current - delta * 2, 0);
-      const lean = Math.sin(dealPhaseRef.current * Math.PI) * 0.08;
-      groupRef.current.rotation.x = lean;
-      groupRef.current.position.y = idleY;
-      groupRef.current.rotation.z = idleRotZ;
+  useEffect(() => {
+    // All Mixamo animations are named "mixamo.com"
+    const idleAction = idleActions['mixamo.com'];
+    const cardsAction = cardsActions['mixamo.com'];
+
+    if (isDealing && cardsAction) {
+      // Crossfade to dealing animation
+      idleAction?.fadeOut(0.3);
+      cardsAction.reset().fadeIn(0.3).play();
+    } else if (idleAction) {
+      // Crossfade back to idle
+      cardsAction?.fadeOut(0.3);
+      idleAction.reset().fadeIn(0.3).play();
     }
-  });
+  }, [isDealing, idleActions, cardsActions]);
 
   return (
     <group ref={groupRef}>
-      <primitive object={scene} scale={1.8} position={[0, -0.85, 0]} />
+      <primitive object={idle.scene} scale={1.1} position={[0, -1.05, 0]} />
     </group>
   );
 }
 
-// Preload model
-useGLTF.preload('/models/dealer.glb');
+// Preload both models
+useGLTF.preload(IDLE_URL);
+useGLTF.preload(CARDS_URL);
 
 export default function DealerAvatar({ isDealing, dealerName, size = 'lg' }: DealerAvatarProps) {
   const heights = { sm: 90, md: 140, lg: 200 };
@@ -57,25 +57,19 @@ export default function DealerAvatar({ isDealing, dealerName, size = 'lg' }: Dea
 
   return (
     <div className="relative flex flex-col items-center" style={{ height: h }}>
-      <div style={{ width: h * 0.9, height: h }}>
+      <div style={{ width: h * 1.1, height: h }}>
         <Canvas
-          camera={{ position: [0, 0.1, 1.2], fov: 35 }}
+          camera={{ position: [0, 0, 2], fov: 30 }}
           gl={{ alpha: true, antialias: true }}
           dpr={[1, 2]}
           style={{ background: 'transparent' }}
         >
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[2, 3, 2]} intensity={1} />
-          <directionalLight position={[-1, 1, -1]} intensity={0.3} />
+          <ambientLight intensity={0.7} />
+          <directionalLight position={[2, 3, 2]} intensity={1.2} />
+          <directionalLight position={[-1, 2, -1]} intensity={0.4} />
           <Suspense fallback={null}>
             <DealerModel isDealing={isDealing} />
           </Suspense>
-          <OrbitControls
-            enabled={false}
-            enableZoom={false}
-            enablePan={false}
-            enableRotate={false}
-          />
         </Canvas>
       </div>
 
