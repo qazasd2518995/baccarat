@@ -163,24 +163,69 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
   // Helper to translate balance report note
   const translateNote = (note: string) => {
     if (!note) return '';
-    // Parse "Round #123 - Bets: tie:800" format
-    const roundMatch = note.match(/Round #(\d+)/);
-    const betsMatch = note.match(/Bets: (.+)/);
+    const isZh = i18n.language === 'zh';
 
-    if (roundMatch && betsMatch) {
-      const roundNum = roundMatch[1];
-      const bets = betsMatch[1];
-      // Translate bet types in the bets string
+    // Result translation map
+    const resultMap: Record<string, string> = {
+      banker: isZh ? '庄赢' : 'Banker',
+      player: isZh ? '闲赢' : 'Player',
+      tie: isZh ? '和局' : 'Tie',
+      dragon: isZh ? '龙赢' : 'Dragon',
+      tiger: isZh ? '虎赢' : 'Tiger',
+      dt_tie: isZh ? '和局' : 'Tie',
+    };
+
+    // Game prefix map
+    const prefixMap: Record<string, string> = {
+      'Table': isZh ? '百家乐' : 'Baccarat',
+      'DT Table': isZh ? '龙虎' : 'Dragon Tiger',
+      'BB Table': isZh ? '牛牛' : 'Bull Bull',
+      'Dragon Tiger': isZh ? '龙虎' : 'Dragon Tiger',
+      'Bull Bull': isZh ? '牛牛' : 'Bull Bull',
+    };
+
+    // Match: "Table Round #35 - banker" or "DT Table Round #12 - tiger" or "BB Table Round #5"
+    const tableMatch = note.match(/^(DT Table|BB Table|Table|Dragon Tiger|Bull Bull)\s+Round #(\d+)(?:\s*-\s*(.+))?$/i);
+    if (tableMatch) {
+      const prefix = prefixMap[tableMatch[1]] || tableMatch[1];
+      const roundNum = tableMatch[2];
+      const extra = tableMatch[3]?.trim().toLowerCase();
+      if (extra) {
+        // "BANKER wins" or just "banker"
+        const cleanResult = extra.replace(/\s*wins?\s*/i, '');
+        const translated = resultMap[cleanResult] || extra;
+        return isZh ? `${prefix} 第${roundNum}局 - ${translated}` : `${prefix} Round #${roundNum} - ${translated}`;
+      }
+      return isZh ? `${prefix} 第${roundNum}局` : `${prefix} Round #${roundNum}`;
+    }
+
+    // Match old format: "Round #123 - Bets: tie:800"
+    const oldMatch = note.match(/^Round #(\d+)\s*-\s*Bets:\s*(.+)$/);
+    if (oldMatch) {
+      const roundNum = oldMatch[1];
+      const bets = oldMatch[2];
       const translatedBets = bets.split(', ').map(bet => {
         const [type, amount] = bet.split(':');
         return `${translateBetType(type)}:${amount}`;
       }).join(', ');
-
-      if (i18n.language === 'zh') {
-        return `第${roundNum}局 - 下注: ${translatedBets}`;
-      }
-      return `Round #${roundNum} - Bets: ${translatedBets}`;
+      return isZh ? `第${roundNum}局 - 下注: ${translatedBets}` : `Round #${roundNum} - Bets: ${translatedBets}`;
     }
+
+    // Match old format: "Round #123 - BANKER wins"
+    const oldWinMatch = note.match(/^Round #(\d+)\s*-\s*(.+)\s+wins?$/i);
+    if (oldWinMatch) {
+      const roundNum = oldWinMatch[1];
+      const result = oldWinMatch[2].toLowerCase();
+      const translated = resultMap[result] || result;
+      return isZh ? `第${roundNum}局 - ${translated}` : `Round #${roundNum} - ${translated}`;
+    }
+
+    // Match simple: "Round #123"
+    const simpleMatch = note.match(/^Round #(\d+)$/);
+    if (simpleMatch) {
+      return isZh ? `第${simpleMatch[1]}局` : note;
+    }
+
     return note;
   };
 
