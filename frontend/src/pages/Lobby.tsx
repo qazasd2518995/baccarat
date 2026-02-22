@@ -652,35 +652,22 @@ export default function Lobby() {
                         <span className="text-green-400 text-xs font-bold ml-1">{t('roadTie') || '和'}{table.roadmap.tie}</span>
                       </div>
 
-                      {/* Body — dealer + roadmaps */}
-                      <div className="flex relative" style={{ minHeight: 148 }}>
-                        {/* Dealer section */}
-                        <div className="shrink-0 flex flex-col items-center justify-center bg-gray-100 border-r border-gray-300" style={{ width: 100 }}>
-                          {table.dealerAvatar ? (
-                            <img
-                              src={table.dealerAvatar}
-                              alt={table.dealer}
-                              className="w-[88px] h-[88px] object-cover rounded"
-                            />
-                          ) : (
-                            <div className="w-[88px] h-[88px] bg-gradient-to-br from-pink-300 to-purple-400 rounded flex items-center justify-center">
-                              <User className="w-10 h-10 text-white/80" />
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1 mt-1">
-                            <span className="text-[10px] bg-blue-600 text-white px-1 rounded" style={{ fontSize: '9px' }}>中文</span>
-                            <span className="text-xs text-gray-700 font-bold truncate" style={{ maxWidth: 60 }}>{table.dealer}</span>
-                          </div>
-                        </div>
-
-                        {/* Roadmap grids */}
-                        <div className="flex-1 min-w-0 overflow-hidden">
+                      {/* Body — full-width roadmap */}
+                      <div className="relative" style={{ minHeight: 148 }}>
+                        {/* Roadmap grids — full width */}
+                        <div className="w-full overflow-hidden" style={{ height: 148 }}>
                           <LobbyRoadmap roadHistory={table.roadHistory} />
                         </div>
 
-                        {/* Status badge overlay */}
+                        {/* Dealer name badge — bottom left */}
+                        <div className="absolute bottom-1 left-1 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
+                          <span className="text-[9px] bg-blue-600 text-white px-1 rounded">中文</span>
+                          <span className="text-[10px] text-white font-bold">{table.dealer}</span>
+                        </div>
+
+                        {/* Status badge — bottom right */}
                         {table.status === 'betting' && table.countdown && table.countdown > 0 && (
-                          <div className="absolute bottom-1 right-1 px-1.5 py-0.5 bg-green-600 text-white text-[10px] font-bold rounded-sm">
+                          <div className="absolute bottom-1 right-1 px-2 py-0.5 bg-green-600 text-white text-[10px] font-bold rounded">
                             {table.countdown}s
                           </div>
                         )}
