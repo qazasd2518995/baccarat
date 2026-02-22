@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { X, Volume2, VolumeX, Video, VideoOff, Gift, TrendingUp } from 'lucide-react';
+import { X, Volume2, VolumeX } from 'lucide-react';
 
 interface GameSettingsModalProps {
   isOpen: boolean;
@@ -10,24 +10,14 @@ interface GameSettingsModalProps {
 
 interface GameSettings {
   language: string;
-  videoSoundEnabled: boolean;
-  videoVolume: number;
   gameSoundEnabled: boolean;
   gameVolume: number;
-  showVideo: boolean;
-  showGiftPopup: boolean;
-  showDragonAlert: boolean;
 }
 
 const DEFAULT_SETTINGS: GameSettings = {
   language: 'zh',
-  videoSoundEnabled: true,
-  videoVolume: 50,
   gameSoundEnabled: true,
   gameVolume: 50,
-  showVideo: true,
-  showGiftPopup: true,
-  showDragonAlert: true,
 };
 
 const STORAGE_KEY = 'baccarat_game_settings';
@@ -36,7 +26,6 @@ export default function GameSettingsModal({ isOpen, onClose }: GameSettingsModal
   const { t, i18n } = useTranslation();
   const [settings, setSettings] = useState<GameSettings>(DEFAULT_SETTINGS);
 
-  // Load settings from localStorage on mount
   useEffect(() => {
     const savedSettings = localStorage.getItem(STORAGE_KEY);
     if (savedSettings) {
@@ -49,7 +38,6 @@ export default function GameSettingsModal({ isOpen, onClose }: GameSettingsModal
     }
   }, []);
 
-  // Save settings to localStorage whenever they change
   const updateSettings = (updates: Partial<GameSettings>) => {
     const newSettings = { ...settings, ...updates };
     setSettings(newSettings);
@@ -106,45 +94,6 @@ export default function GameSettingsModal({ isOpen, onClose }: GameSettingsModal
               </select>
             </div>
 
-            {/* Video Sound */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {settings.videoSoundEnabled ? (
-                    <Volume2 className="w-5 h-5 text-orange-400" />
-                  ) : (
-                    <VolumeX className="w-5 h-5 text-gray-500" />
-                  )}
-                  <span className="text-gray-300">{t('videoSound')}</span>
-                </div>
-                <button
-                  onClick={() => updateSettings({ videoSoundEnabled: !settings.videoSoundEnabled })}
-                  className={`w-12 h-6 rounded-full transition-colors relative ${
-                    settings.videoSoundEnabled ? 'bg-orange-500' : 'bg-gray-600'
-                  }`}
-                >
-                  <div
-                    className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                      settings.videoSoundEnabled ? 'translate-x-7' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-              {settings.videoSoundEnabled && (
-                <div className="flex items-center gap-3">
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={settings.videoVolume}
-                    onChange={(e) => updateSettings({ videoVolume: Number(e.target.value) })}
-                    className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
-                  />
-                  <span className="text-gray-400 text-sm w-10 text-right">{settings.videoVolume}%</span>
-                </div>
-              )}
-            </div>
-
             {/* Game Sound */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -182,70 +131,6 @@ export default function GameSettingsModal({ isOpen, onClose }: GameSettingsModal
                   <span className="text-gray-400 text-sm w-10 text-right">{settings.gameVolume}%</span>
                 </div>
               )}
-            </div>
-
-            {/* Show Video */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                {settings.showVideo ? (
-                  <Video className="w-5 h-5 text-orange-400" />
-                ) : (
-                  <VideoOff className="w-5 h-5 text-gray-500" />
-                )}
-                <span className="text-gray-300">{t('videoDisplay')}</span>
-              </div>
-              <button
-                onClick={() => updateSettings({ showVideo: !settings.showVideo })}
-                className={`w-12 h-6 rounded-full transition-colors relative ${
-                  settings.showVideo ? 'bg-orange-500' : 'bg-gray-600'
-                }`}
-              >
-                <div
-                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                    settings.showVideo ? 'translate-x-7' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Gift Popup */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Gift className={`w-5 h-5 ${settings.showGiftPopup ? 'text-orange-400' : 'text-gray-500'}`} />
-                <span className="text-gray-300">{t('giftPopup')}</span>
-              </div>
-              <button
-                onClick={() => updateSettings({ showGiftPopup: !settings.showGiftPopup })}
-                className={`w-12 h-6 rounded-full transition-colors relative ${
-                  settings.showGiftPopup ? 'bg-orange-500' : 'bg-gray-600'
-                }`}
-              >
-                <div
-                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                    settings.showGiftPopup ? 'translate-x-7' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {/* Dragon Alert */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <TrendingUp className={`w-5 h-5 ${settings.showDragonAlert ? 'text-orange-400' : 'text-gray-500'}`} />
-                <span className="text-gray-300">{t('dragonAlert')}</span>
-              </div>
-              <button
-                onClick={() => updateSettings({ showDragonAlert: !settings.showDragonAlert })}
-                className={`w-12 h-6 rounded-full transition-colors relative ${
-                  settings.showDragonAlert ? 'bg-orange-500' : 'bg-gray-600'
-                }`}
-              >
-                <div
-                  className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
-                    settings.showDragonAlert ? 'translate-x-7' : 'translate-x-1'
-                  }`}
-                />
-              </button>
             </div>
           </div>
 
