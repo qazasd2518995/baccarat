@@ -1,7 +1,6 @@
 import { Suspense, useEffect, useRef, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei';
-import { MeshoptDecoder } from 'meshoptimizer';
 import { AnimationClip } from 'three';
 import type { Group } from 'three';
 
@@ -14,16 +13,13 @@ interface DealerAvatarProps {
 const IDLE_URL = '/models/dealer-idle.glb';
 const CARDS_URL = '/models/dealer-cards.glb';
 
-// Register meshopt decoder for compressed GLB files
-useGLTF.defaults = { decoder: MeshoptDecoder } as never;
-
 /** 3D dealer with Mixamo idle + dealing animations */
 function DealerModel({ isDealing }: { isDealing: boolean }) {
   const groupRef = useRef<Group>(null);
 
-  // Load both models
-  const idle = useGLTF(IDLE_URL);
-  const cards = useGLTF(CARDS_URL);
+  // Load both models (useMeshopt=true for meshopt-compressed GLBs)
+  const idle = useGLTF(IDLE_URL, undefined, true);
+  const cards = useGLTF(CARDS_URL, undefined, true);
 
   // Merge all animations with unique names
   const allClips = useMemo(() => {
@@ -69,9 +65,9 @@ function DealerModel({ isDealing }: { isDealing: boolean }) {
   );
 }
 
-// Preload both models
-useGLTF.preload(IDLE_URL);
-useGLTF.preload(CARDS_URL);
+// Preload both models with meshopt decoder
+useGLTF.preload(IDLE_URL, undefined, true);
+useGLTF.preload(CARDS_URL, undefined, true);
 
 export default function DealerAvatar({ isDealing, dealerName, size = 'lg' }: DealerAvatarProps) {
   const heights = { sm: 100, md: 150, lg: 210 };
