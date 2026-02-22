@@ -7,6 +7,8 @@ const AUDIO_FILES = {
   playerWins: '/audio/player-wins.mp3',
   bankerWins: '/audio/banker-wins.mp3',
   tie: '/audio/tie.mp3',
+  chipPlace: '/audio/chip-place.mp3',
+  betSuccessVoice: '/audio/bet-success-voice.mp3',
 } as const;
 
 type SoundKey = keyof typeof AUDIO_FILES;

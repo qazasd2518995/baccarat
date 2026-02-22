@@ -21,13 +21,16 @@ import {
   Pencil,
   RefreshCw,
   ArrowUpDown,
-  Volume2,
   LogOut,
   Menu,
   X,
+  Music,
+  Music2,
+  SkipForward,
 } from 'lucide-react';
 import { MobileNavBar } from '../components/layout/MobileNavBar';
 import { useAuthStore } from '../store/authStore';
+import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import {
   GameSettingsModal,
   GameRulesModal,
@@ -76,6 +79,10 @@ export default function Lobby() {
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showFollowingModal, setShowFollowingModal] = useState(false);
+
+  // Background music
+  const [isBgmOn, setIsBgmOn] = useState(true);
+  const { toggleBgm, skipTrack } = useBackgroundMusic(false);
 
   // Leaderboard state
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<'daily' | 'weekly'>('daily');
@@ -524,8 +531,22 @@ export default function Lobby() {
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {/* Sub Navigation */}
           <div className="h-auto sm:h-10 bg-[#0d1117] flex flex-wrap sm:flex-nowrap items-center px-2 sm:px-4 gap-2 sm:gap-4 py-2 sm:py-0 border-b border-gray-800/50">
-            <button className="hidden sm:block text-gray-500 hover:text-white">
-              <Volume2 className="w-5 h-5" />
+            <button
+              onClick={() => {
+                const newState = toggleBgm();
+                setIsBgmOn(newState);
+              }}
+              className="hidden sm:block text-gray-500 hover:text-white"
+              title={isBgmOn ? '關閉音樂' : '開啟音樂'}
+            >
+              {isBgmOn ? <Music className="w-5 h-5 text-orange-400" /> : <Music2 className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={skipTrack}
+              className="hidden sm:block text-gray-500 hover:text-white"
+              title="下一首"
+            >
+              <SkipForward className="w-4 h-4" />
             </button>
 
             {/* Game Type Tabs - Scrollable on mobile */}

@@ -10,10 +10,16 @@ import {
   Wifi,
   WifiOff,
   CheckCircle,
+  Volume2,
+  VolumeX,
+  Music,
+  Music2,
 } from 'lucide-react';
 import { MobileNavBar } from '../components/layout/MobileNavBar';
 import { useBullBullStore, type BullBullBetType, CHIP_VALUES, RANK_NAMES } from '../store/bullBullStore';
 import { useBullBullSocket } from '../hooks/useBullBullSocket';
+import { useTTS } from '../hooks/useTTS';
+import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import PlayingCard from '../components/game/PlayingCard';
 import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
 import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
@@ -226,6 +232,10 @@ export default function BullBullGame() {
   } = useBullBullStore();
 
   const [showRules, setShowRules] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const { play: playSound } = useTTS(isMuted);
+  const [isBgmOn, setIsBgmOn] = useState(true);
+  const { toggleBgm } = useBackgroundMusic(isMuted);
 
   // Skip animation if reconnecting mid-round
   // Normal flow: phase → dealing first, then cards/reveal events
@@ -282,6 +292,8 @@ export default function BullBullGame() {
 
     // Only show notification when bets are newly confirmed (count increased)
     if (currentCount > 0 && currentCount > prevCount && phase === 'betting') {
+      playSound('betSuccess');
+      playSound('betSuccessVoice');
       const total = confirmedBets.reduce((sum, b) => sum + b.amount, 0);
       setBetNotification({
         show: true,
@@ -297,7 +309,7 @@ export default function BullBullGame() {
     }
 
     prevConfirmedBetsRef.current = currentCount;
-  }, [confirmedBets, phase]);
+  }, [confirmedBets, phase, playSound]);
 
   // Reset notification reference when round changes
   useEffect(() => {
@@ -310,7 +322,8 @@ export default function BullBullGame() {
 
   const handleBet = (type: BullBullBetType) => {
     if (!canBet) return;
-    addPendingBet(type);
+    const success = addPendingBet(type);
+    if (success) playSound('chipPlace');
   };
 
   const handleConfirm = () => {
@@ -380,6 +393,21 @@ export default function BullBullGame() {
             <div className="text-[10px] sm:text-xs text-yellow-200">餘額</div>
             <div className="text-sm sm:text-base font-bold">${balance.toLocaleString()}</div>
           </div>
+
+          {/* Sound controls */}
+          <button
+            onClick={() => setIsMuted(!isMuted)}
+            className="p-1.5 text-gray-400 hover:text-white"
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => { const on = toggleBgm(); setIsBgmOn(on); }}
+            className={`p-1.5 ${isBgmOn && !isMuted ? 'text-yellow-400' : 'text-gray-400'} hover:text-white`}
+            title={isBgmOn ? '關閉背景音樂' : '開啟背景音樂'}
+          >
+            {isBgmOn && !isMuted ? <Music className="w-4 h-4" /> : <Music2 className="w-4 h-4" />}
+          </button>
 
           {/* Help */}
           <button

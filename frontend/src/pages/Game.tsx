@@ -31,6 +31,8 @@ import {
   MapPin,
   CheckCircle,
   Coins,
+  Music,
+  Music2,
 } from 'lucide-react';
 import { MobileNavBar } from '../components/layout/MobileNavBar';
 import { useGameStore } from '../store/gameStore';
@@ -38,6 +40,7 @@ import { useAuthStore } from '../store/authStore';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 import { useTTS } from '../hooks/useTTS';
+import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import type { BetType, GameResult } from '../types';
 import {
   GameSettingsModal,
@@ -375,6 +378,8 @@ export default function Game() {
   // UI states
   const [isMuted, setIsMuted] = useState(false);
   const { play: playSound } = useTTS(isMuted);
+  const [isBgmOn, setIsBgmOn] = useState(true);
+  const { toggleBgm } = useBackgroundMusic(isMuted);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isFollowingDealer, setIsFollowingDealer] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -841,6 +846,7 @@ export default function Game() {
     // Only show notification when bets are newly confirmed (count increased)
     if (currentCount > 0 && currentCount > prevCount && phase === 'betting') {
       playSound('betSuccess');
+      playSound('betSuccessVoice');
       const total = confirmedBets.reduce((sum, b) => sum + b.amount, 0);
       setBetNotification({
         show: true,
@@ -870,7 +876,8 @@ export default function Game() {
   // Handle bet click
   const handlePlaceBet = (type: BetType) => {
     if (!canBet) return;
-    addPendingBet(type);
+    const success = addPendingBet(type);
+    if (success) playSound('chipPlace');
   };
 
   // Handle confirm - send pending bets to server
@@ -1024,6 +1031,13 @@ export default function Game() {
             className="p-1 text-gray-400 hover:text-white"
           >
             {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => { const on = toggleBgm(); setIsBgmOn(on); }}
+            className={`p-1 ${isBgmOn && !isMuted ? 'text-gold' : 'text-gray-400'} hover:text-white`}
+            title={isBgmOn ? '關閉背景音樂' : '開啟背景音樂'}
+          >
+            {isBgmOn && !isMuted ? <Music className="w-4 h-4" /> : <Music2 className="w-4 h-4" />}
           </button>
           <button
             onClick={toggleFullscreen}

@@ -31,12 +31,16 @@ import {
   MapPin,
   CheckCircle,
   Coins,
+  Music,
+  Music2,
 } from 'lucide-react';
 import { MobileNavBar } from '../components/layout/MobileNavBar';
 import { useDragonTigerStore, type DragonTigerBetType } from '../store/dragonTigerStore';
 import { useGameStore } from '../store/gameStore';
 import { useDragonTigerSocket } from '../hooks/useDragonTigerSocket';
 import { useAuthStore } from '../store/authStore';
+import { useTTS } from '../hooks/useTTS';
+import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
 import ChipSettingsModal from '../components/game/ChipSettingsModal';
 import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
@@ -346,6 +350,9 @@ export default function DragonTigerGame() {
 
   // UI states
   const [isMuted, setIsMuted] = useState(false);
+  const { play: playSound } = useTTS(isMuted);
+  const [isBgmOn, setIsBgmOn] = useState(true);
+  const { toggleBgm } = useBackgroundMusic(isMuted);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isFollowingDealer, setIsFollowingDealer] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -539,6 +546,8 @@ export default function DragonTigerGame() {
     const prevCount = prevConfirmedBetsRef.current;
 
     if (currentCount > 0 && currentCount > prevCount && phase === 'betting') {
+      playSound('betSuccess');
+      playSound('betSuccessVoice');
       const total = confirmedBets.reduce((sum, b) => sum + b.amount, 0);
       setBetNotification({
         show: true,
@@ -554,7 +563,7 @@ export default function DragonTigerGame() {
     }
 
     prevConfirmedBetsRef.current = currentCount;
-  }, [confirmedBets, phase]);
+  }, [confirmedBets, phase, playSound]);
 
   useEffect(() => {
     prevConfirmedBetsRef.current = 0;
@@ -566,7 +575,8 @@ export default function DragonTigerGame() {
 
   const handleBet = (type: DragonTigerBetType) => {
     if (!canBet) return;
-    addPendingBet(type);
+    const success = addPendingBet(type);
+    if (success) playSound('chipPlace');
   };
 
   const handleConfirm = () => {
@@ -745,6 +755,13 @@ export default function DragonTigerGame() {
             className="p-1 text-gray-400 hover:text-white"
           >
             {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => { const on = toggleBgm(); setIsBgmOn(on); }}
+            className={`p-1 ${isBgmOn && !isMuted ? 'text-gold' : 'text-gray-400'} hover:text-white`}
+            title={isBgmOn ? '關閉背景音樂' : '開啟背景音樂'}
+          >
+            {isBgmOn && !isMuted ? <Music className="w-4 h-4" /> : <Music2 className="w-4 h-4" />}
           </button>
           <button
             onClick={toggleFullscreen}
