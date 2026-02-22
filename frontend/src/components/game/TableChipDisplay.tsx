@@ -205,7 +205,7 @@ function TableChipDisplay({ targetBets, phase }: TableChipDisplayProps) {
   if (!has) return null;
 
   return (
-    <div className="absolute bottom-6 left-8 right-8 h-[72px] sm:h-[90px] z-10 flex gap-2 pointer-events-none">
+    <div className="absolute bottom-10 sm:bottom-14 left-8 right-8 h-[72px] sm:h-[90px] z-10 flex gap-2 pointer-events-none">
       <ChipZone label="閒" labelColor="text-blue-400" chips={playerZone.chips} amount={playerZone.currentAmount} />
       <ChipZone label="和" labelColor="text-green-400" chips={tieZone.chips} amount={tieZone.currentAmount} />
       <ChipZone label="莊" labelColor="text-red-400" chips={bankerZone.chips} amount={bankerZone.currentAmount} />

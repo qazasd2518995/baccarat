@@ -556,16 +556,16 @@ export default function Game() {
 
   // Responsive breakpoint
   const bp = useBreakpoint();
-  const cardSize = bp === 'mobile' ? 'sm' : bp === 'tablet' ? 'lg' : 'xxl';
-  const thirdCardHeight = bp === 'mobile' ? 55 : bp === 'tablet' ? 90 : 175;
-  const shoeWidth = bp === 'mobile' ? 40 : bp === 'tablet' ? 60 : 90;
-  const shoeHeight = bp === 'mobile' ? 56 : bp === 'tablet' ? 84 : 120;
-  const shoeCardW = bp === 'mobile' ? 35 : bp === 'tablet' ? 53 : 80;
-  const shoeCardH = bp === 'mobile' ? 49 : bp === 'tablet' ? 74 : 112;
-  const flyY = bp === 'mobile' ? -120 : bp === 'tablet' ? -250 : -400;
-  const flyX = bp === 'mobile' ? 40 : bp === 'tablet' ? 80 : 120;
-  const thirdFlyY = bp === 'mobile' ? -100 : bp === 'tablet' ? -200 : -350;
-  const shoeStackOffset = bp === 'mobile' ? 1 : bp === 'tablet' ? 2 : 3;
+  const cardSize = bp === 'mobile' ? 'sm' : bp === 'tablet' ? 'md' : 'lg';
+  const thirdCardHeight = bp === 'mobile' ? 45 : bp === 'tablet' ? 65 : 90;
+  const shoeWidth = bp === 'mobile' ? 36 : bp === 'tablet' ? 50 : 70;
+  const shoeHeight = bp === 'mobile' ? 50 : bp === 'tablet' ? 70 : 98;
+  const shoeCardW = bp === 'mobile' ? 30 : bp === 'tablet' ? 44 : 62;
+  const shoeCardH = bp === 'mobile' ? 42 : bp === 'tablet' ? 62 : 87;
+  const flyY = bp === 'mobile' ? -100 : bp === 'tablet' ? -180 : -300;
+  const flyX = bp === 'mobile' ? 30 : bp === 'tablet' ? 60 : 90;
+  const thirdFlyY = bp === 'mobile' ? -80 : bp === 'tablet' ? -140 : -250;
+  const shoeStackOffset = bp === 'mobile' ? 1 : bp === 'tablet' ? 2 : 2;
   const cardAreaRef = useRef<HTMLDivElement>(null);
   const expectingCardsRef = useRef(false);
 
