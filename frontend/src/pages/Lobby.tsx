@@ -331,68 +331,15 @@ export default function Lobby() {
 
   return (
     <div className="h-screen bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
-      {/* Top Navigation Bar - GoFun Style */}
-      <header className="h-12 bg-[#0d1117] flex items-center justify-between px-2 sm:px-4 border-b border-gray-800/50">
-        {/* Left - Logo & Mobile Menu */}
-        <div className="flex items-center gap-2 sm:gap-4">
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden p-1 text-gray-400 hover:text-white"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center text-white font-bold text-xs sm:text-sm">G</div>
-            <span className="hidden sm:inline text-orange-500 font-bold text-xl tracking-wide">GoFun</span>
-          </div>
-        </div>
-
-        {/* Center spacer */}
-        <div />
-
-        {/* Right - User Info (desktop) */}
-        <div className="hidden md:flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
-              <User className="w-4 h-4 text-white" />
-            </div>
-            <span className="text-sm text-gray-300">{user?.username || 'LN8270722'}</span>
-          </div>
-          <button
-            onClick={() => i18n.changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
-            className="text-sm text-gray-400 hover:text-white flex items-center gap-1"
-          >
-            <Globe className="w-4 h-4" /> {i18n.language === 'zh' ? 'EN' : '中文'}
-          </button>
-          <button
-            onClick={() => {
-              logout();
-              navigate('/login');
-            }}
-            className="text-sm text-gray-400 hover:text-red-400 flex items-center gap-1 ml-2"
-            title={t('logout')}
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Right - Mobile icons */}
-        <div className="flex md:hidden items-center gap-2">
-          <button
-            onClick={() => {
-              logout();
-              navigate('/login');
-            }}
-            className="text-gray-400 hover:text-red-400 p-1"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
-        </div>
-      </header>
-
-      {/* Main Content */}
+      {/* Main Content — no top header */}
       <div className="flex-1 flex overflow-hidden relative">
+        {/* Mobile menu toggle — floating button */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="lg:hidden fixed top-3 left-3 z-[60] p-2 bg-[#141922] border border-gray-700 rounded-lg text-gray-400 hover:text-white"
+        >
+          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
         {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
           <div
@@ -508,6 +455,22 @@ export default function Lobby() {
                 </div>
               </>
             )}
+          </div>
+
+          {/* Language + Logout — bottom of sidebar */}
+          <div className="p-4 border-t border-gray-800/50 flex items-center gap-3">
+            <button
+              onClick={() => i18n.changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
+              className="flex-1 text-xs text-gray-400 hover:text-white flex items-center justify-center gap-1.5 py-2 bg-gray-800/50 rounded-lg transition-colors"
+            >
+              <Globe className="w-3.5 h-3.5" /> {i18n.language === 'zh' ? 'EN' : '中文'}
+            </button>
+            <button
+              onClick={() => { logout(); navigate('/login'); }}
+              className="flex-1 text-xs text-gray-400 hover:text-red-400 flex items-center justify-center gap-1.5 py-2 bg-gray-800/50 rounded-lg transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" /> {t('logout')}
+            </button>
           </div>
         </div>
 
