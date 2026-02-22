@@ -552,20 +552,14 @@ export default function Game() {
   //           If cards appear without a recent phase transition to 'dealing', it's a reconnect.
   const [skipCardAnim, setSkipCardAnim] = useState(false);
   const [pointsPulseKey, setPointsPulseKey] = useState(0);
-  const shoeRef = useRef<HTMLDivElement>(null);
-
   // Responsive breakpoint
   const bp = useBreakpoint();
   const cardSize = bp === 'mobile' ? 'sm' : bp === 'tablet' ? 'md' : 'lg';
   const thirdCardHeight = bp === 'mobile' ? 45 : bp === 'tablet' ? 65 : 90;
-  const shoeWidth = bp === 'mobile' ? 36 : bp === 'tablet' ? 50 : 70;
-  const shoeHeight = bp === 'mobile' ? 50 : bp === 'tablet' ? 70 : 98;
-  const shoeCardW = bp === 'mobile' ? 30 : bp === 'tablet' ? 44 : 62;
-  const shoeCardH = bp === 'mobile' ? 42 : bp === 'tablet' ? 62 : 87;
-  const flyY = bp === 'mobile' ? -100 : bp === 'tablet' ? -180 : -300;
+  // Cards fly from dealer's hand position (above table, center)
+  const flyY = bp === 'mobile' ? -140 : bp === 'tablet' ? -220 : -350;
   const flyX = bp === 'mobile' ? 30 : bp === 'tablet' ? 60 : 90;
-  const thirdFlyY = bp === 'mobile' ? -80 : bp === 'tablet' ? -140 : -250;
-  const shoeStackOffset = bp === 'mobile' ? 1 : bp === 'tablet' ? 2 : 2;
+  const thirdFlyY = bp === 'mobile' ? -110 : bp === 'tablet' ? -180 : -300;
   const cardAreaRef = useRef<HTMLDivElement>(null);
   const expectingCardsRef = useRef(false);
 
@@ -1198,28 +1192,8 @@ export default function Game() {
                 </div>
               </div>
 
-              {/* Main dealing area */}
+              {/* Main dealing area — cards fly from dealer's hand above */}
               <div className="flex-1 relative flex items-center justify-center">
-                {/* Card Shoe — fly-from origin, top center */}
-                <div ref={shoeRef} className="absolute top-2 left-1/2 -translate-x-1/2 z-10">
-                  <div className="relative" style={{ width: shoeWidth, height: shoeHeight }}>
-                    {[0, 1, 2, 3, 4].map(i => (
-                      <div
-                        key={i}
-                        className="absolute rounded-md bg-gradient-to-br from-[#1e3a5f] to-[#0f2744] border border-[#d4af37]/30"
-                        style={{
-                          width: shoeCardW, height: shoeCardH,
-                          top: -i * shoeStackOffset, left: i * (shoeStackOffset > 1 ? 2 : 1),
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
-                        }}
-                      />
-                    ))}
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                      <div className={`rotate-45 border-2 border-[#d4af37]/50 bg-[#d4af37]/10 ${bp === 'mobile' ? 'w-3 h-3' : 'w-5 h-5'}`} />
-                    </div>
-                  </div>
-                </div>
-
                 {/* Player & Banker zones */}
                 <div ref={cardAreaRef} className="flex items-stretch gap-2 sm:gap-8 lg:gap-16 xl:gap-24">
                   {/* ——— PLAYER ZONE ——— */}

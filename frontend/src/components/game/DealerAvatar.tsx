@@ -17,11 +17,9 @@ const CARDS_URL = '/models/dealer-cards.glb';
 function DealerModel({ isDealing }: { isDealing: boolean }) {
   const groupRef = useRef<Group>(null);
 
-  // Load both models (useMeshopt=true for meshopt-compressed GLBs)
   const idle = useGLTF(IDLE_URL, undefined, true);
   const cards = useGLTF(CARDS_URL, undefined, true);
 
-  // Merge all animations with unique names
   const allClips = useMemo(() => {
     const clips: AnimationClip[] = [];
     idle.animations.forEach(clip => {
@@ -39,12 +37,10 @@ function DealerModel({ isDealing }: { isDealing: boolean }) {
 
   const { actions } = useAnimations(allClips, groupRef);
 
-  // Start idle on mount
   useEffect(() => {
     actions['idle']?.play();
   }, [actions]);
 
-  // Switch animation based on isDealing
   useEffect(() => {
     const idleAction = actions['idle'];
     const dealAction = actions['dealing'];
@@ -60,32 +56,32 @@ function DealerModel({ isDealing }: { isDealing: boolean }) {
 
   return (
     <group ref={groupRef}>
-      <primitive object={idle.scene} scale={1.1} position={[0, -1.0, 0]} />
+      <primitive object={idle.scene} scale={1.6} position={[0, -0.75, 0]} />
     </group>
   );
 }
 
-// Preload both models with meshopt decoder
 useGLTF.preload(IDLE_URL, undefined, true);
 useGLTF.preload(CARDS_URL, undefined, true);
 
 export default function DealerAvatar({ isDealing, dealerName, size = 'lg' }: DealerAvatarProps) {
-  const heights = { sm: 100, md: 150, lg: 210 };
+  // Much larger sizes — dealer should dominate the upper area
+  const heights = { sm: 160, md: 240, lg: 320 };
   const h = heights[size];
 
   return (
-    <div className="relative flex flex-col items-center" style={{ height: h }}>
-      <div style={{ width: h * 1.2, height: h, position: 'relative' }}>
+    <div className="relative flex flex-col items-center" style={{ height: h, width: '100%' }}>
+      <div style={{ width: Math.min(h * 1.4, 500), height: h }}>
         <Canvas
-          camera={{ position: [0, 0.15, 2.2], fov: 28 }}
+          camera={{ position: [0, 0.2, 1.8], fov: 32 }}
           gl={{ alpha: true, antialias: true, powerPreference: 'default' }}
           dpr={[1, 1.5]}
-          style={{ background: 'transparent' }}
+          style={{ background: 'transparent', pointerEvents: 'none' }}
         >
           <ambientLight intensity={0.8} />
-          <directionalLight position={[2, 3, 2]} intensity={1.2} color="#fff5e0" />
+          <directionalLight position={[2, 3, 2]} intensity={1.3} color="#fff5e0" />
           <directionalLight position={[-2, 1, -1]} intensity={0.3} color="#c0d0ff" />
-          <pointLight position={[0, 1, 1.5]} intensity={0.4} color="#ffd700" distance={5} />
+          <pointLight position={[0, 0.5, 1.5]} intensity={0.5} color="#ffd700" distance={5} />
           <Suspense fallback={null}>
             <DealerModel isDealing={isDealing} />
           </Suspense>
@@ -95,8 +91,8 @@ export default function DealerAvatar({ isDealing, dealerName, size = 'lg' }: Dea
       {/* Dealer name tag */}
       {dealerName && (
         <div
-          className="absolute bottom-0 left-1/2 -translate-x-1/2 bg-black/60 text-white text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full border border-[#d4af37]/30 whitespace-nowrap backdrop-blur-sm z-50"
-          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+          className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/70 text-white text-[10px] sm:text-xs px-3 py-1 rounded-full border border-[#d4af37]/30 whitespace-nowrap backdrop-blur-sm z-50"
+          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
         >
           {dealerName}
         </div>
