@@ -45,6 +45,7 @@ import ChipSettingsModal from '../components/game/ChipSettingsModal';
 import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
 import CountdownTimer from '../components/game/CountdownTimer';
 import DealerTable3D from '../components/game/DealerTable3D';
+import TableChipDisplay from '../components/game/TableChipDisplay';
 import { formatAmount } from '../utils/format';
 import {
   GameSettingsModal,
@@ -988,6 +989,16 @@ export default function DragonTigerGame() {
                 </div>
               </div>
             </div>
+
+            {/* Fake bet chips on table — map DT bets to player/tie/banker zones */}
+            <TableChipDisplay
+              targetBets={{
+                player: (fakeBets.dragon || 0) + (fakeBets.dragon_big || 0) + (fakeBets.dragon_small || 0),
+                tie: (fakeBets.dt_tie || 0) + (fakeBets.dt_suited_tie || 0),
+                banker: (fakeBets.tiger || 0) + (fakeBets.tiger_big || 0) + (fakeBets.tiger_small || 0),
+              }}
+              phase={phase}
+            />
 
             {/* Result Overlay */}
             <AnimatePresence>
