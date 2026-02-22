@@ -554,8 +554,8 @@ export default function Game() {
   const [pointsPulseKey, setPointsPulseKey] = useState(0);
   // Responsive breakpoint
   const bp = useBreakpoint();
-  const cardSize = bp === 'mobile' ? 'sm' : bp === 'tablet' ? 'sm' : 'md';
-  const thirdCardHeight = bp === 'mobile' ? 40 : bp === 'tablet' ? 50 : 65;
+  const cardSize = bp === 'mobile' ? 'sm' : bp === 'tablet' ? 'md' : 'lg';
+  const thirdCardHeight = bp === 'mobile' ? 45 : bp === 'tablet' ? 65 : 90;
   // Cards fly from dealer's hand position (above table, center)
   const flyY = bp === 'mobile' ? -140 : bp === 'tablet' ? -220 : -350;
   const flyX = bp === 'mobile' ? 30 : bp === 'tablet' ? 60 : 90;
