@@ -50,6 +50,14 @@ enum BetType {
   dragon_small
   tiger_big
   tiger_small
+  dragon_odd
+  dragon_even
+  tiger_odd
+  tiger_even
+  dragon_red
+  dragon_black
+  tiger_red
+  tiger_black
 
   // Bull Bull
   bb_banker

@@ -29,12 +29,41 @@ enum TransactionType {
 }
 
 enum BetType {
+  // Baccarat
   player
   banker
   tie
   player_pair
   banker_pair
   super_six
+  player_bonus
+  banker_bonus
+  big
+  small
+
+  // Dragon Tiger
+  dragon
+  tiger
+  dt_tie
+  dt_suited_tie
+  dragon_big
+  dragon_small
+  tiger_big
+  tiger_small
+  dragon_odd
+  dragon_even
+  tiger_odd
+  tiger_even
+  dragon_red
+  dragon_black
+  tiger_red
+  tiger_black
+
+  // Bull Bull
+  bb_banker
+  bb_player1
+  bb_player2
+  bb_player3
 }
 
 enum BetStatus {
