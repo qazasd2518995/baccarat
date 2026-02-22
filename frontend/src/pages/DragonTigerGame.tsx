@@ -546,7 +546,6 @@ export default function DragonTigerGame() {
     const prevCount = prevConfirmedBetsRef.current;
 
     if (currentCount > 0 && currentCount > prevCount && phase === 'betting') {
-      playSound('betSuccess');
       playSound('betSuccessVoice');
       const total = confirmedBets.reduce((sum, b) => sum + b.amount, 0);
       setBetNotification({

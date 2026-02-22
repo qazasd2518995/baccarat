@@ -293,7 +293,6 @@ export default function BullBullGame() {
 
     // Only show notification when bets are newly confirmed (count increased)
     if (currentCount > 0 && currentCount > prevCount && phase === 'betting') {
-      playSound('betSuccess');
       playSound('betSuccessVoice');
       const total = confirmedBets.reduce((sum, b) => sum + b.amount, 0);
       setBetNotification({
