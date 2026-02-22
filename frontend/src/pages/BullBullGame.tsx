@@ -422,7 +422,6 @@ export default function BullBullGame() {
 
       {/* Main game area - 3D Dealer Table */}
       <DealerTable3D
-        phase={phase}
         isDealing={phase === 'dealing'}
         dealerName="小美"
         gameType="bullBull"

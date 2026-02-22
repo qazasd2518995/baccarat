@@ -4,7 +4,6 @@ import { useBreakpoint } from '../../hooks/useBreakpoint';
 
 interface DealerTable3DProps {
   children: ReactNode;
-  phase: string;
   isDealing: boolean;
   dealerName?: string;
   gameType?: 'baccarat' | 'dragonTiger' | 'bullBull';
@@ -28,7 +27,6 @@ const FELT_COLORS = {
  */
 export default function DealerTable3D({
   children,
-  phase,
   isDealing,
   dealerName,
   gameType = 'baccarat',

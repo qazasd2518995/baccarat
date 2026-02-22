@@ -898,7 +898,6 @@ export default function DragonTigerGame() {
         <div className="flex-1 flex flex-col min-w-0">
           {/* Video Area - 3D Dealer Table */}
           <DealerTable3D
-            phase={phase}
             isDealing={phase === 'dealing'}
             dealerName={currentDealerName}
             gameType="dragonTiger"
