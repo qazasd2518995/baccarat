@@ -717,6 +717,30 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                         </>
                       ))}
                     </tbody>
+                    {bettingRecords.length > 0 && (
+                      <tfoot className="bg-[#2a3548] border-t border-gray-600/50">
+                        <tr className="font-bold">
+                          <td className="px-2 py-3" colSpan={7}>
+                            <span className="text-gray-300">{t('total')}</span>
+                          </td>
+                          <td className="px-2 py-3 text-right text-white">
+                            {bettingRecords.reduce((sum, r) => sum + r.betAmount, 0).toLocaleString()}
+                          </td>
+                          <td className="px-2 py-3 text-right text-white">
+                            {bettingRecords.reduce((sum, r) => sum + r.validBet, 0).toLocaleString()}
+                          </td>
+                          <td className="px-2 py-3"></td>
+                          <td className={`px-2 py-3 text-right ${
+                            bettingRecords.reduce((sum, r) => sum + r.winLoss, 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {(() => {
+                              const total = bettingRecords.reduce((sum, r) => sum + r.winLoss, 0);
+                              return `${total > 0 ? '+' : ''}${total.toLocaleString()}`;
+                            })()}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    )}
                   </table>
                 )}
 
