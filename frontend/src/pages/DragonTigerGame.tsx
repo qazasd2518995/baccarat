@@ -45,6 +45,7 @@ import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
 import ChipSettingsModal from '../components/game/ChipSettingsModal';
 import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
 import CountdownTimer from '../components/game/CountdownTimer';
+import DealerTable3D from '../components/game/DealerTable3D';
 import { formatAmount } from '../utils/format';
 import {
   GameSettingsModal,
@@ -895,25 +896,24 @@ export default function DragonTigerGame() {
 
         {/* Center - Game Area */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Video Area - Card Display */}
-          <div className="flex-1 relative bg-gradient-to-br from-[#1a5c2e] via-[#14532d] to-[#0f4025] overflow-hidden">
-            {/* Background decorative elements */}
-            <div className="absolute inset-0">
-              <div className="absolute top-0 right-0 w-96 h-96 bg-green-400/8 rounded-full blur-3xl" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400/8 rounded-full blur-3xl" />
-            </div>
-
-            {/* Countdown timer — top left */}
+          {/* Video Area - 3D Dealer Table */}
+          <DealerTable3D
+            phase={phase}
+            isDealing={phase === 'dealing'}
+            dealerName={currentDealerName}
+            gameType="dragonTiger"
+          >
+            {/* Countdown timer */}
             <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
 
             {/* Round Info */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 rounded px-3 py-1 text-sm z-20">
+            <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 rounded px-3 py-1 text-sm z-20">
               <span className="text-gray-400">{t('dragonTiger')} {shoeNumber}</span>
               <span className="text-white ml-2">{new Date().toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
               <span className={`ml-2 font-bold ${phaseDisplay.color}`}>{roundNumber} - {phaseDisplay.text}</span>
             </div>
 
-            {/* Cards Display - Dragon vs Tiger - Responsive gap for mobile */}
+            {/* Cards Display - Dragon vs Tiger */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex items-center gap-6 sm:gap-12 lg:gap-20">
                 {/* Dragon Side */}
@@ -924,7 +924,7 @@ export default function DragonTigerGame() {
                       <AnimatedPlayingCard
                         card={dragonCard}
                         size="lg"
-                        flyFrom={{ x: 100, y: -150 }}
+                        flyFrom={{ x: 100, y: -250 }}
                         flyDelay={0}
                         flyDuration={0.6}
                         flipDelay={0.5}
@@ -964,7 +964,7 @@ export default function DragonTigerGame() {
                       <AnimatedPlayingCard
                         card={tigerCard}
                         size="lg"
-                        flyFrom={{ x: -100, y: -150 }}
+                        flyFrom={{ x: -100, y: -250 }}
                         flyDelay={0.8}
                         flyDuration={0.6}
                         flipDelay={0.5}
@@ -995,7 +995,7 @@ export default function DragonTigerGame() {
               </div>
             </div>
 
-            {/* Result Overlay - Fixed position on mobile to avoid being covered */}
+            {/* Result Overlay */}
             <AnimatePresence>
               {showResult && (
                 <motion.div
@@ -1021,7 +1021,7 @@ export default function DragonTigerGame() {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </DealerTable3D>
 
           {/* Betting Panel */}
           <div className="bg-[#0d1117]">

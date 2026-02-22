@@ -24,6 +24,7 @@ import PlayingCard from '../components/game/PlayingCard';
 import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
 import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
 import CountdownTimer from '../components/game/CountdownTimer';
+import DealerTable3D from '../components/game/DealerTable3D';
 import { formatAmount } from '../utils/format';
 
 // Chip component - uses CasinoChip SVG
@@ -364,9 +365,9 @@ export default function BullBullGame() {
   const phaseDisplay = getPhaseDisplay();
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#1a5c2e] to-[#0f4025] text-white">
+    <div className="h-screen flex flex-col bg-[#0a0e14] text-white overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 bg-[#0d1117]/80 border-b border-gray-800">
+      <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 bg-[#0d1117]/80 border-b border-gray-800 shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => navigate('/')}
@@ -419,118 +420,125 @@ export default function BullBullGame() {
         </div>
       </div>
 
-      {/* Main game area */}
-      <div className="relative p-2 sm:p-4 pb-32 sm:pb-36">
-        {/* Countdown timer — top left */}
-        <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
+      {/* Main game area - 3D Dealer Table */}
+      <DealerTable3D
+        phase={phase}
+        isDealing={phase === 'dealing'}
+        dealerName="小美"
+        gameType="bullBull"
+      >
+        <div className="absolute inset-0 overflow-auto p-2 sm:p-4 pb-32 sm:pb-36">
+          {/* Countdown timer */}
+          <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
 
-        {/* Phase and timer */}
-        <div className="text-center mb-4 sm:mb-6">
-          <div className={`text-xl sm:text-2xl font-bold ${phaseDisplay.color}`}>
-            {phaseDisplay.text}
-          </div>
-        </div>
-
-        {/* Hands display */}
-        <div className="max-w-4xl mx-auto">
-          {/* Banker */}
-          <div className="mb-6">
-            <HandDisplay
-              position="莊家"
-              hand={banker}
-              isBanker
-              betAmount={getBetAmount('bb_banker')}
-              onBet={() => handleBet('bb_banker')}
-              canBet={canBet}
-              dealCount={getDealCount('banker')}
-              isRevealed={revealedPositions.has('banker')}
-              revealDelay={0}
-              skipAnimation={skipBBCardAnim}
-            />
-          </div>
-
-          {/* Players */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <HandDisplay
-              position="閒1"
-              hand={player1}
-              result={player1Result}
-              betAmount={getBetAmount('bb_player1')}
-              fakeBetAmount={fakeBets.bb_player1 || 0}
-              onBet={() => handleBet('bb_player1')}
-              canBet={canBet}
-              dealCount={getDealCount('player1')}
-              isRevealed={revealedPositions.has('player1')}
-              revealDelay={0.8}
-              skipAnimation={skipBBCardAnim}
-            />
-            <HandDisplay
-              position="閒2"
-              hand={player2}
-              result={player2Result}
-              betAmount={getBetAmount('bb_player2')}
-              fakeBetAmount={fakeBets.bb_player2 || 0}
-              onBet={() => handleBet('bb_player2')}
-              canBet={canBet}
-              dealCount={getDealCount('player2')}
-              isRevealed={revealedPositions.has('player2')}
-              revealDelay={1.6}
-              skipAnimation={skipBBCardAnim}
-            />
-            <HandDisplay
-              position="閒3"
-              hand={player3}
-              result={player3Result}
-              betAmount={getBetAmount('bb_player3')}
-              fakeBetAmount={fakeBets.bb_player3 || 0}
-              onBet={() => handleBet('bb_player3')}
-              canBet={canBet}
-              dealCount={getDealCount('player3')}
-              isRevealed={revealedPositions.has('player3')}
-              revealDelay={2.4}
-              skipAnimation={skipBBCardAnim}
-            />
-          </div>
-        </div>
-
-        {/* Settlement display */}
-        {lastSettlement && (
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="mt-6 text-center"
-          >
-            <div className={`text-3xl font-bold ${lastSettlement.netResult >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {lastSettlement.netResult >= 0 ? '+' : ''}{lastSettlement.netResult.toLocaleString()}
+          {/* Phase and timer */}
+          <div className="text-center mb-3 sm:mb-4">
+            <div className={`text-lg sm:text-xl font-bold ${phaseDisplay.color}`}>
+              {phaseDisplay.text}
             </div>
-          </motion.div>
-        )}
+          </div>
 
-        {/* Roadmap */}
-        <div className="mt-4 sm:mt-6 bg-[#0d1117] rounded-lg p-2 sm:p-4 max-w-4xl mx-auto">
-          <div className="text-xs sm:text-sm font-bold mb-2 sm:mb-3">歷史記錄</div>
-          <div className="grid grid-cols-5 sm:grid-cols-10 gap-1 text-xs overflow-x-auto">
-            {roadmapData.slice(-30).map((round, i) => (
-              <div key={i} className="p-1 bg-gray-800/50 rounded text-center">
-                <div className="font-bold text-yellow-400 text-[10px]">
-                  {RANK_NAMES[round.bankerRank as keyof typeof RANK_NAMES] || round.bankerRank}
-                </div>
-                <div className="flex gap-0.5 justify-center mt-0.5">
-                  <span className={round.player1Result === 'win' ? 'text-green-400' : 'text-red-400'}>
-                    {round.player1Result === 'win' ? 'W' : 'L'}
-                  </span>
-                  <span className={round.player2Result === 'win' ? 'text-green-400' : 'text-red-400'}>
-                    {round.player2Result === 'win' ? 'W' : 'L'}
-                  </span>
-                  <span className={round.player3Result === 'win' ? 'text-green-400' : 'text-red-400'}>
-                    {round.player3Result === 'win' ? 'W' : 'L'}
-                  </span>
-                </div>
+          {/* Hands display */}
+          <div className="max-w-4xl mx-auto">
+            {/* Banker */}
+            <div className="mb-4 sm:mb-6">
+              <HandDisplay
+                position="莊家"
+                hand={banker}
+                isBanker
+                betAmount={getBetAmount('bb_banker')}
+                onBet={() => handleBet('bb_banker')}
+                canBet={canBet}
+                dealCount={getDealCount('banker')}
+                isRevealed={revealedPositions.has('banker')}
+                revealDelay={0}
+                skipAnimation={skipBBCardAnim}
+              />
+            </div>
+
+            {/* Players */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <HandDisplay
+                position="閒1"
+                hand={player1}
+                result={player1Result}
+                betAmount={getBetAmount('bb_player1')}
+                fakeBetAmount={fakeBets.bb_player1 || 0}
+                onBet={() => handleBet('bb_player1')}
+                canBet={canBet}
+                dealCount={getDealCount('player1')}
+                isRevealed={revealedPositions.has('player1')}
+                revealDelay={0.8}
+                skipAnimation={skipBBCardAnim}
+              />
+              <HandDisplay
+                position="閒2"
+                hand={player2}
+                result={player2Result}
+                betAmount={getBetAmount('bb_player2')}
+                fakeBetAmount={fakeBets.bb_player2 || 0}
+                onBet={() => handleBet('bb_player2')}
+                canBet={canBet}
+                dealCount={getDealCount('player2')}
+                isRevealed={revealedPositions.has('player2')}
+                revealDelay={1.6}
+                skipAnimation={skipBBCardAnim}
+              />
+              <HandDisplay
+                position="閒3"
+                hand={player3}
+                result={player3Result}
+                betAmount={getBetAmount('bb_player3')}
+                fakeBetAmount={fakeBets.bb_player3 || 0}
+                onBet={() => handleBet('bb_player3')}
+                canBet={canBet}
+                dealCount={getDealCount('player3')}
+                isRevealed={revealedPositions.has('player3')}
+                revealDelay={2.4}
+                skipAnimation={skipBBCardAnim}
+              />
+            </div>
+          </div>
+
+          {/* Settlement display */}
+          {lastSettlement && (
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="mt-4 text-center"
+            >
+              <div className={`text-3xl font-bold ${lastSettlement.netResult >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {lastSettlement.netResult >= 0 ? '+' : ''}{lastSettlement.netResult.toLocaleString()}
               </div>
-            ))}
+            </motion.div>
+          )}
+
+          {/* Roadmap */}
+          <div className="mt-3 sm:mt-4 bg-black/30 rounded-lg p-2 sm:p-4 max-w-4xl mx-auto">
+            <div className="text-xs sm:text-sm font-bold mb-2 sm:mb-3">歷史記錄</div>
+            <div className="grid grid-cols-5 sm:grid-cols-10 gap-1 text-xs overflow-x-auto">
+              {roadmapData.slice(-30).map((round, i) => (
+                <div key={i} className="p-1 bg-gray-800/50 rounded text-center">
+                  <div className="font-bold text-yellow-400 text-[10px]">
+                    {RANK_NAMES[round.bankerRank as keyof typeof RANK_NAMES] || round.bankerRank}
+                  </div>
+                  <div className="flex gap-0.5 justify-center mt-0.5">
+                    <span className={round.player1Result === 'win' ? 'text-green-400' : 'text-red-400'}>
+                      {round.player1Result === 'win' ? 'W' : 'L'}
+                    </span>
+                    <span className={round.player2Result === 'win' ? 'text-green-400' : 'text-red-400'}>
+                      {round.player2Result === 'win' ? 'W' : 'L'}
+                    </span>
+                    <span className={round.player3Result === 'win' ? 'text-green-400' : 'text-red-400'}>
+                      {round.player3Result === 'win' ? 'W' : 'L'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </DealerTable3D>
 
       {/* Betting panel - Desktop */}
       <div className="hidden sm:block fixed bottom-0 left-0 right-0 bg-[#0d1117]/95 border-t border-gray-800 p-4 pb-safe">

@@ -58,6 +58,7 @@ import ChipSettingsModal from '../components/game/ChipSettingsModal';
 import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
 import CountdownTimer from '../components/game/CountdownTimer';
 import TableChipDisplay from '../components/game/TableChipDisplay';
+import DealerTable3D from '../components/game/DealerTable3D';
 
 // Chip component - uses CasinoChip SVG
 function Chip({ value, selected, onClick, disabled }: { value: number | string; selected: boolean; onClick: () => void; disabled?: boolean }) {
@@ -1178,36 +1179,18 @@ export default function Game() {
 
         {/* Center - Game Area */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Video Area - Takes remaining space */}
-          <div className="flex-1 relative bg-gradient-to-b from-[#1a5c2e] via-[#14532d] to-[#0f4025] overflow-hidden">
-            {/* Background decorative glow */}
-            <div className="absolute inset-0">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-[#d4af37]/3 rounded-full blur-[120px]" />
-            </div>
-
-            {/* Integrated Electronic Dealing Table — fills entire game area */}
-            <div className="absolute inset-0 flex flex-col">
-              {/* Table felt background — full area */}
-              <div className="absolute inset-0 bg-gradient-to-b from-[#1e6b35]/90 via-[#185c2e]/95 to-[#124a24]/90 overflow-hidden">
-                {/* Subtle radial glow */}
-                <div className="absolute inset-0 bg-radial-[ellipse_at_center] from-[#d4af37]/4 via-transparent to-transparent" />
-                {/* Felt texture overlay */}
-                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.03) 2px, rgba(255,255,255,0.03) 4px)' }} />
-                {/* Gold border — inner frame */}
-                <div className="absolute inset-2 sm:inset-3 rounded-xl border border-[#d4af37]/15" />
-                <div className="absolute inset-4 sm:inset-5 rounded-lg border border-[#d4af37]/8" />
-                {/* Corner ornaments */}
-                <div className="absolute top-4 left-4 sm:top-5 sm:left-5 w-6 h-6 border-t-2 border-l-2 border-[#d4af37]/25 rounded-tl" />
-                <div className="absolute top-4 right-4 sm:top-5 sm:right-5 w-6 h-6 border-t-2 border-r-2 border-[#d4af37]/25 rounded-tr" />
-                <div className="absolute bottom-4 left-4 sm:bottom-5 sm:left-5 w-6 h-6 border-b-2 border-l-2 border-[#d4af37]/25 rounded-bl" />
-                <div className="absolute bottom-4 right-4 sm:bottom-5 sm:right-5 w-6 h-6 border-b-2 border-r-2 border-[#d4af37]/25 rounded-br" />
-              </div>
-
-              {/* Countdown timer — top left */}
+          {/* Video Area - 3D Dealer Table */}
+          <DealerTable3D
+            phase={phase}
+            isDealing={phase === 'dealing'}
+            dealerName={currentDealerName}
+            gameType="baccarat"
+          >
+              {/* Countdown timer */}
               <CountdownTimer timeRemaining={timeRemaining} phase={phase} hidden={lastResult !== null || frozenResult !== null || showResult} />
 
-              {/* Top info bar — integrated into table */}
-              <div className="relative z-10 flex items-center justify-center pt-3 pb-1">
+              {/* Top info bar */}
+              <div className="relative z-10 flex items-center justify-center pt-2 pb-1">
                 <div className="flex items-center gap-2 bg-black/30 rounded-full px-4 py-1 border border-[#d4af37]/10">
                   <span className="text-[11px] text-[#d4af37]/70 font-mono">{t('baccarat')} {shoeNumber}</span>
                   <span className="text-[#d4af37]/20">|</span>
@@ -1215,10 +1198,10 @@ export default function Game() {
                 </div>
               </div>
 
-              {/* Main dealing area — fills remaining space */}
+              {/* Main dealing area */}
               <div className="flex-1 relative flex items-center justify-center">
                 {/* Card Shoe — fly-from origin, top center */}
-                <div ref={shoeRef} className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+                <div ref={shoeRef} className="absolute top-2 left-1/2 -translate-x-1/2 z-10">
                   <div className="relative" style={{ width: shoeWidth, height: shoeHeight }}>
                     {[0, 1, 2, 3, 4].map(i => (
                       <div
@@ -1250,7 +1233,7 @@ export default function Game() {
                         {renderPlayerPoints ?? '-'}
                       </div>
                     </div>
-                    {/* Third card — rotated 90°, enough height for rotated card */}
+                    {/* Third card — rotated 90° */}
                     <div style={{ height: thirdCardHeight }}>
                       {renderPlayerCards.length > 2 && (
                         <div className="mb-1 sm:mb-3">
@@ -1289,7 +1272,7 @@ export default function Game() {
                         </>
                       )}
                     </div>
-                    {/* Card text preview — only show after each card flips */}
+                    {/* Card text preview */}
                     <div className="mt-1 sm:mt-3 flex gap-2 text-[10px] sm:text-base font-mono text-blue-300/60">
                       {renderPlayerCards.length > 0 ? renderPlayerCards.map((c, i) => (
                         <span key={i} className={`transition-opacity duration-300 ${revealedPlayerCards.has(i) ? 'opacity-100' : 'opacity-0'} ${c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}`}>
@@ -1356,7 +1339,7 @@ export default function Game() {
                         </>
                       )}
                     </div>
-                    {/* Card text preview — only show after each card flips */}
+                    {/* Card text preview */}
                     <div className="mt-1 sm:mt-3 flex gap-2 text-[10px] sm:text-base font-mono text-red-300/60">
                       {renderBankerCards.length > 0 ? renderBankerCards.map((c, i) => (
                         <span key={i} className={`transition-opacity duration-300 ${revealedBankerCards.has(i) ? 'opacity-100' : 'opacity-0'} ${c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}`}>
@@ -1367,7 +1350,7 @@ export default function Game() {
                   </div>
                 </div>
 
-                {/* Mobile Bead Road — simple vertical list, visible below lg */}
+                {/* Mobile Bead Road */}
                 <div className="lg:hidden absolute right-1 top-1 bottom-1 w-6 flex flex-col items-center gap-0.5 overflow-y-auto z-10 scrollbar-hide">
                   {roadmapData.slice(-20).map((r, i) => {
                     const bg = r.result === 'banker' ? '#DC2626' : r.result === 'player' ? '#2563EB' : '#16A34A';
@@ -1380,10 +1363,10 @@ export default function Game() {
                   })}
                 </div>
 
-                {/* Fake bet chip stacks on table — bottom of dealing area */}
+                {/* Fake bet chip stacks on table */}
                 <TableChipDisplay targetBets={fakeBets} phase={phase} />
 
-                {/* Result Overlay — delayed to allow animations to finish */}
+                {/* Result Overlay */}
                 <AnimatePresence>
                   {showResult && (
                     <motion.div
@@ -1411,8 +1394,7 @@ export default function Game() {
                   )}
                 </AnimatePresence>
               </div>
-            </div>
-          </div>
+          </DealerTable3D>
 
           {/* Betting Panel */}
           <div className="bg-[#0d1117]">
