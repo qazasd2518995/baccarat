@@ -41,7 +41,7 @@ export default function DealerTable3D({
   const dealerSize = bp === 'mobile' ? 'sm' : bp === 'tablet' ? 'md' : 'lg';
 
   // How much the dealer overlaps into the table area
-  const dealerOverlap = bp === 'mobile' ? 30 : bp === 'tablet' ? 50 : 70;
+  const dealerOverlap = bp === 'mobile' ? 40 : bp === 'tablet' ? 70 : 100;
 
   return (
     <div className="flex-1 relative flex flex-col overflow-hidden bg-[#0a0e14]">
@@ -49,7 +49,7 @@ export default function DealerTable3D({
       {/* === Dealer — absolute positioned, overlaps into table === */}
       <div
         className="absolute top-0 left-0 right-0 z-30 flex justify-center pointer-events-none"
-        style={{ height: '45%' }}
+        style={{ height: '50%' }}
       >
         {/* Ambient glow behind dealer */}
         <div className="absolute inset-0 overflow-hidden">
@@ -66,7 +66,7 @@ export default function DealerTable3D({
       {/* === Table Surface — positioned below dealer with overlap === */}
       <div
         className="absolute left-0 right-0 bottom-0 z-20"
-        style={{ top: `calc(45% - ${dealerOverlap}px)` }}
+        style={{ top: `calc(42% - ${dealerOverlap}px)` }}
       >
         {/* Table edge — thin golden border at top */}
         <div className="relative z-10 h-1.5 sm:h-2"
