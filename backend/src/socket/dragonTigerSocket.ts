@@ -17,6 +17,9 @@ const placeBetSchema = z.object({
     z.object({
       type: z.enum([
         'dragon', 'tiger', 'dt_tie',
+        'dt_suited_tie',                // 同花和
+        'dragon_big', 'dragon_small',   // 龍大/龍小
+        'tiger_big', 'tiger_small',     // 虎大/虎小
         'dragon_odd', 'dragon_even',    // 龍單/龍雙
         'tiger_odd', 'tiger_even',      // 虎單/虎雙
         'dragon_red', 'dragon_black',   // 龍紅/龍黑
