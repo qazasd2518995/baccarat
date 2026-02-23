@@ -64,7 +64,7 @@ useGLTF.preload(IDLE_URL, undefined, true);
 useGLTF.preload(CARDS_URL, undefined, true);
 
 export default function DealerAvatar({ isDealing, dealerName, size = 'lg' }: DealerAvatarProps) {
-  const heights = { sm: 160, md: 240, lg: 320 };
+  const heights = { sm: 100, md: 200, lg: 320 };
   const h = heights[size];
 
   return (

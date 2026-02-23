@@ -1035,6 +1035,20 @@ export default function DragonTigerGame() {
                 </div>
               </div>
 
+              {/* Mobile Bead Road — vertical list on right side */}
+              <div className="lg:hidden absolute right-1 top-1 bottom-1 w-6 flex flex-col items-center gap-0.5 overflow-y-auto z-10 scrollbar-hide">
+                {roadmapData.slice(-20).map((r: { result: string }, i: number) => {
+                  const norm = r.result === 'dragon' ? 'dragon' : r.result === 'tiger' ? 'tiger' : 'tie';
+                  const bg = norm === 'dragon' ? '#DC2626' : norm === 'tiger' ? '#2563EB' : '#16A34A';
+                  const label = norm === 'dragon' ? '龍' : norm === 'tiger' ? '虎' : '和';
+                  return (
+                    <div key={i} className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{ backgroundColor: bg, fontSize: '8px' }}>
+                      {label}
+                    </div>
+                  );
+                })}
+              </div>
+
               {/* Fake bet chips on table */}
               <TableChipDisplay
                 targetBets={{
