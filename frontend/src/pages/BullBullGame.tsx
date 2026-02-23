@@ -712,13 +712,13 @@ export default function BullBullGame() {
       <MobileNavBar
         className="sm:hidden"
         variant="game"
-        balance={balance}
         totalBet={pendingBets.reduce((sum, b) => sum + b.amount, 0) + confirmedBets.reduce((sum, b) => sum + b.amount, 0)}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
-        onClear={clearPendingBets}
+        onRepeat={handleRepeat}
         canBet={canBet}
         hasBets={hasPendingBets}
+        hasLastBets={lastBets.length > 0}
       />
     </div>
   );
