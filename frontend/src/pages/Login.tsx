@@ -294,7 +294,7 @@ export default function Login() {
       />
 
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-3 sm:p-4">
         <motion.div
           initial={{ opacity: 0, y: 50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -306,7 +306,7 @@ export default function Login() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="absolute -top-16 right-0"
+            className="absolute -top-12 sm:-top-16 right-0"
           >
             <button
               onClick={toggleLanguage}
@@ -332,7 +332,7 @@ export default function Login() {
 
           {/* Login Card */}
           <div
-            className="relative rounded-3xl p-10 overflow-hidden"
+            className="relative rounded-2xl sm:rounded-3xl p-5 sm:p-10 overflow-hidden"
             style={{
               background: 'linear-gradient(135deg, rgba(15, 15, 25, 0.85) 0%, rgba(10, 10, 18, 0.95) 100%)',
               backdropFilter: 'blur(40px)',
@@ -373,14 +373,14 @@ export default function Login() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.6 }}
-              className="text-center mb-10 relative"
+              className="text-center mb-5 sm:mb-10 relative"
             >
               {/* Spade Icon */}
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ delay: 0.4, duration: 0.8, type: "spring" }}
-                className="w-20 h-20 mx-auto mb-6 relative"
+                className="w-14 h-14 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 relative"
               >
                 <div
                   className="absolute inset-0 rounded-2xl"
@@ -389,8 +389,8 @@ export default function Login() {
                     boxShadow: '0 10px 40px rgba(212, 175, 55, 0.4)'
                   }}
                 />
-                <div className="absolute inset-[3px] rounded-xl bg-gradient-to-br from-[#12121f] to-[#0a0a12] flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" className="w-10 h-10" fill="#ffd700">
+                <div className="absolute inset-[2px] sm:inset-[3px] rounded-lg sm:rounded-xl bg-gradient-to-br from-[#12121f] to-[#0a0a12] flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="w-7 h-7 sm:w-10 sm:h-10" fill="#ffd700">
                     <path d="M12 2C9.5 5 6 7 6 11c0 2.5 1.5 4.5 3.5 5.5-.5 1-1.5 2-3 2.5H12h5.5c-1.5-.5-2.5-1.5-3-2.5C16.5 15.5 18 13.5 18 11c0-4-3.5-6-6-9z" />
                   </svg>
                 </div>
@@ -402,9 +402,8 @@ export default function Login() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="text-4xl font-bold mb-3"
+                className="casino-display text-2xl sm:text-4xl font-bold mb-2 sm:mb-3"
                 style={{
-                  fontFamily: "'Noto Serif SC', 'Playfair Display', serif",
                   background: 'linear-gradient(135deg, #ffd700 0%, #f5d17a 25%, #d4af37 50%, #f5d17a 75%, #ffd700 100%)',
                   backgroundSize: '200% auto',
                   WebkitBackgroundClip: 'text',
@@ -418,7 +417,7 @@ export default function Login() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
-                className="text-sm tracking-[0.3em] uppercase"
+                className="text-xs sm:text-sm tracking-[0.2em] sm:tracking-[0.3em] uppercase"
                 style={{ color: 'rgba(212, 175, 55, 0.6)' }}
               >
                 {i18n.language === 'zh' ? '尊贵游戏体验' : 'Premium Gaming Experience'}
@@ -429,13 +428,13 @@ export default function Login() {
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ delay: 0.7, duration: 0.6 }}
-                className="mt-6 h-[1px] mx-auto w-32"
+                className="mt-4 sm:mt-6 h-[1px] mx-auto w-24 sm:w-32"
                 style={{ background: 'linear-gradient(90deg, transparent, #d4af37, transparent)' }}
               />
             </motion.div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               {/* Error message */}
               {error && (
                 <motion.div
@@ -459,7 +458,7 @@ export default function Login() {
                 transition={{ delay: 0.4 }}
               >
                 <label
-                  className="block text-sm font-medium mb-3 tracking-wider"
+                  className="block text-xs sm:text-sm font-medium mb-2 sm:mb-3 tracking-wider"
                   style={{ color: '#d4af37' }}
                 >
                   {t('username')}
@@ -471,7 +470,7 @@ export default function Login() {
                     onChange={(e) => setUsername(e.target.value)}
                     onFocus={() => setFocusedField('username')}
                     onBlur={() => setFocusedField(null)}
-                    className="login-input w-full px-5 py-4 rounded-xl transition-all duration-500 outline-none text-base"
+                    className="login-input w-full px-4 py-3 sm:px-5 sm:py-4 rounded-lg sm:rounded-xl transition-all duration-500 outline-none text-sm sm:text-base"
                     style={{
                       background: focusedField === 'username'
                         ? 'linear-gradient(135deg, rgba(30, 30, 50, 0.95) 0%, rgba(20, 20, 35, 0.98) 100%)'
@@ -501,7 +500,7 @@ export default function Login() {
                 transition={{ delay: 0.5 }}
               >
                 <label
-                  className="block text-sm font-medium mb-3 tracking-wider"
+                  className="block text-xs sm:text-sm font-medium mb-2 sm:mb-3 tracking-wider"
                   style={{ color: '#d4af37' }}
                 >
                   {t('password')}
@@ -513,7 +512,7 @@ export default function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     onFocus={() => setFocusedField('password')}
                     onBlur={() => setFocusedField(null)}
-                    className="login-input w-full px-5 py-4 rounded-xl transition-all duration-500 outline-none text-base"
+                    className="login-input w-full px-4 py-3 sm:px-5 sm:py-4 rounded-lg sm:rounded-xl transition-all duration-500 outline-none text-sm sm:text-base"
                     style={{
                       background: focusedField === 'password'
                         ? 'linear-gradient(135deg, rgba(30, 30, 50, 0.95) 0%, rgba(20, 20, 35, 0.98) 100%)'
@@ -541,14 +540,14 @@ export default function Login() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="pt-4"
+                className="pt-2 sm:pt-4"
               >
                 <motion.button
                   type="submit"
                   disabled={isLoading}
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full py-5 rounded-xl font-bold text-lg tracking-widest transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+                  className="w-full py-3.5 sm:py-5 rounded-lg sm:rounded-xl font-bold text-base sm:text-lg tracking-widest transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
                   style={{
                     background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #aa8c2c 100%)',
                     color: '#0a0a0f',
@@ -578,7 +577,7 @@ export default function Login() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
-              className="mt-8 flex justify-center gap-4"
+              className="mt-4 sm:mt-8 flex justify-center gap-3 sm:gap-4"
             >
               {['♠', '♥', '♣', '♦'].map((suit, i) => (
                 <motion.span
@@ -586,7 +585,7 @@ export default function Login() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 0.4, y: 0 }}
                   transition={{ delay: 0.9 + i * 0.1 }}
-                  className="text-2xl"
+                  className="text-xl sm:text-2xl"
                   style={{ color: suit === '♥' || suit === '♦' ? '#8b0000' : '#d4af37' }}
                 >
                   {suit}
@@ -600,7 +599,7 @@ export default function Login() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
-            className="text-center mt-8"
+            className="text-center mt-4 sm:mt-8"
           >
             <p className="text-xs tracking-widest" style={{ color: 'rgba(212, 175, 55, 0.4)' }}>
               © 2025 {i18n.language === 'zh' ? '皇家游戏 · 尊贵百家乐' : 'ROYAL GAMING · PREMIUM BACCARAT'}
