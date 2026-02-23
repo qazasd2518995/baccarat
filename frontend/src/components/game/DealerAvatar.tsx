@@ -87,12 +87,22 @@ export default function DealerAvatar({ isDealing, dealerName, size = 'lg' }: Dea
       </div>
 
       {dealerName && (
-        <div
-          className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/70 text-white text-[10px] sm:text-xs px-3 py-1 rounded-full border border-[#d4af37]/30 whitespace-nowrap backdrop-blur-sm z-50"
-          style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
-        >
-          {dealerName}
-        </div>
+        <>
+          {/* Mobile: Name on right side */}
+          <div
+            className="sm:hidden absolute top-1/2 -translate-y-1/2 right-0 bg-black/70 text-white text-[9px] px-2 py-0.5 rounded-full border border-[#d4af37]/30 whitespace-nowrap backdrop-blur-sm z-50"
+            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
+          >
+            {dealerName}
+          </div>
+          {/* Desktop: Name at bottom center */}
+          <div
+            className="hidden sm:block absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-3 py-1 rounded-full border border-[#d4af37]/30 whitespace-nowrap backdrop-blur-sm z-50"
+            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
+          >
+            {dealerName}
+          </div>
+        </>
       )}
     </div>
   );

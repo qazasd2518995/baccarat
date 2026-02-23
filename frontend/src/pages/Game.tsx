@@ -31,6 +31,8 @@ import {
   Coins,
   Music,
   Music2,
+  Menu,
+  Home,
 } from 'lucide-react';
 import { MobileNavBar } from '../components/layout/MobileNavBar';
 import { useGameStore } from '../store/gameStore';
@@ -50,18 +52,21 @@ import {
   ResultsProportionModal,
   RoadmapModal,
 } from '../components/game/modals';
-import PlayingCard from '../components/game/PlayingCard';
 import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
 import ChipSettingsModal from '../components/game/ChipSettingsModal';
 import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
 import CountdownTimer from '../components/game/CountdownTimer';
 import TableChipDisplay from '../components/game/TableChipDisplay';
 import DealerTable3D from '../components/game/DealerTable3D';
+import LobbyRoadmap from '../components/lobby/LobbyRoadmap';
+import MarqueeChat, { useMarqueeChat, MarqueeQuickButtons } from '../components/game/MarqueeChat';
+import { FlyingChipOverlay, useFlyingChips, ChipStack } from '../components/game/BetAreaChips';
 
 // Chip component - uses CasinoChip SVG
-function Chip({ value, selected, onClick, disabled }: { value: number | string; selected: boolean; onClick: () => void; disabled?: boolean }) {
+function Chip({ value, selected, onClick, disabled, small, extraSmall }: { value: number | string; selected: boolean; onClick: () => void; disabled?: boolean; small?: boolean; extraSmall?: boolean }) {
   const numValue = typeof value === 'number' ? value : undefined;
   const label = typeof value === 'string' ? value : formatChipValue(value);
+  const chipSize = extraSmall ? 26 : small ? 32 : 56;
 
   return (
     <button
@@ -74,7 +79,7 @@ function Chip({ value, selected, onClick, disabled }: { value: number | string; 
         ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}
       `}
     >
-      <CasinoChip size={56} value={numValue} label={label} />
+      <CasinoChip size={chipSize} value={numValue} label={label} />
     </button>
   );
 }
@@ -115,7 +120,14 @@ function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair, blink }: { 
       {/* Main circle - responsive size, hollow */}
       <div
         className="rounded-full"
-        style={{ width: '80%', height: '80%', maxWidth: 20, maxHeight: 20, border: `2px solid ${color.border}`, ...(blink ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {}) }}
+        style={{
+          width: '80%',
+          height: '80%',
+          maxWidth: 20,
+          maxHeight: 20,
+          border: `2px solid ${color.border}`,
+          ...(blink ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {})
+        }}
       />
 
       {/* Banker pair indicator - red dot at top-left */}
@@ -154,7 +166,7 @@ function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair, blink }: { 
   );
 }
 
-// Derived Road Cell (大眼仔, 小路, 蟑螂路) - Different styles matching reference
+// Derived Road Cell (大眼仔, 小路, 蟑螂路) - Different styles
 function DerivedRoadCell({ value, type, blink }: { value?: 'red' | 'blue'; type: 'big_eye' | 'small' | 'cockroach'; blink?: boolean }) {
   if (!value) {
     return <div className="w-full h-full bg-white" />;
@@ -374,6 +386,9 @@ export default function Game() {
   const [isProportionOpen, setIsProportionOpen] = useState(false);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
 
+  // Mobile hamburger menu state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // UI states
   const [isMuted, setIsMuted] = useState(false);
   const { play: playSound } = useTTS(isMuted);
@@ -393,6 +408,13 @@ export default function Game() {
 
   // Ask Road mode: 'none' | 'banker' | 'player'
   const [askRoadMode, setAskRoadMode] = useState<'none' | 'banker' | 'player'>('none');
+
+  // Flying chips animation
+  const { flyingChips, addFlyingChip } = useFlyingChips();
+  const chipSelectorRef = useRef<HTMLDivElement>(null);
+
+  // Marquee chat
+  const { cooldown: marqueeCooldown, sendMessage: sendMarqueeMessage } = useMarqueeChat(user?.username || '玩家');
 
   // Bet success notification
   const [betNotification, setBetNotification] = useState<{
@@ -550,10 +572,15 @@ export default function Game() {
   //           If cards appear without a recent phase transition to 'dealing', it's a reconnect.
   const [skipCardAnim, setSkipCardAnim] = useState(false);
   const [pointsPulseKey, setPointsPulseKey] = useState(0);
+
+  // Dealer animation: keep dealing animation active until all cards are dealt and flipped
+  // This is separate from phase because we need to keep animating during third card delays
+  const [dealerAnimating, setDealerAnimating] = useState(false);
+  const dealerAnimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Responsive breakpoint
   const bp = useBreakpoint();
-  const cardSize = bp === 'mobile' ? 'sm' : bp === 'tablet' ? 'md' : 'lg';
-  const thirdCardHeight = bp === 'mobile' ? 45 : bp === 'tablet' ? 65 : 90;
+  const cardSize = bp === 'mobile' ? 'md' : bp === 'tablet' ? 'md' : 'lg';
+  const thirdCardHeight = bp === 'mobile' ? 65 : bp === 'tablet' ? 65 : 90;
   // Cards fly from dealer's hand position (above table, center)
   const flyY = bp === 'mobile' ? -140 : bp === 'tablet' ? -220 : -350;
   const flyX = bp === 'mobile' ? 30 : bp === 'tablet' ? 60 : 90;
@@ -580,6 +607,11 @@ export default function Game() {
     pendingResetRef.current = false;
     expectingCardsRef.current = false;
     setSkipCardAnim(false);
+    setDealerAnimating(false); // Reset dealer animation
+    if (dealerAnimTimerRef.current) {
+      clearTimeout(dealerAnimTimerRef.current);
+      dealerAnimTimerRef.current = null;
+    }
     setDisplayPlayerPoints(null);
     setDisplayBankerPoints(null);
     setAllFlipsDone(false);
@@ -597,7 +629,8 @@ export default function Game() {
     console.log(`[Game] Phase changed: ${prevPhaseRef.current} → ${phase}`);
     if (phase === 'dealing' && prevPhaseRef.current !== 'dealing') {
       expectingCardsRef.current = true;
-      console.log('[Game] Phase→dealing: expecting animated cards');
+      setDealerAnimating(true); // Start dealer animation
+      console.log('[Game] Phase→dealing: expecting animated cards, dealer animating');
     }
     // TTS: 停止下注 (plays immediately, no conflict)
     if (phase === 'sealed' && prevPhaseRef.current !== 'sealed') {
@@ -634,6 +667,7 @@ export default function Game() {
       } else {
         // Cards appeared without a phase transition to dealing — reconnect/state restore
         setSkipCardAnim(true);
+        setDealerAnimating(false); // No dealer animation on reconnect
         // Show points and all card texts immediately on reconnect
         setDisplayPlayerPoints(playerPoints);
         setDisplayBankerPoints(bankerPoints);
@@ -658,8 +692,9 @@ export default function Game() {
   const checkAllFlipsDone = useCallback(() => {
     console.log(`[Game] checkAllFlipsDone: lastResult=${lastResult} flipped=${flippedCountRef.current} expected=${expectedCardsRef.current}`);
     if (lastResult !== null && flippedCountRef.current >= expectedCardsRef.current) {
-      console.log('[Game] ✅ ALL FLIPS DONE');
+      console.log('[Game] ✅ ALL FLIPS DONE, stopping dealer animation');
       setAllFlipsDone(true);
+      setDealerAnimating(false); // Stop dealer animation when all cards are flipped
     }
   }, [lastResult]);
 
@@ -865,11 +900,29 @@ export default function Game() {
   // Phase display
   const phaseDisplay = getPhaseDisplay(phase, timeRemaining, t);
 
-  // Handle bet click
-  const handlePlaceBet = (type: BetType) => {
+  // Handle bet click with flying chip animation
+  const handlePlaceBet = (type: BetType, event?: React.MouseEvent) => {
     if (!canBet) return;
     const success = addPendingBet(type);
-    if (success) playSound('chipPlace');
+    if (success) {
+      playSound('chipPlace');
+
+      // Trigger flying chip animation
+      if (event && chipSelectorRef.current) {
+        const selectorRect = chipSelectorRef.current.getBoundingClientRect();
+        const targetRect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+
+        // Start from chip selector center
+        const startX = selectorRect.left + selectorRect.width / 2;
+        const startY = selectorRect.top + selectorRect.height / 2;
+
+        // End at bet area center
+        const endX = targetRect.left + targetRect.width / 2;
+        const endY = targetRect.top + targetRect.height / 2;
+
+        addFlyingChip(selectedChip, startX, startY, endX, endY);
+      }
+    }
   };
 
   // Handle confirm - send pending bets to server
@@ -979,8 +1032,11 @@ export default function Game() {
 
   return (
     <div className="h-screen bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
-      {/* Top Header Bar */}
-      <header className="h-11 bg-[#0d1117] flex items-center justify-between px-2 sm:px-4 border-b border-gray-800/50">
+      {/* Flying chips overlay */}
+      <FlyingChipOverlay chips={flyingChips} chipSize={32} />
+
+      {/* Top Header Bar - Desktop only */}
+      <header className="hidden lg:flex h-11 bg-[#0d1117] items-center justify-between px-2 sm:px-4 border-b border-gray-800/50">
         {/* Left - Back & Info */}
         <div className="flex items-center gap-2 sm:gap-3">
           <button
@@ -1011,7 +1067,7 @@ export default function Game() {
           </div>
         </div>
 
-        {/* Center - Balance (mobile) */}
+        {/* Center - Balance (tablet) */}
         <div className="xl:hidden flex items-center gap-2">
           <span className="text-amber-400 font-bold text-sm">${balance.toLocaleString()}</span>
         </div>
@@ -1045,6 +1101,95 @@ export default function Game() {
           </button>
         </div>
       </header>
+
+      {/* Mobile Hamburger Menu Button - Fixed position */}
+      <div className="lg:hidden fixed top-2 right-2 z-50">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 bg-black/60 rounded-lg text-white"
+        >
+          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {/* Mobile Menu Dropdown */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="lg:hidden fixed top-12 right-2 z-50 bg-[#1a1f2e] border border-gray-700 rounded-lg shadow-xl p-2 min-w-[160px]"
+          >
+            <div className="flex flex-col gap-1">
+              {/* Connection Status */}
+              <div className={`flex items-center gap-2 px-3 py-2 text-xs ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+                {isConnected ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+                <span>{isConnected ? '已連線' : '離線'}</span>
+              </div>
+              <div className="border-t border-gray-700 my-1" />
+              {/* Sound Toggle */}
+              <button
+                onClick={() => { toggleMute(); }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
+              >
+                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                <span>{isMuted ? '開啟音效' : '關閉音效'}</span>
+              </button>
+              {/* BGM Toggle */}
+              <button
+                onClick={() => { const on = toggleBgm(); setIsBgmOn(on); }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
+              >
+                {isBgmOn && !isMuted ? <Music className="w-4 h-4" /> : <Music2 className="w-4 h-4" />}
+                <span>{isBgmOn ? '關閉音樂' : '開啟音樂'}</span>
+              </button>
+              <div className="border-t border-gray-700 my-1" />
+              {/* Settings */}
+              <button
+                onClick={() => { setIsSettingsOpen(true); setIsMobileMenuOpen(false); }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
+              >
+                <Settings className="w-4 h-4" />
+                <span>設定</span>
+              </button>
+              {/* Rules */}
+              <button
+                onClick={() => { setIsRulesOpen(true); setIsMobileMenuOpen(false); }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span>遊戲規則</span>
+              </button>
+              {/* Roadmap */}
+              <button
+                onClick={() => { setIsRoadmapOpen(true); setIsMobileMenuOpen(false); }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
+              >
+                <MapPin className="w-4 h-4" />
+                <span>路單</span>
+              </button>
+              {/* Report */}
+              <button
+                onClick={() => { setIsReportOpen(true); setIsMobileMenuOpen(false); }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
+              >
+                <FileText className="w-4 h-4" />
+                <span>報表</span>
+              </button>
+              <div className="border-t border-gray-700 my-1" />
+              {/* Back to Lobby */}
+              <button
+                onClick={() => navigate('/lobby')}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded"
+              >
+                <Home className="w-4 h-4" />
+                <span>返回大廳</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
@@ -1175,13 +1320,14 @@ export default function Game() {
 
           {/* Video Area - 3D Dealer Table */}
           <DealerTable3D
-            isDealing={phase === 'dealing'}
+            isDealing={dealerAnimating}
             dealerName={currentDealerName}
             gameType="baccarat"
           >
 
               {/* Top info bar */}
-              <div className="relative z-10 flex items-center justify-center pt-2 pb-1">
+              {/* Desktop only: Game info bar */}
+              <div className="hidden sm:flex relative z-10 items-center justify-center pt-2 pb-1">
                 <div className="flex items-center gap-2 bg-black/30 rounded-full px-4 py-1 border border-[#d4af37]/10">
                   <span className="text-[11px] text-[#d4af37]/70 font-mono">{t('baccarat')} {shoeNumber}</span>
                   <span className="text-[#d4af37]/20">|</span>
@@ -1190,24 +1336,24 @@ export default function Game() {
               </div>
 
               {/* Main dealing area — cards fly from dealer's hand above */}
-              <div className="flex-1 relative flex items-center justify-center">
+              <div className="flex-1 relative flex items-start sm:items-center justify-center mt-[5%] sm:mt-0 pt-1 sm:pt-0">
                 {/* Player & Banker zones */}
-                <div ref={cardAreaRef} className="flex items-stretch gap-2 sm:gap-8 lg:gap-16 xl:gap-24">
+                <div ref={cardAreaRef} className="flex items-stretch gap-1 sm:gap-8 lg:gap-16 xl:gap-24">
                   {/* ——— PLAYER ZONE ——— */}
                   <div className="flex flex-col items-center">
                     {/* Player header + score */}
-                    <div className="flex items-center gap-1 mb-2 sm:gap-3 sm:mb-4">
-                      <div className="bg-blue-600 text-white text-xs px-2 py-1 sm:text-xl sm:px-5 sm:py-2 rounded-l font-bold tracking-wide">
-                        P {t('player').toUpperCase()}
+                    <div className="flex items-center gap-0.5 mb-1 sm:gap-3 sm:mb-4">
+                      <div className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 sm:text-xl sm:px-5 sm:py-2 rounded-l font-bold tracking-wide">
+                        閒
                       </div>
-                      <div key={`pp-${pointsPulseKey}`} className={`bg-black/60 text-white text-2xl px-3 py-1 min-w-[40px] sm:text-5xl sm:px-6 sm:py-2 sm:min-w-[80px] rounded-r font-bold text-center border border-blue-500/20 ${renderPlayerPoints !== null ? 'points-pulse' : ''}`}>
+                      <div key={`pp-${pointsPulseKey}`} className={`bg-black/60 text-white text-lg px-2 py-0.5 min-w-[28px] sm:text-5xl sm:px-6 sm:py-2 sm:min-w-[80px] rounded-r font-bold text-center border border-blue-500/20 ${renderPlayerPoints !== null ? 'points-pulse' : ''}`}>
                         {renderPlayerPoints ?? '-'}
                       </div>
                     </div>
                     {/* Third card — rotated 90° */}
                     <div style={{ height: thirdCardHeight }}>
                       {renderPlayerCards.length > 2 && (
-                        <div className="mb-1 sm:mb-3">
+                        <div className="mb-0.5 sm:mb-3">
                           <AnimatedPlayingCard
                             card={renderPlayerCards[2]}
                             size={cardSize}
@@ -1223,7 +1369,7 @@ export default function Game() {
                     </div>
                     {/* First two cards */}
                     <div className="flex gap-1 sm:gap-3">
-                      {renderPlayerCards.length > 0 ? (
+                      {renderPlayerCards.length > 0 && (
                         renderPlayerCards.slice(0, 2).map((card, i) => (
                           <AnimatedPlayingCard
                             key={`player-${i}-${card.rank}-${card.suit}`}
@@ -1236,15 +1382,10 @@ export default function Game() {
                             onFlipComplete={() => onPlayerCardFlipped(i)}
                           />
                         ))
-                      ) : (
-                        <>
-                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size={cardSize} />
-                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size={cardSize} />
-                        </>
                       )}
                     </div>
                     {/* Card text preview */}
-                    <div className="mt-1 sm:mt-3 flex gap-2 text-[10px] sm:text-base font-mono text-blue-300/60">
+                    <div className="mt-0.5 sm:mt-3 flex gap-1 sm:gap-2 text-[8px] sm:text-base font-mono text-blue-300/60">
                       {renderPlayerCards.length > 0 ? renderPlayerCards.map((c, i) => (
                         <span key={i} className={`transition-opacity duration-300 ${revealedPlayerCards.has(i) ? 'opacity-100' : 'opacity-0'} ${c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}`}>
                           {SUIT_SYMBOLS[c.suit]}{c.rank}
@@ -1254,27 +1395,27 @@ export default function Game() {
                   </div>
 
                   {/* ——— Center VS ——— */}
-                  <div className="flex flex-col items-center justify-center gap-1 sm:gap-2 px-1 sm:px-2 lg:px-4">
-                    <div className="w-px h-6 sm:h-12 lg:h-20 bg-gradient-to-b from-transparent via-[#d4af37]/25 to-transparent" />
-                    <div className="text-sm sm:text-xl lg:text-2xl text-[#d4af37]/30 font-bold">VS</div>
-                    <div className="w-px h-6 sm:h-12 lg:h-20 bg-gradient-to-b from-transparent via-[#d4af37]/25 to-transparent" />
+                  <div className="flex flex-col items-center justify-center gap-0.5 sm:gap-2 px-0.5 sm:px-2 lg:px-4">
+                    <div className="w-px h-4 sm:h-12 lg:h-20 bg-gradient-to-b from-transparent via-[#d4af37]/25 to-transparent" />
+                    <div className="text-[10px] sm:text-xl lg:text-2xl text-[#d4af37]/30 font-bold">VS</div>
+                    <div className="w-px h-4 sm:h-12 lg:h-20 bg-gradient-to-b from-transparent via-[#d4af37]/25 to-transparent" />
                   </div>
 
                   {/* ——— BANKER ZONE ——— */}
                   <div className="flex flex-col items-center">
                     {/* Banker header + score */}
-                    <div className="flex items-center gap-1 mb-2 sm:gap-3 sm:mb-4">
-                      <div key={`bp-${pointsPulseKey}`} className={`bg-black/60 text-white text-2xl px-3 py-1 min-w-[40px] sm:text-5xl sm:px-6 sm:py-2 sm:min-w-[80px] rounded-l font-bold text-center border border-red-500/20 ${renderBankerPoints !== null ? 'points-pulse' : ''}`}>
+                    <div className="flex items-center gap-0.5 mb-1 sm:gap-3 sm:mb-4">
+                      <div key={`bp-${pointsPulseKey}`} className={`bg-black/60 text-white text-lg px-2 py-0.5 min-w-[28px] sm:text-5xl sm:px-6 sm:py-2 sm:min-w-[80px] rounded-l font-bold text-center border border-red-500/20 ${renderBankerPoints !== null ? 'points-pulse' : ''}`}>
                         {renderBankerPoints ?? '-'}
                       </div>
-                      <div className="bg-red-600 text-white text-xs px-2 py-1 sm:text-xl sm:px-5 sm:py-2 rounded-r font-bold tracking-wide">
-                        {t('banker').toUpperCase()} B
+                      <div className="bg-red-600 text-white text-[10px] px-1.5 py-0.5 sm:text-xl sm:px-5 sm:py-2 rounded-r font-bold tracking-wide">
+                        莊
                       </div>
                     </div>
                     {/* Third card — rotated 90° */}
                     <div style={{ height: thirdCardHeight }}>
                       {renderBankerCards.length > 2 && (
-                        <div className="mb-1 sm:mb-3">
+                        <div className="mb-0.5 sm:mb-3">
                           <AnimatedPlayingCard
                             card={renderBankerCards[2]}
                             size={cardSize}
@@ -1290,7 +1431,7 @@ export default function Game() {
                     </div>
                     {/* First two cards */}
                     <div className="flex gap-1 sm:gap-3">
-                      {renderBankerCards.length > 0 ? (
+                      {renderBankerCards.length > 0 && (
                         renderBankerCards.slice(0, 2).map((card, i) => (
                           <AnimatedPlayingCard
                             key={`banker-${i}-${card.rank}-${card.suit}`}
@@ -1303,15 +1444,10 @@ export default function Game() {
                             onFlipComplete={() => onBankerCardFlipped(i)}
                           />
                         ))
-                      ) : (
-                        <>
-                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size={cardSize} />
-                          <PlayingCard card={{ suit: 'spades', rank: 'A', value: 1 }} faceDown size={cardSize} />
-                        </>
                       )}
                     </div>
                     {/* Card text preview */}
-                    <div className="mt-1 sm:mt-3 flex gap-2 text-[10px] sm:text-base font-mono text-red-300/60">
+                    <div className="mt-0.5 sm:mt-3 flex gap-1 sm:gap-2 text-[8px] sm:text-base font-mono text-red-300/60">
                       {renderBankerCards.length > 0 ? renderBankerCards.map((c, i) => (
                         <span key={i} className={`transition-opacity duration-300 ${revealedBankerCards.has(i) ? 'opacity-100' : 'opacity-0'} ${c.suit === 'hearts' || c.suit === 'diamonds' ? 'text-red-400/60' : ''}`}>
                           {SUIT_SYMBOLS[c.suit]}{c.rank}
@@ -1320,22 +1456,6 @@ export default function Game() {
                     </div>
                   </div>
                 </div>
-
-                {/* Mobile Bead Road */}
-                <div className="lg:hidden absolute right-1 top-1 bottom-1 w-6 flex flex-col items-center gap-0.5 overflow-y-auto z-10 scrollbar-hide">
-                  {roadmapData.slice(-20).map((r, i) => {
-                    const bg = r.result === 'banker' ? '#DC2626' : r.result === 'player' ? '#2563EB' : '#16A34A';
-                    const label = r.result === 'banker' ? '莊' : r.result === 'player' ? '閒' : '和';
-                    return (
-                      <div key={i} className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{ backgroundColor: bg, fontSize: '8px' }}>
-                        {label}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Fake bet chip stacks on table */}
-                <TableChipDisplay targetBets={fakeBets} phase={phase} />
 
                 {/* Result Overlay */}
                 <AnimatePresence>
@@ -1364,13 +1484,31 @@ export default function Game() {
                     </motion.div>
                   )}
                 </AnimatePresence>
+
               </div>
+
+            {/* Fake bet chips on table - at bottom of table area */}
+            <div className="absolute bottom-[8%] sm:bottom-[10%] left-4 right-4 z-10 pointer-events-none">
+              <TableChipDisplay targetBets={fakeBets} phase={phase} />
+            </div>
           </DealerTable3D>
+
+          {/* Marquee chat - flying messages (outside DealerTable3D for proper positioning) */}
+          <MarqueeChat
+            username={user?.username || '玩家'}
+            showButtons={true}
+          />
 
           {/* Betting Panel */}
           <div className="bg-[#0d1117]">
-            {/* Control Bar */}
-            <div className="flex flex-wrap sm:flex-nowrap items-center justify-between px-2 sm:px-4 py-2 gap-2 border-b border-gray-800/50">
+            {/* Quick Message Buttons - Desktop only, above Control Bar */}
+            <div className="hidden lg:flex items-center gap-1 px-2 sm:px-4 py-1.5 border-b border-gray-800/30 bg-black/30">
+              <span className="text-[10px] text-gray-500 mr-2">廣播:</span>
+              <MarqueeQuickButtons sendMessage={sendMarqueeMessage} cooldown={marqueeCooldown} />
+            </div>
+
+            {/* Control Bar - Hidden on mobile */}
+            <div className="hidden lg:flex flex-wrap sm:flex-nowrap items-center justify-between px-2 sm:px-4 py-2 gap-2 border-b border-gray-800/50">
               <div className="flex items-center gap-2 sm:gap-3">
                 <span className="hidden sm:inline text-xs text-gray-400">{t('switchPlay')}</span>
                 <span className="text-xs text-gray-500">{t('noComm')}</span>
@@ -1416,8 +1554,8 @@ export default function Game() {
               </div>
             </div>
 
-            {/* Betting Areas - Full Width - Exact match to reference image */}
-            <div className="flex flex-col lg:flex-row lg:items-stretch min-h-[200px] lg:h-[360px] pb-16 xl:pb-0" style={{ backgroundColor: '#FFFFFF' }}>
+            {/* Betting Areas - Casino Felt Surface */}
+            <div className="flex flex-col lg:flex-row lg:items-stretch lg:h-[360px] casino-betting-surface border-t-2 border-[#d4af37]/40">
               {/* Left: Bead Plate (珠盤路) + Ask Road buttons - Hidden on mobile */}
               <div className="hidden lg:flex lg:w-[22%] flex-col">
                 <div className="flex flex-1">
@@ -1536,133 +1674,171 @@ export default function Game() {
               </div>
 
               {/* Center: Betting Buttons */}
-              <div className="flex-1 flex flex-col border-l border-r border-gray-400">
+              <div className="flex-1 flex flex-col border-l border-r border-[#d4af37]/30">
                 {/* Top Row - Side bets (5 buttons) */}
-                <div className="flex flex-wrap lg:flex-nowrap h-auto lg:h-[95px] border-b border-gray-400">
+                <div className="flex flex-wrap lg:flex-nowrap h-auto lg:h-[95px] border-b border-[#d4af37]/30">
                   {/* 閒龍寶 - Player Dragon Bonus */}
                   <button
-                    onClick={() => handlePlaceBet('player_bonus')}
+                    onClick={(e) => handlePlaceBet('player_bonus', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('player_bonus') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#E0F2FE' }}
+                    className={`casino-bet-spot casino-bet-player relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('player_bonus') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('playerBonus')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:30</span>
+                    <span className="text-blue-300 text-[8px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('playerBonus')}</span>
+                    <span className="text-[#d4af37] text-[7px] sm:text-xs font-semibold">1:30</span>
                     {getBetAmount('player_bonus') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('player_bonus')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[6px] font-bold px-0.5 rounded-full z-10">{getBetAmount('player_bonus')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('player_bonus')} chipSize={14} maxChips={2} stackOffset={1} />
+                        </div>
+                      </>
                     )}
                   </button>
 
-                  {/* 閒對 - Light blue */}
+                  {/* 閒對 - Player Pair */}
                   <button
-                    onClick={() => handlePlaceBet('player_pair')}
+                    onClick={(e) => handlePlaceBet('player_pair', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('player_pair') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#F0F4FF' }}
+                    className={`casino-bet-spot casino-bet-pair relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('player_pair') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-gray-800 text-xs sm:text-sm font-medium">{t('playerPair')}</span>
-                    <span className="text-red-600 text-xs sm:text-sm font-bold">1:11</span>
+                    <span className="text-blue-300 text-[8px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('playerPair')}</span>
+                    <span className="text-[#d4af37] text-[8px] sm:text-sm font-bold">1:11</span>
                     {getBetAmount('player_pair') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('player_pair')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[6px] font-bold px-0.5 rounded-full z-10">{getBetAmount('player_pair')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('player_pair')} chipSize={14} maxChips={2} stackOffset={1} />
+                        </div>
+                      </>
                     )}
                   </button>
 
-                  {/* Super 6 - Light green with purple text */}
+                  {/* Super 6 */}
                   <button
-                    onClick={() => handlePlaceBet('super_six')}
+                    onClick={(e) => handlePlaceBet('super_six', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('super_six') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#F0FFF4' }}
+                    className={`casino-bet-spot casino-bet-super6 relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('super_six') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-purple-700 text-[8px] sm:text-[10px] font-bold tracking-wider">SUPER</span>
-                    <span className="text-purple-700 text-xl sm:text-3xl font-black leading-none">6</span>
-                    <span className="text-red-600 text-[8px] sm:text-[10px]">1:12/1:20</span>
+                    <span className="text-purple-300 text-[6px] sm:text-[10px] font-bold tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">SUPER</span>
+                    <span className="text-purple-200 text-sm sm:text-3xl font-black leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">6</span>
+                    <span className="text-[#d4af37] text-[6px] sm:text-[10px] font-semibold">1:12/1:20</span>
                     {getBetAmount('super_six') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('super_six')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[6px] font-bold px-0.5 rounded-full z-10">{getBetAmount('super_six')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('super_six')} chipSize={14} maxChips={2} stackOffset={1} />
+                        </div>
+                      </>
                     )}
                   </button>
 
-                  {/* 莊對 - Light pink */}
+                  {/* 莊對 - Banker Pair */}
                   <button
-                    onClick={() => handlePlaceBet('banker_pair')}
+                    onClick={(e) => handlePlaceBet('banker_pair', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('banker_pair') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#FFF0F0' }}
+                    className={`casino-bet-spot casino-bet-pair relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('banker_pair') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-gray-800 text-xs sm:text-sm font-medium">{t('bankerPair')}</span>
-                    <span className="text-red-600 text-xs sm:text-sm font-bold">1:11</span>
+                    <span className="text-red-300 text-[8px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('bankerPair')}</span>
+                    <span className="text-[#d4af37] text-[8px] sm:text-sm font-bold">1:11</span>
                     {getBetAmount('banker_pair') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('banker_pair')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[6px] font-bold px-0.5 rounded-full z-10">{getBetAmount('banker_pair')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('banker_pair')} chipSize={14} maxChips={2} stackOffset={1} />
+                        </div>
+                      </>
                     )}
                   </button>
 
                   {/* 莊龍寶 - Banker Dragon Bonus */}
                   <button
-                    onClick={() => handlePlaceBet('banker_bonus')}
+                    onClick={(e) => handlePlaceBet('banker_bonus', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-b lg:border-b-0 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('banker_bonus') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#FEE2E2' }}
+                    className={`casino-bet-spot casino-bet-banker relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('banker_bonus') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-red-700 text-xs sm:text-sm font-medium">{t('bankerBonus')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:30</span>
+                    <span className="text-red-300 text-[8px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('bankerBonus')}</span>
+                    <span className="text-[#d4af37] text-[7px] sm:text-xs font-semibold">1:30</span>
                     {getBetAmount('banker_bonus') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('banker_bonus')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[6px] font-bold px-0.5 rounded-full z-10">{getBetAmount('banker_bonus')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('banker_bonus')} chipSize={14} maxChips={2} stackOffset={1} />
+                        </div>
+                      </>
                     )}
                   </button>
                 </div>
 
-                {/* Main Row - 閒 / 和 / 莊 (large buttons) */}
+                {/* Main Row - 閒 / 和 / 莊 (large buttons with gold trim) */}
                 <div className="flex flex-1">
-                  {/* 閒 - Blue background */}
+                  {/* 閒 - Player (Blue) */}
                   <button
-                    onClick={() => handlePlaceBet('player')}
+                    onClick={(e) => handlePlaceBet('player', e)}
                     disabled={!canBet}
-                    className={`relative flex-[2] py-4 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('player') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#DBEAFE' }}
+                    className={`casino-bet-spot casino-bet-player relative flex-[2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('player') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-blue-700 text-3xl sm:text-4xl lg:text-5xl font-black">{t('player')}</span>
-                    <span className="text-red-600 text-base sm:text-lg lg:text-xl font-bold mt-1">1:1</span>
+                    {/* Corner ornaments */}
+                    <div className="casino-corner-ornament top-left hidden sm:block" />
+                    <div className="casino-corner-ornament bottom-right hidden sm:block" />
+                    <span className="casino-display text-blue-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('player')}</span>
+                    <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:1</span>
                     {getBetAmount('player') > 0 && (
-                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-yellow-500 text-black text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full shadow">{getBetAmount('player')}</div>
+                      <>
+                        <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-[8px] sm:text-sm font-bold px-1 py-0 rounded-full shadow-lg z-10">{getBetAmount('player')}</div>
+                        <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('player')} chipSize={20} maxChips={3} />
+                        </div>
+                      </>
                     )}
                   </button>
 
-                  {/* 和 - Yellow background */}
+                  {/* 和 - Tie (Green) */}
                   <button
-                    onClick={() => handlePlaceBet('tie')}
+                    onClick={(e) => handlePlaceBet('tie', e)}
                     disabled={!canBet}
-                    className={`relative flex-[1.2] py-4 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('tie') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#FEF9C3' }}
+                    className={`casino-bet-spot casino-bet-tie relative flex-[1.2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tie') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-green-700 text-3xl sm:text-4xl lg:text-5xl font-black">{t('tie')}</span>
-                    <span className="text-red-600 text-base sm:text-lg lg:text-xl font-bold mt-1">1:8</span>
+                    <span className="casino-display text-green-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('tie')}</span>
+                    <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:8</span>
                     {getBetAmount('tie') > 0 && (
-                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-yellow-500 text-black text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full shadow">{getBetAmount('tie')}</div>
+                      <>
+                        <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-[8px] sm:text-sm font-bold px-1 py-0 rounded-full shadow-lg z-10">{getBetAmount('tie')}</div>
+                        <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('tie')} chipSize={20} maxChips={3} />
+                        </div>
+                      </>
                     )}
                   </button>
 
-                  {/* 莊 - Pink/Red background */}
+                  {/* 莊 - Banker (Red) */}
                   <button
-                    onClick={() => handlePlaceBet('banker')}
+                    onClick={(e) => handlePlaceBet('banker', e)}
                     disabled={!canBet}
-                    className={`relative flex-[2] py-4 sm:py-6 lg:py-0 flex flex-col items-center justify-center transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('banker') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#FFE4E6' }}
+                    className={`casino-bet-spot casino-bet-banker relative flex-[2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('banker') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-red-700 text-3xl sm:text-4xl lg:text-5xl font-black">{t('banker')}</span>
-                    <span className="text-red-600 text-base sm:text-lg lg:text-xl font-bold mt-1">
+                    {/* Corner ornaments */}
+                    <div className="casino-corner-ornament top-right hidden sm:block" />
+                    <div className="casino-corner-ornament bottom-left hidden sm:block" />
+                    <span className="casino-display text-red-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('banker')}</span>
+                    <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">
                       {isNoCommission ? '1:1' : '1:0.95'}
                     </span>
                     {isNoCommission && (
-                      <span className="text-red-500 text-[10px] sm:text-xs">(6點贏 1:0.5)</span>
+                      <span className="text-[#d4af37]/70 text-[7px] sm:text-xs">(6點贏 1:0.5)</span>
                     )}
                     {getBetAmount('banker') > 0 && (
-                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-yellow-500 text-black text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full shadow">{getBetAmount('banker')}</div>
+                      <>
+                        <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-[8px] sm:text-sm font-bold px-1 py-0 rounded-full shadow-lg z-10">{getBetAmount('banker')}</div>
+                        <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('banker')} chipSize={20} maxChips={3} />
+                        </div>
+                      </>
                     )}
                   </button>
                 </div>
 
-                {/* Chips Row */}
-                <div className="flex justify-start lg:justify-center items-center gap-1 sm:gap-1.5 py-2 px-2 bg-[#1a1f2e] overflow-x-auto scrollbar-hide">
+                {/* Chips Row - Desktop */}
+                <div ref={chipSelectorRef} className="hidden lg:flex justify-center items-center gap-1.5 py-2 px-2 bg-[#1a1f2e]">
                   {displayedChips.map((value) => (
                     <Chip
                       key={value}
@@ -1670,16 +1846,91 @@ export default function Game() {
                       selected={selectedChip === value}
                       onClick={() => setSelectedChip(value)}
                       disabled={value > balance}
+                      small={false}
                     />
                   ))}
-                  {/* Chip Settings Button */}
                   <button
                     onClick={() => setIsChipSettingsOpen(true)}
-                    className="relative w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-br from-gray-500 to-gray-700 border-2 border-white/20 shadow-lg transition-all duration-200 cursor-pointer hover:scale-105"
+                    className="relative rounded-full flex items-center justify-center bg-gradient-to-br from-gray-500 to-gray-700 border-2 border-white/20 shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 w-14 h-14"
                     title={t('chipSettings') || '籌碼設置'}
                   >
-                    <Coins className="relative z-10 w-6 h-6 text-white drop-shadow-lg" />
+                    <Coins className="relative z-10 text-white drop-shadow-lg w-6 h-6" />
                   </button>
+                </div>
+
+                {/* Mobile: Two rows - Chips on top, Balance/Actions on bottom */}
+                <div ref={!chipSelectorRef.current ? chipSelectorRef : undefined} className="lg:hidden bg-[#1a1f2e]">
+                  {/* Row 1: Chips */}
+                  <div className="flex items-center justify-center gap-0.5 py-0.5 px-1 overflow-x-auto scrollbar-hide">
+                    {displayedChips.map((value) => (
+                      <Chip
+                        key={value}
+                        value={value}
+                        selected={selectedChip === value}
+                        onClick={() => setSelectedChip(value)}
+                        disabled={value > balance}
+                        extraSmall={true}
+                      />
+                    ))}
+                    <button
+                      onClick={() => setIsChipSettingsOpen(true)}
+                      className="relative rounded-full flex items-center justify-center bg-gradient-to-br from-gray-500 to-gray-700 border-2 border-white/20 shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 w-6 h-6 shrink-0"
+                    >
+                      <Coins className="relative z-10 text-white drop-shadow-lg w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Row 2: Balance + No Commission + Actions */}
+                  <div className="flex items-center justify-between py-1 px-2 border-t border-gray-700/50">
+                    {/* Left: Balance Info */}
+                    <div className="flex items-center gap-3 text-[9px]">
+                      <span className="text-gray-400">餘額 <span className="text-yellow-400 font-bold">{balance.toLocaleString()}</span></span>
+                      <span className="text-gray-400">下注 <span className="text-white font-bold">{totalBet.toLocaleString()}</span></span>
+                      <span className="text-gray-400">輸贏 <span className={`font-bold ${(lastSettlement?.netResult ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>{(lastSettlement?.netResult ?? 0).toLocaleString()}</span></span>
+                    </div>
+
+                    {/* Right: No Commission + Actions */}
+                    <div className="flex items-center gap-1">
+                      {/* No Commission Toggle */}
+                      <button
+                        onClick={() => setIsNoCommission(!isNoCommission)}
+                        className={`px-2 py-0.5 text-[9px] rounded transition ${
+                          isNoCommission
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-gray-600 text-gray-300'
+                        }`}
+                      >
+                        免佣 {isNoCommission ? '開' : '關'}
+                      </button>
+
+                      {/* Action Buttons */}
+                      {pendingBets.length > 0 && (
+                        <>
+                          <button
+                            onClick={handleCancel}
+                            className="p-1 bg-gray-700 text-gray-300 rounded"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={handleRepeat}
+                            className="p-1 bg-gray-700 text-gray-300 rounded"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
+                      {canBet && pendingBets.length > 0 && (
+                        <button
+                          onClick={handleConfirm}
+                          className="px-2 py-1 text-[9px] bg-amber-500 text-black font-bold rounded flex items-center gap-0.5"
+                        >
+                          <Check className="w-3 h-3" />
+                          確認
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1779,6 +2030,31 @@ export default function Game() {
                   <span className="text-blue-500 font-bold text-sm">閒對 <span className="text-white">{roadmapData.filter(r => r.playerPair).length}</span></span>
                   <span className="text-gray-400 text-sm">總數 <span className="text-white">{total}</span></span>
                 </div>
+              </div>
+            </div>
+
+            {/* Mobile Roadmap Section - Only visible on mobile/tablet */}
+            <div className="lg:hidden bg-[#0d1117]">
+              {/* Stats Summary */}
+              <div className="flex items-center justify-between px-2 py-1.5 text-[10px] border-b border-gray-800">
+                <div className="flex items-center gap-2">
+                  <span className="text-red-500 font-bold">莊 <span className="text-white">{bankerWins}</span></span>
+                  <span className="text-blue-500 font-bold">閒 <span className="text-white">{playerWins}</span></span>
+                  <span className="text-green-500 font-bold">和 <span className="text-white">{ties}</span></span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-red-400">莊對 <span className="text-white">{bankerPairCount}</span></span>
+                  <span className="text-blue-400">閒對 <span className="text-white">{playerPairCount}</span></span>
+                  <span className="text-gray-400">總 <span className="text-white">{total}</span></span>
+                </div>
+              </div>
+              {/* Mobile Roadmap - use LobbyRoadmap component */}
+              <div className="h-[100px] sm:h-[120px] sm:pb-14">
+                <LobbyRoadmap roadHistory={roadmapData.map(r => ({
+                  result: r.result,
+                  playerPair: r.playerPair || false,
+                  bankerPair: r.bankerPair || false,
+                }))} />
               </div>
             </div>
           </div>
@@ -1997,27 +2273,29 @@ export default function Game() {
         )}
       </AnimatePresence>
 
-      {/* Mobile Bottom Navigation */}
-      <MobileNavBar
-        className="xl:hidden"
-        variant="game"
-        balance={balance}
-        totalBet={totalBet}
-        onConfirm={handleConfirm}
-        onCancel={handleCancel}
-        onClear={clearPendingBets}
-        canBet={canBet}
-        hasBets={pendingBets.length > 0}
-        menuActions={[
-          { icon: <MapPin className="w-5 h-5" />, label: t('roadmap') || '路單', onClick: () => setIsRoadmapOpen(true), color: 'text-amber-400' },
-          { icon: <Heart className="w-5 h-5" />, label: t('followingList'), onClick: () => setIsFollowingOpen(true), color: 'text-pink-400' },
-          { icon: <BarChart2 className="w-5 h-5" />, label: t('resultsProportion'), onClick: () => setIsProportionOpen(true) },
-          { icon: <FileText className="w-5 h-5" />, label: t('gameReport'), onClick: () => setIsReportOpen(true) },
-          { icon: <Settings className="w-5 h-5" />, label: t('gameSettings'), onClick: () => setIsSettingsOpen(true) },
-          { icon: <HelpCircle className="w-5 h-5" />, label: t('gameRules'), onClick: () => setIsRulesOpen(true) },
-          { icon: <Coins className="w-5 h-5" />, label: t('chipSettings') || '籌碼設定', onClick: () => setIsChipSettingsOpen(true) },
-        ]}
-      />
+      {/* Mobile Bottom Navigation - Only shown on tablet/larger mobile, hidden on small phones where we use inline controls */}
+      <div className="hidden sm:block lg:hidden">
+        <MobileNavBar
+          className=""
+          variant="game"
+          totalBet={totalBet}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+          onRepeat={handleRepeat}
+          canBet={canBet}
+          hasBets={pendingBets.length > 0}
+          hasLastBets={lastBets.length > 0}
+          menuActions={[
+            { icon: <MapPin className="w-5 h-5" />, label: t('roadmap') || '路單', onClick: () => setIsRoadmapOpen(true), color: 'text-amber-400' },
+            { icon: <Heart className="w-5 h-5" />, label: t('followingList'), onClick: () => setIsFollowingOpen(true), color: 'text-pink-400' },
+            { icon: <BarChart2 className="w-5 h-5" />, label: t('resultsProportion'), onClick: () => setIsProportionOpen(true) },
+            { icon: <FileText className="w-5 h-5" />, label: t('gameReport'), onClick: () => setIsReportOpen(true) },
+            { icon: <Settings className="w-5 h-5" />, label: t('gameSettings'), onClick: () => setIsSettingsOpen(true) },
+            { icon: <HelpCircle className="w-5 h-5" />, label: t('gameRules'), onClick: () => setIsRulesOpen(true) },
+            { icon: <Coins className="w-5 h-5" />, label: t('chipSettings') || '籌碼設定', onClick: () => setIsChipSettingsOpen(true) },
+          ]}
+        />
+      </div>
     </div>
   );
 }

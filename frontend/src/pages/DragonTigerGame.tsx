@@ -32,8 +32,9 @@ import {
   Coins,
   Music,
   Music2,
+  Menu,
+  Home,
 } from 'lucide-react';
-import { MobileNavBar } from '../components/layout/MobileNavBar';
 import { useDragonTigerStore, type DragonTigerBetType } from '../store/dragonTigerStore';
 import { useGameStore } from '../store/gameStore';
 import { useDragonTigerSocket } from '../hooks/useDragonTigerSocket';
@@ -45,7 +46,10 @@ import ChipSettingsModal from '../components/game/ChipSettingsModal';
 import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
 import CountdownTimer from '../components/game/CountdownTimer';
 import DealerTable3D from '../components/game/DealerTable3D';
+import MarqueeChat, { useMarqueeChat, MarqueeQuickButtons } from '../components/game/MarqueeChat';
 import TableChipDisplay from '../components/game/TableChipDisplay';
+import DragonTigerRoadmap from '../components/game/DragonTigerRoadmap';
+import { FlyingChipOverlay, useFlyingChips, ChipStack } from '../components/game/BetAreaChips';
 import {
   GameSettingsModal,
   GameRulesModal,
@@ -57,7 +61,8 @@ import {
 } from '../components/game/modals';
 
 // Chip component - uses CasinoChip SVG
-function Chip({ value, selected, onClick, disabled }: { value: number; selected: boolean; onClick: () => void; disabled?: boolean }) {
+function Chip({ value, selected, onClick, disabled, extraSmall }: { value: number; selected: boolean; onClick: () => void; disabled?: boolean; extraSmall?: boolean }) {
+  const size = extraSmall ? 40 : 56;
   return (
     <button
       onClick={onClick}
@@ -69,7 +74,7 @@ function Chip({ value, selected, onClick, disabled }: { value: number; selected:
         ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:scale-105'}
       `}
     >
-      <CasinoChip size={56} value={value} label={formatChipValue(value)} />
+      <CasinoChip size={size} value={value} label={formatChipValue(value)} />
     </button>
   );
 }
@@ -80,95 +85,6 @@ function normalizeResult(result: string | undefined): 'dragon' | 'tiger' | 'tie'
   if (result === 'dt_tie') return 'tie';
   if (result === 'dragon' || result === 'tiger' || result === 'tie') return result;
   return undefined;
-}
-
-// Dragon Tiger Big Road Cell
-function DTBigRoadCell({ result: rawResult, tieCount = 0, blink }: { result?: string; tieCount?: number; blink?: boolean }) {
-  const result = normalizeResult(rawResult);
-
-  if (!result || result === 'tie') {
-    return <div className="w-full h-full bg-white" />;
-  }
-
-  const colors: Record<string, { border: string }> = {
-    dragon: { border: '#DC2626' },  // Red for Dragon
-    tiger: { border: '#2563EB' },   // Blue for Tiger
-  };
-  const color = colors[result];
-
-  if (!color) {
-    return <div className="w-full h-full bg-white" />;
-  }
-
-  const blinkStyle = blink ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
-
-  return (
-    <div className="relative w-full h-full flex items-center justify-center bg-white" style={{ minWidth: 0, minHeight: 0 }}>
-      <div
-        className="rounded-full"
-        style={{ width: '80%', height: '80%', maxWidth: 20, maxHeight: 20, border: `2px solid ${color.border}`, ...blinkStyle }}
-      />
-      {tieCount > 0 && (
-        tieCount === 1 ? (
-          <div
-            className="absolute top-1/2 left-1/4 right-1/4 h-0.5 -translate-y-1/2"
-            style={{ backgroundColor: '#16A34A' }}
-          />
-        ) : (
-          <div
-            className="absolute inset-0 flex items-center justify-center text-[6px] font-bold"
-            style={{ color: '#16A34A' }}
-          >
-            {tieCount}
-          </div>
-        )
-      )}
-    </div>
-  );
-}
-
-// Derived Road Cell for Dragon Tiger
-function DTDerivedRoadCell({ value, type, blink }: { value?: 'red' | 'blue'; type: 'big_eye' | 'small' | 'cockroach'; blink?: boolean }) {
-  if (!value) {
-    return <div className="w-full h-full bg-white" />;
-  }
-
-  const colors = {
-    red: { border: '#DC2626', fill: '#DC2626' },
-    blue: { border: '#2563EB', fill: '#2563EB' },
-  };
-  const color = colors[value];
-  const blinkStyle = blink ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
-
-  if (type === 'big_eye') {
-    return (
-      <div className="w-full h-full flex items-center justify-center p-px bg-white">
-        <div
-          className="w-2.5 h-2.5 rounded-full"
-          style={{ border: `1.5px solid ${color.border}`, ...blinkStyle }}
-        />
-      </div>
-    );
-  }
-
-  if (type === 'small') {
-    return (
-      <div className="w-full h-full flex items-center justify-center p-px bg-white">
-        <div
-          className="w-2.5 h-2.5 rounded-full"
-          style={{ backgroundColor: color.fill, ...blinkStyle }}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="w-full h-full flex items-center justify-center bg-white">
-      <svg viewBox="0 0 10 10" className="w-3 h-3" style={blinkStyle}>
-        <line x1="2" y1="8" x2="8" y2="2" stroke={color.fill} strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    </div>
-  );
 }
 
 // DT Big Road grid type
@@ -292,17 +208,117 @@ function buildDTAskRoad(
   };
 }
 
-// Get a sliding window of the rightmost displayCols columns
+// Big Road Cell for Dragon Tiger (龍=紅, 虎=藍, 和=綠線)
+function DTBigRoadCell({ result, tieCount = 0, blink }: { result?: 'dragon' | 'tiger'; tieCount?: number; blink?: boolean }) {
+  if (!result) {
+    return <div className="w-full h-full bg-white" />;
+  }
+
+  const colors = {
+    dragon: { border: '#DC2626' },  // Red for Dragon
+    tiger: { border: '#2563EB' },   // Blue for Tiger
+  };
+  const color = colors[result];
+
+  return (
+    <div className="relative w-full h-full flex items-center justify-center bg-white" style={{ minWidth: 0, minHeight: 0 }}>
+      {/* Main circle - responsive size, hollow */}
+      <div
+        className="rounded-full"
+        style={{
+          width: '80%',
+          height: '80%',
+          maxWidth: 20,
+          maxHeight: 20,
+          border: `2px solid ${color.border}`,
+          ...(blink ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {})
+        }}
+      />
+
+      {/* Tie indicator - green line through circle, or number if multiple ties */}
+      {tieCount > 0 && (
+        tieCount === 1 ? (
+          <div
+            className="absolute top-1/2 left-1/4 right-1/4 h-0.5 -translate-y-1/2"
+            style={{ backgroundColor: '#16A34A' }}
+          />
+        ) : (
+          <div
+            className="absolute inset-0 flex items-center justify-center text-[6px] font-bold"
+            style={{ color: '#16A34A' }}
+          >
+            {tieCount}
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
+// Derived Road Cell for Dragon Tiger (大眼仔, 小路, 蟑螂路)
+function DTDerivedRoadCell({ value, type, blink }: { value?: 'red' | 'blue'; type: 'big_eye' | 'small' | 'cockroach'; blink?: boolean }) {
+  if (!value) {
+    return <div className="w-full h-full bg-white" />;
+  }
+
+  const colors = {
+    red: { border: '#DC2626', fill: '#DC2626' },
+    blue: { border: '#2563EB', fill: '#2563EB' },
+  };
+  const color = colors[value];
+
+  const blinkStyle = blink ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
+
+  // Big Eye Boy: hollow circles (border only)
+  if (type === 'big_eye') {
+    return (
+      <div className="w-full h-full flex items-center justify-center p-px bg-white">
+        <div
+          className="w-2.5 h-2.5 rounded-full"
+          style={{ border: `1.5px solid ${color.border}`, ...blinkStyle }}
+        />
+      </div>
+    );
+  }
+
+  // Small Road: filled circles
+  if (type === 'small') {
+    return (
+      <div className="w-full h-full flex items-center justify-center p-px bg-white">
+        <div
+          className="w-2.5 h-2.5 rounded-full"
+          style={{ backgroundColor: color.fill, ...blinkStyle }}
+        />
+      </div>
+    );
+  }
+
+  // Cockroach Pig: diagonal slashes
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-white">
+      <svg viewBox="0 0 10 10" className="w-3 h-3" style={blinkStyle}>
+        <line x1="2" y1="8" x2="8" y2="2" stroke={color.fill} strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+}
+
+// Get sliding window for Big Road display
 function getDTBigRoadWindow(grid: DTBigRoadGrid, displayCols: number, extraRoom: number = 1): { window: DTBigRoadGrid; startCol: number } {
   const maxCol = getDTMaxCol(grid);
   const startCol = Math.max(0, maxCol - displayCols + 1 + extraRoom);
-  const win: DTBigRoadGrid = Array(6).fill(null).map(() => Array(displayCols).fill(null));
+  const window: DTBigRoadGrid = Array(6).fill(null).map(() => Array(displayCols).fill(null));
+
   for (let row = 0; row < 6; row++) {
-    for (let c = 0; c < displayCols; c++) {
-      win[row][c] = grid[row]?.[startCol + c] || null;
+    for (let col = 0; col < displayCols; col++) {
+      const srcCol = startCol + col;
+      if (srcCol >= 0 && srcCol < grid[0]?.length) {
+        window[row][col] = grid[row][srcCol];
+      }
     }
   }
-  return { window: win, startCol };
+
+  return { window, startCol };
 }
 
 // Phase display text
@@ -342,8 +358,18 @@ export default function DragonTigerGame() {
   const [isProportionOpen, setIsProportionOpen] = useState(false);
   const [isChipSettingsOpen, setIsChipSettingsOpen] = useState(false);
 
+  // Mobile hamburger menu state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // Ask Road mode: 'none' | 'dragon' | 'tiger'
   const [askRoadMode, setAskRoadMode] = useState<'none' | 'dragon' | 'tiger'>('none');
+
+  // Flying chips animation
+  const { flyingChips, addFlyingChip } = useFlyingChips();
+  const chipSelectorRef = useRef<HTMLDivElement>(null);
+
+  // Marquee chat
+  const { cooldown: marqueeCooldown, sendMessage: sendMarqueeMessage } = useMarqueeChat(user?.username || '玩家');
 
   // Get displayed chips from gameStore (shared with Baccarat)
   const { displayedChips } = useGameStore();
@@ -466,6 +492,7 @@ export default function DragonTigerGame() {
     clearPendingBets,
     loadRepeatBets,
     getBetAmount,
+    getBetChipValue,
     dragonCard,
     tigerCard,
     dragonValue,
@@ -583,10 +610,25 @@ export default function DragonTigerGame() {
   const hasPendingBets = pendingBets.length > 0;
   const hasConfirmedBets = confirmedBets.length > 0;
 
-  const handleBet = (type: DragonTigerBetType) => {
+  const handleBet = (type: DragonTigerBetType, event?: React.MouseEvent) => {
     if (!canBet) return;
     const success = addPendingBet(type);
-    if (success) playSound('chipPlace');
+    if (success) {
+      playSound('chipPlace');
+
+      // Trigger flying chip animation
+      if (event && chipSelectorRef.current) {
+        const selectorRect = chipSelectorRef.current.getBoundingClientRect();
+        const targetRect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+
+        const startX = selectorRect.left + selectorRect.width / 2;
+        const startY = selectorRect.top + selectorRect.height / 2;
+        const endX = targetRect.left + targetRect.width / 2;
+        const endY = targetRect.top + targetRect.height / 2;
+
+        addFlyingChip(selectedChip, startX, startY, endX, endY);
+      }
+    }
   };
 
   const handleConfirm = () => {
@@ -617,69 +659,68 @@ export default function DragonTigerGame() {
   // Build big road grid (full 120 cols)
   const bigRoadFull = buildDTBigRoad(roadmapData);
 
-  // Flat derived roads (full data)
+  // Build derived roads data for Ask Road feature
   const bigEyeBoyDataFull = calculateDTBigEyeBoy(bigRoadFull);
   const smallRoadDataFull = calculateDTSmallRoad(bigRoadFull);
   const cockroachDataFull = calculateDTCockroachPig(bigRoadFull);
-
-  const BIG_ROAD_DISPLAY_COLS = 20;
-  const DERIVED_DISPLAY_CELLS = 32; // 8 cols x 4 rows
 
   // Calculate Ask Roads (問路) - predict what happens if next result is dragon/tiger
   const dragonAskRoad = buildDTAskRoad(roadmapData, 'dragon');
   const tigerAskRoad = buildDTAskRoad(roadmapData, 'tiger');
 
-  // Find predicted Big Road position on the FULL grid (not windowed)
+  // Display constants for right side roads
+  const BIG_ROAD_DISPLAY_COLS = 12;
+  const DERIVED_DISPLAY_CELLS = 32; // 8 cols × 4 rows
+
+  // Get the big road window with sliding
   const getAskRoadBigRoadPredictionFull = (hypothetical: 'dragon' | 'tiger'): { row: number; col: number; result: 'dragon' | 'tiger' } | null => {
     const simData = [...roadmapData, { result: hypothetical }];
     const simGrid = buildDTBigRoad(simData);
-    const simMaxCol = getDTMaxCol(simGrid);
-    const curMaxCol = getDTMaxCol(bigRoadFull);
-    for (let col = Math.max(0, curMaxCol); col <= simMaxCol; col++) {
-      for (let row = 0; row < 6; row++) {
-        if (simGrid[row]?.[col] && !bigRoadFull[row]?.[col]) {
-          return { row, col, result: hypothetical };
-        }
+    const maxCol = getDTMaxCol(simGrid);
+    for (let row = 5; row >= 0; row--) {
+      if (simGrid[row]?.[maxCol]) {
+        return { row, col: maxCol, result: hypothetical };
       }
     }
     return null;
   };
 
-  const askPredFull = askRoadMode !== 'none'
+  const askBigRoadPredictionFull = askRoadMode !== 'none'
     ? getAskRoadBigRoadPredictionFull(askRoadMode)
     : null;
 
-  // Sliding window: make sure predicted cell is visible if ask mode active
-  const { window: bigRoadWindow, startCol: bigRoadStartCol } = (() => {
-    if (askPredFull) {
-      const predCol = askPredFull.col;
-      const maxCol = Math.max(getDTMaxCol(bigRoadFull), predCol);
-      const startCol = Math.max(0, maxCol - BIG_ROAD_DISPLAY_COLS + 1);
+  // Build window — if ask road active, include prediction column in window
+  const { window: bigRoadWindow } = (() => {
+    if (askRoadMode !== 'none' && askBigRoadPredictionFull) {
+      const simData = [...roadmapData, { result: askRoadMode }];
+      const simGrid = buildDTBigRoad(simData);
       const win: DTBigRoadGrid = Array(6).fill(null).map(() => Array(BIG_ROAD_DISPLAY_COLS).fill(null));
+      const { startCol } = getDTBigRoadWindow(simGrid, BIG_ROAD_DISPLAY_COLS, 0);
       for (let row = 0; row < 6; row++) {
-        for (let c = 0; c < BIG_ROAD_DISPLAY_COLS; c++) {
-          win[row][c] = bigRoadFull[row]?.[startCol + c] || null;
+        for (let col = 0; col < BIG_ROAD_DISPLAY_COLS; col++) {
+          const srcCol = startCol + col;
+          if (srcCol >= 0 && srcCol < simGrid[0]?.length) win[row][col] = simGrid[row][srcCol];
         }
       }
-      return { window: win, startCol };
+      return { window: win };
     }
     return getDTBigRoadWindow(bigRoadFull, BIG_ROAD_DISPLAY_COLS);
   })();
 
-  // Convert predicted full-grid position to window position
   const askBigRoadPrediction = (() => {
-    if (!askPredFull) return null;
-    const displayCol = askPredFull.col - bigRoadStartCol;
-    if (displayCol < 0 || displayCol >= BIG_ROAD_DISPLAY_COLS) return null;
-    return { row: askPredFull.row, col: displayCol, result: askPredFull.result };
+    if (!askBigRoadPredictionFull) return null;
+    const { startCol } = getDTBigRoadWindow(bigRoadFull, BIG_ROAD_DISPLAY_COLS);
+    const mappedCol = askBigRoadPredictionFull.col - startCol;
+    if (mappedCol < 0 || mappedCol >= BIG_ROAD_DISPLAY_COLS) return null;
+    return { ...askBigRoadPredictionFull, col: mappedCol };
   })();
 
-  // Sliding window for derived roads: show last N entries, leave 1 slot for prediction
+  // Derived roads data for display (sliding window)
   const bigEyeBoyData = bigEyeBoyDataFull.slice(-(DERIVED_DISPLAY_CELLS - 1));
   const smallRoadData = smallRoadDataFull.slice(-(DERIVED_DISPLAY_CELLS - 1));
   const cockroachPigData = cockroachDataFull.slice(-(DERIVED_DISPLAY_CELLS - 1));
 
-  // Get active ask road derived predictions
+  // Active ask road predictions for derived roads
   const activeAskRoad = (() => {
     if (askRoadMode === 'none') return null;
     const askData = askRoadMode === 'dragon' ? dragonAskRoad : tigerAskRoad;
@@ -758,10 +799,13 @@ export default function DragonTigerGame() {
 
   return (
     <div className="h-screen bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
-      {/* Top Header Bar */}
-      <header className="h-11 bg-[#0d1117] flex items-center justify-between px-2 sm:px-4 border-b border-gray-800/50">
+      {/* Flying chips overlay */}
+      <FlyingChipOverlay chips={flyingChips} chipSize={32} />
+
+      {/* Top Header Bar - Hidden on mobile, shown on lg+ */}
+      <header className="hidden lg:flex h-11 bg-[#0d1117] items-center justify-between px-4 border-b border-gray-800/50">
         {/* Left - Back & Info */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/lobby')}
             className="p-1 text-gray-400 hover:text-white"
@@ -770,7 +814,7 @@ export default function DragonTigerGame() {
           </button>
           <button
             onClick={() => setIsRulesOpen(true)}
-            className="hidden sm:block p-1 text-gray-400 hover:text-white"
+            className="p-1 text-gray-400 hover:text-white"
           >
             <HelpCircle className="w-4 h-4" />
           </button>
@@ -782,17 +826,12 @@ export default function DragonTigerGame() {
           </button>
           <div className={`flex items-center gap-1 text-xs ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
             {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
-            <span className="hidden sm:inline">{isConnected ? t('live') : t('offline')}</span>
+            <span>{isConnected ? t('live') : t('offline')}</span>
           </div>
         </div>
 
-        {/* Center - Balance (mobile) */}
-        <div className="xl:hidden flex items-center gap-2">
-          <span className="text-amber-400 font-bold text-sm">${balance.toLocaleString()}</span>
-        </div>
-
         {/* Right - Controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-3">
           <button
             onClick={toggleMute}
             className="p-1 text-gray-400 hover:text-white"
@@ -808,7 +847,7 @@ export default function DragonTigerGame() {
           </button>
           <button
             onClick={toggleFullscreen}
-            className="hidden sm:block p-1 text-gray-400 hover:text-white"
+            className="p-1 text-gray-400 hover:text-white"
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </button>
@@ -820,6 +859,100 @@ export default function DragonTigerGame() {
           </button>
         </div>
       </header>
+
+      {/* Mobile Hamburger Menu Button - Fixed position */}
+      <div className="lg:hidden fixed top-2 right-2 z-50">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 bg-black/60 rounded-lg text-white"
+        >
+          {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
+
+      {/* Mobile Menu Dropdown */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="lg:hidden fixed top-12 right-2 z-50 bg-[#1a1f2e] border border-gray-700 rounded-lg shadow-xl p-2 min-w-[160px]"
+          >
+            <div className="flex flex-col gap-1">
+              {/* Connection Status */}
+              <div className={`flex items-center gap-2 px-3 py-2 text-xs ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+                {isConnected ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
+                <span>{isConnected ? '已連線' : '離線'}</span>
+              </div>
+              {/* Balance */}
+              <div className="flex items-center gap-2 px-3 py-2 text-sm text-amber-400 font-bold">
+                <Coins className="w-4 h-4" />
+                <span>${balance.toLocaleString()}</span>
+              </div>
+              <div className="border-t border-gray-700 my-1" />
+              {/* Sound Toggle */}
+              <button
+                onClick={() => { toggleMute(); }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
+              >
+                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                <span>{isMuted ? '開啟音效' : '關閉音效'}</span>
+              </button>
+              {/* BGM Toggle */}
+              <button
+                onClick={() => { const on = toggleBgm(); setIsBgmOn(on); }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
+              >
+                {isBgmOn && !isMuted ? <Music className="w-4 h-4" /> : <Music2 className="w-4 h-4" />}
+                <span>{isBgmOn ? '關閉音樂' : '開啟音樂'}</span>
+              </button>
+              <div className="border-t border-gray-700 my-1" />
+              {/* Settings */}
+              <button
+                onClick={() => { setIsSettingsOpen(true); setIsMobileMenuOpen(false); }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
+              >
+                <Settings className="w-4 h-4" />
+                <span>設定</span>
+              </button>
+              {/* Rules */}
+              <button
+                onClick={() => { setIsRulesOpen(true); setIsMobileMenuOpen(false); }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
+              >
+                <HelpCircle className="w-4 h-4" />
+                <span>遊戲規則</span>
+              </button>
+              {/* Report */}
+              <button
+                onClick={() => { setIsReportOpen(true); setIsMobileMenuOpen(false); }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
+              >
+                <FileText className="w-4 h-4" />
+                <span>報表</span>
+              </button>
+              {/* Results Proportion */}
+              <button
+                onClick={() => { setIsProportionOpen(true); setIsMobileMenuOpen(false); }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
+              >
+                <BarChart2 className="w-4 h-4" />
+                <span>結果比例</span>
+              </button>
+              <div className="border-t border-gray-700 my-1" />
+              {/* Back to Lobby */}
+              <button
+                onClick={() => navigate('/lobby')}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded"
+              >
+                <Home className="w-4 h-4" />
+                <span>返回大廳</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main Content - Three Column Layout */}
       <div className="flex-1 flex overflow-hidden">
@@ -947,24 +1080,24 @@ export default function DragonTigerGame() {
             dealerName={currentDealerName}
             gameType="dragonTiger"
           >
-            {/* Round Info */}
-            <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 rounded px-3 py-1 text-sm z-20">
+            {/* Round Info - Hidden on mobile, compact on tablet */}
+            <div className="hidden sm:block absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 rounded px-2 sm:px-3 py-1 text-xs sm:text-sm z-20">
               <span className="text-gray-400">{t('dragonTiger')} {shoeNumber}</span>
-              <span className="text-white ml-2">{new Date().toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+              <span className="hidden lg:inline text-white ml-2">{new Date().toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
               <span className={`ml-2 font-bold ${phaseDisplay.color}`}>{roundNumber} - {phaseDisplay.text}</span>
             </div>
 
             {/* Cards Display - Dragon vs Tiger */}
-            <div className="flex-1 relative flex items-center justify-center mt-[10%]">
-              <div className="flex items-center gap-6 sm:gap-12 lg:gap-20">
+            <div className="flex-1 relative flex items-center justify-center mt-[5%] sm:mt-[10%]">
+              <div className="flex items-center gap-4 sm:gap-12 lg:gap-20">
                 {/* Dragon Side */}
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-400 mb-4">{t('dtDragon')}</div>
+                  <div className="text-base sm:text-2xl font-bold text-red-400 mb-2 sm:mb-4">{t('dtDragon')}</div>
                   <div className="relative">
-                    {dragonCard ? (
+                    {dragonCard && (
                       <AnimatedPlayingCard
                         card={dragonCard}
-                        size="lg"
+                        size="md"
                         flyFrom={{ x: 100, y: -250 }}
                         flyDelay={0}
                         flyDuration={0.6}
@@ -975,17 +1108,13 @@ export default function DragonTigerGame() {
                         skipAnimation={skipCardAnim}
                         onFlipComplete={() => setDragonFlipped(true)}
                       />
-                    ) : (
-                      <div className="w-24 h-32 bg-gradient-to-br from-red-900 to-red-950 rounded-lg border-2 border-red-700 flex items-center justify-center">
-                        <span className="text-red-400 text-4xl">{t('dtDragon')}</span>
-                      </div>
                     )}
                     <AnimatePresence>
                       {dragonValue !== null && dragonFlipped && (
                         <motion.div
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
-                          className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-red-600 text-white px-4 py-1 rounded-full font-bold text-lg"
+                          className="absolute -bottom-5 sm:-bottom-6 left-1/2 -translate-x-1/2 bg-red-600 text-white px-2 sm:px-4 py-0.5 sm:py-1 rounded-full font-bold text-sm sm:text-lg"
                         >
                           {dragonValue}
                         </motion.div>
@@ -995,16 +1124,16 @@ export default function DragonTigerGame() {
                 </div>
 
                 {/* VS */}
-                <div className={`text-4xl font-bold text-gray-500 ${vsPulse ? 'vs-flash' : ''}`}>VS</div>
+                <div className={`text-xl sm:text-4xl font-bold text-gray-500 ${vsPulse ? 'vs-flash' : ''}`}>VS</div>
 
                 {/* Tiger Side */}
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-400 mb-4">{t('dtTiger')}</div>
+                  <div className="text-base sm:text-2xl font-bold text-blue-400 mb-2 sm:mb-4">{t('dtTiger')}</div>
                   <div className="relative">
-                    {tigerCard ? (
+                    {tigerCard && (
                       <AnimatedPlayingCard
                         card={tigerCard}
-                        size="lg"
+                        size="md"
                         flyFrom={{ x: -100, y: -250 }}
                         flyDelay={0.8}
                         flyDuration={0.6}
@@ -1015,17 +1144,13 @@ export default function DragonTigerGame() {
                         skipAnimation={skipCardAnim}
                         onFlipComplete={() => setTigerFlipped(true)}
                       />
-                    ) : (
-                      <div className="w-24 h-32 bg-gradient-to-br from-blue-900 to-blue-950 rounded-lg border-2 border-blue-700 flex items-center justify-center">
-                        <span className="text-blue-400 text-4xl">{t('dtTiger')}</span>
-                      </div>
                     )}
                     <AnimatePresence>
                       {tigerValue !== null && tigerFlipped && (
                         <motion.div
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
-                          className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-4 py-1 rounded-full font-bold text-lg"
+                          className="absolute -bottom-5 sm:-bottom-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-2 sm:px-4 py-0.5 sm:py-1 rounded-full font-bold text-sm sm:text-lg"
                         >
                           {tigerValue}
                         </motion.div>
@@ -1035,21 +1160,10 @@ export default function DragonTigerGame() {
                 </div>
               </div>
 
-              {/* Mobile Bead Road — vertical list on right side */}
-              <div className="lg:hidden absolute right-1 top-1 bottom-1 w-6 flex flex-col items-center gap-0.5 overflow-y-auto z-10 scrollbar-hide">
-                {roadmapData.slice(-20).map((r: { result: string }, i: number) => {
-                  const norm = r.result === 'dragon' ? 'dragon' : r.result === 'tiger' ? 'tiger' : 'tie';
-                  const bg = norm === 'dragon' ? '#DC2626' : norm === 'tiger' ? '#2563EB' : '#16A34A';
-                  const label = norm === 'dragon' ? '龍' : norm === 'tiger' ? '虎' : '和';
-                  return (
-                    <div key={i} className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold shrink-0" style={{ backgroundColor: bg, fontSize: '8px' }}>
-                      {label}
-                    </div>
-                  );
-                })}
-              </div>
+            </div>
 
-              {/* Fake bet chips on table */}
+            {/* Fake bet chips on table - at bottom of table area */}
+            <div className="absolute bottom-[8%] sm:bottom-[10%] left-4 right-4 z-10 pointer-events-none">
               <TableChipDisplay
                 targetBets={{
                   player: (fakeBets.dragon || 0) + (fakeBets.dragon_big || 0) + (fakeBets.dragon_small || 0) + (fakeBets.dragon_odd || 0) + (fakeBets.dragon_even || 0) + (fakeBets.dragon_red || 0) + (fakeBets.dragon_black || 0),
@@ -1057,9 +1171,12 @@ export default function DragonTigerGame() {
                   banker: (fakeBets.tiger || 0) + (fakeBets.tiger_big || 0) + (fakeBets.tiger_small || 0) + (fakeBets.tiger_odd || 0) + (fakeBets.tiger_even || 0) + (fakeBets.tiger_red || 0) + (fakeBets.tiger_black || 0),
                 }}
                 phase={phase}
+                compact={true}
+                gameType="dragonTiger"
               />
+            </div>
 
-              {/* Result Overlay */}
+            {/* Result Overlay */}
             <AnimatePresence>
               {showResult && (
                 <motion.div
@@ -1085,17 +1202,28 @@ export default function DragonTigerGame() {
                 </motion.div>
               )}
             </AnimatePresence>
-            </div>
           </DealerTable3D>
+
+          {/* Marquee chat - flying messages (outside DealerTable3D for proper positioning) */}
+          <MarqueeChat
+            username={user?.username || '玩家'}
+            showButtons={true}
+          />
 
           {/* Betting Panel */}
           <div className="bg-[#0d1117]">
-            {/* Control Bar */}
-            <div className="flex flex-wrap sm:flex-nowrap items-center justify-between px-2 sm:px-4 py-2 gap-2 border-b border-gray-800/50">
-              <div className="flex items-center gap-2 sm:gap-3">
+            {/* Quick Message Buttons - Desktop only, above Control Bar */}
+            <div className="hidden xl:flex items-center gap-1 px-4 py-1.5 border-b border-gray-800/30 bg-black/30">
+              <span className="text-[10px] text-gray-500 mr-2">廣播:</span>
+              <MarqueeQuickButtons sendMessage={sendMarqueeMessage} cooldown={marqueeCooldown} />
+            </div>
+
+            {/* Control Bar - Hidden on mobile, shown on xl+ */}
+            <div className="hidden xl:flex items-center justify-between px-4 py-2 gap-2 border-b border-gray-800/50">
+              <div className="flex items-center gap-3">
                 <span className="text-xs text-gray-400">{t('dragonTiger')}</span>
               </div>
-              <div className="hidden xl:flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={handleCancel}
                   disabled={!canBet || (!hasPendingBets && !hasConfirmedBets)}
@@ -1118,14 +1246,14 @@ export default function DragonTigerGame() {
                   <Check className="w-3 h-3" /> {t('confirm')}
                 </button>
               </div>
-              <div className="hidden lg:flex items-center gap-3">
+              <div className="flex items-center gap-3">
                 <button className="text-xs text-gray-400 hover:text-white">{t('signal')}</button>
                 <button className="text-xs text-orange-400 hover:text-orange-300">{t('gifts')}</button>
               </div>
             </div>
 
             {/* Betting Areas - Full Width */}
-            <div className="flex flex-col lg:flex-row lg:items-stretch min-h-[200px] lg:h-[360px] pb-16 xl:pb-0" style={{ backgroundColor: '#FFFFFF' }}>
+            <div className="flex flex-col lg:flex-row lg:items-stretch lg:h-[360px] xl:pb-0" style={{ backgroundColor: '#FFFFFF' }}>
               {/* Left: Ask Road Buttons + Bead Plate (珠盤路) - Hidden on mobile */}
               <div className="hidden lg:flex lg:w-[22%] flex-col">
                 <div className="flex flex-1">
@@ -1240,223 +1368,291 @@ export default function DragonTigerGame() {
                 </div>
               </div>
 
-              {/* Center: Betting Buttons */}
-              <div className="flex-1 flex flex-col border-l border-r border-gray-400">
+              {/* Center: Betting Buttons - All on casino green felt */}
+              <div className="flex-1 flex flex-col border-l border-r border-[#d4af37]/30 casino-betting-surface">
                 {/* Row 0 - 龍大/龍小/同花和/虎小/虎大 */}
-                <div className="flex flex-wrap lg:flex-nowrap h-auto lg:h-[60px] border-b border-gray-400">
+                <div className="flex h-[40px] lg:h-[60px] border-b border-[#d4af37]/30">
                   <button
-                    onClick={() => handleBet('dragon_big')}
+                    onClick={(e) => handleBet('dragon_big', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[50px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('dragon_big') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#DBEAFE' }}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_big') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonBig')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:1</span>
+                    <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonBig')}</span>
+                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
                     {getBetAmount('dragon_big') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_big')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dragon_big')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('dragon_big')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_big')} />
+                        </div>
+                      </>
                     )}
                   </button>
                   <button
-                    onClick={() => handleBet('dragon_small')}
+                    onClick={(e) => handleBet('dragon_small', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[50px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('dragon_small') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#DBEAFE' }}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_small') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonSmall')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:1</span>
+                    <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonSmall')}</span>
+                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
                     {getBetAmount('dragon_small') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_small')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dragon_small')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('dragon_small')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_small')} />
+                        </div>
+                      </>
                     )}
                   </button>
                   <button
-                    onClick={() => handleBet('dt_suited_tie')}
+                    onClick={(e) => handleBet('dt_suited_tie', e)}
                     disabled={!canBet}
-                    className={`relative flex-[1.5] min-w-[70px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('dt_suited_tie') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#FEF9C3' }}
+                    className={`casino-bet-spot relative flex-[1.5] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dt_suited_tie') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-amber-700 text-xs sm:text-sm font-bold">{t('dtSuitedTie')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:50</span>
+                    <span className="text-green-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dtSuitedTie')}</span>
+                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:50</span>
                     {getBetAmount('dt_suited_tie') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dt_suited_tie')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dt_suited_tie')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('dt_suited_tie')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dt_suited_tie')} />
+                        </div>
+                      </>
                     )}
                   </button>
                   <button
-                    onClick={() => handleBet('tiger_small')}
+                    onClick={(e) => handleBet('tiger_small', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[50px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('tiger_small') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#FFE4E6' }}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tiger_small') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerSmall')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:1</span>
+                    <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerSmall')}</span>
+                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
                     {getBetAmount('tiger_small') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_small')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('tiger_small')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('tiger_small')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_small')} />
+                        </div>
+                      </>
                     )}
                   </button>
                   <button
-                    onClick={() => handleBet('tiger_big')}
+                    onClick={(e) => handleBet('tiger_big', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[50px] py-2 lg:py-0 flex flex-col items-center justify-center border-b lg:border-b-0 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('tiger_big') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#FFE4E6' }}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger_big') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerBig')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:1</span>
+                    <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerBig')}</span>
+                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
                     {getBetAmount('tiger_big') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_big')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('tiger_big')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('tiger_big')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_big')} />
+                        </div>
+                      </>
                     )}
                   </button>
                 </div>
 
                 {/* Row 1 - 龍雙/龍單/虎單/虎雙 */}
-                <div className="flex flex-wrap lg:flex-nowrap h-auto lg:h-[70px] border-b border-gray-400">
+                <div className="flex h-[40px] lg:h-[70px] border-b border-[#d4af37]/30">
                   <button
-                    onClick={() => handleBet('dragon_even')}
+                    onClick={(e) => handleBet('dragon_even', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('dragon_even') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#DBEAFE' }}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_even') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonEven')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:1.05</span>
+                    <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonEven')}</span>
+                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1.05</span>
                     {getBetAmount('dragon_even') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_even')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dragon_even')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('dragon_even')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_even')} />
+                        </div>
+                      </>
                     )}
                   </button>
                   <button
-                    onClick={() => handleBet('dragon_odd')}
+                    onClick={(e) => handleBet('dragon_odd', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('dragon_odd') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#DBEAFE' }}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_odd') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonOdd')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:0.75</span>
+                    <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonOdd')}</span>
+                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.75</span>
                     {getBetAmount('dragon_odd') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_odd')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dragon_odd')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('dragon_odd')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_odd')} />
+                        </div>
+                      </>
                     )}
                   </button>
                   <button
-                    onClick={() => handleBet('tiger_odd')}
+                    onClick={(e) => handleBet('tiger_odd', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('tiger_odd') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#FFE4E6' }}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tiger_odd') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerOdd')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:0.75</span>
+                    <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerOdd')}</span>
+                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.75</span>
                     {getBetAmount('tiger_odd') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_odd')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('tiger_odd')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('tiger_odd')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_odd')} />
+                        </div>
+                      </>
                     )}
                   </button>
                   <button
-                    onClick={() => handleBet('tiger_even')}
+                    onClick={(e) => handleBet('tiger_even', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-b lg:border-b-0 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('tiger_even') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#FFE4E6' }}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger_even') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerEven')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:1.05</span>
+                    <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerEven')}</span>
+                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1.05</span>
                     {getBetAmount('tiger_even') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_even')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('tiger_even')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('tiger_even')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_even')} />
+                        </div>
+                      </>
                     )}
                   </button>
                 </div>
 
                 {/* Row 2 - 龍黑/龍紅/虎紅/虎黑 */}
-                <div className="flex flex-wrap lg:flex-nowrap h-auto lg:h-[70px] border-b border-gray-400">
+                <div className="flex h-[40px] lg:h-[70px] border-b border-[#d4af37]/30">
                   <button
-                    onClick={() => handleBet('dragon_black')}
+                    onClick={(e) => handleBet('dragon_black', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('dragon_black') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#DBEAFE' }}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_black') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonBlack')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:0.9</span>
+                    <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonBlack')}</span>
+                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
                     {getBetAmount('dragon_black') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_black')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dragon_black')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('dragon_black')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_black')} />
+                        </div>
+                      </>
                     )}
                   </button>
                   <button
-                    onClick={() => handleBet('dragon_red')}
+                    onClick={(e) => handleBet('dragon_red', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('dragon_red') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#DBEAFE' }}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_red') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-blue-700 text-xs sm:text-sm font-medium">{t('dragonRed')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:0.9</span>
+                    <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonRed')}</span>
+                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
                     {getBetAmount('dragon_red') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('dragon_red')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dragon_red')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('dragon_red')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_red')} />
+                        </div>
+                      </>
                     )}
                   </button>
                   <button
-                    onClick={() => handleBet('tiger_red')}
+                    onClick={(e) => handleBet('tiger_red', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('tiger_red') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#FFE4E6' }}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tiger_red') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerRed')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:0.9</span>
+                    <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerRed')}</span>
+                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
                     {getBetAmount('tiger_red') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_red')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('tiger_red')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('tiger_red')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_red')} />
+                        </div>
+                      </>
                     )}
                   </button>
                   <button
-                    onClick={() => handleBet('tiger_black')}
+                    onClick={(e) => handleBet('tiger_black', e)}
                     disabled={!canBet}
-                    className={`relative flex-1 min-w-[60px] py-2 lg:py-0 flex flex-col items-center justify-center border-b lg:border-b-0 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('tiger_black') > 0 ? 'ring-2 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#FFE4E6' }}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger_black') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-red-700 text-xs sm:text-sm font-medium">{t('tigerBlack')}</span>
-                    <span className="text-red-600 text-[10px] sm:text-xs">1:0.9</span>
+                    <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerBlack')}</span>
+                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
                     {getBetAmount('tiger_black') > 0 && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 text-black text-[10px] font-bold px-1.5 rounded-full">{getBetAmount('tiger_black')}</div>
+                      <>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('tiger_black')}</div>
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('tiger_black')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_black')} />
+                        </div>
+                      </>
                     )}
                   </button>
                 </div>
 
                 {/* Row 3 - Main: 龍 / 和 / 虎 (large buttons) */}
                 <div className="flex flex-1">
-                  {/* 龍 - Blue background */}
+                  {/* 龍 - Dragon (Blue) */}
                   <button
-                    onClick={() => handleBet('dragon')}
+                    onClick={(e) => handleBet('dragon', e)}
                     disabled={!canBet}
-                    className={`relative flex-[2] py-4 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('dragon') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#DBEAFE' }}
+                    className={`casino-bet-spot casino-bet-player relative flex-[2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-blue-700 text-3xl sm:text-4xl lg:text-5xl font-black">{t('dtDragon')}</span>
-                    <span className="text-red-600 text-base sm:text-lg lg:text-xl font-bold mt-1">1:1</span>
+                    <div className="casino-corner-ornament top-left hidden sm:block" />
+                    <div className="casino-corner-ornament bottom-right hidden sm:block" />
+                    <span className="casino-display text-blue-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('dtDragon')}</span>
+                    <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:1</span>
                     {getBetAmount('dragon') > 0 && (
-                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-yellow-500 text-black text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full shadow">{getBetAmount('dragon')}</div>
+                      <>
+                        <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-[8px] sm:text-sm font-bold px-1 py-0 rounded-full shadow-lg z-10">{getBetAmount('dragon')}</div>
+                        <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('dragon')} chipSize={20} maxChips={3} chipValue={getBetChipValue('dragon')} />
+                        </div>
+                      </>
                     )}
                   </button>
 
-                  {/* 和 - Yellow background */}
+                  {/* 和 - Tie (Green) */}
                   <button
-                    onClick={() => handleBet('dt_tie')}
+                    onClick={(e) => handleBet('dt_tie', e)}
                     disabled={!canBet}
-                    className={`relative flex-[1.2] py-4 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-gray-400 transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('dt_tie') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#FEF9C3' }}
+                    className={`casino-bet-spot relative flex-[1.2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dt_tie') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-green-700 text-3xl sm:text-4xl lg:text-5xl font-black">{t('dtTie')}</span>
-                    <span className="text-red-600 text-base sm:text-lg lg:text-xl font-bold mt-1">1:8</span>
+                    <span className="casino-display text-green-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('dtTie')}</span>
+                    <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:8</span>
                     {getBetAmount('dt_tie') > 0 && (
-                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-yellow-500 text-black text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full shadow">{getBetAmount('dt_tie')}</div>
+                      <>
+                        <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-[8px] sm:text-sm font-bold px-1 py-0 rounded-full shadow-lg z-10">{getBetAmount('dt_tie')}</div>
+                        <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('dt_tie')} chipSize={20} maxChips={3} chipValue={getBetChipValue('dt_tie')} />
+                        </div>
+                      </>
                     )}
                   </button>
 
-                  {/* 虎 - Pink/Red background */}
+                  {/* 虎 - Tiger (Red) */}
                   <button
-                    onClick={() => handleBet('tiger')}
+                    onClick={(e) => handleBet('tiger', e)}
                     disabled={!canBet}
-                    className={`relative flex-[2] py-4 sm:py-6 lg:py-0 flex flex-col items-center justify-center transition hover:brightness-95 disabled:opacity-50 ${getBetAmount('tiger') > 0 ? 'ring-3 ring-yellow-400 ring-inset' : ''}`}
-                    style={{ backgroundColor: '#FFE4E6' }}
+                    className={`casino-bet-spot casino-bet-banker relative flex-[2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger') > 0 ? 'has-bet' : ''}`}
                   >
-                    <span className="text-red-700 text-3xl sm:text-4xl lg:text-5xl font-black">{t('dtTiger')}</span>
-                    <span className="text-red-600 text-base sm:text-lg lg:text-xl font-bold mt-1">1:1</span>
+                    <div className="casino-corner-ornament top-right hidden sm:block" />
+                    <div className="casino-corner-ornament bottom-left hidden sm:block" />
+                    <span className="casino-display text-red-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('dtTiger')}</span>
+                    <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:1</span>
                     {getBetAmount('tiger') > 0 && (
-                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-yellow-500 text-black text-xs sm:text-sm font-bold px-2 py-0.5 rounded-full shadow">{getBetAmount('tiger')}</div>
+                      <>
+                        <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-[8px] sm:text-sm font-bold px-1 py-0 rounded-full shadow-lg z-10">{getBetAmount('tiger')}</div>
+                        <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2">
+                          <ChipStack amount={getBetAmount('tiger')} chipSize={20} maxChips={3} chipValue={getBetChipValue('tiger')} />
+                        </div>
+                      </>
                     )}
                   </button>
                 </div>
 
-                {/* Chips Row */}
-                <div className="flex justify-start lg:justify-center items-center gap-1 sm:gap-1.5 py-2 px-2 bg-[#1a1f2e] overflow-x-auto scrollbar-hide">
+                {/* Chips Row - Desktop */}
+                <div ref={chipSelectorRef} className="hidden lg:flex justify-center items-center gap-1.5 py-2 px-2 bg-[#1a1f2e]">
                   {displayedChips.map((value) => (
                     <Chip
                       key={value}
@@ -1466,7 +1662,6 @@ export default function DragonTigerGame() {
                       disabled={value > balance}
                     />
                   ))}
-                  {/* Chip Settings Button */}
                   <button
                     onClick={() => setIsChipSettingsOpen(true)}
                     className="relative w-14 h-14 rounded-full flex items-center justify-center bg-gradient-to-br from-gray-500 to-gray-700 border-2 border-white/20 shadow-lg transition-all duration-200 cursor-pointer hover:scale-105"
@@ -1474,6 +1669,69 @@ export default function DragonTigerGame() {
                   >
                     <Coins className="relative z-10 w-6 h-6 text-white drop-shadow-lg" />
                   </button>
+                </div>
+
+                {/* Mobile: Two rows - Chips on top, Balance/Actions on bottom */}
+                <div className="lg:hidden bg-[#1a1f2e]">
+                  {/* Row 1: Chips */}
+                  <div className="flex items-center justify-center gap-0.5 py-0.5 px-1 overflow-x-auto scrollbar-hide">
+                    {displayedChips.map((value) => (
+                      <Chip
+                        key={value}
+                        value={value}
+                        selected={selectedChip === value}
+                        onClick={() => setSelectedChip(value)}
+                        disabled={value > balance}
+                        extraSmall={true}
+                      />
+                    ))}
+                    <button
+                      onClick={() => setIsChipSettingsOpen(true)}
+                      className="relative rounded-full flex items-center justify-center bg-gradient-to-br from-gray-500 to-gray-700 border-2 border-white/20 shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 w-6 h-6 shrink-0"
+                    >
+                      <Coins className="relative z-10 text-white drop-shadow-lg w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {/* Row 2: Balance + Actions */}
+                  <div className="flex items-center justify-between py-1 px-2 border-t border-gray-700/50">
+                    {/* Left: Balance Info */}
+                    <div className="flex items-center gap-3 text-[9px]">
+                      <span className="text-gray-400">餘額 <span className="text-yellow-400 font-bold">{balance.toLocaleString()}</span></span>
+                      <span className="text-gray-400">下注 <span className="text-white font-bold">{totalBet.toLocaleString()}</span></span>
+                      <span className="text-gray-400">輸贏 <span className={`font-bold ${(lastSettlement?.netResult ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>{(lastSettlement?.netResult ?? 0).toLocaleString()}</span></span>
+                    </div>
+
+                    {/* Right: Actions */}
+                    <div className="flex items-center gap-1">
+                      {/* Action Buttons */}
+                      {pendingBets.length > 0 && (
+                        <>
+                          <button
+                            onClick={handleCancel}
+                            className="p-1 bg-gray-700 text-gray-300 rounded"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={handleRepeat}
+                            className="p-1 bg-gray-700 text-gray-300 rounded"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
+                      {canBet && pendingBets.length > 0 && (
+                        <button
+                          onClick={handleConfirm}
+                          className="px-2 py-1 text-[9px] bg-amber-500 text-black font-bold rounded flex items-center gap-0.5"
+                        >
+                          <Check className="w-3 h-3" />
+                          確認
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1566,10 +1824,27 @@ export default function DragonTigerGame() {
 
                 {/* Bottom Stats */}
                 <div className="flex items-center justify-around py-1.5 bg-[#1a1f2e]">
-                  <span className="text-red-500 font-bold text-sm">{t('dtRoadDragon')} <span className="text-white">{dragonWins}</span></span>
-                  <span className="text-blue-500 font-bold text-sm">{t('dtRoadTiger')} <span className="text-white">{tigerWins}</span></span>
-                  <span className="text-gray-400 text-sm">{t('total')} <span className="text-white">{total}</span></span>
+                  <span className="text-red-500 font-bold text-sm">龍 <span className="text-white">{dragonWins}</span></span>
+                  <span className="text-blue-500 font-bold text-sm">虎 <span className="text-white">{tigerWins}</span></span>
+                  <span className="text-green-500 font-bold text-sm">和 <span className="text-white">{ties}</span></span>
                 </div>
+              </div>
+            </div>
+
+            {/* Roadmap Section - Bottom area (dark theme like Baccarat) - Mobile/Tablet only */}
+            <div className="bg-[#0d1117] lg:hidden">
+              {/* Stats Summary */}
+              <div className="flex items-center justify-between px-2 py-1 text-[10px] border-b border-gray-800">
+                <div className="flex items-center gap-3">
+                  <span className="text-red-500 font-bold">龍 <span className="text-white">{dragonWins}</span></span>
+                  <span className="text-blue-500 font-bold">虎 <span className="text-white">{tigerWins}</span></span>
+                  <span className="text-green-500 font-bold">和 <span className="text-white">{ties}</span></span>
+                </div>
+                <span className="text-gray-400">總 <span className="text-white">{total}</span></span>
+              </div>
+              {/* Roadmap using same layout as Baccarat LobbyRoadmap */}
+              <div className="h-[120px]">
+                <DragonTigerRoadmap roadHistory={roadmapData} />
               </div>
             </div>
           </div>
@@ -1790,18 +2065,6 @@ export default function DragonTigerGame() {
         )}
       </AnimatePresence>
 
-      {/* Mobile Bottom Navigation */}
-      <MobileNavBar
-        className="xl:hidden"
-        variant="game"
-        balance={balance}
-        totalBet={totalBet}
-        onConfirm={handleConfirm}
-        onCancel={handleCancel}
-        onClear={clearPendingBets}
-        canBet={canBet}
-        hasBets={hasPendingBets}
-      />
     </div>
   );
 }

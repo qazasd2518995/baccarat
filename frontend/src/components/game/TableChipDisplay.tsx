@@ -6,6 +6,8 @@ import { formatAmount } from '../../utils/format';
 interface TableChipDisplayProps {
   targetBets: Record<string, number>;
   phase: string;
+  compact?: boolean;
+  gameType?: 'baccarat' | 'dragonTiger';
 }
 
 // Random chip value weighted by total pool size
@@ -38,21 +40,24 @@ interface ZoneState {
 }
 
 // Each zone is a wide area; chips scatter randomly within it
-function ChipZone({ label, labelColor, chips, amount }: {
+function ChipZone({ label, labelColor, chips, amount, compact }: {
   label: string;
   labelColor: string;
   chips: ChipData[];
   amount: number;
+  compact?: boolean;
 }) {
   if (amount <= 0 && chips.length === 0) return null;
+
+  const chipSize = compact ? 18 : 26;
 
   return (
     <div className="relative flex-1 h-full">
       {/* Zone label at bottom center */}
       {amount > 0 && (
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 text-center z-20">
-          <span className={`text-[11px] font-bold ${labelColor} drop-shadow-md`}>{label} </span>
-          <span className="text-[10px] text-white/50 font-mono">{formatAmount(amount)}</span>
+          <span className={`${compact ? 'text-[9px]' : 'text-[11px]'} font-bold ${labelColor} drop-shadow-md`}>{label} </span>
+          <span className={`${compact ? 'text-[8px]' : 'text-[10px]'} text-white/50 font-mono`}>{formatAmount(amount)}</span>
         </div>
       )}
       {/* Scattered chips */}
@@ -81,10 +86,10 @@ function ChipZone({ label, labelColor, chips, amount }: {
               left: `${chip.x}%`,
               top: `${chip.y}%`,
               transform: `translate(-50%, -50%) rotate(${chip.rotation}deg)`,
-              zIndex: chip.id % 20,
+              zIndex: chip.id % 10, // Keep chips below labels (z-20)
             }}
           >
-            <CasinoChip size={26} value={chip.value} />
+            <CasinoChip size={chipSize} value={chip.value} />
           </motion.div>
         ))}
       </AnimatePresence>
@@ -114,7 +119,7 @@ function createChip(): ChipData {
   };
 }
 
-function TableChipDisplay({ targetBets, phase }: TableChipDisplayProps) {
+function TableChipDisplay({ targetBets, phase, compact = false, gameType = 'baccarat' }: TableChipDisplayProps) {
   const [playerZone, setPlayerZone] = useState<ZoneState>({ chips: [], currentAmount: 0 });
   const [tieZone, setTieZone] = useState<ZoneState>({ chips: [], currentAmount: 0 });
   const [bankerZone, setBankerZone] = useState<ZoneState>({ chips: [], currentAmount: 0 });
@@ -204,11 +209,22 @@ function TableChipDisplay({ targetBets, phase }: TableChipDisplayProps) {
   const has = playerZone.currentAmount > 0 || bankerZone.currentAmount > 0 || tieZone.currentAmount > 0;
   if (!has) return null;
 
+  // Labels based on game type
+  const labels = gameType === 'dragonTiger'
+    ? { player: '龍', tie: '和', banker: '虎' }
+    : { player: '閒', tie: '和', banker: '莊' };
+
+  // Position classes based on compact mode
+  // Compact: smaller chips, parent handles positioning (used by both Dragon Tiger and Baccarat)
+  const positionClass = compact
+    ? 'relative h-[40px] sm:h-[50px] flex gap-2'
+    : 'relative h-[60px] sm:h-[72px] flex gap-2';
+
   return (
-    <div className="absolute -bottom-16 sm:-bottom-20 left-4 right-4 h-[60px] sm:h-[72px] z-10 flex gap-2 pointer-events-none">
-      <ChipZone label="閒" labelColor="text-blue-400" chips={playerZone.chips} amount={playerZone.currentAmount} />
-      <ChipZone label="和" labelColor="text-green-400" chips={tieZone.chips} amount={tieZone.currentAmount} />
-      <ChipZone label="莊" labelColor="text-red-400" chips={bankerZone.chips} amount={bankerZone.currentAmount} />
+    <div className={positionClass}>
+      <ChipZone label={labels.player} labelColor="text-blue-400" chips={playerZone.chips} amount={playerZone.currentAmount} compact={compact} />
+      <ChipZone label={labels.tie} labelColor="text-green-400" chips={tieZone.chips} amount={tieZone.currentAmount} compact={compact} />
+      <ChipZone label={labels.banker} labelColor="text-red-400" chips={bankerZone.chips} amount={bankerZone.currentAmount} compact={compact} />
     </div>
   );
 }
