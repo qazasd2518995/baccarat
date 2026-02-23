@@ -7,7 +7,7 @@ import type { Group } from 'three';
 interface DealerAvatarProps {
   isDealing: boolean;
   dealerName?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'ms' | 'md' | 'lg';
 }
 
 const IDLE_URL = '/models/dealer-idle.glb';
@@ -64,7 +64,7 @@ useGLTF.preload(IDLE_URL, undefined, true);
 useGLTF.preload(CARDS_URL, undefined, true);
 
 export default function DealerAvatar({ isDealing, dealerName, size = 'lg' }: DealerAvatarProps) {
-  const heights = { sm: 100, md: 200, lg: 320 };
+  const heights = { sm: 100, ms: 150, md: 200, lg: 320 };
   const h = heights[size];
 
   return (

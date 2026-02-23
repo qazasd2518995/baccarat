@@ -35,7 +35,9 @@ export default function DealerTable3D({
   // Responsive values
   const perspective = bp === 'mobile' ? 800 : bp === 'tablet' ? 1000 : 1200;
   const rotateX = bp === 'mobile' ? 6 : bp === 'tablet' ? 8 : 10;
-  const dealerSize = bp === 'mobile' ? 'md' : bp === 'tablet' ? 'lg' : 'lg';
+  const dealerSize = bp === 'mobile'
+    ? (gameType === 'dragonTiger' ? 'ms' : 'md')
+    : bp === 'tablet' ? 'lg' : 'lg';
 
   // How much the dealer overlaps into the table area
   // Mobile: dealer should be closer to table, with lower body hidden by table edge
@@ -338,7 +340,7 @@ export default function DealerTable3D({
         <DealerAvatar
           isDealing={isDealing}
           dealerName={dealerName}
-          size={dealerSize as 'sm' | 'md' | 'lg'}
+          size={dealerSize as 'sm' | 'ms' | 'md' | 'lg'}
         />
       </div>
 
