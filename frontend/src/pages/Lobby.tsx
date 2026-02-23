@@ -22,7 +22,6 @@ import {
   Music2,
   SkipForward,
 } from 'lucide-react';
-import { MobileNavBar } from '../components/layout/MobileNavBar';
 import { useAuthStore } from '../store/authStore';
 import { useBackgroundMusic } from '../hooks/useBackgroundMusic';
 import {
@@ -334,7 +333,7 @@ export default function Lobby() {
         {/* Mobile menu toggle — floating button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden fixed top-3 left-3 z-[60] p-2 bg-[#141922] border border-gray-700 rounded-lg text-gray-400 hover:text-white"
+          className="lg:hidden fixed top-3 right-3 z-[60] p-2 bg-[#141922] border border-gray-700 rounded-lg text-gray-400 hover:text-white"
         >
           {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -453,6 +452,44 @@ export default function Lobby() {
             )}
           </div>
 
+          {/* Menu Items */}
+          <div className="p-4 border-t border-gray-800/50 space-y-1">
+            <button
+              onClick={() => {
+                const newState = toggleBgm();
+                setIsBgmOn(newState);
+              }}
+              className="w-full text-left text-sm text-gray-400 flex items-center gap-2 py-2 px-3 hover:bg-gray-800/30 rounded transition-colors"
+            >
+              {isBgmOn ? <Music className="w-4 h-4 text-orange-400" /> : <Music2 className="w-4 h-4" />}
+              {isBgmOn ? '關閉音樂' : '開啟音樂'}
+            </button>
+            <button
+              onClick={skipTrack}
+              className="w-full text-left text-sm text-gray-400 flex items-center gap-2 py-2 px-3 hover:bg-gray-800/30 rounded transition-colors"
+            >
+              <SkipForward className="w-4 h-4" /> 下一首
+            </button>
+            <button
+              onClick={() => setShowReportModal(true)}
+              className="w-full text-left text-sm text-gray-400 flex items-center gap-2 py-2 px-3 hover:bg-gray-800/30 rounded transition-colors"
+            >
+              <FileText className="w-4 h-4" /> {t('gameReport')}
+            </button>
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="w-full text-left text-sm text-gray-400 flex items-center gap-2 py-2 px-3 hover:bg-gray-800/30 rounded transition-colors"
+            >
+              <Settings className="w-4 h-4" /> {t('gameSettings')}
+            </button>
+            <button
+              onClick={() => setShowRulesModal(true)}
+              className="w-full text-left text-sm text-gray-400 flex items-center gap-2 py-2 px-3 hover:bg-gray-800/30 rounded transition-colors"
+            >
+              <HelpCircle className="w-4 h-4" /> {t('gameRules')}
+            </button>
+          </div>
+
           {/* Language + Logout — bottom of sidebar */}
           <div className="p-4 border-t border-gray-800/50 flex items-center gap-3">
             <button
@@ -539,7 +576,7 @@ export default function Lobby() {
           </div>
 
           {/* Tables Grid */}
-          <div className="flex-1 p-2 sm:p-4 overflow-auto bg-[#0d1117] pb-20 xl:pb-4">
+          <div className="flex-1 p-2 sm:p-4 overflow-auto bg-[#0d1117]">
             {filteredTables.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
                 <LayoutGrid className="w-12 h-12 sm:w-16 sm:h-16 mb-4 opacity-50" />
@@ -690,12 +727,6 @@ export default function Lobby() {
         onGoToTable={handleJoinTable}
       />
 
-      {/* Mobile Bottom Navigation */}
-      <MobileNavBar
-        className="xl:hidden"
-        variant="lobby"
-        balance={Number(user?.balance || 0)}
-      />
     </div>
   );
 }

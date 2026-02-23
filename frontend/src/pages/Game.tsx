@@ -573,6 +573,10 @@ export default function Game() {
   const [skipCardAnim, setSkipCardAnim] = useState(false);
   const [pointsPulseKey, setPointsPulseKey] = useState(0);
 
+  // Cumulative win/loss for this session
+  const [sessionWinLoss, setSessionWinLoss] = useState(0);
+  const prevSettlementRef = useRef<typeof lastSettlement>(null);
+
   // Dealer animation: keep dealing animation active until all cards are dealt and flipped
   // This is separate from phase because we need to keep animating during third card delays
   const [dealerAnimating, setDealerAnimating] = useState(false);
@@ -963,6 +967,14 @@ export default function Game() {
   const [frozenPlayerPoints, setFrozenPlayerPoints] = useState<number | null>(null);
   const [frozenBankerPoints, setFrozenBankerPoints] = useState<number | null>(null);
 
+  // Accumulate session win/loss when a new settlement arrives
+  useEffect(() => {
+    if (lastSettlement && lastSettlement !== prevSettlementRef.current) {
+      setSessionWinLoss(prev => prev + lastSettlement.netResult);
+      prevSettlementRef.current = lastSettlement;
+    }
+  }, [lastSettlement]);
+
   useEffect(() => {
     console.log(`[Game] Result display check: lastResult=${lastResult} allFlipsDone=${allFlipsDone} resultShown=${resultShownRef.current} showResult=${showResult}`);
     if (lastResult !== null && allFlipsDone && !resultShownRef.current) {
@@ -1192,7 +1204,7 @@ export default function Game() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Left Sidebar - User Info (hidden on mobile/tablet) */}
         <div className="hidden xl:flex w-60 bg-[#141922] border-r border-gray-800/50 flex-col shrink-0">
           {/* OFA LIVE Header */}
@@ -1314,7 +1326,7 @@ export default function Game() {
         </div>
 
         {/* Center - Game Area */}
-        <div className="flex-1 flex flex-col min-w-0 relative">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 relative">
           {/* Countdown timer — positioned over entire game area (above dealer + table) */}
           <CountdownTimer timeRemaining={timeRemaining} phase={phase} hidden={lastResult !== null || frozenResult !== null || showResult} />
 
@@ -1886,7 +1898,7 @@ export default function Game() {
                     <div className="flex items-center gap-3 text-[9px]">
                       <span className="text-gray-400">餘額 <span className="text-yellow-400 font-bold">{balance.toLocaleString()}</span></span>
                       <span className="text-gray-400">下注 <span className="text-white font-bold">{totalBet.toLocaleString()}</span></span>
-                      <span className="text-gray-400">輸贏 <span className={`font-bold ${(lastSettlement?.netResult ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>{(lastSettlement?.netResult ?? 0).toLocaleString()}</span></span>
+                      <span className="text-gray-400">輸贏 <span className={`font-bold ${sessionWinLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>{sessionWinLoss.toLocaleString()}</span></span>
                     </div>
 
                     {/* Right: No Commission + Actions */}

@@ -223,6 +223,11 @@ export default function MarqueeChat({
 
       {showButtons && (
         <>
+          {/* Click-outside overlay to close broadcast panel */}
+          {isPanelOpen && (
+            <div className="lg:hidden fixed inset-0 z-40" onClick={() => setIsPanelOpen(false)} />
+          )}
+
           {/* Mobile: Broadcast button (shows below hamburger menu on right side) */}
           <div className="lg:hidden fixed top-14 right-2 z-50">
             <motion.button

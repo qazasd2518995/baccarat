@@ -509,12 +509,24 @@ export default function DragonTigerGame() {
     fakeBets,
   } = useDragonTigerStore();
 
+  // Cumulative win/loss for this session
+  const [sessionWinLoss, setSessionWinLoss] = useState(0);
+  const prevSettlementRef = useRef<typeof lastSettlement>(null);
+
   // Card animation: track reconnection to skip animation
   // Normal flow: phase → dealing first, then cards arrive individually
   // Reconnect: dt:state sends phase + cards together
   const [skipCardAnim, setSkipCardAnim] = useState(false);
   const [vsPulse, setVsPulse] = useState(false);
   const expectingDTCardsRef = useRef(false);
+
+  // Accumulate session win/loss when a new settlement arrives
+  useEffect(() => {
+    if (lastSettlement && lastSettlement !== prevSettlementRef.current) {
+      setSessionWinLoss(prev => prev + lastSettlement.netResult);
+      prevSettlementRef.current = lastSettlement;
+    }
+  }, [lastSettlement]);
 
   // Track phase transitions
   const prevDTPhaseRef = useRef(phase);
@@ -955,7 +967,7 @@ export default function DragonTigerGame() {
       </AnimatePresence>
 
       {/* Main Content - Three Column Layout */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Left Sidebar - User Info & Leaderboard (hidden on mobile/tablet) */}
         <div className="hidden xl:flex w-60 bg-[#141922] border-r border-gray-800/50 flex-col shrink-0">
           {/* OFA LIVE Header */}
@@ -1070,7 +1082,7 @@ export default function DragonTigerGame() {
         </div>
 
         {/* Center - Game Area */}
-        <div className="flex-1 flex flex-col min-w-0 relative">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 relative">
           {/* Countdown timer — over entire game area */}
           <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
 
@@ -1699,7 +1711,7 @@ export default function DragonTigerGame() {
                     <div className="flex items-center gap-3 text-[9px]">
                       <span className="text-gray-400">餘額 <span className="text-yellow-400 font-bold">{balance.toLocaleString()}</span></span>
                       <span className="text-gray-400">下注 <span className="text-white font-bold">{totalBet.toLocaleString()}</span></span>
-                      <span className="text-gray-400">輸贏 <span className={`font-bold ${(lastSettlement?.netResult ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>{(lastSettlement?.netResult ?? 0).toLocaleString()}</span></span>
+                      <span className="text-gray-400">輸贏 <span className={`font-bold ${sessionWinLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>{sessionWinLoss.toLocaleString()}</span></span>
                     </div>
 
                     {/* Right: Actions */}

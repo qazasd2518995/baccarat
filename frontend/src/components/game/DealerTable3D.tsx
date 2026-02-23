@@ -35,37 +35,39 @@ export default function DealerTable3D({
   // Responsive values
   const perspective = bp === 'mobile' ? 800 : bp === 'tablet' ? 1000 : 1200;
   const rotateX = bp === 'mobile' ? 6 : bp === 'tablet' ? 8 : 10;
-  const dealerSize = bp === 'mobile' ? 'md' : bp === 'tablet' ? 'lg' : 'lg';
+  // Dragon Tiger uses smaller dealer on mobile
+  const dealerSize = bp === 'mobile'
+    ? (gameType === 'dragonTiger' ? 'sm' : 'md')
+    : bp === 'tablet' ? 'lg' : 'lg';
 
   // How much the dealer overlaps into the table area
   // Mobile: dealer should be closer to table, with lower body hidden by table edge
   const dealerOverlap = bp === 'mobile' ? 25 : bp === 'tablet' ? 70 : 100;
-  const dealerZoneHeight = bp === 'mobile' ? '50%' : '50%';
-  const tableTop = bp === 'mobile' ? `calc(40% - ${dealerOverlap}px)` : `calc(42% - ${dealerOverlap}px)`;
+  const dealerZoneHeight = bp === 'mobile' ? '42%' : '50%';
+  const tableTop = bp === 'mobile' ? `calc(38% - ${dealerOverlap}px)` : `calc(42% - ${dealerOverlap}px)`;
   // Additional downward offset for the dealer on mobile (moves dealer closer to table edge)
-  // Dragon Tiger needs less offset (moved up) compared to Baccarat
+  // Reduced offsets to move dealers up and eliminate black rectangle gap
   const dealerDownOffset = bp === 'mobile'
-    ? (gameType === 'dragonTiger' ? 35 : 80)
+    ? (gameType === 'dragonTiger' ? 10 : 40)
     : bp === 'tablet'
-      ? (gameType === 'dragonTiger' ? 10 : 30)
+      ? (gameType === 'dragonTiger' ? 5 : 20)
       : 0;
 
   return (
-    <div className="flex-1 relative flex flex-col overflow-hidden bg-[#050a0d]">
+    <div className="flex-1 min-h-0 relative flex flex-col overflow-hidden bg-[#050a0d]">
 
       {/* === Opulent Art Deco Noir Casino Background === */}
       <div className="absolute inset-0 z-0 overflow-hidden">
 
-        {/* Base: Deep noir gradient background - darker at top, warmer in middle */}
+        {/* Base: Deep noir gradient background - warm tones throughout to avoid dark bands */}
         <div
           className="absolute inset-0"
           style={{
             background: `
               linear-gradient(to bottom,
-                #030303 0%,
-                #050505 5%,
-                #080706 15%,
-                #0a0908 30%,
+                #0a0806 0%,
+                #0c0a08 10%,
+                #0e0c0a 25%,
                 #0c0a09 50%,
                 #050a0d 100%
               )
@@ -106,7 +108,7 @@ export default function DealerTable3D({
         </svg>
 
         {/* === Crystal Chandelier Effect === */}
-        <div className="absolute top-[2%] left-1/2 -translate-x-1/2 w-40 h-32 sm:w-56 sm:h-40">
+        <div className="absolute top-[1%] left-1/2 -translate-x-1/2 w-48 h-40 sm:w-56 sm:h-40">
           {/* Main chandelier glow */}
           <div
             className="absolute inset-0"
