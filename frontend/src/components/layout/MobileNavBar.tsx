@@ -16,9 +16,10 @@ interface MobileNavBarProps {
   totalBet?: number;
   onConfirm?: () => void;
   onCancel?: () => void;
-  onClear?: () => void;
+  onRepeat?: () => void;
   canBet?: boolean;
   hasBets?: boolean;
+  hasLastBets?: boolean;
   className?: string;
   menuActions?: MenuAction[];
 }
@@ -29,9 +30,10 @@ export function MobileNavBar({
   totalBet = 0,
   onConfirm,
   onCancel,
-  onClear,
+  onRepeat,
   canBet = false,
   hasBets = false,
+  hasLastBets = false,
   className = '',
   menuActions = [],
 }: MobileNavBarProps) {
@@ -117,22 +119,12 @@ export function MobileNavBar({
 
         {/* Action buttons */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Menu toggle */}
-          {menuActions.length > 0 && (
+          {/* Repeat button */}
+          {canBet && onRepeat && hasLastBets && (
             <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className={`p-2 rounded-lg transition-colors ${menuOpen ? 'bg-gray-700 text-white' : 'text-gray-400 hover:text-white'}`}
-            >
-              {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          )}
-
-          {/* Clear button */}
-          {hasBets && onClear && (
-            <button
-              onClick={onClear}
+              onClick={onRepeat}
               className="p-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
-              title="清除下注"
+              title={t('repeat') || '重複'}
             >
               <RotateCcw className="w-5 h-5" />
             </button>
@@ -142,8 +134,8 @@ export function MobileNavBar({
           {hasBets && onCancel && (
             <button
               onClick={onCancel}
-              className="p-2 rounded-lg bg-red-600/20 hover:bg-red-600/30 text-red-400 transition-colors"
-              title="取消"
+              className="p-2 rounded-lg bg-red-600/80 hover:bg-red-600 text-white transition-colors"
+              title={t('cancel') || '取消'}
             >
               <X className="w-5 h-5" />
             </button>

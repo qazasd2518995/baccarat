@@ -26,6 +26,7 @@ export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
 export interface DTBet {
   type: DragonTigerBetType;
   amount: number;
+  chipValue?: number; // Last chip value used for this bet (for display)
 }
 
 export interface DTBetResult extends DTBet {
@@ -73,6 +74,9 @@ interface DragonTigerStore {
 
   // Get total bet for a specific type (pending + confirmed)
   getBetAmount: (type: DragonTigerBetType) => number;
+
+  // Get chip value for display (last used chip for this bet type)
+  getBetChipValue: (type: DragonTigerBetType) => number | undefined;
 
   // Card state
   dragonCard: Card | null;
@@ -177,11 +181,12 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
         newBets[existingIndex] = {
           ...newBets[existingIndex],
           amount: newBets[existingIndex].amount + state.selectedChip,
+          chipValue: state.selectedChip, // Update to latest chip value
         };
         return { pendingBets: newBets };
       }
       return {
-        pendingBets: [...state.pendingBets, { type, amount: state.selectedChip }],
+        pendingBets: [...state.pendingBets, { type, amount: state.selectedChip, chipValue: state.selectedChip }],
       };
     });
     return true;
@@ -235,6 +240,16 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
     const pending = state.pendingBets.find((b) => b.type === type)?.amount || 0;
     const confirmed = state.confirmedBets.find((b) => b.type === type)?.amount || 0;
     return pending + confirmed;
+  },
+
+  // Get chip value for display
+  getBetChipValue: (type) => {
+    const state = get();
+    // Prefer pending bet's chip value (most recent), fall back to confirmed
+    const pendingBet = state.pendingBets.find((b) => b.type === type);
+    if (pendingBet?.chipValue) return pendingBet.chipValue;
+    const confirmedBet = state.confirmedBets.find((b) => b.type === type);
+    return confirmedBet?.chipValue;
   },
 
   // Cards
