@@ -35,10 +35,7 @@ export default function DealerTable3D({
   // Responsive values
   const perspective = bp === 'mobile' ? 800 : bp === 'tablet' ? 1000 : 1200;
   const rotateX = bp === 'mobile' ? 6 : bp === 'tablet' ? 8 : 10;
-  // Dragon Tiger uses smaller dealer on mobile
-  const dealerSize = bp === 'mobile'
-    ? (gameType === 'dragonTiger' ? 'sm' : 'md')
-    : bp === 'tablet' ? 'lg' : 'lg';
+  const dealerSize = bp === 'mobile' ? 'md' : bp === 'tablet' ? 'lg' : 'lg';
 
   // How much the dealer overlaps into the table area
   // Mobile: dealer should be closer to table, with lower body hidden by table edge
