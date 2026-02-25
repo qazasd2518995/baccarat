@@ -327,7 +327,7 @@ export default function Lobby() {
   }), [tables, selectedCategory, viewMode]);
 
   return (
-    <div className="h-screen bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
+    <div className="h-full bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
       {/* Main Content — no top header */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Mobile menu toggle — floating button */}

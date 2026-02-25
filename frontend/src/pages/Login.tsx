@@ -258,7 +258,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden" style={{ background: '#050508' }}>
+    <div className="h-full w-full relative overflow-hidden" style={{ background: '#050508' }}>
       {/* Three.js Canvas Background */}
       <div className="absolute inset-0">
         <Canvas
@@ -294,7 +294,7 @@ export default function Login() {
       />
 
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-3 sm:p-4">
+      <div className="relative z-10 h-full flex items-center justify-center p-3 sm:p-4">
         <motion.div
           initial={{ opacity: 0, y: 50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}

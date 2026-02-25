@@ -810,7 +810,7 @@ export default function DragonTigerGame() {
                    confirmedBets.reduce((sum, b) => sum + b.amount, 0);
 
   return (
-    <div className="h-screen bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
+    <div className="h-full bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
       {/* Flying chips overlay */}
       <FlyingChipOverlay chips={flyingChips} chipSize={32} />
 

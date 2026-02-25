@@ -377,7 +377,7 @@ export default function BullBullGame() {
   const phaseDisplay = getPhaseDisplay();
 
   return (
-    <div className="h-screen flex flex-col bg-[#0a0e14] text-white overflow-hidden">
+    <div className="h-full flex flex-col bg-[#0a0e14] text-white overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 bg-[#0d1117]/80 border-b border-gray-800 shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
