@@ -7,7 +7,6 @@ import type { Group } from 'three';
 interface DealerAvatarProps {
   isDealing: boolean;
   dealerName?: string;
-  size?: 'sm' | 'ms' | 'md' | 'lg';
 }
 
 const MODEL_URL = '/models/dealer-cards-new.fbx';
@@ -56,13 +55,11 @@ function DealerModel({ isDealing }: { isDealing: boolean }) {
 
 useFBX.preload(MODEL_URL);
 
-export default function DealerAvatar({ isDealing, dealerName, size = 'lg' }: DealerAvatarProps) {
-  const heights = { sm: 100, ms: 150, md: 200, lg: 320 };
-  const h = heights[size];
-
+export default function DealerAvatar({ isDealing, dealerName }: DealerAvatarProps) {
   return (
-    <div className="relative flex flex-col items-center" style={{ height: h, width: '100%' }}>
-      <div style={{ width: Math.min(h * 1.4, 500), height: h }}>
+    <div className="relative flex flex-col items-center w-full h-full">
+      {/* Canvas fills parent — aspect ratio maintained by container */}
+      <div className="w-full h-full max-w-[500px]">
         <Canvas
           camera={{ position: [0, 2.5, 3.0], fov: 40 }}
           gl={{ alpha: true, antialias: true, powerPreference: 'default' }}

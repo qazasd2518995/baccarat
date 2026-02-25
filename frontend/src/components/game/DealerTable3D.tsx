@@ -35,22 +35,18 @@ export default function DealerTable3D({
   // Responsive values
   const perspective = bp === 'mobile' ? 800 : bp === 'tablet' ? 1000 : 1200;
   const rotateX = bp === 'mobile' ? 6 : bp === 'tablet' ? 8 : 10;
-  const dealerSize = bp === 'mobile'
-    ? (gameType === 'dragonTiger' ? 'ms' : 'md')
-    : bp === 'tablet' ? 'lg' : 'lg';
 
-  // How much the dealer overlaps into the table area
-  // Mobile: dealer should be closer to table, with lower body hidden by table edge
-  const dealerOverlap = bp === 'mobile' ? 25 : bp === 'tablet' ? 70 : 100;
-  const dealerZoneHeight = bp === 'mobile' ? '42%' : '50%';
-  const tableTop = bp === 'mobile' ? `calc(38% - ${dealerOverlap}px)` : `calc(42% - ${dealerOverlap}px)`;
-  // Additional downward offset for the dealer on mobile (moves dealer closer to table edge)
-  // Reduced offsets to move dealers up and eliminate black rectangle gap
-  const dealerDownOffset = bp === 'mobile'
-    ? (gameType === 'dragonTiger' ? 10 : 40)
+  // === All positioning in pure % — consistent across all screen sizes ===
+  // Dealer zone: top offset + height (% of container)
+  const isDT = gameType === 'dragonTiger';
+  const dealerTop = bp === 'mobile'
+    ? (isDT ? '2%' : '5%')
     : bp === 'tablet'
-      ? (gameType === 'dragonTiger' ? 5 : 20)
-      : 0;
+      ? (isDT ? '1%' : '3%')
+      : '0%';
+  const dealerZoneHeight = bp === 'mobile' ? '42%' : '50%';
+  // Table top overlaps with dealer zone bottom by a fixed % amount
+  const tableTop = bp === 'mobile' ? '35%' : '38%';
 
   return (
     <div className="flex-1 min-h-0 relative flex flex-col overflow-hidden bg-[#050a0d]">
@@ -308,7 +304,7 @@ export default function DealerTable3D({
       {/* === Dealer — absolute positioned, overlaps into table === */}
       <div
         className="absolute left-0 right-0 z-10 flex justify-center pointer-events-none"
-        style={{ top: `${dealerDownOffset}px`, height: dealerZoneHeight }}
+        style={{ top: dealerTop, height: dealerZoneHeight }}
       >
         {/* Dramatic chandelier spotlight on dealer */}
         <div className="absolute inset-0 overflow-hidden">
@@ -340,7 +336,6 @@ export default function DealerTable3D({
         <DealerAvatar
           isDealing={isDealing}
           dealerName={dealerName}
-          size={dealerSize as 'sm' | 'ms' | 'md' | 'lg'}
         />
       </div>
 
