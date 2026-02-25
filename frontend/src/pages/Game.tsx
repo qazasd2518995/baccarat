@@ -1355,10 +1355,10 @@ export default function Game() {
                   <div className="flex flex-col items-center">
                     {/* Player header + score */}
                     <div className="flex items-center gap-0.5 mb-1 sm:gap-3 sm:mb-4">
-                      <div className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 sm:text-xl sm:px-5 sm:py-2 rounded-l font-bold tracking-wide">
+                      <div className="bg-blue-600 text-white text-base px-2.5 py-1 sm:text-xl sm:px-5 sm:py-2 rounded-l font-bold tracking-wide">
                         閒
                       </div>
-                      <div key={`pp-${pointsPulseKey}`} className={`bg-black/60 text-white text-lg px-2 py-0.5 min-w-[28px] sm:text-5xl sm:px-6 sm:py-2 sm:min-w-[80px] rounded-r font-bold text-center border border-blue-500/20 ${renderPlayerPoints !== null ? 'points-pulse' : ''}`}>
+                      <div key={`pp-${pointsPulseKey}`} className={`bg-black/60 text-white text-2xl px-3 py-1 min-w-[36px] sm:text-5xl sm:px-6 sm:py-2 sm:min-w-[80px] rounded-r font-bold text-center border border-blue-500/20 ${renderPlayerPoints !== null ? 'points-pulse' : ''}`}>
                         {renderPlayerPoints ?? '-'}
                       </div>
                     </div>
@@ -1417,10 +1417,10 @@ export default function Game() {
                   <div className="flex flex-col items-center">
                     {/* Banker header + score */}
                     <div className="flex items-center gap-0.5 mb-1 sm:gap-3 sm:mb-4">
-                      <div key={`bp-${pointsPulseKey}`} className={`bg-black/60 text-white text-lg px-2 py-0.5 min-w-[28px] sm:text-5xl sm:px-6 sm:py-2 sm:min-w-[80px] rounded-l font-bold text-center border border-red-500/20 ${renderBankerPoints !== null ? 'points-pulse' : ''}`}>
+                      <div key={`bp-${pointsPulseKey}`} className={`bg-black/60 text-white text-2xl px-3 py-1 min-w-[36px] sm:text-5xl sm:px-6 sm:py-2 sm:min-w-[80px] rounded-l font-bold text-center border border-red-500/20 ${renderBankerPoints !== null ? 'points-pulse' : ''}`}>
                         {renderBankerPoints ?? '-'}
                       </div>
-                      <div className="bg-red-600 text-white text-[10px] px-1.5 py-0.5 sm:text-xl sm:px-5 sm:py-2 rounded-r font-bold tracking-wide">
+                      <div className="bg-red-600 text-white text-base px-2.5 py-1 sm:text-xl sm:px-5 sm:py-2 rounded-r font-bold tracking-wide">
                         莊
                       </div>
                     </div>
