@@ -5,7 +5,7 @@ import { getCardImage, CardBack, SIZES } from './PlayingCard';
 
 interface AnimatedPlayingCardProps {
   card: Card;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
   /** Starting position for fly-in animation relative to card's final position */
   flyFrom?: { x: number; y: number };
   /** Delay before fly-in starts (seconds) */

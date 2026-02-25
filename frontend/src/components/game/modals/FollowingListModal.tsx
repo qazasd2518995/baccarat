@@ -82,7 +82,7 @@ export default function FollowingListModal({ isOpen, onClose, onGoToTable }: Fol
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-[#1a2235] rounded-xl w-[480px] max-h-[80vh] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
+          className="bg-[#1a2235] rounded-xl w-[95vw] sm:w-[480px] max-h-[80vh] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700/50">

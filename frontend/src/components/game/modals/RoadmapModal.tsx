@@ -146,7 +146,7 @@ export default function RoadmapModal({ isOpen, onClose, data }: RoadmapModalProp
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
-            className="bg-[#141922] rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden border border-gray-700/50"
+            className="bg-[#141922] rounded-xl w-[95vw] sm:w-full sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden border border-gray-700/50"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

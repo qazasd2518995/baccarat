@@ -460,7 +460,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-[#1a2235] rounded-xl w-[1100px] max-w-[95vw] max-h-[85vh] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
+          className="bg-[#1a2235] rounded-xl w-[95vw] lg:w-[1100px] max-h-[85vh] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700/50">
@@ -500,27 +500,27 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
           </div>
 
           {/* Filters */}
-          <div className="flex items-center gap-4 px-6 py-4 border-b border-gray-700/50 bg-[#141922]">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-gray-400" />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-700/50 bg-[#141922]">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Calendar className="w-4 h-4 text-gray-400 hidden sm:block" />
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="bg-[#2a3548] text-white text-sm px-3 py-2 rounded border border-gray-600/50 outline-none focus:border-orange-500/50"
+                className="flex-1 sm:flex-none bg-[#2a3548] text-white text-xs sm:text-sm px-2 sm:px-3 py-2 rounded border border-gray-600/50 outline-none focus:border-orange-500/50"
               />
               <span className="text-gray-500">-</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="bg-[#2a3548] text-white text-sm px-3 py-2 rounded border border-gray-600/50 outline-none focus:border-orange-500/50"
+                className="flex-1 sm:flex-none bg-[#2a3548] text-white text-xs sm:text-sm px-2 sm:px-3 py-2 rounded border border-gray-600/50 outline-none focus:border-orange-500/50"
               />
             </div>
             <button
               onClick={handleSearch}
               disabled={loading}
-              className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 rounded text-sm font-medium transition flex items-center gap-2 disabled:opacity-50"
+              className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 rounded text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
               {t('search')}

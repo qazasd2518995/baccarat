@@ -62,7 +62,7 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] bg-[#1a1f2e] rounded-xl shadow-2xl z-50 overflow-hidden"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] sm:w-[380px] max-h-[90vh] overflow-y-auto bg-[#1a1f2e] rounded-xl shadow-2xl z-50"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
@@ -85,7 +85,7 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
             </div>
 
             {/* Chip grid */}
-            <div className="p-4 grid grid-cols-5 gap-3">
+            <div className="p-3 sm:p-4 grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-3">
               {ALL_CHIP_OPTIONS.map((chip) => {
                 const isSelected = selected.includes(chip.value);
                 const isDisabled = !isSelected && selected.length >= 6;

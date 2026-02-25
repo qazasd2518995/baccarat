@@ -318,7 +318,7 @@ export default function GameRulesModal({ isOpen, onClose, onSelectRule }: GameRu
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-[#1a2235] rounded-xl w-[600px] max-h-[90vh] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
+          className="bg-[#1a2235] rounded-xl w-[95vw] sm:w-[600px] max-h-[90vh] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700/50">
@@ -378,8 +378,8 @@ export default function GameRulesModal({ isOpen, onClose, onSelectRule }: GameRu
               </div>
 
               {/* Rules Grid */}
-              <div className="p-6 pt-2">
-                <div className="grid grid-cols-3 gap-4">
+              <div className="p-4 sm:p-6 pt-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                   {RULE_OPTIONS.map((rule, index) => (
                     <motion.button
                       key={rule.id}
@@ -387,18 +387,18 @@ export default function GameRulesModal({ isOpen, onClose, onSelectRule }: GameRu
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.05 }}
                       onClick={() => handleSelectRule(rule.id)}
-                      className={`relative overflow-hidden rounded-xl aspect-square bg-gradient-to-br ${rule.bgColor} p-4 flex flex-col items-center justify-center gap-3 hover:scale-105 transition-transform group border border-white/10`}
+                      className={`relative overflow-hidden rounded-xl aspect-square bg-gradient-to-br ${rule.bgColor} p-2 sm:p-4 flex flex-col items-center justify-center gap-2 sm:gap-3 hover:scale-105 transition-transform group border border-white/10`}
                     >
                       {/* Background decoration */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
 
                       {/* Icon */}
-                      <div className="relative z-10 w-16 h-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
+                      <div className="relative z-10 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/20 flex items-center justify-center backdrop-blur-sm">
                         {rule.icon}
                       </div>
 
                       {/* Label */}
-                      <span className="relative z-10 text-white font-bold text-sm">
+                      <span className="relative z-10 text-white font-bold text-xs sm:text-sm text-center">
                         {t(rule.labelKey)}
                       </span>
 

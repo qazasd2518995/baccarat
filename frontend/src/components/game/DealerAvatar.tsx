@@ -1,7 +1,7 @@
-import { Suspense, useEffect, useRef, useMemo } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { useGLTF, useAnimations } from '@react-three/drei';
-import { AnimationClip } from 'three';
+import { useFBX, useAnimations } from '@react-three/drei';
+import { LoopOnce } from 'three';
 import type { Group } from 'three';
 
 interface DealerAvatarProps {
@@ -10,58 +10,51 @@ interface DealerAvatarProps {
   size?: 'sm' | 'ms' | 'md' | 'lg';
 }
 
-const IDLE_URL = '/models/dealer-idle.glb';
-const CARDS_URL = '/models/dealer-cards.glb';
+const MODEL_URL = '/models/dealer-cards-new.fbx';
 
 function DealerModel({ isDealing }: { isDealing: boolean }) {
   const groupRef = useRef<Group>(null);
+  const fbx = useFBX(MODEL_URL);
 
-  const idle = useGLTF(IDLE_URL, undefined, true);
-  const cards = useGLTF(CARDS_URL, undefined, true);
+  const { actions, names } = useAnimations(fbx.animations, groupRef);
 
-  const allClips = useMemo(() => {
-    const clips: AnimationClip[] = [];
-    idle.animations.forEach(clip => {
-      const c = clip.clone();
-      c.name = 'idle';
-      clips.push(c);
-    });
-    cards.animations.forEach(clip => {
-      const c = clip.clone();
-      c.name = 'dealing';
-      clips.push(c);
-    });
-    return clips;
-  }, [idle.animations, cards.animations]);
-
-  const { actions } = useAnimations(allClips, groupRef);
-
+  // On mount: pause the animation at frame 0 (idle pose)
   useEffect(() => {
-    actions['idle']?.play();
-  }, [actions]);
-
-  useEffect(() => {
-    const idleAction = actions['idle'];
-    const dealAction = actions['dealing'];
-
-    if (isDealing && dealAction) {
-      idleAction?.fadeOut(0.4);
-      dealAction.reset().fadeIn(0.4).play();
-    } else if (idleAction) {
-      dealAction?.fadeOut(0.4);
-      idleAction.reset().fadeIn(0.4).play();
+    if (names.length > 0 && actions[names[0]]) {
+      const action = actions[names[0]]!;
+      action.setLoop(LoopOnce, 1);
+      action.clampWhenFinished = true;
+      action.play();
+      action.paused = true;
+      action.time = 0;
     }
-  }, [isDealing, actions]);
+  }, [actions, names]);
+
+  // When isDealing changes, play or reset the animation
+  useEffect(() => {
+    if (names.length === 0) return;
+    const action = actions[names[0]];
+    if (!action) return;
+
+    if (isDealing) {
+      action.setLoop(LoopOnce, 1);
+      action.clampWhenFinished = true;
+      action.reset().play();
+      action.paused = false;
+    } else {
+      action.paused = true;
+      action.time = 0;
+    }
+  }, [isDealing, actions, names]);
 
   return (
     <group ref={groupRef}>
-      <primitive object={idle.scene} scale={5.0} position={[0, -3.5, 0]} />
+      <primitive object={fbx} scale={0.05} position={[0, -3.5, 0]} />
     </group>
   );
 }
 
-useGLTF.preload(IDLE_URL, undefined, true);
-useGLTF.preload(CARDS_URL, undefined, true);
+useFBX.preload(MODEL_URL);
 
 export default function DealerAvatar({ isDealing, dealerName, size = 'lg' }: DealerAvatarProps) {
   const heights = { sm: 100, ms: 150, md: 200, lg: 320 };

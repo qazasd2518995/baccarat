@@ -34,8 +34,7 @@ export default function GameHeader() {
         </motion.div>
         <div>
           <h1
-            className="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600"
-            style={{ fontFamily: "'Playfair Display', serif" }}
+            className="font-en-display text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600"
           >
             BACCARAT
           </h1>

@@ -122,7 +122,7 @@ export default function TableSwitchModal({
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-[#1a2235] rounded-xl w-[700px] max-h-[80vh] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
+          className="bg-[#1a2235] rounded-xl w-[95vw] sm:w-[700px] max-h-[80vh] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700/50">
@@ -139,10 +139,10 @@ export default function TableSwitchModal({
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 px-6 py-3 border-b border-gray-700/50">
+          <div className="flex gap-1 sm:gap-2 px-3 sm:px-6 py-2 sm:py-3 border-b border-gray-700/50 overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setSelectedTab('all')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition whitespace-nowrap ${
                 selectedTab === 'all'
                   ? 'bg-orange-500 text-white'
                   : 'bg-gray-700/50 text-gray-400 hover:text-white'
@@ -152,7 +152,7 @@ export default function TableSwitchModal({
             </button>
             <button
               onClick={() => setSelectedTab('baccarat')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition whitespace-nowrap ${
                 selectedTab === 'baccarat'
                   ? 'bg-orange-500 text-white'
                   : 'bg-gray-700/50 text-gray-400 hover:text-white'
@@ -162,7 +162,7 @@ export default function TableSwitchModal({
             </button>
             <button
               onClick={() => setSelectedTab('dragonTiger')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition whitespace-nowrap ${
                 selectedTab === 'dragonTiger'
                   ? 'bg-orange-500 text-white'
                   : 'bg-gray-700/50 text-gray-400 hover:text-white'
@@ -172,7 +172,7 @@ export default function TableSwitchModal({
             </button>
             <button
               onClick={() => setSelectedTab('bullBull')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition whitespace-nowrap ${
                 selectedTab === 'bullBull'
                   ? 'bg-orange-500 text-white'
                   : 'bg-gray-700/50 text-gray-400 hover:text-white'
@@ -197,7 +197,7 @@ export default function TableSwitchModal({
                     <p className="text-gray-400">{t('noTablesAvailable')}</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {filteredTables.map((table, index) => (
                       <motion.div
                         key={table.id}

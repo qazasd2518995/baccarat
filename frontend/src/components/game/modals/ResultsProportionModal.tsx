@@ -52,7 +52,7 @@ export default function ResultsProportionModal({ isOpen, onClose }: ResultsPropo
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-[#1a2235] rounded-xl w-[400px] overflow-hidden shadow-2xl border border-gray-700/50"
+          className="bg-[#1a2235] rounded-xl w-[95vw] sm:w-[400px] max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-700/50"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700/50 bg-gradient-to-r from-orange-500/20 to-transparent">

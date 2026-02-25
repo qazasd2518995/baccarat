@@ -46,13 +46,16 @@ function BeadRoad({ data, width }: { data: RoadHistoryEntry[]; width: number }) 
       style={{
         gridTemplateRows: `repeat(${ROWS}, 1fr)`,
         gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gridAutoFlow: 'column',
         gap: '1px',
         backgroundColor: LINE,
       }}
     >
       {Array.from({ length: ROWS * cols }, (_, i) => {
-        const row = i % ROWS;
+        // With gridAutoFlow: column, items fill top-to-bottom, then next column
+        // i goes: col0-row0, col0-row1, ..., col0-row5, col1-row0, ...
         const col = Math.floor(i / ROWS);
+        const row = i % ROWS;
         const dataIdx = col * ROWS + row;
         const entry = visibleData[dataIdx];
         const key = `b-${row}-${col}`;

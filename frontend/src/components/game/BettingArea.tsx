@@ -185,8 +185,7 @@ export default function BettingArea({ disabled }: BettingAreaProps) {
               <div className="relative z-10 h-full flex flex-col items-center justify-center p-2">
                 {/* Label */}
                 <motion.div
-                  className={`text-lg font-black tracking-wider ${spot.color}`}
-                  style={{ fontFamily: "'Playfair Display', serif" }}
+                  className={`casino-display text-lg font-black tracking-wider ${spot.color}`}
                 >
                   {t(spot.label)}
                 </motion.div>

@@ -176,7 +176,7 @@ export default function GiftModal({
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-[#1a2235] rounded-xl w-[520px] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
+          className="bg-[#1a2235] rounded-xl w-[95vw] sm:w-[520px] max-h-[90vh] overflow-hidden shadow-2xl border border-gray-700/50 flex flex-col"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700/50 bg-gradient-to-r from-pink-500/20 to-purple-500/20">
@@ -195,15 +195,15 @@ export default function GiftModal({
           </div>
 
           {/* Gift Grid */}
-          <div className="p-4">
-            <div className="grid grid-cols-4 gap-3">
+          <div className="p-3 sm:p-4 overflow-y-auto flex-1">
+            <div className="grid grid-cols-4 gap-2 sm:gap-3">
               {GIFT_ITEMS.map((gift) => (
                 <motion.button
                   key={gift.id}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleSelectGift(gift)}
-                  className={`relative p-4 rounded-xl flex flex-col items-center justify-center transition-all ${
+                  className={`relative p-2 sm:p-4 rounded-xl flex flex-col items-center justify-center transition-all ${
                     selectedGift?.id === gift.id
                       ? `${gift.bgColor} ring-2 ring-offset-2 ring-offset-[#1a2235] ring-white/50`
                       : 'bg-[#2a3548] hover:bg-[#323d52]'
@@ -281,22 +281,22 @@ export default function GiftModal({
           )}
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-700/50 bg-[#141922] flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm">{t('yourBalance')}</span>
-              <span className="text-yellow-400 font-bold">${balance.toLocaleString()}</span>
+          <div className="px-3 sm:px-6 py-3 sm:py-4 border-t border-gray-700/50 bg-[#141922] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0">
+            <div className="flex items-center justify-center sm:justify-start gap-2">
+              <span className="text-gray-400 text-xs sm:text-sm">{t('yourBalance')}</span>
+              <span className="text-yellow-400 font-bold text-sm sm:text-base">${balance.toLocaleString()}</span>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={onClose}
-                className="px-6 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition"
+                className="flex-1 sm:flex-none px-4 sm:px-6 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition text-sm"
               >
                 {t('cancel')}
               </button>
               <button
                 onClick={handleSendGift}
                 disabled={!selectedGift || !canAfford}
-                className={`px-6 py-2 rounded-lg font-bold transition flex items-center gap-2 ${
+                className={`flex-1 sm:flex-none px-4 sm:px-6 py-2 rounded-lg font-bold transition flex items-center justify-center gap-2 text-sm ${
                   selectedGift && canAfford
                     ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-400 hover:to-purple-400'
                     : 'bg-gray-700 text-gray-500 cursor-not-allowed'
