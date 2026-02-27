@@ -376,6 +376,12 @@ export default function Game() {
   const searchParams = new URLSearchParams(window.location.search);
   const tableId = searchParams.get('table') || undefined;
 
+  // Assign dealer model based on tableId (evenly distribute v1/v2/v3)
+  const dealerModels = ['v1', 'v2', 'v3'] as const;
+  const dealerModelForTable = dealerModels[
+    (tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % 3
+  ];
+
   // Modal states
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isRulesOpen, setIsRulesOpen] = useState(false);
@@ -1335,7 +1341,7 @@ export default function Game() {
             isDealing={dealerAnimating}
             dealerName={currentDealerName}
             gameType="baccarat"
-            dealerModel="v2"
+            dealerModel={dealerModelForTable}
           >
 
               {/* Top info bar */}

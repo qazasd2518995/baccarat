@@ -347,6 +347,12 @@ export default function DragonTigerGame() {
   const [searchParams] = useSearchParams();
   const tableId = searchParams.get('table') || undefined;
 
+  // Assign dealer model based on tableId (evenly distribute v1/v2/v3)
+  const dealerModels = ['v1', 'v2', 'v3'] as const;
+  const dealerModelForTable = dealerModels[
+    (tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % 3
+  ];
+
   const { submitBets, cancelBets } = useDragonTigerSocket(tableId);
 
   // Modal states
@@ -1096,7 +1102,7 @@ export default function DragonTigerGame() {
             isDealing={phase === 'dealing'}
             dealerName={currentDealerName}
             gameType="dragonTiger"
-            dealerModel="v3"
+            dealerModel={dealerModelForTable}
           >
             {/* Round Info - Hidden on mobile, compact on tablet */}
             <div className="hidden sm:block absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 rounded px-2 sm:px-3 py-1 text-xs sm:text-sm z-20">
