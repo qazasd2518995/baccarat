@@ -30,7 +30,7 @@ export default function DealerTable3D({
   isDealing,
   dealerName,
   gameType = 'baccarat',
-  dealerModel = 'new',
+  dealerModel = 'v2',
 }: DealerTable3DProps) {
   const bp = useBreakpoint();
   const felt = FELT_COLORS[gameType];

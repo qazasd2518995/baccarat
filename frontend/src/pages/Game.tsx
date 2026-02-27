@@ -1335,7 +1335,7 @@ export default function Game() {
             isDealing={dealerAnimating}
             dealerName={currentDealerName}
             gameType="baccarat"
-            dealerModel="original"
+            dealerModel="v1"
           >
 
               {/* Top info bar */}
