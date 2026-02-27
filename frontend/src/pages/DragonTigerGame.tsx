@@ -1096,6 +1096,7 @@ export default function DragonTigerGame() {
             isDealing={phase === 'dealing'}
             dealerName={currentDealerName}
             gameType="dragonTiger"
+            dealerModel="v3"
           >
             {/* Round Info - Hidden on mobile, compact on tablet */}
             <div className="hidden sm:block absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 rounded px-2 sm:px-3 py-1 text-xs sm:text-sm z-20">
