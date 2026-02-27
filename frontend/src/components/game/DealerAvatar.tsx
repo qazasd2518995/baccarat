@@ -4,7 +4,7 @@ import { useFBX, useAnimations } from '@react-three/drei';
 import { LoopOnce } from 'three';
 import type { Group } from 'three';
 
-export type DealerModel = 'v1' | 'v2' | 'v3';
+export type DealerModel = 'v1' | 'v2' | 'v3' | 'v4';
 
 interface DealerAvatarProps {
   isDealing: boolean;
@@ -16,6 +16,7 @@ const MODEL_URLS: Record<DealerModel, string> = {
   v1: '/models/dealer-v1.fbx',
   v2: '/models/dealer-cards-new.fbx',
   v3: '/models/dealer-v3.fbx',
+  v4: '/models/dealer-v4.fbx',
 };
 
 function DealerModelInner({ isDealing, url }: { isDealing: boolean; url: string }) {
@@ -61,6 +62,7 @@ function DealerModelInner({ isDealing, url }: { isDealing: boolean; url: string 
 useFBX.preload(MODEL_URLS.v1);
 useFBX.preload(MODEL_URLS.v2);
 useFBX.preload(MODEL_URLS.v3);
+useFBX.preload(MODEL_URLS.v4);
 
 export default function DealerAvatar({ isDealing, dealerName, model = 'v2' }: DealerAvatarProps) {
   return (

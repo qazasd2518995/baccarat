@@ -376,10 +376,10 @@ export default function Game() {
   const searchParams = new URLSearchParams(window.location.search);
   const tableId = searchParams.get('table') || undefined;
 
-  // Assign dealer model based on tableId (evenly distribute v1/v2/v3)
-  const dealerModels = ['v1', 'v2', 'v3'] as const;
+  // Assign dealer model based on tableId (evenly distribute v1/v2/v3/v4)
+  const dealerModels = ['v1', 'v2', 'v3', 'v4'] as const;
   const dealerModelForTable = dealerModels[
-    (tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % 3
+    (tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % 4
   ];
 
   // Modal states
