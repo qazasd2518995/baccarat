@@ -348,9 +348,9 @@ export default function DragonTigerGame() {
   const tableId = searchParams.get('table') || undefined;
 
   // Assign dealer model based on tableId (evenly distribute v1/v2/v3/v4)
-  const dealerModels = ['v1', 'v2', 'v3', 'v4'] as const;
+  const dealerModels = ['v1', 'v2', 'v3', 'v4', 'v5'] as const;
   const dealerModelForTable = dealerModels[
-    (tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % 4
+    (tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % 5
   ];
 
   const { submitBets, cancelBets } = useDragonTigerSocket(tableId);
