@@ -46,6 +46,7 @@ import ChipSettingsModal from '../components/game/ChipSettingsModal';
 import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
 import CountdownTimer from '../components/game/CountdownTimer';
 import DealerTable3D from '../components/game/DealerTable3D';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 import MarqueeChat, { useMarqueeChat, MarqueeQuickButtons } from '../components/game/MarqueeChat';
 import TableChipDisplay from '../components/game/TableChipDisplay';
 import DragonTigerRoadmap from '../components/game/DragonTigerRoadmap';
@@ -363,6 +364,10 @@ export default function DragonTigerGame() {
 
   // Ask Road mode: 'none' | 'dragon' | 'tiger'
   const [askRoadMode, setAskRoadMode] = useState<'none' | 'dragon' | 'tiger'>('none');
+
+  // Responsive
+  const bp = useBreakpoint();
+  const dtCardSize = bp === 'mobile' ? 'sm' : 'md';
 
   // Flying chips animation
   const { flyingChips, addFlyingChip } = useFlyingChips();
@@ -1109,7 +1114,7 @@ export default function DragonTigerGame() {
                     {dragonCard && (
                       <AnimatedPlayingCard
                         card={dragonCard}
-                        size="md"
+                        size={dtCardSize}
                         flyFrom={{ x: 100, y: -250 }}
                         flyDelay={0}
                         flyDuration={0.6}
@@ -1145,7 +1150,7 @@ export default function DragonTigerGame() {
                     {tigerCard && (
                       <AnimatedPlayingCard
                         card={tigerCard}
-                        size="md"
+                        size={dtCardSize}
                         flyFrom={{ x: -100, y: -250 }}
                         flyDelay={0.8}
                         flyDuration={0.6}
