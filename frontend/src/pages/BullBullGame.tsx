@@ -437,6 +437,7 @@ export default function BullBullGame() {
         isDealing={phase === 'dealing'}
         dealerName="小美"
         gameType="bullBull"
+        dealerModel="v3"
       >
         <div className="absolute inset-0 overflow-auto p-2 sm:p-4 pb-32 sm:pb-36">
           {/* Countdown timer */}
