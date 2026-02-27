@@ -589,8 +589,8 @@ export default function Game() {
   const dealerAnimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Responsive breakpoint
   const bp = useBreakpoint();
-  const cardSize = bp === 'mobile' ? 'md' : bp === 'tablet' ? 'md' : 'lg';
-  const thirdCardHeight = bp === 'mobile' ? 65 : bp === 'tablet' ? 65 : 90;
+  const cardSize = bp === 'mobile' ? 'sm' : bp === 'tablet' ? 'md' : 'lg';
+  const thirdCardHeight = bp === 'mobile' ? 50 : bp === 'tablet' ? 65 : 90;
   // Cards fly from dealer's hand position (above table, center)
   const flyY = bp === 'mobile' ? -140 : bp === 'tablet' ? -220 : -350;
   const flyX = bp === 'mobile' ? 30 : bp === 'tablet' ? 60 : 90;
