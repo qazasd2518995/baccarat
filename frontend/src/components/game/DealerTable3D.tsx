@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import DealerAvatar from './DealerAvatar';
+import type { DealerModel } from './DealerAvatar';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 
 interface DealerTable3DProps {
@@ -7,6 +8,7 @@ interface DealerTable3DProps {
   isDealing: boolean;
   dealerName?: string;
   gameType?: 'baccarat' | 'dragonTiger' | 'bullBull';
+  dealerModel?: DealerModel;
 }
 
 const FELT_COLORS = {
@@ -28,6 +30,7 @@ export default function DealerTable3D({
   isDealing,
   dealerName,
   gameType = 'baccarat',
+  dealerModel = 'new',
 }: DealerTable3DProps) {
   const bp = useBreakpoint();
   const felt = FELT_COLORS[gameType];
@@ -336,6 +339,7 @@ export default function DealerTable3D({
         <DealerAvatar
           isDealing={isDealing}
           dealerName={dealerName}
+          model={dealerModel}
         />
       </div>
 

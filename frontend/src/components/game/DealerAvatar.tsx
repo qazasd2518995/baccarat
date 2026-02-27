@@ -1,23 +1,25 @@
-import { Suspense, useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { useFBX, useAnimations } from '@react-three/drei';
-import { LoopOnce } from 'three';
+import { useFBX, useGLTF, useAnimations } from '@react-three/drei';
+import { LoopOnce, AnimationClip } from 'three';
 import type { Group } from 'three';
+
+export type DealerModel = 'original' | 'new';
 
 interface DealerAvatarProps {
   isDealing: boolean;
   dealerName?: string;
+  model?: DealerModel;
 }
 
-const MODEL_URL = '/models/dealer-cards-new.fbx';
+// === New FBX model (single file with dealing animation) ===
+const FBX_URL = '/models/dealer-cards-new.fbx';
 
-function DealerModel({ isDealing }: { isDealing: boolean }) {
+function FBXDealerModel({ isDealing }: { isDealing: boolean }) {
   const groupRef = useRef<Group>(null);
-  const fbx = useFBX(MODEL_URL);
-
+  const fbx = useFBX(FBX_URL);
   const { actions, names } = useAnimations(fbx.animations, groupRef);
 
-  // On mount: pause the animation at frame 0 (idle pose)
   useEffect(() => {
     if (names.length > 0 && actions[names[0]]) {
       const action = actions[names[0]]!;
@@ -29,7 +31,6 @@ function DealerModel({ isDealing }: { isDealing: boolean }) {
     }
   }, [actions, names]);
 
-  // When isDealing changes, play or reset the animation
   useEffect(() => {
     if (names.length === 0) return;
     const action = actions[names[0]];
@@ -53,12 +54,64 @@ function DealerModel({ isDealing }: { isDealing: boolean }) {
   );
 }
 
-useFBX.preload(MODEL_URL);
+// === Original GLB model (idle + dealing as separate files) ===
+const IDLE_URL = '/models/dealer-idle.glb';
+const CARDS_URL = '/models/dealer-cards.glb';
 
-export default function DealerAvatar({ isDealing, dealerName }: DealerAvatarProps) {
+function GLBDealerModel({ isDealing }: { isDealing: boolean }) {
+  const groupRef = useRef<Group>(null);
+  const idle = useGLTF(IDLE_URL, undefined, true);
+  const cards = useGLTF(CARDS_URL, undefined, true);
+
+  const allClips = useMemo(() => {
+    const clips: AnimationClip[] = [];
+    idle.animations.forEach(clip => {
+      const c = clip.clone();
+      c.name = 'idle';
+      clips.push(c);
+    });
+    cards.animations.forEach(clip => {
+      const c = clip.clone();
+      c.name = 'dealing';
+      clips.push(c);
+    });
+    return clips;
+  }, [idle.animations, cards.animations]);
+
+  const { actions } = useAnimations(allClips, groupRef);
+
+  useEffect(() => {
+    actions['idle']?.play();
+  }, [actions]);
+
+  useEffect(() => {
+    const idleAction = actions['idle'];
+    const dealAction = actions['dealing'];
+
+    if (isDealing && dealAction) {
+      idleAction?.fadeOut(0.4);
+      dealAction.reset().fadeIn(0.4).play();
+    } else if (idleAction) {
+      dealAction?.fadeOut(0.4);
+      idleAction.reset().fadeIn(0.4).play();
+    }
+  }, [isDealing, actions]);
+
+  return (
+    <group ref={groupRef}>
+      <primitive object={idle.scene} scale={5.0} position={[0, -3.5, 0]} />
+    </group>
+  );
+}
+
+// Preload both models
+useFBX.preload(FBX_URL);
+useGLTF.preload(IDLE_URL, undefined, true);
+useGLTF.preload(CARDS_URL, undefined, true);
+
+export default function DealerAvatar({ isDealing, dealerName, model = 'new' }: DealerAvatarProps) {
   return (
     <div className="relative flex flex-col items-center w-full h-full">
-      {/* Canvas fills parent — aspect ratio maintained by container */}
       <div className="w-full h-full max-w-[500px]">
         <Canvas
           camera={{ position: [0, 2.5, 3.0], fov: 40 }}
@@ -71,7 +124,11 @@ export default function DealerAvatar({ isDealing, dealerName }: DealerAvatarProp
           <directionalLight position={[-2, 1, -1]} intensity={0.3} color="#c0d0ff" />
           <pointLight position={[0, 0.5, 1.5]} intensity={0.5} color="#ffd700" distance={5} />
           <Suspense fallback={null}>
-            <DealerModel isDealing={isDealing} />
+            {model === 'original' ? (
+              <GLBDealerModel isDealing={isDealing} />
+            ) : (
+              <FBXDealerModel isDealing={isDealing} />
+            )}
           </Suspense>
         </Canvas>
       </div>
