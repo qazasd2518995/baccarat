@@ -540,12 +540,11 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                     <thead className="bg-[#2a3548] text-gray-400">
                       <tr>
                         <th className="px-2 py-3 text-left w-8"></th>
-                        <th className="px-2 py-3 text-left whitespace-nowrap">{t('roundId')}</th>
+                        <th className="px-2 py-3 text-left whitespace-nowrap">{t('periodNum')}</th>
                         <th className="px-2 py-3 text-left whitespace-nowrap">{t('game')}</th>
                         <th className="px-2 py-3 text-left whitespace-nowrap">{t('settleTime')}</th>
                         <th className="px-2 py-3 text-left whitespace-nowrap">{t('table')}</th>
                         <th className="px-2 py-3 text-center whitespace-nowrap">{t('shoeNum')}</th>
-                        <th className="px-2 py-3 text-center whitespace-nowrap">{t('roundNum')}</th>
                         <th className="px-2 py-3 text-right whitespace-nowrap">{t('betAmount')}</th>
                         <th className="px-2 py-3 text-right whitespace-nowrap">{t('validBet')}</th>
                         <th className="px-2 py-3 text-center whitespace-nowrap">{t('result')}</th>
@@ -569,12 +568,11 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                                 <ChevronDown className="w-4 h-4" />
                               )}
                             </td>
-                            <td className="px-2 py-3 text-gray-300 font-mono whitespace-nowrap">{record.roundId}</td>
+                            <td className="px-2 py-3 text-gray-300 font-mono whitespace-nowrap">{record.round}</td>
                             <td className="px-2 py-3 text-gray-300 whitespace-nowrap">{record.game}</td>
                             <td className="px-2 py-3 text-gray-400 text-xs whitespace-nowrap">{record.settleTime}</td>
                             <td className="px-2 py-3 text-gray-300 whitespace-nowrap">{record.table}</td>
                             <td className="px-2 py-3 text-center text-gray-400 whitespace-nowrap">{record.shoe}</td>
-                            <td className="px-2 py-3 text-center text-gray-400 whitespace-nowrap">{record.round}</td>
                             <td className="px-2 py-3 text-right text-gray-300 whitespace-nowrap">{record.betAmount.toLocaleString()}</td>
                             <td className="px-2 py-3 text-right text-gray-300 whitespace-nowrap">{record.validBet.toLocaleString()}</td>
                             <td className="px-2 py-3 text-center whitespace-nowrap">
@@ -597,7 +595,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                           {/* Expanded Row with Card Details */}
                           {expandedRow === record.roundId && (
                             <tr key={`${record.roundId}-expanded`}>
-                              <td colSpan={11} className="bg-[#0d1117] border-b border-gray-700/30">
+                              <td colSpan={10} className="bg-[#0d1117] border-b border-gray-700/30">
                                 <motion.div
                                   initial={{ opacity: 0, height: 0 }}
                                   animate={{ opacity: 1, height: 'auto' }}
@@ -765,7 +763,7 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                     {bettingRecords.length > 0 && (
                       <tfoot className="bg-[#2a3548] border-t border-gray-600/50">
                         <tr className="font-bold">
-                          <td className="px-2 py-3" colSpan={7}>
+                          <td className="px-2 py-3" colSpan={6}>
                             <span className="text-gray-300">{t('total')}</span>
                           </td>
                           <td className="px-2 py-3 text-right text-white">
