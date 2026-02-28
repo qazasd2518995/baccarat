@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Plus, Edit2, Trash2, X, Pin } from 'lucide-react';
 import { noticeApi } from '../services/api';
+import ConfirmModal from '../components/ConfirmModal';
+import { useToastStore } from '../store/toastStore';
 
 interface Notice {
   id: string;
@@ -16,10 +18,13 @@ interface Notice {
 
 export default function Notices() {
   const { t } = useTranslation();
+  const toast = useToastStore();
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
+  const [deleting, setDeleting] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -71,23 +76,32 @@ export default function Notices() {
     try {
       if (editingNotice) {
         await noticeApi.updateNotice(editingNotice.id, formData);
+        toast.success('公告更新成功');
       } else {
         await noticeApi.createNotice(formData);
+        toast.success('公告创建成功');
       }
       setShowModal(false);
       fetchNotices();
     } catch (error) {
       console.error('Failed to save notice:', error);
+      toast.error('保存失败');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('确定要删除这条公告吗？')) return;
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.id) return;
+    setDeleting(true);
     try {
-      await noticeApi.deleteNotice(id);
+      await noticeApi.deleteNotice(deleteConfirm.id);
+      toast.success('公告已删除');
+      setDeleteConfirm({ open: false, id: null });
       fetchNotices();
     } catch (error) {
       console.error('Failed to delete notice:', error);
+      toast.error('删除失败');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -126,15 +140,15 @@ export default function Notices() {
       {/* Notice List */}
       <div className="space-y-4">
         {loading ? (
-          <div className="text-center py-8 text-slate-400">{t('loading')}</div>
+          <div className="text-center py-8 text-gray-400">{t('loading')}</div>
         ) : notices.length === 0 ? (
-          <div className="text-center py-8 text-slate-400">{t('noData')}</div>
+          <div className="text-center py-8 text-gray-400">{t('noData')}</div>
         ) : (
           notices.map((notice) => (
             <div
               key={notice.id}
-              className={`bg-slate-800 rounded-xl p-6 border transition-colors ${
-                notice.isPinned ? 'border-amber-500/50' : 'border-slate-700'
+              className={`bg-[#1e1e1e] rounded-xl p-6 border transition-colors ${
+                notice.isPinned ? 'border-amber-500/50' : 'border-[#333]'
               }`}
             >
               <div className="flex items-start justify-between mb-3">
@@ -146,7 +160,7 @@ export default function Notices() {
                     {getTypeText(notice.type)}
                   </span>
                   {!notice.isPublished && (
-                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-slate-600 text-slate-300">
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-[#444] text-gray-300">
                       草稿
                     </span>
                   )}
@@ -154,21 +168,21 @@ export default function Notices() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => openEditModal(notice)}
-                    className="p-2 hover:bg-slate-700 text-slate-400 hover:text-white rounded-lg transition-colors"
+                    className="p-2 hover:bg-[#252525] text-gray-400 hover:text-white rounded-lg transition-colors"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(notice.id)}
-                    className="p-2 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded-lg transition-colors"
+                    onClick={() => setDeleteConfirm({ open: true, id: notice.id })}
+                    className="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
               <h3 className="text-lg font-bold text-white mb-2">{notice.title}</h3>
-              <p className="text-slate-400 mb-3 whitespace-pre-wrap">{notice.content}</p>
-              <div className="text-sm text-slate-500">
+              <p className="text-gray-400 mb-3 whitespace-pre-wrap">{notice.content}</p>
+              <div className="text-sm text-gray-500">
                 {new Date(notice.createdAt).toLocaleString('zh-CN')}
               </div>
             </div>
@@ -182,41 +196,41 @@ export default function Notices() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-slate-800 rounded-2xl p-6 w-full max-w-lg border border-slate-700"
+            className="bg-[#1e1e1e] rounded-2xl p-6 w-full max-w-lg mx-4 border border-[#333]"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">
                 {editingNotice ? '编辑公告' : '创建公告'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">标题</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">标题</label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">内容</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">内容</label>
                 <textarea
                   value={formData.content}
                   onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500 resize-none"
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500 resize-none"
                   rows={5}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">类型</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">类型</label>
                 <select
                   value={formData.type}
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
                 >
                   <option value="info">信息</option>
                   <option value="warning">警告</option>
@@ -229,18 +243,18 @@ export default function Notices() {
                     type="checkbox"
                     checked={formData.isPinned}
                     onChange={(e) => setFormData({ ...formData, isPinned: e.target.checked })}
-                    className="w-4 h-4 rounded border-slate-600 text-amber-500 focus:ring-amber-500"
+                    className="w-4 h-4 rounded border-[#444] text-amber-500 focus:ring-amber-500"
                   />
-                  <span className="text-slate-300">置顶</span>
+                  <span className="text-gray-300">置顶</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={formData.isPublished}
                     onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
-                    className="w-4 h-4 rounded border-slate-600 text-amber-500 focus:ring-amber-500"
+                    className="w-4 h-4 rounded border-[#444] text-amber-500 focus:ring-amber-500"
                   />
-                  <span className="text-slate-300">发布</span>
+                  <span className="text-gray-300">发布</span>
                 </label>
               </div>
               <button
@@ -253,6 +267,19 @@ export default function Notices() {
           </motion.div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteConfirm.open}
+        onClose={() => setDeleteConfirm({ open: false, id: null })}
+        onConfirm={handleDeleteConfirm}
+        title="删除公告"
+        message="确定要删除这条公告吗？此操作无法撤销。"
+        confirmText="删除"
+        cancelText="取消"
+        type="danger"
+        loading={deleting}
+      />
     </div>
   );
 }

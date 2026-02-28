@@ -75,7 +75,7 @@ export default function Reports() {
         <select
           value={dateRange}
           onChange={(e) => setDateRange(e.target.value)}
-          className="px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-amber-500"
+          className="px-4 py-2 bg-[#1e1e1e] border border-[#333] rounded-xl text-white focus:outline-none focus:border-amber-500"
         >
           <option value="today">今日</option>
           <option value="week">近7天</option>
@@ -85,49 +85,49 @@ export default function Reports() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <div className="bg-[#1e1e1e] rounded-xl p-6 border border-[#333]">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
               <TrendingUp className="w-6 h-6 text-green-400" />
             </div>
           </div>
-          <div className="text-sm text-slate-400 mb-1">总入点</div>
+          <div className="text-sm text-gray-400 mb-1">总入点</div>
           <div className="text-2xl font-bold text-green-400">
             {loading ? '...' : stats.totalDeposits.toLocaleString()}
           </div>
         </div>
 
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <div className="bg-[#1e1e1e] rounded-xl p-6 border border-[#333]">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
               <TrendingDown className="w-6 h-6 text-red-400" />
             </div>
           </div>
-          <div className="text-sm text-slate-400 mb-1">总出点</div>
+          <div className="text-sm text-gray-400 mb-1">总出点</div>
           <div className="text-2xl font-bold text-red-400">
             {loading ? '...' : stats.totalWithdraws.toLocaleString()}
           </div>
         </div>
 
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <div className="bg-[#1e1e1e] rounded-xl p-6 border border-[#333]">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
               <BarChart3 className="w-6 h-6 text-amber-400" />
             </div>
           </div>
-          <div className="text-sm text-slate-400 mb-1">净流入</div>
+          <div className="text-sm text-gray-400 mb-1">净流入</div>
           <div className={`text-2xl font-bold ${stats.netFlow >= 0 ? 'text-green-400' : 'text-red-400'}`}>
             {loading ? '...' : (stats.netFlow >= 0 ? '+' : '') + stats.netFlow.toLocaleString()}
           </div>
         </div>
 
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+        <div className="bg-[#1e1e1e] rounded-xl p-6 border border-[#333]">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
               <Calendar className="w-6 h-6 text-blue-400" />
             </div>
           </div>
-          <div className="text-sm text-slate-400 mb-1">交易笔数</div>
+          <div className="text-sm text-gray-400 mb-1">交易笔数</div>
           <div className="text-2xl font-bold text-white">
             {loading ? '...' : stats.transactionCount}
           </div>
@@ -135,9 +135,9 @@ export default function Reports() {
       </div>
 
       {/* Summary */}
-      <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+      <div className="bg-[#1e1e1e] rounded-xl p-6 border border-[#333]">
         <h2 className="text-lg font-bold text-white mb-4">报表说明</h2>
-        <div className="space-y-2 text-slate-400">
+        <div className="space-y-2 text-gray-400">
           <p>• <span className="text-green-400">入点</span>：上级给下级充值的点数</p>
           <p>• <span className="text-red-400">出点</span>：下级退还给上级的点数</p>
           <p>• <span className="text-amber-400">净流入</span>：入点 - 出点，正数表示系统内点数增加</p>

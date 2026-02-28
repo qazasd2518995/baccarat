@@ -62,7 +62,7 @@ export default function Games() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">{t('gameHistory')}</h1>
-        <p className="text-slate-400 mt-1">查看所有游戏局数</p>
+        <p className="text-gray-400 mt-1">查看所有游戏局数</p>
       </div>
 
       {/* Stats Cards */}
@@ -119,52 +119,52 @@ export default function Games() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+      <div className="flex gap-4 p-4 rounded-xl bg-[#1e1e1e]/50 border border-[#333]/50">
         <input
           type="date"
           value={filter.startDate}
           onChange={(e) => setFilter({ ...filter, startDate: e.target.value })}
-          className="px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-white focus:outline-none focus:border-amber-500/50"
+          className="px-4 py-2 rounded-lg bg-[#252525]/50 border border-[#444]/50 text-white focus:outline-none focus:border-amber-500/50"
         />
         <input
           type="date"
           value={filter.endDate}
           onChange={(e) => setFilter({ ...filter, endDate: e.target.value })}
-          className="px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-white focus:outline-none focus:border-amber-500/50"
+          className="px-4 py-2 rounded-lg bg-[#252525]/50 border border-[#444]/50 text-white focus:outline-none focus:border-amber-500/50"
         />
         <button
           onClick={() => setFilter({ startDate: '', endDate: '' })}
-          className="px-4 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 text-white"
+          className="px-4 py-2 rounded-lg bg-[#252525]/50 hover:bg-[#333]/50 text-white"
         >
           清除
         </button>
       </div>
 
       {/* Games Table */}
-      <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 overflow-hidden">
+      <div className="rounded-xl bg-[#1e1e1e]/50 border border-[#333]/50 overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-slate-700/50">
-              <th className="px-4 py-4 text-left text-sm font-medium text-slate-400 w-10"></th>
-              <th className="px-4 py-4 text-left text-sm font-medium text-slate-400">局号</th>
-              <th className="px-4 py-4 text-left text-sm font-medium text-slate-400">靴号</th>
-              <th className="px-4 py-4 text-left text-sm font-medium text-slate-400">时间</th>
-              <th className="px-4 py-4 text-center text-sm font-medium text-slate-400">闲点数</th>
-              <th className="px-4 py-4 text-center text-sm font-medium text-slate-400">庄点数</th>
-              <th className="px-4 py-4 text-center text-sm font-medium text-slate-400">结果</th>
-              <th className="px-4 py-4 text-center text-sm font-medium text-slate-400">对子</th>
+            <tr className="border-b border-[#333]/50">
+              <th className="px-4 py-4 text-left text-sm font-medium text-gray-400 w-10"></th>
+              <th className="px-4 py-4 text-left text-sm font-medium text-gray-400">局号</th>
+              <th className="px-4 py-4 text-left text-sm font-medium text-gray-400">靴号</th>
+              <th className="px-4 py-4 text-left text-sm font-medium text-gray-400">时间</th>
+              <th className="px-4 py-4 text-center text-sm font-medium text-gray-400">闲点数</th>
+              <th className="px-4 py-4 text-center text-sm font-medium text-gray-400">庄点数</th>
+              <th className="px-4 py-4 text-center text-sm font-medium text-gray-400">结果</th>
+              <th className="px-4 py-4 text-center text-sm font-medium text-gray-400">对子</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-slate-400">
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-400">
                   {t('loading')}
                 </td>
               </tr>
             ) : rounds.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-slate-400">
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-400">
                   {t('noData')}
                 </td>
               </tr>
@@ -175,10 +175,10 @@ export default function Games() {
                     key={round.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="border-b border-slate-700/30 hover:bg-slate-700/20 cursor-pointer"
+                    className="border-b border-[#333]/30 hover:bg-[#252525]/20 cursor-pointer"
                     onClick={() => toggleExpand(round.id)}
                   >
-                    <td className="px-4 py-4 text-slate-400">
+                    <td className="px-4 py-4 text-gray-400">
                       {expandedRow === round.id ? (
                         <ChevronUp className="w-4 h-4" />
                       ) : (
@@ -188,10 +188,10 @@ export default function Games() {
                     <td className="px-4 py-4 text-white font-medium">
                       #{round.roundNumber}
                     </td>
-                    <td className="px-4 py-4 text-slate-400">
+                    <td className="px-4 py-4 text-gray-400">
                       #{round.shoeNumber}
                     </td>
-                    <td className="px-4 py-4 text-sm text-slate-300">
+                    <td className="px-4 py-4 text-sm text-gray-300">
                       {new Date(round.createdAt).toLocaleString('zh-CN')}
                     </td>
                     <td className="px-4 py-4 text-center">
@@ -214,7 +214,7 @@ export default function Games() {
                           <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400">庄对</span>
                         )}
                         {!round.playerPair && !round.bankerPair && (
-                          <span className="text-slate-500">-</span>
+                          <span className="text-gray-500">-</span>
                         )}
                       </div>
                     </td>
@@ -223,7 +223,7 @@ export default function Games() {
                   <AnimatePresence>
                     {expandedRow === round.id && (
                       <tr key={`${round.id}-expanded`}>
-                        <td colSpan={8} className="px-4 py-0 bg-slate-800/50">
+                        <td colSpan={8} className="px-4 py-0 bg-[#1e1e1e]/50">
                           <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
@@ -242,7 +242,7 @@ export default function Games() {
                                   size="md"
                                 />
                               ) : (
-                                <div className="text-slate-500 text-sm">无闲家牌数据</div>
+                                <div className="text-gray-500 text-sm">无闲家牌数据</div>
                               )}
 
                               {/* Banker Cards */}
@@ -255,7 +255,7 @@ export default function Games() {
                                   size="md"
                                 />
                               ) : (
-                                <div className="text-slate-500 text-sm">无庄家牌数据</div>
+                                <div className="text-gray-500 text-sm">无庄家牌数据</div>
                               )}
                             </div>
                           </motion.div>
@@ -271,25 +271,25 @@ export default function Games() {
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-700/50">
-            <div className="text-sm text-slate-400">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-[#333]/50">
+            <div className="text-sm text-gray-400">
               显示 {(pagination.page - 1) * pagination.limit + 1} 到 {Math.min(pagination.page * pagination.limit, pagination.total)} 共 {pagination.total} 条
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
                 disabled={pagination.page === 1}
-                className="px-3 py-1 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 disabled:opacity-50 disabled:cursor-not-allowed text-white"
+                className="px-3 py-1 rounded-lg bg-[#252525]/50 hover:bg-[#333]/50 disabled:opacity-50 disabled:cursor-not-allowed text-white"
               >
                 上一页
               </button>
-              <span className="px-3 py-1 text-slate-400">
+              <span className="px-3 py-1 text-gray-400">
                 {pagination.page} / {pagination.totalPages}
               </span>
               <button
                 onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
                 disabled={pagination.page === pagination.totalPages}
-                className="px-3 py-1 rounded-lg bg-slate-700/50 hover:bg-slate-600/50 disabled:opacity-50 disabled:cursor-not-allowed text-white"
+                className="px-3 py-1 rounded-lg bg-[#252525]/50 hover:bg-[#333]/50 disabled:opacity-50 disabled:cursor-not-allowed text-white"
               >
                 下一页
               </button>

@@ -56,15 +56,15 @@ export default function Modal({
       {/* Modal */}
       <div
         ref={modalRef}
-        className={`relative w-full ${sizes[size]} bg-slate-800 border border-slate-700 rounded-xl shadow-2xl transform transition-all`}
+        className={`relative w-full ${sizes[size]} bg-[#1e1e1e] border border-[#333] rounded-xl shadow-2xl transform transition-all`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#333]">
           <h2 className="text-lg font-semibold text-white">{title}</h2>
           {showClose && (
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+              className="p-1.5 rounded-lg hover:bg-[#252525] text-gray-400 hover:text-white transition-colors"
             >
               <X size={20} />
             </button>
@@ -83,7 +83,7 @@ export default function Modal({
 // Sub-components for consistent styling
 export function ModalFooter({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-slate-700">
+    <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-[#333]">
       {children}
     </div>
   );
@@ -110,7 +110,7 @@ export function Button({
 }) {
   const variants = {
     primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-    secondary: 'bg-slate-700 hover:bg-slate-600 text-white',
+    secondary: 'bg-[#252525] hover:bg-[#333] text-white',
     danger: 'bg-red-600 hover:bg-red-700 text-white',
     success: 'bg-green-600 hover:bg-green-700 text-white',
   };
@@ -166,14 +166,14 @@ export function Input({
   return (
     <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium text-slate-300">
+        <label className="block text-sm font-medium text-gray-300">
           {label}
         </label>
       )}
       <input
         {...props}
-        className={`w-full px-3 py-2 bg-slate-700 border rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-          error ? 'border-red-500' : 'border-slate-600'
+        className={`w-full px-3 py-2 bg-[#252525] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+          error ? 'border-red-500' : 'border-[#444]'
         } ${props.className || ''}`}
       />
       {error && <p className="text-xs text-red-400">{error}</p>}
@@ -194,14 +194,14 @@ export function Select({
   return (
     <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium text-slate-300">
+        <label className="block text-sm font-medium text-gray-300">
           {label}
         </label>
       )}
       <select
         {...props}
-        className={`w-full px-3 py-2 bg-slate-700 border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-          error ? 'border-red-500' : 'border-slate-600'
+        className={`w-full px-3 py-2 bg-[#252525] border rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+          error ? 'border-red-500' : 'border-[#444]'
         } ${props.className || ''}`}
       >
         {options.map((opt) => (

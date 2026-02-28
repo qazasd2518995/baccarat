@@ -31,12 +31,12 @@ export default function DataTable({
 }: DataTableProps) {
   if (loading) {
     return (
-      <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+      <div className="bg-[#1e1e1e] border border-[#333] rounded-xl overflow-hidden">
         <div className="animate-pulse">
-          <div className="h-12 bg-slate-700/50 border-b border-slate-700" />
+          <div className="h-12 bg-[#252525]/50 border-b border-[#333]" />
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-14 border-b border-slate-700 flex items-center px-4">
-              <div className="h-4 bg-slate-700 rounded w-full" />
+            <div key={i} className="h-14 border-b border-[#333] flex items-center px-4">
+              <div className="h-4 bg-[#252525] rounded w-full" />
             </div>
           ))}
         </div>
@@ -45,25 +45,25 @@ export default function DataTable({
   }
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+    <div className="bg-[#1e1e1e] border border-[#333] rounded-xl overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-slate-700/50">
+            <tr className="bg-[#252525]/50">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider ${col.className || ''}`}
+                  className={`px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider ${col.className || ''}`}
                 >
                   {col.header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-700">
+          <tbody className="divide-y divide-[#333]">
             {data.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-12 text-center text-slate-400">
+                <td colSpan={columns.length} className="px-4 py-12 text-center text-gray-400">
                   {emptyMessage}
                 </td>
               </tr>
@@ -71,12 +71,12 @@ export default function DataTable({
               data.map((item) => (
                 <tr
                   key={String(item[keyField])}
-                  className="hover:bg-slate-700/30 transition-colors"
+                  className="hover:bg-[#252525]/30 transition-colors"
                 >
                   {columns.map((col) => (
                     <td
                       key={col.key}
-                      className={`px-4 py-3 text-sm text-slate-300 ${col.className || ''}`}
+                      className={`px-4 py-3 text-sm text-gray-300 ${col.className || ''}`}
                     >
                       {col.render
                         ? col.render(item)
@@ -92,22 +92,22 @@ export default function DataTable({
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="px-4 py-3 border-t border-slate-700 flex items-center justify-between">
-          <p className="text-sm text-slate-400">
+        <div className="px-4 py-3 border-t border-[#333] flex items-center justify-between">
+          <p className="text-sm text-gray-400">
             Showing page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
           </p>
           <div className="flex items-center gap-1">
             <button
               onClick={() => pagination.onPageChange(1)}
               disabled={pagination.page === 1}
-              className="p-1.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded hover:bg-[#252525] text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronsLeft size={18} />
             </button>
             <button
               onClick={() => pagination.onPageChange(pagination.page - 1)}
               disabled={pagination.page === 1}
-              className="p-1.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded hover:bg-[#252525] text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft size={18} />
             </button>
@@ -115,14 +115,14 @@ export default function DataTable({
             <button
               onClick={() => pagination.onPageChange(pagination.page + 1)}
               disabled={pagination.page === pagination.totalPages}
-              className="p-1.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded hover:bg-[#252525] text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronRight size={18} />
             </button>
             <button
               onClick={() => pagination.onPageChange(pagination.totalPages)}
               disabled={pagination.page === pagination.totalPages}
-              className="p-1.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-1.5 rounded hover:bg-[#252525] text-gray-400 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronsRight size={18} />
             </button>

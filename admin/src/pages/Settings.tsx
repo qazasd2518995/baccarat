@@ -3,11 +3,13 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { User, Globe, Save, X } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import { userApi } from '../services/api';
+import { userApi, authApi } from '../services/api';
+import { useToastStore } from '../store/toastStore';
 
 export default function Settings() {
   const { t, i18n } = useTranslation();
   const { user, setAuth } = useAuthStore();
+  const toast = useToastStore();
   const [activeTab, setActiveTab] = useState('profile');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [profileData, setProfileData] = useState({
@@ -19,7 +21,6 @@ export default function Settings() {
     confirmPassword: '',
   });
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
 
   const handleSaveProfile = async () => {
     if (!user) return;
@@ -29,33 +30,38 @@ export default function Settings() {
         nickname: profileData.nickname,
       });
       setAuth(data, localStorage.getItem('admin_token') || '');
-      setMessage('保存成功');
-      setTimeout(() => setMessage(''), 3000);
+      toast.success('保存成功');
     } catch (error) {
-      setMessage('保存失败');
-      setTimeout(() => setMessage(''), 3000);
+      toast.error('保存失败');
     } finally {
       setSaving(false);
     }
   };
 
   const handleChangePassword = async () => {
+    if (!passwordData.currentPassword) {
+      toast.error('请输入当前密码');
+      return;
+    }
+    if (passwordData.newPassword.length < 6) {
+      toast.error('新密码至少6位');
+      return;
+    }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setMessage('两次输入的密码不一致');
-      setTimeout(() => setMessage(''), 3000);
+      toast.error('两次输入的密码不一致');
       return;
     }
     setSaving(true);
     try {
-      // Note: This would need a backend endpoint for password change
-      setMessage('密码修改功能即将推出');
+      await authApi.changePassword(passwordData.currentPassword, passwordData.newPassword);
+      toast.success('密码修改成功');
       setShowPasswordModal(false);
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (error) {
-      setMessage('修改失败');
+    } catch (error: any) {
+      const msg = error.response?.data?.error || '修改失败';
+      toast.error(msg);
     } finally {
       setSaving(false);
-      setTimeout(() => setMessage(''), 3000);
     }
   };
 
@@ -71,60 +77,48 @@ export default function Settings() {
         <h1 className="text-2xl font-bold text-white">{t('settings')}</h1>
       </div>
 
-      {/* Message */}
-      {message && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`p-4 rounded-xl ${
-            message.includes('成功') ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-          }`}
-        >
-          {message}
-        </motion.div>
-      )}
-
-      <div className="grid grid-cols-4 gap-6">
+      
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar */}
-        <div className="col-span-1">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+        <div className="lg:col-span-1">
+          <div className="bg-[#1e1e1e] rounded-xl border border-[#333] overflow-hidden flex lg:flex-col">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${
+                className={`flex-1 lg:flex-none w-full flex items-center justify-center lg:justify-start gap-3 px-4 py-3 transition-colors ${
                   activeTab === tab.id
-                    ? 'bg-amber-500/20 text-amber-400 border-l-2 border-amber-500'
-                    : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
+                    ? 'bg-amber-500/20 text-amber-400 lg:border-l-2 border-amber-500'
+                    : 'text-gray-400 hover:bg-[#252525] hover:text-white'
                 }`}
               >
                 <tab.icon className="w-5 h-5" />
-                <span>{tab.label}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Content */}
-        <div className="col-span-3">
-          <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+        <div className="lg:col-span-3">
+          <div className="bg-[#1e1e1e] rounded-xl border border-[#333] p-6">
             {activeTab === 'profile' && (
               <div className="space-y-6">
                 <h2 className="text-lg font-bold text-white mb-4">个人资料</h2>
 
                 {/* User Info */}
-                <div className="p-4 bg-slate-700/50 rounded-xl">
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="p-4 bg-[#252525] rounded-xl">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-slate-400">用户名：</span>
+                      <span className="text-gray-400">用户名：</span>
                       <span className="text-white ml-2">{user?.username}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400">角色：</span>
+                      <span className="text-gray-400">角色：</span>
                       <span className="text-amber-400 ml-2">{t(user?.role || '')}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400">余额：</span>
+                      <span className="text-gray-400">余额：</span>
                       <span className="text-white ml-2">{Number(user?.balance || 0).toLocaleString()}</span>
                     </div>
                   </div>
@@ -132,21 +126,21 @@ export default function Settings() {
 
                 {/* Nickname */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">昵称</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">昵称</label>
                   <input
                     type="text"
                     value={profileData.nickname}
                     onChange={(e) => setProfileData({ ...profileData, nickname: e.target.value })}
-                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                    className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
                   />
                 </div>
 
                 {/* Password Change */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">密码</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">密码</label>
                   <button
                     onClick={() => setShowPasswordModal(true)}
-                    className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-colors"
+                    className="px-4 py-2 bg-[#252525] hover:bg-[#333] text-white rounded-xl transition-colors"
                   >
                     修改密码
                   </button>
@@ -179,7 +173,7 @@ export default function Settings() {
                       className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${
                         i18n.language === lang.code
                           ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50'
-                          : 'bg-slate-700 text-white hover:bg-slate-600'
+                          : 'bg-[#252525] text-white hover:bg-[#333]'
                       }`}
                     >
                       <span>{lang.label}</span>
@@ -201,40 +195,40 @@ export default function Settings() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700"
+            className="bg-[#1e1e1e] rounded-2xl p-6 w-full max-w-md mx-4 border border-[#333]"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">修改密码</h2>
-              <button onClick={() => setShowPasswordModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowPasswordModal(false)} className="text-gray-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">当前密码</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">当前密码</label>
                 <input
                   type="password"
                   value={passwordData.currentPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">新密码</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">新密码</label>
                 <input
                   type="password"
                   value={passwordData.newPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">确认新密码</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">确认新密码</label>
                 <input
                   type="password"
                   value={passwordData.confirmPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
                 />
               </div>
               <button

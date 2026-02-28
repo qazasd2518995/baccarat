@@ -14,6 +14,7 @@ import Notices from './pages/Notices';
 import Reports from './pages/Reports';
 import GameControl from './pages/GameControl';
 import OperationLogs from './pages/OperationLogs';
+import ToastContainer from './components/Toast';
 
 // Protected Route component (requires admin or agent role)
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <BrowserRouter>
+      <ToastContainer />
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Login />} />

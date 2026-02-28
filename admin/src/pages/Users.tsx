@@ -82,7 +82,7 @@ export default function Users() {
   const ROLE_COLORS: Record<string, string> = {
     admin: 'bg-purple-500/20 text-purple-400',
     agent: 'bg-blue-500/20 text-blue-400',
-    member: 'bg-slate-500/20 text-slate-400',
+    member: 'bg-gray-500/20 text-gray-400',
   };
 
   const STATUS_COLORS: Record<string, string> = {
@@ -97,7 +97,7 @@ export default function Users() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">{t('users')}</h1>
-          <p className="text-slate-400 mt-1">Manage agents and members</p>
+          <p className="text-gray-400 mt-1">Manage agents and members</p>
         </div>
         <motion.button
           whileHover={{ scale: 1.02 }}
@@ -110,18 +110,18 @@ export default function Users() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
+      <div className="flex gap-4 p-4 rounded-xl bg-[#1e1e1e]/50 border border-[#333]/50">
         <input
           type="text"
           placeholder={t('search')}
           value={filter.search}
           onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-          className="flex-1 px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-white placeholder-slate-400 focus:outline-none focus:border-amber-500/50"
+          className="flex-1 px-4 py-2 rounded-lg bg-[#252525]/50 border border-[#444]/50 text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50"
         />
         <select
           value={filter.role}
           onChange={(e) => setFilter({ ...filter, role: e.target.value })}
-          className="px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-white focus:outline-none focus:border-amber-500/50"
+          className="px-4 py-2 rounded-lg bg-[#252525]/50 border border-[#444]/50 text-white focus:outline-none focus:border-amber-500/50"
         >
           <option value="">All Roles</option>
           <option value="agent">{t('agent')}</option>
@@ -130,7 +130,7 @@ export default function Users() {
         <select
           value={filter.status}
           onChange={(e) => setFilter({ ...filter, status: e.target.value })}
-          className="px-4 py-2 rounded-lg bg-slate-700/50 border border-slate-600/50 text-white focus:outline-none focus:border-amber-500/50"
+          className="px-4 py-2 rounded-lg bg-[#252525]/50 border border-[#444]/50 text-white focus:outline-none focus:border-amber-500/50"
         >
           <option value="">All Status</option>
           <option value="active">{t('active')}</option>
@@ -140,38 +140,38 @@ export default function Users() {
       </div>
 
       {/* Users Table */}
-      <div className="rounded-xl bg-slate-800/50 border border-slate-700/50 overflow-hidden">
+      <div className="rounded-xl bg-[#1e1e1e]/50 border border-[#333]/50 overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-slate-700/50">
-              <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">{t('username')}</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">{t('role')}</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">{t('balance')}</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">{t('status')}</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">{t('parentAgent')}</th>
-              <th className="px-6 py-4 text-right text-sm font-medium text-slate-400">{t('actions')}</th>
+            <tr className="border-b border-[#333]/50">
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('username')}</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('role')}</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('balance')}</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('status')}</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('parentAgent')}</th>
+              <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">{t('actions')}</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
                   {t('loading')}
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
                   {t('noData')}
                 </td>
               </tr>
             ) : (
               users.map((user) => (
-                <tr key={user.id} className="border-b border-slate-700/30 hover:bg-slate-700/20">
+                <tr key={user.id} className="border-b border-[#333]/30 hover:bg-[#252525]/20">
                   <td className="px-6 py-4">
                     <div>
                       <div className="font-medium text-white">{user.username}</div>
-                      {user.nickname && <div className="text-sm text-slate-400">{user.nickname}</div>}
+                      {user.nickname && <div className="text-sm text-gray-400">{user.nickname}</div>}
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -193,7 +193,7 @@ export default function Users() {
                       <option value="banned">{t('banned')}</option>
                     </select>
                   </td>
-                  <td className="px-6 py-4 text-slate-400">
+                  <td className="px-6 py-4 text-gray-400">
                     {user.parentAgent?.username || '-'}
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -229,45 +229,45 @@ export default function Users() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-2xl bg-slate-800 border border-slate-700"
+              className="w-full max-w-md p-6 rounded-2xl bg-[#1e1e1e] border border-[#333]"
             >
               <h2 className="text-xl font-bold text-white mb-4">{t('createUser')}</h2>
               <form onSubmit={handleCreateUser} className="space-y-4">
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">{t('username')}</label>
+                  <label className="block text-sm text-gray-400 mb-1">{t('username')}</label>
                   <input
                     type="text"
                     value={newUser.username}
                     onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                    className="w-full px-4 py-2 rounded-lg bg-[#252525] border border-[#444] text-white"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">{t('password')}</label>
+                  <label className="block text-sm text-gray-400 mb-1">{t('password')}</label>
                   <input
                     type="password"
                     value={newUser.password}
                     onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                    className="w-full px-4 py-2 rounded-lg bg-[#252525] border border-[#444] text-white"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">Nickname</label>
+                  <label className="block text-sm text-gray-400 mb-1">Nickname</label>
                   <input
                     type="text"
                     value={newUser.nickname}
                     onChange={(e) => setNewUser({ ...newUser, nickname: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                    className="w-full px-4 py-2 rounded-lg bg-[#252525] border border-[#444] text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">{t('role')}</label>
+                  <label className="block text-sm text-gray-400 mb-1">{t('role')}</label>
                   <select
                     value={newUser.role}
                     onChange={(e) => setNewUser({ ...newUser, role: e.target.value as 'agent' | 'member' })}
-                    className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                    className="w-full px-4 py-2 rounded-lg bg-[#252525] border border-[#444] text-white"
                   >
                     <option value="member">{t('member')}</option>
                     <option value="agent">{t('agent')}</option>
@@ -277,7 +277,7 @@ export default function Users() {
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="flex-1 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white"
+                    className="flex-1 py-2 rounded-lg bg-[#252525] hover:bg-[#333] text-white"
                   >
                     {t('cancel')}
                   </button>
@@ -309,15 +309,15 @@ export default function Users() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-2xl bg-slate-800 border border-slate-700"
+              className="w-full max-w-md p-6 rounded-2xl bg-[#1e1e1e] border border-[#333]"
             >
               <h2 className="text-xl font-bold text-white mb-2">{t('deposit')} / {t('withdraw')}</h2>
-              <p className="text-slate-400 mb-4">
+              <p className="text-gray-400 mb-4">
                 User: {selectedUser.username} | {t('balance')}: {Number(selectedUser.balance).toLocaleString()}
               </p>
               <form onSubmit={handleTransaction} className="space-y-4">
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">Type</label>
+                  <label className="block text-sm text-gray-400 mb-1">Type</label>
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -325,7 +325,7 @@ export default function Users() {
                       className={`flex-1 py-2 rounded-lg font-medium ${
                         transaction.type === 'deposit'
                           ? 'bg-green-500 text-white'
-                          : 'bg-slate-700 text-slate-400'
+                          : 'bg-[#252525] text-gray-400'
                       }`}
                     >
                       {t('deposit')}
@@ -336,7 +336,7 @@ export default function Users() {
                       className={`flex-1 py-2 rounded-lg font-medium ${
                         transaction.type === 'withdraw'
                           ? 'bg-red-500 text-white'
-                          : 'bg-slate-700 text-slate-400'
+                          : 'bg-[#252525] text-gray-400'
                       }`}
                     >
                       {t('withdraw')}
@@ -344,30 +344,30 @@ export default function Users() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">{t('amount')}</label>
+                  <label className="block text-sm text-gray-400 mb-1">{t('amount')}</label>
                   <input
                     type="number"
                     value={transaction.amount || ''}
                     onChange={(e) => setTransaction({ ...transaction, amount: Number(e.target.value) })}
-                    className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                    className="w-full px-4 py-2 rounded-lg bg-[#252525] border border-[#444] text-white"
                     min="1"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-slate-400 mb-1">{t('note')}</label>
+                  <label className="block text-sm text-gray-400 mb-1">{t('note')}</label>
                   <input
                     type="text"
                     value={transaction.note}
                     onChange={(e) => setTransaction({ ...transaction, note: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white"
+                    className="w-full px-4 py-2 rounded-lg bg-[#252525] border border-[#444] text-white"
                   />
                 </div>
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => setShowTransactionModal(false)}
-                    className="flex-1 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white"
+                    className="flex-1 py-2 rounded-lg bg-[#252525] hover:bg-[#333] text-white"
                   >
                     {t('cancel')}
                   </button>

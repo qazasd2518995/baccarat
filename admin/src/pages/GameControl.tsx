@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { Search, X } from 'lucide-react';
 import { userApi, gameControlApi } from '../services/api';
 import type { User } from '../types';
+import { useToastStore } from '../store/toastStore';
 
 export default function GameControl() {
   const { t } = useTranslation();
+  const toast = useToastStore();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,6 +32,7 @@ export default function GameControl() {
       setUsers(data.users || []);
     } catch (error) {
       console.error('Failed to fetch users:', error);
+      toast.error('获取用户列表失败');
     } finally {
       setLoading(false);
     }
@@ -87,9 +90,11 @@ export default function GameControl() {
         await gameControlApi.setBettingControl(selectedUser.id, data);
       }
 
+      toast.success('保存成功');
       setShowControlModal(false);
     } catch (error) {
       console.error('Failed to save control:', error);
+      toast.error('保存失败');
     }
   };
 
@@ -116,42 +121,42 @@ export default function GameControl() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         <input
           type="text"
           placeholder={t('search')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-amber-500"
+          className="w-full pl-12 pr-4 py-3 bg-[#1e1e1e] border border-[#333] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-500"
         />
       </div>
 
       {/* Table */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-slate-700/50">
+      <div className="bg-[#1e1e1e] rounded-xl border border-[#333] overflow-hidden overflow-x-auto">
+        <table className="w-full min-w-[600px]">
+          <thead className="bg-[#252525]">
             <tr>
-              <th className="px-6 py-4 text-left text-sm font-medium text-slate-300">{t('username')}</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-slate-300">{t('nickname')}</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-slate-300">{t('role')}</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-slate-300">{t('balance')}</th>
-              <th className="px-6 py-4 text-right text-sm font-medium text-slate-300">控制设置</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('username')}</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('nickname')}</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('role')}</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('balance')}</th>
+              <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">控制设置</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-700">
+          <tbody className="divide-y divide-[#333]">
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-slate-400">{t('loading')}</td>
+                <td colSpan={5} className="px-6 py-8 text-center text-gray-400">{t('loading')}</td>
               </tr>
             ) : filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-slate-400">{t('noData')}</td>
+                <td colSpan={5} className="px-6 py-8 text-center text-gray-400">{t('noData')}</td>
               </tr>
             ) : (
               filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-slate-700/30 transition-colors">
+                <tr key={user.id} className="hover:bg-[#252525] transition-colors">
                   <td className="px-6 py-4 text-white font-medium">{user.username}</td>
-                  <td className="px-6 py-4 text-slate-300">{user.nickname || '-'}</td>
+                  <td className="px-6 py-4 text-gray-300">{user.nickname || '-'}</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       user.role === 'admin' ? 'bg-purple-500/20 text-purple-400' :
@@ -199,24 +204,24 @@ export default function GameControl() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700"
+            className="bg-[#1e1e1e] rounded-2xl p-6 w-full max-w-md mx-4 border border-[#333]"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">
                 {getControlTypeName(controlType)} - {selectedUser.username}
               </h2>
-              <button onClick={() => setShowControlModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowControlModal(false)} className="text-gray-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-4">
               {/* Enable Toggle */}
-              <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-xl">
+              <div className="flex items-center justify-between p-4 bg-[#252525] rounded-xl">
                 <span className="text-white">启用控制</span>
                 <button
                   onClick={() => setControlData({ ...controlData, enabled: !controlData.enabled })}
                   className={`w-12 h-6 rounded-full transition-colors ${
-                    controlData.enabled ? 'bg-amber-500' : 'bg-slate-600'
+                    controlData.enabled ? 'bg-amber-500' : 'bg-[#444]'
                   }`}
                 >
                   <div className={`w-5 h-5 rounded-full bg-white transition-transform ${
@@ -227,35 +232,35 @@ export default function GameControl() {
 
               {/* Min Amount */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">最小金额</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">最小金额</label>
                 <input
                   type="number"
                   value={controlData.minAmount}
                   onChange={(e) => setControlData({ ...controlData, minAmount: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
                   placeholder="不限制"
                 />
               </div>
 
               {/* Max Amount */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">最大金额</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">最大金额</label>
                 <input
                   type="number"
                   value={controlData.maxAmount}
                   onChange={(e) => setControlData({ ...controlData, maxAmount: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
                   placeholder="不限制"
                 />
               </div>
 
               {/* Note */}
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">备注</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">备注</label>
                 <textarea
                   value={controlData.note}
                   onChange={(e) => setControlData({ ...controlData, note: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500 resize-none"
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500 resize-none"
                   rows={3}
                   placeholder="可选"
                 />

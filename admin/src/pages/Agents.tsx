@@ -86,42 +86,42 @@ export default function Agents() {
 
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
         <input
           type="text"
           placeholder={t('search')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-12 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-amber-500"
+          className="w-full pl-12 pr-4 py-3 bg-[#1e1e1e] border border-[#333] rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-500"
         />
       </div>
 
       {/* Table */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+      <div className="bg-[#1e1e1e] rounded-xl border border-[#333] overflow-hidden">
         <table className="w-full">
-          <thead className="bg-slate-700/50">
+          <thead className="bg-[#252525]/50">
             <tr>
-              <th className="px-6 py-4 text-left text-sm font-medium text-slate-300">{t('username')}</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-slate-300">{t('nickname')}</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-slate-300">{t('balance')}</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-slate-300">{t('status')}</th>
-              <th className="px-6 py-4 text-right text-sm font-medium text-slate-300">{t('actions')}</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">{t('username')}</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">{t('nickname')}</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">{t('balance')}</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-300">{t('status')}</th>
+              <th className="px-6 py-4 text-right text-sm font-medium text-gray-300">{t('actions')}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-700">
+          <tbody className="divide-y divide-[#333]">
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-slate-400">{t('loading')}</td>
+                <td colSpan={5} className="px-6 py-8 text-center text-gray-400">{t('loading')}</td>
               </tr>
             ) : filteredAgents.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-slate-400">{t('noData')}</td>
+                <td colSpan={5} className="px-6 py-8 text-center text-gray-400">{t('noData')}</td>
               </tr>
             ) : (
               filteredAgents.map((agent) => (
-                <tr key={agent.id} className="hover:bg-slate-700/30 transition-colors">
+                <tr key={agent.id} className="hover:bg-[#252525]/30 transition-colors">
                   <td className="px-6 py-4 text-white font-medium">{agent.username}</td>
-                  <td className="px-6 py-4 text-slate-300">{agent.nickname || '-'}</td>
+                  <td className="px-6 py-4 text-gray-300">{agent.nickname || '-'}</td>
                   <td className="px-6 py-4 text-amber-400 font-medium">
                     {Number(agent.balance).toLocaleString()}
                   </td>
@@ -173,40 +173,40 @@ export default function Agents() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700"
+            className="bg-[#1e1e1e] rounded-2xl p-6 w-full max-w-md border border-[#333]"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">{t('createUser')}</h2>
-              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowCreateModal(false)} className="text-gray-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">{t('username')}</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{t('username')}</label>
                 <input
                   type="text"
                   value={newAgent.username}
                   onChange={(e) => setNewAgent({ ...newAgent, username: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">{t('password')}</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{t('password')}</label>
                 <input
                   type="password"
                   value={newAgent.password}
                   onChange={(e) => setNewAgent({ ...newAgent, password: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">{t('nickname')}</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{t('nickname')}</label>
                 <input
                   type="text"
                   value={newAgent.nickname}
                   onChange={(e) => setNewAgent({ ...newAgent, nickname: e.target.value })}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
                 />
               </div>
               <button
@@ -226,30 +226,30 @@ export default function Agents() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700"
+            className="bg-[#1e1e1e] rounded-2xl p-6 w-full max-w-md border border-[#333]"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">
                 {transferType === 'deposit' ? t('deposit') : t('withdraw')} - {selectedAgent.username}
               </h2>
-              <button onClick={() => setShowTransferModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowTransferModal(false)} className="text-gray-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="space-y-4">
-              <div className="p-4 bg-slate-700/50 rounded-xl">
-                <div className="text-sm text-slate-400 mb-1">{t('balance')}</div>
+              <div className="p-4 bg-[#252525]/50 rounded-xl">
+                <div className="text-sm text-gray-400 mb-1">{t('balance')}</div>
                 <div className="text-2xl font-bold text-amber-400">
                   {Number(selectedAgent.balance).toLocaleString()}
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">{t('amount')}</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{t('amount')}</label>
                 <input
                   type="number"
                   value={transferAmount}
                   onChange={(e) => setTransferAmount(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:border-amber-500"
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
                   placeholder="0"
                 />
               </div>

@@ -35,7 +35,7 @@ export default function GameRounds() {
       case 'player': return 'text-blue-400 bg-blue-500/20';
       case 'banker': return 'text-red-400 bg-red-500/20';
       case 'tie': return 'text-green-400 bg-green-500/20';
-      default: return 'text-slate-400 bg-slate-500/20';
+      default: return 'text-gray-400 bg-gray-500/20';
     }
   };
 
@@ -57,44 +57,44 @@ export default function GameRounds() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-white">{t('gameRounds')}</h1>
-        <div className="text-slate-400">
+        <div className="text-gray-400">
           共 {total} 局
         </div>
       </div>
 
       {/* Table */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-slate-700/50">
+      <div className="bg-[#1e1e1e] rounded-xl border border-[#333] overflow-hidden overflow-x-auto">
+        <table className="w-full min-w-[800px]">
+          <thead className="bg-[#252525]">
             <tr>
-              <th className="px-4 py-4 text-left text-sm font-medium text-slate-300 w-10"></th>
-              <th className="px-4 py-4 text-left text-sm font-medium text-slate-300">局号</th>
-              <th className="px-4 py-4 text-left text-sm font-medium text-slate-300">靴号</th>
-              <th className="px-4 py-4 text-center text-sm font-medium text-slate-300">结果</th>
-              <th className="px-4 py-4 text-center text-sm font-medium text-slate-300">闲点数</th>
-              <th className="px-4 py-4 text-center text-sm font-medium text-slate-300">庄点数</th>
-              <th className="px-4 py-4 text-center text-sm font-medium text-slate-300">对子</th>
-              <th className="px-4 py-4 text-left text-sm font-medium text-slate-300">时间</th>
+              <th className="px-4 py-4 text-left text-sm font-medium text-gray-400 w-10"></th>
+              <th className="px-4 py-4 text-left text-sm font-medium text-gray-400">局号</th>
+              <th className="px-4 py-4 text-left text-sm font-medium text-gray-400">靴号</th>
+              <th className="px-4 py-4 text-center text-sm font-medium text-gray-400">结果</th>
+              <th className="px-4 py-4 text-center text-sm font-medium text-gray-400">闲点数</th>
+              <th className="px-4 py-4 text-center text-sm font-medium text-gray-400">庄点数</th>
+              <th className="px-4 py-4 text-center text-sm font-medium text-gray-400">对子</th>
+              <th className="px-4 py-4 text-left text-sm font-medium text-gray-400">时间</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-700">
+          <tbody className="divide-y divide-[#333]">
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-slate-400">{t('loading')}</td>
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-400">{t('loading')}</td>
               </tr>
             ) : rounds.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-8 text-center text-slate-400">{t('noData')}</td>
+                <td colSpan={8} className="px-6 py-8 text-center text-gray-400">{t('noData')}</td>
               </tr>
             ) : (
               rounds.map((round) => (
                 <>
                   <tr
                     key={round.id}
-                    className="hover:bg-slate-700/30 transition-colors cursor-pointer"
+                    className="hover:bg-[#252525] transition-colors cursor-pointer"
                     onClick={() => toggleExpand(round.id)}
                   >
-                    <td className="px-4 py-4 text-slate-400">
+                    <td className="px-4 py-4 text-gray-400">
                       {expandedRow === round.id ? (
                         <ChevronUp className="w-4 h-4" />
                       ) : (
@@ -102,7 +102,7 @@ export default function GameRounds() {
                       )}
                     </td>
                     <td className="px-4 py-4 text-white font-medium">#{round.roundNumber}</td>
-                    <td className="px-4 py-4 text-slate-300">#{round.shoeNumber}</td>
+                    <td className="px-4 py-4 text-gray-300">#{round.shoeNumber}</td>
                     <td className="px-4 py-4 text-center">
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${getResultColor(round.result || '')}`}>
                         {getResultText(round.result || '')}
@@ -123,11 +123,11 @@ export default function GameRounds() {
                           <span className="px-2 py-0.5 rounded text-xs bg-red-500/20 text-red-400">庄对</span>
                         )}
                         {!round.playerPair && !round.bankerPair && (
-                          <span className="text-slate-500">-</span>
+                          <span className="text-gray-500">-</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-slate-400 text-sm">
+                    <td className="px-4 py-4 text-gray-400 text-sm">
                       {new Date(round.createdAt).toLocaleString('zh-TW')}
                     </td>
                   </tr>
@@ -135,7 +135,7 @@ export default function GameRounds() {
                   <AnimatePresence>
                     {expandedRow === round.id && (
                       <tr key={`${round.id}-expanded`}>
-                        <td colSpan={8} className="px-4 py-0 bg-slate-800/50">
+                        <td colSpan={8} className="px-4 py-0 bg-[#1a1a1a]">
                           <motion.div
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: 'auto', opacity: 1 }}
@@ -154,7 +154,7 @@ export default function GameRounds() {
                                   size="md"
                                 />
                               ) : (
-                                <div className="text-slate-500 text-sm">无闲家牌数据</div>
+                                <div className="text-gray-500 text-sm">无闲家牌数据</div>
                               )}
 
                               {/* Banker Cards */}
@@ -167,7 +167,7 @@ export default function GameRounds() {
                                   size="md"
                                 />
                               ) : (
-                                <div className="text-slate-500 text-sm">无庄家牌数据</div>
+                                <div className="text-gray-500 text-sm">无庄家牌数据</div>
                               )}
                             </div>
                           </motion.div>
@@ -188,17 +188,17 @@ export default function GameRounds() {
           <button
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white rounded-lg"
+            className="px-4 py-2 bg-[#252525] hover:bg-[#333] disabled:opacity-50 text-white rounded-lg"
           >
             上一页
           </button>
-          <span className="text-slate-400 px-4">
+          <span className="text-gray-400 px-4">
             第 {page} 页 / 共 {Math.ceil(total / 20)} 页
           </span>
           <button
             onClick={() => setPage(p => p + 1)}
             disabled={page >= Math.ceil(total / 20)}
-            className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-white rounded-lg"
+            className="px-4 py-2 bg-[#252525] hover:bg-[#333] disabled:opacity-50 text-white rounded-lg"
           >
             下一页
           </button>
