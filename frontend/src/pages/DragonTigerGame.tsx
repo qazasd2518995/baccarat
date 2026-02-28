@@ -46,9 +46,10 @@ import ChipSettingsModal from '../components/game/ChipSettingsModal';
 import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
 import CountdownTimer from '../components/game/CountdownTimer';
 import DealerTable3D from '../components/game/DealerTable3D';
+import GameLoadingScreen from '../components/game/GameLoadingScreen';
 import { useBreakpoint } from '../hooks/useBreakpoint';
 import MarqueeChat, { useMarqueeChat, MarqueeQuickButtons } from '../components/game/MarqueeChat';
-import TableChipDisplay from '../components/game/TableChipDisplay';
+import { useFakeChipAmounts, FakeChipStack, FakeBetStats } from '../components/game/TableChipDisplay';
 import DragonTigerRoadmap from '../components/game/DragonTigerRoadmap';
 import { FlyingChipOverlay, useFlyingChips, ChipStack } from '../components/game/BetAreaChips';
 import {
@@ -520,6 +521,9 @@ export default function DragonTigerGame() {
     fakeBets,
   } = useDragonTigerStore();
 
+  // Progressive fake chip amounts for bet areas
+  const fakeAmounts = useFakeChipAmounts(fakeBets, phase);
+
   // Cumulative win/loss for this session
   const [sessionWinLoss, setSessionWinLoss] = useState(0);
   const prevSettlementRef = useRef<typeof lastSettlement>(null);
@@ -822,6 +826,11 @@ export default function DragonTigerGame() {
 
   return (
     <div className="h-full bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
+      {/* Loading screen */}
+      <AnimatePresence>
+        <GameLoadingScreen visible={!isConnected} />
+      </AnimatePresence>
+
       {/* Flying chips overlay */}
       <FlyingChipOverlay chips={flyingChips} chipSize={32} />
 
@@ -1186,18 +1195,9 @@ export default function DragonTigerGame() {
 
             </div>
 
-            {/* Fake bet chips on table - at bottom of table area */}
-            <div className="absolute bottom-[8%] sm:bottom-[10%] left-4 right-4 z-10 pointer-events-none">
-              <TableChipDisplay
-                targetBets={{
-                  player: (fakeBets.dragon || 0) + (fakeBets.dragon_big || 0) + (fakeBets.dragon_small || 0) + (fakeBets.dragon_odd || 0) + (fakeBets.dragon_even || 0) + (fakeBets.dragon_red || 0) + (fakeBets.dragon_black || 0),
-                  tie: (fakeBets.dt_tie || 0) + (fakeBets.dt_suited_tie || 0),
-                  banker: (fakeBets.tiger || 0) + (fakeBets.tiger_big || 0) + (fakeBets.tiger_small || 0) + (fakeBets.tiger_odd || 0) + (fakeBets.tiger_even || 0) + (fakeBets.tiger_red || 0) + (fakeBets.tiger_black || 0),
-                }}
-                phase={phase}
-                compact={true}
-                gameType="dragonTiger"
-              />
+            {/* Fake bet stats - left of dealer */}
+            <div className="absolute top-[8%] sm:top-[12%] left-2 sm:left-4 z-30 pointer-events-none">
+              <FakeBetStats fakeBets={fakeBets} gameType="dragonTiger" />
             </div>
 
             {/* Result Overlay */}
@@ -1411,6 +1411,9 @@ export default function DragonTigerGame() {
                         </div>
                       </>
                     )}
+                    {(fakeAmounts.dragon_big || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.dragon_big} compact /></div>
+                    )}
                   </button>
                   <button
                     onClick={(e) => handleBet('dragon_small', e)}
@@ -1426,6 +1429,9 @@ export default function DragonTigerGame() {
                           <ChipStack amount={getBetAmount('dragon_small')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_small')} />
                         </div>
                       </>
+                    )}
+                    {(fakeAmounts.dragon_small || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.dragon_small} compact /></div>
                     )}
                   </button>
                   <button
@@ -1443,6 +1449,9 @@ export default function DragonTigerGame() {
                         </div>
                       </>
                     )}
+                    {(fakeAmounts.dt_suited_tie || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.dt_suited_tie} compact /></div>
+                    )}
                   </button>
                   <button
                     onClick={(e) => handleBet('tiger_small', e)}
@@ -1459,6 +1468,9 @@ export default function DragonTigerGame() {
                         </div>
                       </>
                     )}
+                    {(fakeAmounts.tiger_small || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.tiger_small} compact /></div>
+                    )}
                   </button>
                   <button
                     onClick={(e) => handleBet('tiger_big', e)}
@@ -1474,6 +1486,9 @@ export default function DragonTigerGame() {
                           <ChipStack amount={getBetAmount('tiger_big')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_big')} />
                         </div>
                       </>
+                    )}
+                    {(fakeAmounts.tiger_big || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.tiger_big} compact /></div>
                     )}
                   </button>
                 </div>
@@ -1495,6 +1510,9 @@ export default function DragonTigerGame() {
                         </div>
                       </>
                     )}
+                    {(fakeAmounts.dragon_even || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.dragon_even} compact /></div>
+                    )}
                   </button>
                   <button
                     onClick={(e) => handleBet('dragon_odd', e)}
@@ -1510,6 +1528,9 @@ export default function DragonTigerGame() {
                           <ChipStack amount={getBetAmount('dragon_odd')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_odd')} />
                         </div>
                       </>
+                    )}
+                    {(fakeAmounts.dragon_odd || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.dragon_odd} compact /></div>
                     )}
                   </button>
                   <button
@@ -1527,6 +1548,9 @@ export default function DragonTigerGame() {
                         </div>
                       </>
                     )}
+                    {(fakeAmounts.tiger_odd || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.tiger_odd} compact /></div>
+                    )}
                   </button>
                   <button
                     onClick={(e) => handleBet('tiger_even', e)}
@@ -1542,6 +1566,9 @@ export default function DragonTigerGame() {
                           <ChipStack amount={getBetAmount('tiger_even')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_even')} />
                         </div>
                       </>
+                    )}
+                    {(fakeAmounts.tiger_even || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.tiger_even} compact /></div>
                     )}
                   </button>
                 </div>
@@ -1563,6 +1590,9 @@ export default function DragonTigerGame() {
                         </div>
                       </>
                     )}
+                    {(fakeAmounts.dragon_black || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.dragon_black} compact /></div>
+                    )}
                   </button>
                   <button
                     onClick={(e) => handleBet('dragon_red', e)}
@@ -1578,6 +1608,9 @@ export default function DragonTigerGame() {
                           <ChipStack amount={getBetAmount('dragon_red')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_red')} />
                         </div>
                       </>
+                    )}
+                    {(fakeAmounts.dragon_red || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.dragon_red} compact /></div>
                     )}
                   </button>
                   <button
@@ -1595,6 +1628,9 @@ export default function DragonTigerGame() {
                         </div>
                       </>
                     )}
+                    {(fakeAmounts.tiger_red || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.tiger_red} compact /></div>
+                    )}
                   </button>
                   <button
                     onClick={(e) => handleBet('tiger_black', e)}
@@ -1610,6 +1646,9 @@ export default function DragonTigerGame() {
                           <ChipStack amount={getBetAmount('tiger_black')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_black')} />
                         </div>
                       </>
+                    )}
+                    {(fakeAmounts.tiger_black || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.tiger_black} compact /></div>
                     )}
                   </button>
                 </div>
@@ -1634,6 +1673,9 @@ export default function DragonTigerGame() {
                         </div>
                       </>
                     )}
+                    {(fakeAmounts.dragon || 0) > 0 && (
+                      <div className="absolute bottom-0.5 left-1 sm:bottom-1 sm:left-2"><FakeChipStack amount={fakeAmounts.dragon} /></div>
+                    )}
                   </button>
 
                   {/* 和 - Tie (Green) */}
@@ -1651,6 +1693,9 @@ export default function DragonTigerGame() {
                           <ChipStack amount={getBetAmount('dt_tie')} chipSize={20} maxChips={3} chipValue={getBetChipValue('dt_tie')} />
                         </div>
                       </>
+                    )}
+                    {(fakeAmounts.dt_tie || 0) > 0 && (
+                      <div className="absolute bottom-0.5 left-1 sm:bottom-1 sm:left-2"><FakeChipStack amount={fakeAmounts.dt_tie} /></div>
                     )}
                   </button>
 
@@ -1671,6 +1716,9 @@ export default function DragonTigerGame() {
                           <ChipStack amount={getBetAmount('tiger')} chipSize={20} maxChips={3} chipValue={getBetChipValue('tiger')} />
                         </div>
                       </>
+                    )}
+                    {(fakeAmounts.tiger || 0) > 0 && (
+                      <div className="absolute bottom-0.5 left-1 sm:bottom-1 sm:left-2"><FakeChipStack amount={fakeAmounts.tiger} /></div>
                     )}
                   </button>
                 </div>

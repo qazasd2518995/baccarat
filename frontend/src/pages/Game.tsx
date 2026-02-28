@@ -56,8 +56,9 @@ import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
 import ChipSettingsModal from '../components/game/ChipSettingsModal';
 import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
 import CountdownTimer from '../components/game/CountdownTimer';
-import TableChipDisplay from '../components/game/TableChipDisplay';
+import { useFakeChipAmounts, FakeChipStack, FakeBetStats } from '../components/game/TableChipDisplay';
 import DealerTable3D from '../components/game/DealerTable3D';
+import GameLoadingScreen from '../components/game/GameLoadingScreen';
 import LobbyRoadmap from '../components/lobby/LobbyRoadmap';
 import MarqueeChat, { useMarqueeChat, MarqueeQuickButtons } from '../components/game/MarqueeChat';
 import { FlyingChipOverlay, useFlyingChips, ChipStack } from '../components/game/BetAreaChips';
@@ -568,6 +569,9 @@ export default function Game() {
     fakeBets,
   } = useGameStore();
 
+  // Progressive fake chip amounts for bet areas
+  const fakeAmounts = useFakeChipAmounts(fakeBets, phase);
+
   // Can place bets only during betting phase
   const canBet = phase === 'betting' && isConnected;
 
@@ -1050,6 +1054,11 @@ export default function Game() {
 
   return (
     <div className="h-full bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
+      {/* Loading screen */}
+      <AnimatePresence>
+        <GameLoadingScreen visible={!isConnected} />
+      </AnimatePresence>
+
       {/* Flying chips overlay */}
       <FlyingChipOverlay chips={flyingChips} chipSize={32} />
 
@@ -1506,9 +1515,9 @@ export default function Game() {
 
               </div>
 
-            {/* Fake bet chips on table - at bottom of table area */}
-            <div className="absolute bottom-[8%] sm:bottom-[10%] left-4 right-4 z-10 pointer-events-none">
-              <TableChipDisplay targetBets={fakeBets} phase={phase} />
+            {/* Fake bet stats - left of dealer */}
+            <div className="absolute top-[8%] sm:top-[12%] left-2 sm:left-4 z-30 pointer-events-none">
+              <FakeBetStats fakeBets={fakeBets} gameType="baccarat" />
             </div>
           </DealerTable3D>
 
@@ -1712,6 +1721,9 @@ export default function Game() {
                         </div>
                       </>
                     )}
+                    {(fakeAmounts.player_bonus || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.player_bonus} compact /></div>
+                    )}
                   </button>
 
                   {/* 閒對 - Player Pair */}
@@ -1729,6 +1741,9 @@ export default function Game() {
                           <ChipStack amount={getBetAmount('player_pair')} chipSize={14} maxChips={2} stackOffset={1} />
                         </div>
                       </>
+                    )}
+                    {(fakeAmounts.player_pair || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.player_pair} compact /></div>
                     )}
                   </button>
 
@@ -1749,6 +1764,9 @@ export default function Game() {
                         </div>
                       </>
                     )}
+                    {(fakeAmounts.super_six || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.super_six} compact /></div>
+                    )}
                   </button>
 
                   {/* 莊對 - Banker Pair */}
@@ -1767,6 +1785,9 @@ export default function Game() {
                         </div>
                       </>
                     )}
+                    {(fakeAmounts.banker_pair || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.banker_pair} compact /></div>
+                    )}
                   </button>
 
                   {/* 莊龍寶 - Banker Dragon Bonus */}
@@ -1784,6 +1805,9 @@ export default function Game() {
                           <ChipStack amount={getBetAmount('banker_bonus')} chipSize={14} maxChips={2} stackOffset={1} />
                         </div>
                       </>
+                    )}
+                    {(fakeAmounts.banker_bonus || 0) > 0 && (
+                      <div className="absolute bottom-0 left-0.5"><FakeChipStack amount={fakeAmounts.banker_bonus} compact /></div>
                     )}
                   </button>
                 </div>
@@ -1809,6 +1833,9 @@ export default function Game() {
                         </div>
                       </>
                     )}
+                    {(fakeAmounts.player || 0) > 0 && (
+                      <div className="absolute bottom-0.5 left-1 sm:bottom-1 sm:left-2"><FakeChipStack amount={fakeAmounts.player} /></div>
+                    )}
                   </button>
 
                   {/* 和 - Tie (Green) */}
@@ -1826,6 +1853,9 @@ export default function Game() {
                           <ChipStack amount={getBetAmount('tie')} chipSize={20} maxChips={3} />
                         </div>
                       </>
+                    )}
+                    {(fakeAmounts.tie || 0) > 0 && (
+                      <div className="absolute bottom-0.5 left-1 sm:bottom-1 sm:left-2"><FakeChipStack amount={fakeAmounts.tie} /></div>
                     )}
                   </button>
 
@@ -1852,6 +1882,9 @@ export default function Game() {
                           <ChipStack amount={getBetAmount('banker')} chipSize={20} maxChips={3} />
                         </div>
                       </>
+                    )}
+                    {(fakeAmounts.banker || 0) > 0 && (
+                      <div className="absolute bottom-0.5 left-1 sm:bottom-1 sm:left-2"><FakeChipStack amount={fakeAmounts.banker} /></div>
                     )}
                   </button>
                 </div>

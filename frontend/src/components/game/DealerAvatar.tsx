@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { useFBX, useAnimations } from '@react-three/drei';
+import { useGLTF, useAnimations } from '@react-three/drei';
 import { LoopOnce } from 'three';
 import type { Group } from 'three';
 
@@ -13,18 +13,20 @@ interface DealerAvatarProps {
 }
 
 const MODEL_URLS: Record<DealerModel, string> = {
-  v1: '/models/dealer-v1.fbx',
-  v2: '/models/dealer-cards-new.fbx',
-  v3: '/models/dealer-v3.fbx',
-  v4: '/models/dealer-v4.fbx',
-  v5: '/models/dealer-v5.fbx',
-  v6: '/models/dealer-v6.fbx',
+  v1: '/models/dealer-v1.glb',
+  v2: '/models/dealer-v2.glb',
+  v3: '/models/dealer-v3.glb',
+  v4: '/models/dealer-v4.glb',
+  v5: '/models/dealer-v5.glb',
+  v6: '/models/dealer-v6.glb',
 };
+
+export const ALL_MODEL_URLS = Object.values(MODEL_URLS);
 
 function DealerModelInner({ isDealing, url }: { isDealing: boolean; url: string }) {
   const groupRef = useRef<Group>(null);
-  const fbx = useFBX(url);
-  const { actions, names } = useAnimations(fbx.animations, groupRef);
+  const gltf = useGLTF(url);
+  const { actions, names } = useAnimations(gltf.animations, groupRef);
 
   useEffect(() => {
     if (names.length > 0 && actions[names[0]]) {
@@ -55,20 +57,27 @@ function DealerModelInner({ isDealing, url }: { isDealing: boolean; url: string 
 
   return (
     <group ref={groupRef}>
-      <primitive object={fbx} scale={0.05} position={[0, -3.5, 0]} />
+      <primitive object={gltf.scene} scale={0.05} position={[0, -3.5, 0]} />
     </group>
   );
 }
 
-// Preload all models
-useFBX.preload(MODEL_URLS.v1);
-useFBX.preload(MODEL_URLS.v2);
-useFBX.preload(MODEL_URLS.v3);
-useFBX.preload(MODEL_URLS.v4);
-useFBX.preload(MODEL_URLS.v5);
-useFBX.preload(MODEL_URLS.v6);
+// Loading placeholder inside Canvas (3D silhouette)
+function DealerLoadingFallback() {
+  return (
+    <mesh position={[0, -1, 0]}>
+      <capsuleGeometry args={[0.6, 1.5, 8, 16]} />
+      <meshStandardMaterial color="#d4af37" transparent opacity={0.15} />
+    </mesh>
+  );
+}
 
 export default function DealerAvatar({ isDealing, dealerName, model = 'v2' }: DealerAvatarProps) {
+  // Only preload the model we actually need
+  useEffect(() => {
+    useGLTF.preload(MODEL_URLS[model]);
+  }, [model]);
+
   return (
     <div className="relative flex flex-col items-center w-full h-full">
       <div className="w-full h-full max-w-[500px]">
@@ -82,7 +91,7 @@ export default function DealerAvatar({ isDealing, dealerName, model = 'v2' }: De
           <directionalLight position={[2, 3, 2]} intensity={1.3} color="#fff5e0" />
           <directionalLight position={[-2, 1, -1]} intensity={0.3} color="#c0d0ff" />
           <pointLight position={[0, 0.5, 1.5]} intensity={0.5} color="#ffd700" distance={5} />
-          <Suspense fallback={null}>
+          <Suspense fallback={<DealerLoadingFallback />}>
             <DealerModelInner isDealing={isDealing} url={MODEL_URLS[model]} />
           </Suspense>
         </Canvas>

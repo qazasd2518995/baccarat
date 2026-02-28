@@ -31,6 +31,8 @@ import {
   FollowingListModal,
 } from '../components/game/modals';
 import LobbyRoadmap from '../components/lobby/LobbyRoadmap';
+import { useGLTF } from '@react-three/drei';
+import { ALL_MODEL_URLS } from '../components/game/DealerAvatar';
 import type { RoadHistoryEntry } from '../utils/roadmap';
 
 interface Table {
@@ -51,6 +53,9 @@ interface Table {
   hasGoodRoad?: boolean;
   roadHistory: RoadHistoryEntry[];
 }
+
+// Preload all dealer GLB models so they're cached when entering games
+ALL_MODEL_URLS.forEach((url) => useGLTF.preload(url));
 
 const GAME_TYPE_LABELS: Record<string, string> = {
   baccarat: '百家樂',
