@@ -76,7 +76,8 @@ export function initializeSocket(io: TypedServer): void {
     handleDragonTigerEvents(io, authSocket);
 
     // Setup game event handlers for Bull Bull
-    handleBullBullEvents(io, authSocket);
+    // [PAUSED] 暫停牛牛遊戲
+    // handleBullBullEvents(io, authSocket);
 
     // Setup chat event handlers
     handleChatEvents(io, authSocket);

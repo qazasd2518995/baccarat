@@ -113,7 +113,8 @@ async function start() {
   startMultiTableDragonTiger(io);
 
   // Start the multi-table bull bull system (each table has independent game loop)
-  startMultiTableBullBull(io);
+  // [PAUSED] 暫停牛牛遊戲 — 減少資料庫寫入
+  // startMultiTableBullBull(io);
 
   httpServer.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
