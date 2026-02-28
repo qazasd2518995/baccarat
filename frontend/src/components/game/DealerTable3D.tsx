@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import DealerAvatar from './DealerAvatar';
 import type { DealerModel } from './DealerAvatar';
+import { CardBack } from './PlayingCard';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
 
 interface DealerTable3DProps {
@@ -14,86 +15,166 @@ interface DealerTable3DProps {
   isShuffling?: boolean;
 }
 
-// ——— Shuffling animation overlay ———
+// ——— Premium shuffling animation with real card backs on table ———
 const ShufflingOverlay = memo(function ShufflingOverlay() {
-  // 6 cards doing a riffle shuffle animation
-  const cards = [0, 1, 2, 3, 4, 5];
+  const bp = useBreakpoint();
+  const isMobile = bp === 'mobile';
+
+  // Card dimensions
+  const cardW = isMobile ? 32 : 50;
+  const cardH = isMobile ? 45 : 70;
+
+  // Generate deterministic card data for 8 cards in two stacks
+  const cards = useMemo(() => Array.from({ length: 8 }, (_, i) => ({
+    id: i,
+    stackSide: i < 4 ? 'left' as const : 'right' as const,
+    indexInStack: i < 4 ? i : i - 4,
+  })), []);
+
+  // Spread offset per stack
+  const stackSpread = isMobile ? 50 : 80;
+  const stackY = isMobile ? 2 : 3;
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.4 }}
       className="absolute inset-0 z-40 flex flex-col items-center justify-center pointer-events-none"
     >
-      {/* Dim overlay */}
-      <div className="absolute inset-0 bg-black/30" />
+      {/* Subtle green-tinted overlay */}
+      <div
+        className="absolute inset-0"
+        style={{ background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 100%)' }}
+      />
 
-      {/* Shuffling cards container */}
-      <div className="relative w-20 h-14 sm:w-28 sm:h-20">
-        {cards.map((i) => {
-          const isLeft = i % 2 === 0;
-          const delay = i * 0.12;
+      {/* Table-level card shuffle area */}
+      <div
+        className="relative"
+        style={{ width: isMobile ? 180 : 300, height: isMobile ? 100 : 150 }}
+      >
+        {/* Phase 1: Two stacks riffle merge — cards interleave from left and right */}
+        {cards.map(({ id, stackSide, indexInStack }) => {
+          const isLeft = stackSide === 'left';
+          const baseX = isLeft ? -stackSpread / 2 : stackSpread / 2;
+          const stackOffset = indexInStack * stackY;
+
+          // Riffle shuffle: cards fly from their stack to center, interleaving
+          const targetX = (id - 3.5) * (isMobile ? 3 : 4); // slight fan at center
+          const riffleDelay = id * 0.08;
+
           return (
             <motion.div
-              key={i}
-              className="absolute top-0 rounded-sm sm:rounded"
+              key={id}
+              className="absolute rounded-sm overflow-hidden"
               style={{
-                width: '28px',
-                height: '40px',
+                width: cardW,
+                height: cardH,
                 left: '50%',
-                marginLeft: '-14px',
-                background: 'linear-gradient(135deg, #c0392b 0%, #e74c3c 30%, #c0392b 60%, #a93226 100%)',
-                border: '1.5px solid rgba(255,255,255,0.3)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                top: '50%',
+                marginLeft: -cardW / 2,
+                marginTop: -cardH / 2,
+                zIndex: 10 + id,
+                filter: `drop-shadow(0 ${isMobile ? 2 : 4}px ${isMobile ? 4 : 8}px rgba(0,0,0,0.5))`,
               }}
               animate={{
-                x: isLeft
-                  ? [-20, 0, 20, 0, -20]
-                  : [20, 0, -20, 0, 20],
-                y: [0, -8, 0, -8, 0],
-                rotateZ: isLeft
-                  ? [-15, 0, 15, 0, -15]
-                  : [15, 0, -15, 0, 15],
+                // Keyframe sequence: stack → riffle → collect → stack (loop)
+                x: [
+                  baseX,                          // 0: sitting in stack
+                  baseX,                          // 1: hold
+                  targetX,                        // 2: riffle to center
+                  targetX,                        // 3: hold merged
+                  0,                              // 4: collect to center
+                  0,                              // 5: hold
+                  isLeft ? stackSpread * 0.3 : -stackSpread * 0.3, // 6: cut to opposite
+                  baseX,                          // 7: back to original stack
+                ],
+                y: [
+                  -stackOffset,                   // 0: stacked offset
+                  -stackOffset,                   // 1: hold
+                  -(id * stackY * 0.5),           // 2: riffle interleave height
+                  -(id * stackY * 0.5),           // 3: hold
+                  -(id * stackY * 0.3),           // 4: collect
+                  -(id * stackY * 0.3),           // 5: hold
+                  -stackOffset * 0.5,             // 6: cut
+                  -stackOffset,                   // 7: back
+                ],
+                rotateZ: [
+                  isLeft ? -2 : 2,                // 0: slight tilt
+                  isLeft ? -2 : 2,                // 1: hold
+                  (id - 3.5) * 1.5,               // 2: fan out
+                  (id - 3.5) * 1.5,               // 3: hold
+                  0,                              // 4: straighten
+                  0,                              // 5: hold
+                  isLeft ? 3 : -3,                // 6: cut tilt
+                  isLeft ? -2 : 2,                // 7: back
+                ],
+                scale: [
+                  1,                              // 0
+                  1,                              // 1
+                  1.02,                           // 2: slight pop
+                  1.02,                           // 3
+                  1,                              // 4
+                  1,                              // 5
+                  1.01,                           // 6
+                  1,                              // 7
+                ],
               }}
               transition={{
-                duration: 1.2,
-                delay,
+                duration: 3.2,
+                delay: riffleDelay,
                 repeat: Infinity,
                 ease: 'easeInOut',
+                times: [0, 0.12, 0.32, 0.42, 0.58, 0.68, 0.82, 1],
               }}
             >
-              {/* Card back pattern */}
-              <div
-                className="absolute inset-[2px] rounded-[1px]"
-                style={{
-                  background: `
-                    repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.08) 2px, rgba(255,255,255,0.08) 4px),
-                    linear-gradient(135deg, #a93226 0%, #c0392b 100%)
-                  `,
-                  border: '0.5px solid rgba(255,215,0,0.3)',
-                }}
-              />
+              <CardBack width={cardW} height={cardH} />
             </motion.div>
           );
         })}
+
+        {/* Floating highlight shimmer across the cards */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(105deg, transparent 40%, rgba(212,175,55,0.08) 50%, transparent 60%)',
+            borderRadius: '4px',
+          }}
+          animate={{
+            x: ['-100%', '200%'],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
+        />
       </div>
 
-      {/* Shuffling text */}
+      {/* Shuffling text with premium styling */}
       <motion.div
-        className="relative mt-3 sm:mt-4"
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
+        className="relative mt-4 sm:mt-6 flex flex-col items-center gap-1"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
       >
-        <span
-          className="text-[10px] sm:text-xs font-bold tracking-[0.25em]"
+        <motion.span
+          className="text-xs sm:text-sm font-bold tracking-[0.3em] sm:tracking-[0.4em]"
           style={{
             color: '#e8d48b',
-            textShadow: '0 0 10px rgba(212,175,55,0.5), 0 1px 3px rgba(0,0,0,0.8)',
+            textShadow: '0 0 12px rgba(212,175,55,0.5), 0 1px 3px rgba(0,0,0,0.8)',
           }}
+          animate={{ opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
         >
-          洗牌中...
+          SHUFFLING
+        </motion.span>
+        <span
+          className="text-[9px] sm:text-[11px] tracking-[0.15em]"
+          style={{ color: 'rgba(212,175,55,0.4)' }}
+        >
+          洗牌中
         </span>
       </motion.div>
     </motion.div>
@@ -427,7 +508,7 @@ export default function DealerTable3D({
         </div>
 
         <DealerAvatar
-          isDealing={isDealing}
+          isDealing={isDealing || isShuffling}
           dealerName={dealerName}
           model={dealerModel}
         />
