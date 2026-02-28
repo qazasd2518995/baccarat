@@ -283,16 +283,25 @@ router.get('/member', requireRole('admin', 'agent'), async (req: Request, res: R
       select: { username: true, nickname: true, agentLevel: true, sharePercent: true, rebatePercent: true }
     });
 
-    // Get direct downline members
+    // Get members - admin sees all, agent sees only direct downline
     let memberFilter: any = {
-      parentAgentId: currentUser.userId,
       role: 'member'
     };
 
+    // Agent can only see direct downline members
+    if (currentUser.role === 'agent') {
+      memberFilter.parentAgentId = currentUser.userId;
+    }
+
     if (memberId) {
-      memberFilter.OR = [
-        { username: { contains: memberId as string, mode: 'insensitive' } },
-        { nickname: { contains: memberId as string, mode: 'insensitive' } }
+      memberFilter.AND = [
+        memberFilter,
+        {
+          OR: [
+            { username: { contains: memberId as string, mode: 'insensitive' } },
+            { nickname: { contains: memberId as string, mode: 'insensitive' } }
+          ]
+        }
       ];
     }
 
