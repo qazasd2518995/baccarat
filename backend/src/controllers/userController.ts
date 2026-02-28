@@ -289,3 +289,96 @@ export async function getSubUsers(req: Request, res: Response) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+// Fix user hierarchy - sets admin as level 0 and assigns orphan members/agents to admin
+export async function fixUserHierarchy(req: Request, res: Response) {
+  try {
+    const currentUser = req.user!;
+
+    // Get the admin user (current user must be admin)
+    const admin = await prisma.user.findUnique({
+      where: { id: currentUser.userId },
+      select: { id: true, username: true, role: true, agentLevel: true }
+    });
+
+    if (!admin || admin.role !== 'admin') {
+      return res.status(403).json({ error: 'Only admin can fix hierarchy' });
+    }
+
+    const results: string[] = [];
+
+    // 1. Set admin to agentLevel 0
+    if (admin.agentLevel !== 0) {
+      await prisma.user.update({
+        where: { id: admin.id },
+        data: { agentLevel: 0 }
+      });
+      results.push(`Set ${admin.username} to agentLevel 0`);
+    }
+
+    // 2. Find all members without parentAgentId and assign to admin
+    const orphanMembers = await prisma.user.findMany({
+      where: {
+        role: 'member',
+        parentAgentId: null
+      },
+      select: { id: true, username: true }
+    });
+
+    for (const member of orphanMembers) {
+      await prisma.user.update({
+        where: { id: member.id },
+        data: { parentAgentId: admin.id }
+      });
+      results.push(`Assigned member ${member.username} to ${admin.username}`);
+    }
+
+    // 3. Find all agents without parentAgentId (except admin) and assign to admin
+    const orphanAgents = await prisma.user.findMany({
+      where: {
+        role: 'agent',
+        parentAgentId: null
+      },
+      select: { id: true, username: true }
+    });
+
+    for (const agent of orphanAgents) {
+      await prisma.user.update({
+        where: { id: agent.id },
+        data: {
+          parentAgentId: admin.id,
+          agentLevel: 1
+        }
+      });
+      results.push(`Assigned agent ${agent.username} to ${admin.username} (level 1)`);
+    }
+
+    // 4. Get final state
+    const allUsers = await prisma.user.findMany({
+      where: {
+        OR: [
+          { role: 'admin' },
+          { parentAgentId: admin.id }
+        ]
+      },
+      select: {
+        id: true,
+        username: true,
+        role: true,
+        agentLevel: true,
+        parentAgentId: true
+      },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    res.json({
+      success: true,
+      message: 'Hierarchy fixed',
+      changes: results,
+      users: allUsers
+    });
+  } catch (error) {
+    console.error('Fix hierarchy error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}

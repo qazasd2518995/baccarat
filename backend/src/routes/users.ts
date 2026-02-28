@@ -6,6 +6,7 @@ import {
   updateUser,
   resetPassword,
   getSubUsers,
+  fixUserHierarchy,
 } from '../controllers/userController.js';
 import {
   getNotificationSettings,
@@ -39,5 +40,8 @@ router.get('/:id/sub-users', requireRole('admin', 'agent'), getSubUsers);
 // Notification settings
 router.get('/:id/notification-settings', getNotificationSettings);
 router.patch('/:id/notification-settings', updateNotificationSettings);
+
+// Fix user hierarchy (admin only) - sets admin as level 0 and assigns orphan members
+router.post('/fix-hierarchy', requireRole('admin'), fixUserHierarchy);
 
 export default router;
