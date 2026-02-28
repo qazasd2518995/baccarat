@@ -73,8 +73,19 @@ interface SubAccount {
   username: string;
   nickname: string;
   status: string;
+  permissions?: Record<string, boolean>;
   createdAt: string;
 }
+
+const PERMISSION_LABELS: Record<string, string> = {
+  agentManagement: '代理管理',
+  memberManagement: '会员管理',
+  shareSettings: '占成设定',
+  betLimits: '限红设定',
+  balanceOps: '存取款',
+  viewReports: '报表查看',
+  viewLogs: '日志查看',
+};
 
 export default function AgentManagement() {
   const [activeTab, setActiveTab] = useState<TabType>('agents');
@@ -84,6 +95,8 @@ export default function AgentManagement() {
   const [subAccounts, setSubAccounts] = useState<SubAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createStep, setCreateStep] = useState(1);
 
@@ -135,6 +148,7 @@ export default function AgentManagement() {
   };
 
   const handleSearch = () => {
+    setCurrentPage(1);
     fetchData();
   };
 
@@ -235,6 +249,13 @@ export default function AgentManagement() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
   };
+
+  const getCurrentItems = <T,>(items: T[]) => {
+    const start = (currentPage - 1) * pageSize;
+    return items.slice(start, start + pageSize);
+  };
+
+  const getTotalPages = (total: number) => Math.max(1, Math.ceil(total / pageSize));
 
   const formatCurrency = (value: number) => {
     return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -364,7 +385,7 @@ export default function AgentManagement() {
           return (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => { setActiveTab(tab.key); setCurrentPage(1); }}
               className={`flex items-center gap-2 px-6 py-3 transition-all border-b-2 -mb-[2px] ${
                 activeTab === tab.key
                   ? 'border-amber-500 text-amber-400 bg-amber-500/10'
@@ -431,7 +452,7 @@ export default function AgentManagement() {
           {agents.length === 0 ? (
             <div className="text-center py-12 text-gray-400">暂无数据</div>
           ) : (
-            agents.map((agent) => (
+            getCurrentItems(agents).map((agent) => (
               <motion.div
                 key={agent.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -571,7 +592,7 @@ export default function AgentManagement() {
           {members.length === 0 ? (
             <div className="text-center py-12 text-gray-400">暂无数据</div>
           ) : (
-            members.map((member) => (
+            getCurrentItems(members).map((member) => (
               <motion.div
                 key={member.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -632,7 +653,7 @@ export default function AgentManagement() {
           {subAccounts.length === 0 ? (
             <div className="text-center py-12 text-gray-400">暂无数据</div>
           ) : (
-            subAccounts.map((sub) => (
+            getCurrentItems(subAccounts).map((sub) => (
               <motion.div
                 key={sub.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -653,6 +674,20 @@ export default function AgentManagement() {
                       <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
                         <span>创建时间：{new Date(sub.createdAt).toLocaleString('zh-CN')}</span>
                       </div>
+                      {sub.permissions && Object.entries(sub.permissions).some(([, v]) => v) && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {Object.entries(sub.permissions)
+                            .filter(([, v]) => v)
+                            .map(([key]) => (
+                              <span
+                                key={key}
+                                className="px-1.5 py-0.5 rounded text-xs bg-amber-500/20 text-amber-400"
+                              >
+                                {PERMISSION_LABELS[key] || key}
+                              </span>
+                            ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -680,14 +715,42 @@ export default function AgentManagement() {
       )}
 
       {/* Pagination */}
-      <div className="flex items-center justify-end gap-2">
-        <span className="text-gray-400 text-sm">1</span>
-        <select className="px-2 py-1 bg-[#1e1e1e] border border-[#333] rounded text-white text-sm">
-          <option>10 条/页</option>
-          <option>20 条/页</option>
-          <option>50 条/页</option>
-        </select>
-      </div>
+      {(() => {
+        const totalItems = activeTab === 'agents' ? agents.length : activeTab === 'members' ? members.length : subAccounts.length;
+        const totalPages = getTotalPages(totalItems);
+        return (
+          <div className="flex items-center justify-end gap-3">
+            <span className="text-gray-400 text-sm">
+              {currentPage} / {totalPages} (共 {totalItems} 条)
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+                className="px-3 py-1 bg-[#1e1e1e] border border-[#333] rounded text-white text-sm disabled:opacity-40 hover:bg-[#2a2a2a] transition-colors"
+              >
+                上一页
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+                className="px-3 py-1 bg-[#1e1e1e] border border-[#333] rounded text-white text-sm disabled:opacity-40 hover:bg-[#2a2a2a] transition-colors"
+              >
+                下一页
+              </button>
+            </div>
+            <select
+              value={pageSize}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+              className="px-2 py-1 bg-[#1e1e1e] border border-[#333] rounded text-white text-sm"
+            >
+              <option value={10}>10 条/页</option>
+              <option value={20}>20 条/页</option>
+              <option value={50}>50 条/页</option>
+            </select>
+          </div>
+        );
+      })()}
 
       {/* Create Modal */}
       {showCreateModal && (

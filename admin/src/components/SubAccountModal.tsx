@@ -3,6 +3,16 @@ import { motion } from 'framer-motion';
 import { X, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { agentManagementApi } from '../services/api';
 
+const PERMISSION_OPTIONS = [
+  { key: 'agentManagement', label: '代理管理' },
+  { key: 'memberManagement', label: '会员管理' },
+  { key: 'shareSettings', label: '占成设定' },
+  { key: 'betLimits', label: '限红设定' },
+  { key: 'balanceOps', label: '存取款' },
+  { key: 'viewReports', label: '报表查看' },
+  { key: 'viewLogs', label: '日志查看' },
+];
+
 interface SubAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -11,6 +21,7 @@ interface SubAccountModalProps {
     username: string;
     nickname: string;
     status: string;
+    permissions?: Record<string, boolean>;
   } | null;
   onSuccess?: () => void;
 }
@@ -21,11 +32,15 @@ export default function SubAccountModal({
   subAccount,
   onSuccess
 }: SubAccountModalProps) {
+  const defaultPermissions = () =>
+    Object.fromEntries(PERMISSION_OPTIONS.map(p => [p.key, false]));
+
   const [form, setForm] = useState({
     username: '',
     password: '',
     confirmPassword: '',
-    nickname: ''
+    nickname: '',
+    permissions: defaultPermissions() as Record<string, boolean>,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -41,14 +56,16 @@ export default function SubAccountModal({
           username: subAccount.username,
           password: '',
           confirmPassword: '',
-          nickname: subAccount.nickname || ''
+          nickname: subAccount.nickname || '',
+          permissions: { ...defaultPermissions(), ...subAccount.permissions },
         });
       } else {
         setForm({
           username: '',
           password: '',
           confirmPassword: '',
-          nickname: ''
+          nickname: '',
+          permissions: defaultPermissions(),
         });
       }
       setError('');
@@ -108,7 +125,7 @@ export default function SubAccountModal({
       setError('');
 
       if (isEditing) {
-        const updateData: any = { nickname: form.nickname };
+        const updateData: any = { nickname: form.nickname, permissions: form.permissions };
         if (form.password) {
           updateData.password = form.password;
         }
@@ -117,7 +134,8 @@ export default function SubAccountModal({
         await agentManagementApi.createSubAccount({
           username: form.username,
           password: form.password,
-          nickname: form.nickname
+          nickname: form.nickname,
+          permissions: form.permissions,
         });
       }
 
@@ -248,6 +266,32 @@ export default function SubAccountModal({
                   <X className="w-4 h-4" />
                 </button>
               )}
+            </div>
+          </div>
+
+          {/* 权限设置 */}
+          <div>
+            <label className="block text-gray-400 text-sm mb-2">权限设置</label>
+            <div className="grid grid-cols-2 gap-2">
+              {PERMISSION_OPTIONS.map((perm) => (
+                <label
+                  key={perm.key}
+                  className="flex items-center gap-2 p-2 bg-[#252525] rounded-lg cursor-pointer hover:bg-[#333] transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={form.permissions[perm.key] || false}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        permissions: { ...form.permissions, [perm.key]: e.target.checked },
+                      })
+                    }
+                    className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded focus:ring-amber-500"
+                  />
+                  <span className="text-white text-sm">{perm.label}</span>
+                </label>
+              ))}
             </div>
           </div>
 

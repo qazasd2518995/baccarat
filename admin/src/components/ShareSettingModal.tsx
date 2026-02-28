@@ -28,30 +28,6 @@ interface CategoryData {
   settings: ShareSetting[];
 }
 
-// 游戏分类配置
-const GAME_CATEGORIES: CategoryData[] = [
-  {
-    category: '电子',
-    platforms: ['100HP', 'AMB', 'ATG', 'EG', 'IN-OUT', '9Game', 'PANDA', 'PIX', 'QT', 'RG', 'RSG', 'Sigma', 'Slotmill', 'TURBO', 'WOW', 'ZG'],
-    settings: []
-  },
-  {
-    category: '真人百家2馆',
-    platforms: ['卡利真人', 'DG真人', 'EEAI'],
-    settings: []
-  },
-  {
-    category: '真人百家1馆',
-    platforms: ['MT真人', 'RC真人', 'T9真人', '华利高真人电投'],
-    settings: []
-  },
-  {
-    category: '体育',
-    platforms: ['SUPER体育'],
-    settings: []
-  }
-];
-
 export default function ShareSettingModal({
   isOpen,
   onClose,
@@ -60,17 +36,36 @@ export default function ShareSettingModal({
   onSuccess,
   onOpenHistory
 }: ShareSettingModalProps) {
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    GAME_CATEGORIES.map(c => c.category)
-  );
+  const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [platformsLoading, setPlatformsLoading] = useState(false);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [batchSharePercent, setBatchSharePercent] = useState('');
   const [batchRebatePercent, setBatchRebatePercent] = useState('');
   const [settings, setSettings] = useState<Record<string, { share: string; rebate: string }>>({});
   const [loading, setLoading] = useState(false);
-  // const [showHistory, setShowHistory] = useState(false);
+
+  const fetchPlatforms = async () => {
+    try {
+      setPlatformsLoading(true);
+      const res = await agentManagementApi.getPlatforms();
+      const platformMap: Record<string, string[]> = res.data.platforms || res.data;
+      const cats: CategoryData[] = Object.entries(platformMap).map(([category, platforms]) => ({
+        category,
+        platforms: platforms as string[],
+        settings: [],
+      }));
+      setCategories(cats);
+      setSelectedCategories(cats.map(c => c.category));
+    } catch (err) {
+      console.error('Failed to fetch platforms:', err);
+    } finally {
+      setPlatformsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (isOpen && agentId) {
+      fetchPlatforms();
       fetchShareSettings();
     }
   }, [isOpen, agentId]);
@@ -95,11 +90,11 @@ export default function ShareSettingModal({
   };
 
   const handleSelectAll = () => {
-    setSelectedCategories(GAME_CATEGORIES.map(c => c.category));
+    setSelectedCategories(categories.map(c => c.category));
   };
 
   const handleSelectInverse = () => {
-    const allCategories = GAME_CATEGORIES.map(c => c.category);
+    const allCategories = categories.map(c => c.category);
     setSelectedCategories(
       allCategories.filter(c => !selectedCategories.includes(c))
     );
@@ -117,7 +112,7 @@ export default function ShareSettingModal({
     if (!batchSharePercent) return;
 
     const newSettings = { ...settings };
-    GAME_CATEGORIES.forEach(cat => {
+    categories.forEach(cat => {
       if (selectedCategories.includes(cat.category)) {
         cat.platforms.forEach(platform => {
           const key = `${cat.category}-${platform}`;
@@ -135,7 +130,7 @@ export default function ShareSettingModal({
     if (!batchRebatePercent) return;
 
     const newSettings = { ...settings };
-    GAME_CATEGORIES.forEach(cat => {
+    categories.forEach(cat => {
       if (selectedCategories.includes(cat.category)) {
         cat.platforms.forEach(platform => {
           const key = `${cat.category}-${platform}`;
@@ -243,7 +238,7 @@ export default function ShareSettingModal({
 
             {/* 分类选择 */}
             <div className="flex items-center gap-4 mb-4">
-              {GAME_CATEGORIES.map(cat => (
+              {categories.map(cat => (
                 <label key={cat.category} className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -316,6 +311,15 @@ export default function ShareSettingModal({
           </div>
 
           {/* 设定表格 */}
+          {platformsLoading ? (
+            <div className="flex items-center justify-center py-12 text-gray-400">
+              平台载入中...
+            </div>
+          ) : categories.length === 0 ? (
+            <div className="flex items-center justify-center py-12 text-gray-400">
+              暂无平台数据
+            </div>
+          ) : (
           <div className="bg-[#252525] rounded-lg overflow-hidden">
             <table className="w-full">
               <thead>
@@ -333,7 +337,7 @@ export default function ShareSettingModal({
                 </tr>
               </thead>
               <tbody>
-                {GAME_CATEGORIES.map((cat) => (
+                {categories.map((cat) => (
                   <tr key={cat.category} className="border-t border-[#333]">
                     <td className="px-4 py-3 text-white text-sm align-top">{cat.category}</td>
                     <td className="px-4 py-3 text-gray-300 text-sm align-top">
@@ -420,6 +424,7 @@ export default function ShareSettingModal({
               </tbody>
             </table>
           </div>
+          )}
 
           {/* 提示 */}
           <p className="text-amber-400 text-sm text-center mt-4">

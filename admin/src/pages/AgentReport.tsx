@@ -108,6 +108,41 @@ export default function AgentReport() {
     fetchData();
   };
 
+  const handleExport = () => {
+    if (!data) return;
+
+    let csvContent = '\uFEFF'; // UTF-8 BOM for Excel
+
+    if (activeTab === 'agent') {
+      csvContent += '代理账号,名称,层级,注单数,下注金额,有效投注,会员输赢,会员退水,个人占成,个人退水,应收下线,应缴上线,个人盈亏\n';
+      data.agents?.forEach((a) => {
+        csvContent += `${a.username},${a.nickname || ''},${a.agentLevel},${a.betCount},${a.betAmount},${a.validBet},${a.memberWinLoss},${a.memberRebate},${a.personalShare},${a.personalRebate},${a.receivable},${a.payable},${a.profit}\n`;
+      });
+    } else {
+      csvContent += '会员账号,名称,注单数,下注金额,有效投注,会员输赢\n';
+      data.members?.forEach((m) => {
+        csvContent += `${m.username},${m.nickname || ''},${m.betCount},${m.betAmount},${m.validBet},${m.memberWinLoss}\n`;
+      });
+    }
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${activeTab === 'agent' ? '代理报表' : '会员报表'}_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleReset = () => {
+    setSearchQuery('');
+    setStartDate('');
+    setEndDate('');
+    setQuickFilter('today');
+  };
+
   const formatCurrency = (value: number) => {
     return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
@@ -268,13 +303,16 @@ export default function AgentReport() {
                 查询
               </button>
               <button
-                onClick={fetchData}
+                onClick={handleReset}
                 className="flex items-center gap-2 px-4 py-2 bg-[#2a2a2a] text-gray-400 hover:text-white text-sm rounded-lg transition-colors"
               >
                 <RefreshCw className="w-4 h-4" />
                 重置
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 hover:bg-green-500/30 text-sm rounded-lg transition-colors">
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 hover:bg-green-500/30 text-sm rounded-lg transition-colors"
+              >
                 <Download className="w-4 h-4" />
                 导出
               </button>
