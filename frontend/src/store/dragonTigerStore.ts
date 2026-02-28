@@ -307,7 +307,6 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
       lastResult: null,
       isSuitedTie: false,
       lastSettlement: null,
-      fakeBets: {},
     }),
 
   // Full reset

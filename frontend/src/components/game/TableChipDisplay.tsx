@@ -14,24 +14,44 @@ export function useFakeChipAmounts(
   const [amounts, setAmounts] = useState<Record<string, number>>({});
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const tickRef = useRef(0);
+  const prevPhaseRef = useRef(phase);
 
-  // Reset on new betting round
-  useEffect(() => {
-    if (phase === 'betting') {
-      setAmounts({});
-      tickRef.current = 0;
-    }
-  }, [phase]);
-
-  // Progressive ramp during betting
+  // Single combined effect handles both phase transitions and targetBets changes
   useEffect(() => {
     const keys = Object.keys(targetBets).filter(k => targetBets[k] > 0);
-    if (phase !== 'betting' || keys.length === 0) {
+
+    // Phase just changed to betting → reset tick counter
+    if (phase === 'betting' && prevPhaseRef.current !== 'betting') {
+      tickRef.current = 0;
+      setAmounts({});
+    }
+    prevPhaseRef.current = phase;
+
+    // Not in betting phase or no bets → show final amounts directly
+    if (phase !== 'betting') {
+      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+      // Outside betting, show target amounts directly (so stats panel stays visible)
+      if (keys.length > 0) {
+        setAmounts({ ...targetBets });
+      }
+      return;
+    }
+
+    // In betting phase but no bet data yet → wait for data
+    if (keys.length === 0) {
       if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
       return;
     }
 
+    // Already fully ramped → just update with new targets
     const totalTicks = 8 + Math.floor(Math.random() * 4); // 8-11 ticks
+    if (tickRef.current >= totalTicks) {
+      setAmounts({ ...targetBets });
+      return;
+    }
+
+    // Clear any existing timer before starting new schedule
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
 
     const scheduleNext = () => {
       const delay = tickRef.current === 0
@@ -47,7 +67,6 @@ export function useFakeChipAmounts(
           const next: Record<string, number> = {};
           for (const key of keys) {
             const target = targetBets[key];
-            // Slightly randomize each key's progress
             const p = Math.min(progress * (0.8 + Math.random() * 0.4), 1);
             next[key] = Math.round(target * p);
           }

@@ -344,7 +344,6 @@ export const useBullBullStore = create<BullBullStore>((set, get) => ({
       dealingCards: [],
       revealedPositions: new Set(),
       lastSettlement: null,
-      fakeBets: {},
     }),
 
   // Full reset

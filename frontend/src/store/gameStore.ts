@@ -350,7 +350,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
       bankerPoints: null,
       lastResult: null,
       lastSettlement: null,
-      fakeBets: {},
     }),
 
   // Full reset (on disconnect/logout)
