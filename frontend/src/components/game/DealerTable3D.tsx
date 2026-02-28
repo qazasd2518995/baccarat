@@ -11,7 +11,7 @@ interface DealerTable3DProps {
   dealerName?: string;
   gameType?: 'baccarat' | 'dragonTiger' | 'bullBull';
   dealerModel?: DealerModel;
-  phase?: string;
+  isShuffling?: boolean;
 }
 
 // ——— Shuffling animation overlay ———
@@ -120,7 +120,7 @@ export default function DealerTable3D({
   dealerName,
   gameType = 'baccarat',
   dealerModel = 'v2',
-  phase,
+  isShuffling = false,
 }: DealerTable3DProps) {
   const bp = useBreakpoint();
   const felt = FELT_COLORS[gameType];
@@ -657,9 +657,9 @@ export default function DealerTable3D({
               {children}
             </div>
 
-            {/* Shuffling overlay */}
+            {/* Shuffling overlay — only during new shoe */}
             <AnimatePresence>
-              {phase === 'sealed' && <ShufflingOverlay />}
+              {isShuffling && <ShufflingOverlay />}
             </AnimatePresence>
           </div>
         </div>

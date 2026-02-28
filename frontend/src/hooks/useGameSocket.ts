@@ -44,6 +44,7 @@ export function useGameSocket(tableId?: string) {
     saveLastBets,
     setBettingLimits,
     setFakeBets,
+    setIsShuffling,
     pendingBets,
     phase,
   } = useGameStore();
@@ -128,6 +129,10 @@ export function useGameSocket(tableId?: string) {
       setPhase(data.phase);
       setTimeRemaining(data.timeRemaining);
       setRoundId(data.roundId);
+      // Clear shuffling state when dealing starts (shuffle animation is over)
+      if (data.phase === 'dealing') {
+        setIsShuffling(false);
+      }
       // Note: resetForNewRound() is NOT called here.
       // Game.tsx handles the reset with deferred timing to avoid
       // clearing result data before the result display finishes.
@@ -194,6 +199,11 @@ export function useGameSocket(tableId?: string) {
       setFakeBets(data.bets);
     };
 
+    const handleShuffle = (data: { shoeNumber: number }) => {
+      console.log('[useGameSocket] New shoe shuffle:', data.shoeNumber);
+      setIsShuffling(true);
+    };
+
     const handleError = (data: ErrorEvent) => {
       console.error('[useGameSocket] Error:', data.code, data.message);
     };
@@ -211,6 +221,7 @@ export function useGameSocket(tableId?: string) {
     socket.off('user:balance', handleBalance);
     socket.off('game:roadmap', handleRoadmap);
     socket.off('game:fakeBets', handleFakeBets);
+    socket.off('game:shuffle', handleShuffle);
     socket.off('error', handleError);
 
     // Add listeners
@@ -226,6 +237,7 @@ export function useGameSocket(tableId?: string) {
     socket.on('user:balance', handleBalance);
     socket.on('game:roadmap', handleRoadmap);
     socket.on('game:fakeBets', handleFakeBets);
+    socket.on('game:shuffle', handleShuffle);
     socket.on('error', handleError);
 
     // If socket is already connected, initialize immediately
@@ -248,6 +260,7 @@ export function useGameSocket(tableId?: string) {
       socket.off('user:balance', handleBalance);
       socket.off('game:roadmap', handleRoadmap);
       socket.off('game:fakeBets', handleFakeBets);
+      socket.off('game:shuffle', handleShuffle);
       socket.off('error', handleError);
       disconnectSocket();
       resetAll();

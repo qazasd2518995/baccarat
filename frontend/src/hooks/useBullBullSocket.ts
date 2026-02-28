@@ -76,6 +76,7 @@ export function useBullBullSocket(tableId?: string) {
     resetAll,
     saveLastBets,
     setFakeBets,
+    setIsShuffling,
     revealPosition,
     clearRevealed,
     addDealingCard,
@@ -148,6 +149,9 @@ export function useBullBullSocket(tableId?: string) {
       setTimeRemaining(data.timeRemaining);
       setRoundId(data.roundId);
 
+      if (data.phase === 'dealing') {
+        setIsShuffling(false);
+      }
       if (data.phase === 'betting') {
         resetForNewRound();
         clearRevealed();
@@ -250,6 +254,11 @@ export function useBullBullSocket(tableId?: string) {
       setFakeBets(data.bets);
     };
 
+    const handleShuffle = (data: { shoeNumber: number }) => {
+      console.log('[useBullBullSocket] New shoe shuffle:', data.shoeNumber);
+      setIsShuffling(true);
+    };
+
     const handleError = (data: any) => {
       console.error('[useBullBullSocket] Error:', data.code, data.message);
     };
@@ -268,6 +277,7 @@ export function useBullBullSocket(tableId?: string) {
     socket.off('user:balance', handleBalance);
     socket.off('bb:roadmap', handleRoadmap);
     socket.off('bb:fakeBets', handleFakeBets);
+    socket.off('bb:shuffle', handleShuffle);
     socket.off('error', handleError);
 
     // Add listeners
@@ -284,6 +294,7 @@ export function useBullBullSocket(tableId?: string) {
     socket.on('user:balance', handleBalance);
     socket.on('bb:roadmap', handleRoadmap);
     socket.on('bb:fakeBets', handleFakeBets);
+    socket.on('bb:shuffle', handleShuffle);
     socket.on('error', handleError);
 
     // If socket is already connected, initialize immediately
@@ -307,6 +318,7 @@ export function useBullBullSocket(tableId?: string) {
       socket.off('user:balance', handleBalance);
       socket.off('bb:roadmap', handleRoadmap);
       socket.off('bb:fakeBets', handleFakeBets);
+      socket.off('bb:shuffle', handleShuffle);
       socket.off('error', handleError);
       disconnectSocket();
       resetAll();

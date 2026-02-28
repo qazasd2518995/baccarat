@@ -143,6 +143,11 @@ export interface FakeBetsEvent {
   bets: Record<string, number>;
 }
 
+// Shuffle event (new shoe)
+export interface ShuffleEvent {
+  shoeNumber: number;
+}
+
 // ============================================
 // Chat Events
 // ============================================
@@ -187,6 +192,9 @@ export interface ServerToClientEvents {
   'game:fakeBets': (data: FakeBetsEvent) => void;
   'dt:fakeBets': (data: FakeBetsEvent) => void;
   'bb:fakeBets': (data: FakeBetsEvent) => void;
+  'game:shuffle': (data: ShuffleEvent) => void;
+  'dt:shuffle': (data: ShuffleEvent) => void;
+  'bb:shuffle': (data: ShuffleEvent) => void;
   error: (data: ErrorEvent) => void;
 }
 

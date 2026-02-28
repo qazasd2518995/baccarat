@@ -127,6 +127,10 @@ interface DragonTigerStore {
   fakeBets: Record<string, number>;
   setFakeBets: (bets: Record<string, number>) => void;
 
+  // Shuffling (new shoe)
+  isShuffling: boolean;
+  setIsShuffling: (v: boolean) => void;
+
   // Reset for new round
   resetForNewRound: () => void;
 
@@ -293,6 +297,10 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
   fakeBets: {},
   setFakeBets: (bets) => set({ fakeBets: bets }),
 
+  // Shuffling (new shoe)
+  isShuffling: false,
+  setIsShuffling: (v) => set({ isShuffling: v }),
+
   // Reset for new round
   resetForNewRound: () =>
     set({
@@ -335,5 +343,6 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
       shoeNumber: 1,
       cardsRemaining: 416,
       fakeBets: {},
+      isShuffling: false,
     }),
 }));

@@ -570,6 +570,7 @@ export default function Game() {
     clearPendingBets,
     resetForNewRound,
     fakeBets,
+    isShuffling,
   } = useGameStore();
 
   // Progressive fake chip amounts for bet areas
@@ -1359,7 +1360,7 @@ export default function Game() {
             dealerName={currentDealerName}
             gameType="baccarat"
             dealerModel={dealerModelForTable}
-            phase={phase}
+            isShuffling={isShuffling}
           >
 
               {/* Top info bar */}

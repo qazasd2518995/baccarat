@@ -233,6 +233,10 @@ async function handleDealingPhase(io: TypedServer): Promise<void> {
     }
 
     console.log(`[GameLoop] New shoe #${getShoeNumber()} created with ${currentShoe.length} cards — stats reset`);
+
+    // Notify game room of shuffle — frontend shows animation
+    io.to('table:default').emit('game:shuffle', { shoeNumber: getShoeNumber() });
+    await delay(4000);
   }
 
   // Broadcast phase change

@@ -77,6 +77,7 @@ export function useDragonTigerSocket(tableId?: string) {
     resetAll,
     saveLastBets,
     setFakeBets,
+    setIsShuffling,
     pendingBets,
     phase,
   } = useDragonTigerStore();
@@ -144,6 +145,9 @@ export function useDragonTigerSocket(tableId?: string) {
       setTimeRemaining(data.timeRemaining);
       setRoundId(data.roundId);
 
+      if (data.phase === 'dealing') {
+        setIsShuffling(false);
+      }
       if (data.phase === 'betting') {
         resetForNewRound();
       }
@@ -209,6 +213,11 @@ export function useDragonTigerSocket(tableId?: string) {
       setFakeBets(data.bets);
     };
 
+    const handleShuffle = (data: { shoeNumber: number }) => {
+      console.log('[useDragonTigerSocket] New shoe shuffle:', data.shoeNumber);
+      setIsShuffling(true);
+    };
+
     const handleError = (data: any) => {
       console.error('[useDragonTigerSocket] Error:', data.code, data.message);
     };
@@ -226,6 +235,7 @@ export function useDragonTigerSocket(tableId?: string) {
     socket.off('user:balance', handleBalance);
     socket.off('dt:roadmap', handleRoadmap);
     socket.off('dt:fakeBets', handleFakeBets);
+    socket.off('dt:shuffle', handleShuffle);
     socket.off('error', handleError);
 
     // Add listeners
@@ -241,6 +251,7 @@ export function useDragonTigerSocket(tableId?: string) {
     socket.on('user:balance', handleBalance);
     socket.on('dt:roadmap', handleRoadmap);
     socket.on('dt:fakeBets', handleFakeBets);
+    socket.on('dt:shuffle', handleShuffle);
     socket.on('error', handleError);
 
     // If socket is already connected, initialize immediately
@@ -263,6 +274,7 @@ export function useDragonTigerSocket(tableId?: string) {
       socket.off('user:balance', handleBalance);
       socket.off('dt:roadmap', handleRoadmap);
       socket.off('dt:fakeBets', handleFakeBets);
+      socket.off('dt:shuffle', handleShuffle);
       socket.off('error', handleError);
       disconnectSocket();
       resetAll();

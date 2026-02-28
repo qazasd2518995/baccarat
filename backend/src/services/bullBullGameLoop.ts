@@ -229,6 +229,10 @@ async function handleDealingPhase(io: Server): Promise<void> {
     }
 
     console.log(`[BullBull] New shoe #${getShoeNumber()} created with ${currentShoe.length} cards — stats reset`);
+
+    // Notify game room of shuffle — frontend shows animation
+    io.to('table:bullbull').emit('bb:shuffle', { shoeNumber: getShoeNumber() });
+    await delay(4000);
   }
 
   // Broadcast phase change

@@ -230,6 +230,7 @@ export default function BullBullGame() {
     shoeNumber,
     lastBets,
     fakeBets,
+    isShuffling,
   } = useBullBullStore();
 
   const [showRules, setShowRules] = useState(false);
@@ -440,7 +441,7 @@ export default function BullBullGame() {
           return names[(tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % names.length];
         })()}
         gameType="bullBull"
-        phase={phase}
+        isShuffling={isShuffling}
         dealerModel="v3"
       >
         <div className="absolute inset-0 overflow-auto p-2 sm:p-4 pb-32 sm:pb-36">

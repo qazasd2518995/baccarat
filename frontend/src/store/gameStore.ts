@@ -159,6 +159,10 @@ interface GameStore {
   fakeBets: Record<string, number>;
   setFakeBets: (bets: Record<string, number>) => void;
 
+  // Shuffling (new shoe)
+  isShuffling: boolean;
+  setIsShuffling: (v: boolean) => void;
+
   // Reset for new round
   resetForNewRound: () => void;
 
@@ -339,6 +343,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
   fakeBets: {},
   setFakeBets: (bets) => set({ fakeBets: bets }),
 
+  // Shuffling (new shoe)
+  isShuffling: false,
+  setIsShuffling: (v) => set({ isShuffling: v }),
+
   // Reset for new round (when betting phase starts)
   resetForNewRound: () =>
     set({
@@ -376,6 +384,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       cardsRemaining: 416,
       bettingLimits: null,
       fakeBets: {},
+      isShuffling: false,
     }),
 
   // Chip preferences
