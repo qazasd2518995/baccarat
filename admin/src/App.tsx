@@ -14,6 +14,8 @@ import Notices from './pages/Notices';
 import Reports from './pages/Reports';
 import GameControl from './pages/GameControl';
 import OperationLogs from './pages/OperationLogs';
+import WinControl from './pages/WinControl';
+import ManualDetection from './pages/ManualDetection';
 import ToastContainer from './components/Toast';
 
 // Protected Route component (requires admin or agent role)
@@ -57,6 +59,8 @@ function App() {
           <Route path="log/index" element={<Logs />} />
           <Route path="game/rounds" element={<GameRounds />} />
           <Route path="game/control" element={<GameControl />} />
+          <Route path="game/win-control" element={<WinControl />} />
+          <Route path="game/manual-detection" element={<ManualDetection />} />
           <Route path="settings" element={<Settings />} />
           <Route path="notices" element={<Notices />} />
           <Route path="reports" element={<Reports />} />

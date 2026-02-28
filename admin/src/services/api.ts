@@ -381,4 +381,55 @@ export const bettingApi = {
   }) => api.get('/game/bets', { params }),
 };
 
+// Win Control API (輸贏控制)
+export const winControlApi = {
+  // 會員輸贏控制
+  getMembers: (params?: { search?: string; page?: number; limit?: number }) =>
+    api.get('/win-control/members', { params }),
+  getMember: (userId: string) => api.get(`/win-control/members/${userId}`),
+  setMemberWinCap: (userId: string, data: {
+    enabled: boolean;
+    dailyCap?: number | null;
+    weeklyCap?: number | null;
+    monthlyCap?: number | null;
+    note?: string | null;
+  }) => api.put(`/win-control/members/${userId}`, data),
+  resetMemberWinCap: (userId: string) => api.post(`/win-control/members/${userId}/reset`),
+
+  // 代理線輸贏控制
+  getAgents: (params?: { search?: string; page?: number; limit?: number }) =>
+    api.get('/win-control/agents', { params }),
+  getAgent: (agentId: string) => api.get(`/win-control/agents/${agentId}`),
+  setAgentLineWinCap: (agentId: string, data: {
+    enabled: boolean;
+    dailyCap?: number | null;
+    weeklyCap?: number | null;
+    monthlyCap?: number | null;
+    note?: string | null;
+  }) => api.put(`/win-control/agents/${agentId}`, data),
+  resetAgentLineWinCap: (agentId: string) => api.post(`/win-control/agents/${agentId}/reset`),
+};
+
+// Manual Detection API (自動偵測)
+export const manualDetectionApi = {
+  getMembers: (params?: { search?: string }) => api.get('/manual-detection/members', { params }),
+  getAgents: (params?: { search?: string }) => api.get('/manual-detection/agents', { params }),
+  getSettlement: (params?: { scope?: string; agent_id?: string; member_username?: string }) =>
+    api.get('/manual-detection/settlement', { params }),
+  activate: (data: {
+    scope: 'all' | 'agent_line' | 'member';
+    targetAgentId?: string;
+    targetAgentUsername?: string;
+    targetMemberUsername?: string;
+    targetSettlement: number;
+    controlPercentage: number;
+  }) => api.post('/manual-detection/activate', data),
+  deactivate: (id?: string) => api.post('/manual-detection/deactivate', { id }),
+  reactivate: (id: string) => api.post(`/manual-detection/reactivate/${id}`),
+  getStatus: () => api.get('/manual-detection/status'),
+  getHistory: (params?: { page?: number; limit?: number }) =>
+    api.get('/manual-detection/history', { params }),
+  deleteRecord: (id: string) => api.delete(`/manual-detection/${id}`),
+};
+
 export default api;

@@ -20,6 +20,8 @@ import dealersRoutes from './routes/dealers.js';
 import agentManagementRoutes from './routes/agentManagement.js';
 import agentReportRoutes from './routes/agentReport.js';
 import logsRoutes from './routes/logs.js';
+import winControlRoutes from './routes/winControl.js';
+import manualDetectionRoutes from './routes/manualDetection.js';
 import { initializeSocket } from './socket/index.js';
 import { setSocketInstance } from './socket/socketManager.js';
 import { startMultiTableGameLoop } from './services/multiTableGameLoop.js';
@@ -71,6 +73,8 @@ app.use('/api/dealers', dealersRoutes);
 app.use('/api/agent-management', agentManagementRoutes);
 app.use('/api/agent-report', agentReportRoutes);
 app.use('/api/logs', logsRoutes);
+app.use('/api/win-control', winControlRoutes);
+app.use('/api/manual-detection', manualDetectionRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

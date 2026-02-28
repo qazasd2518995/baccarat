@@ -580,3 +580,33 @@ model GamePlatform {
 
   @@map("game_platforms")
 }
+
+// 手動偵測控制（自動偵測）
+enum DetectionScope {
+  all
+  agent_line
+  member
+}
+
+model ManualDetectionControl {
+  id                   String          @id @default(uuid())
+  scope                DetectionScope  // 控制範圍：全盤、代理線、會員
+  targetAgentId        String?         @map("target_agent_id")
+  targetAgentUsername  String?         @map("target_agent_username")
+  targetMemberUsername String?         @map("target_member_username")
+  targetSettlement     Decimal         @map("target_settlement") @db.Decimal(15, 2)
+  controlPercentage    Int             @map("control_percentage")  // 控制機率 1-100
+  startSettlement      Decimal         @default(0) @map("start_settlement") @db.Decimal(15, 2)
+  isActive             Boolean         @default(true) @map("is_active")
+  isCompleted          Boolean         @default(false) @map("is_completed")
+  completedAt          DateTime?       @map("completed_at")
+  completionSettlement Decimal?        @map("completion_settlement") @db.Decimal(15, 2)
+  operatorId           String          @map("operator_id")
+  operatorUsername     String?         @map("operator_username")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+
+  @@index([scope, isActive])
+  @@index([targetAgentId, isActive])
+  @@map("manual_detection_controls")
+}

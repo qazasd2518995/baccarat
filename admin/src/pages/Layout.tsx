@@ -18,6 +18,8 @@ import {
   ClipboardList,
   Menu,
   X,
+  Target,
+  Activity,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
@@ -28,6 +30,8 @@ const NAV_ITEMS = [
   { path: '/bet/index', icon: History, label: '投注记录' },
   { path: '/game/rounds', icon: Gamepad2, label: '游戏记录' },
   { path: '/game/control', icon: Joystick, label: '游戏控制' },
+  { path: '/game/win-control', icon: Target, label: '输赢控制' },
+  { path: '/game/manual-detection', icon: Activity, label: '自动侦测' },
   { path: '/member/index', icon: Users, label: '下线代理管理' },
   { path: '/notices', icon: Bell, label: '公告管理' },
   { path: '/settings', icon: Settings, label: '系统设置' },
