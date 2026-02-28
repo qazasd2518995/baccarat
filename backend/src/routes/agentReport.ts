@@ -103,6 +103,26 @@ async function getAllDownlineMembers(agentId: string): Promise<string[]> {
   return memberIds;
 }
 
+// Helper to get all downline agents recursively
+async function getAllDownlineAgents(agentId: string): Promise<string[]> {
+  const agentIds: string[] = [];
+
+  // Get direct downline agents
+  const directAgents = await prisma.user.findMany({
+    where: { parentAgentId: agentId, role: 'agent' },
+    select: { id: true }
+  });
+
+  for (const agent of directAgents) {
+    agentIds.push(agent.id);
+    // Recursively get sub-agents
+    const subAgents = await getAllDownlineAgents(agent.id);
+    agentIds.push(...subAgents);
+  }
+
+  return agentIds;
+}
+
 // Helper to calculate agent report
 async function calculateAgentReport(agentId: string, startDate: Date, endDate: Date) {
   // Get all members under this agent
@@ -187,16 +207,23 @@ router.get('/agent', requireRole('admin', 'agent'), async (req: Request, res: Re
       select: { username: true, nickname: true, agentLevel: true, sharePercent: true, rebatePercent: true }
     });
 
-    // Get direct downline agents
+    // Get all downline agent IDs recursively
+    const allAgentIds = await getAllDownlineAgents(currentUser.userId);
+
+    // Build filter for agents
     let agentFilter: any = {
-      parentAgentId: currentUser.userId,
-      role: 'agent'
+      id: { in: allAgentIds }
     };
 
     if (agentId) {
-      agentFilter.OR = [
-        { username: { contains: agentId as string, mode: 'insensitive' } },
-        { nickname: { contains: agentId as string, mode: 'insensitive' } }
+      agentFilter.AND = [
+        { id: { in: allAgentIds } },
+        {
+          OR: [
+            { username: { contains: agentId as string, mode: 'insensitive' } },
+            { nickname: { contains: agentId as string, mode: 'insensitive' } }
+          ]
+        }
       ];
     }
 
@@ -208,9 +235,12 @@ router.get('/agent', requireRole('admin', 'agent'), async (req: Request, res: Re
         nickname: true,
         agentLevel: true,
         sharePercent: true,
-        rebatePercent: true
+        rebatePercent: true,
+        parentAgent: {
+          select: { username: true }
+        }
       },
-      orderBy: { createdAt: 'asc' }
+      orderBy: [{ agentLevel: 'asc' }, { createdAt: 'asc' }]
     });
 
     // Calculate report for each downline agent
@@ -283,19 +313,17 @@ router.get('/member', requireRole('admin', 'agent'), async (req: Request, res: R
       select: { username: true, nickname: true, agentLevel: true, sharePercent: true, rebatePercent: true }
     });
 
-    // Get members - admin sees all, agent sees only direct downline
-    let memberFilter: any = {
-      role: 'member'
-    };
+    // Get all downline member IDs recursively (includes sub-agents' members)
+    const allMemberIds = await getAllDownlineMembers(currentUser.userId);
 
-    // Agent can only see direct downline members
-    if (currentUser.role === 'agent') {
-      memberFilter.parentAgentId = currentUser.userId;
-    }
+    // Build filter for members
+    let memberFilter: any = {
+      id: { in: allMemberIds }
+    };
 
     if (memberId) {
       memberFilter.AND = [
-        memberFilter,
+        { id: { in: allMemberIds } },
         {
           OR: [
             { username: { contains: memberId as string, mode: 'insensitive' } },
@@ -310,7 +338,10 @@ router.get('/member', requireRole('admin', 'agent'), async (req: Request, res: R
       select: {
         id: true,
         username: true,
-        nickname: true
+        nickname: true,
+        parentAgent: {
+          select: { username: true }
+        }
       },
       orderBy: { createdAt: 'asc' }
     });
