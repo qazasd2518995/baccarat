@@ -9,18 +9,16 @@ const router = Router();
 router.use(authenticate);
 router.use(requireRole('admin'));
 
-// ============ 會員輸贏控制 (Member Win Cap) ============
+// ============ 會員輸贏控制 ============
 
-const memberWinCapSchema = z.object({
+const memberControlSchema = z.object({
   enabled: z.boolean(),
-  dailyCap: z.number().positive().nullable().optional(),
-  weeklyCap: z.number().positive().nullable().optional(),
-  monthlyCap: z.number().positive().nullable().optional(),
-  controlWinRate: z.number().min(0).max(100).nullable().optional(), // 控制勝率
+  controlDirection: z.enum(['win', 'lose']),  // 'win' = 讓他贏, 'lose' = 讓他輸
+  controlPercentage: z.number().min(1).max(100),  // 控制機率 1-100%
   note: z.string().nullable().optional(),
 });
 
-// Get all users with win cap settings
+// Get all members with control settings
 router.get('/members', async (req, res) => {
   try {
     const { search, page = 1, limit = 20 } = req.query;
@@ -67,7 +65,7 @@ router.get('/members', async (req, res) => {
   }
 });
 
-// Get win cap for a specific user
+// Get control for a specific member
 router.get('/members/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -87,49 +85,28 @@ router.get('/members/:userId', async (req, res) => {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    // Calculate today's win amount from bets
-    const today = new Date();
-    today.setHours(7, 0, 0, 0); // Game day starts at 7 AM
-    if (new Date().getHours() < 7) {
-      today.setDate(today.getDate() - 1);
-    }
-
-    const todayBets = await prisma.bet.aggregate({
-      where: {
-        userId,
-        createdAt: { gte: today },
-        status: { in: ['won', 'lost'] },
-      },
-      _sum: { payout: true, amount: true },
-    });
-
-    const todayWin = Number(todayBets._sum.payout || 0) - Number(todayBets._sum.amount || 0);
-
     res.json({
       success: true,
       data: {
         ...user,
-        todayWin,
         winCapControl: user.winCapControl || {
           enabled: false,
-          dailyCap: null,
-          weeklyCap: null,
-          monthlyCap: null,
-          currentWin: 0,
+          controlDirection: 'win',
+          controlPercentage: 50,
         },
       },
     });
   } catch (error) {
-    console.error('Get member win cap error:', error);
+    console.error('Get member control error:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-// Set win cap for a user
+// Set control for a member
 router.put('/members/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
-    const data = memberWinCapSchema.parse(req.body);
+    const data = memberControlSchema.parse(req.body);
     const currentUser = req.user!;
 
     const user = await prisma.user.findUnique({
@@ -151,7 +128,7 @@ router.put('/members/:userId', async (req, res) => {
     await prisma.operationLog.create({
       data: {
         operatorId: currentUser.userId,
-        action: 'update_member_win_cap',
+        action: 'update_member_win_control',
         targetType: 'user',
         targetId: userId,
         details: { username: user.username, ...data },
@@ -164,13 +141,13 @@ router.put('/members/:userId', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ success: false, error: 'Invalid input', details: error.errors });
     }
-    console.error('Set member win cap error:', error);
+    console.error('Set member control error:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-// Reset current win for a user
-router.post('/members/:userId/reset', async (req, res) => {
+// Delete (disable) control for a member
+router.delete('/members/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const currentUser = req.user!;
@@ -179,45 +156,41 @@ router.post('/members/:userId/reset', async (req, res) => {
       where: { userId },
     });
 
-    if (!control) {
-      return res.status(404).json({ success: false, error: 'Win cap control not found' });
+    if (control) {
+      await prisma.winCapControl.delete({
+        where: { userId },
+      });
+
+      // Log operation
+      await prisma.operationLog.create({
+        data: {
+          operatorId: currentUser.userId,
+          action: 'delete_member_win_control',
+          targetType: 'user',
+          targetId: userId,
+          details: {},
+          ipAddress: Array.isArray(req.ip) ? req.ip[0] : req.ip,
+        },
+      });
     }
 
-    const updated = await prisma.winCapControl.update({
-      where: { userId },
-      data: { currentWin: 0 },
-    });
-
-    // Log operation
-    await prisma.operationLog.create({
-      data: {
-        operatorId: currentUser.userId,
-        action: 'reset_member_win_cap',
-        targetType: 'user',
-        targetId: userId,
-        details: { previousWin: control.currentWin },
-        ipAddress: Array.isArray(req.ip) ? req.ip[0] : req.ip,
-      },
-    });
-
-    res.json({ success: true, data: updated });
+    res.json({ success: true });
   } catch (error) {
-    console.error('Reset member win cap error:', error);
+    console.error('Delete member control error:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-// ============ 代理線輸贏控制 (Agent Line Win Cap) ============
+// ============ 代理線輸贏控制 ============
 
-const agentLineWinCapSchema = z.object({
+const agentLineControlSchema = z.object({
   enabled: z.boolean(),
-  dailyCap: z.number().positive().nullable().optional(),
-  weeklyCap: z.number().positive().nullable().optional(),
-  monthlyCap: z.number().positive().nullable().optional(),
+  controlDirection: z.enum(['win', 'lose']),  // 'win' = 讓線下贏, 'lose' = 讓線下輸
+  controlPercentage: z.number().min(1).max(100),  // 控制機率 1-100%
   note: z.string().nullable().optional(),
 });
 
-// Get all agents with win cap settings
+// Get all agents with control settings
 router.get('/agents', async (req, res) => {
   try {
     const { search, page = 1, limit = 20 } = req.query;
@@ -263,7 +236,7 @@ router.get('/agents', async (req, res) => {
   }
 });
 
-// Get agent line win cap with downline stats
+// Get control for a specific agent
 router.get('/agents/:agentId', async (req, res) => {
   try {
     const { agentId } = req.params;
@@ -277,6 +250,7 @@ router.get('/agents/:agentId', async (req, res) => {
         agentLevel: true,
         balance: true,
         agentLineWinCap: true,
+        _count: { select: { subUsers: true } },
       },
     });
 
@@ -284,67 +258,32 @@ router.get('/agents/:agentId', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Agent not found' });
     }
 
-    // Get all downline members recursively
-    const downlineMembers = await getAgentDownlineMembers(agentId);
-
-    // Calculate today's settlement for the agent line
-    const today = new Date();
-    today.setHours(7, 0, 0, 0);
-    if (new Date().getHours() < 7) {
-      today.setDate(today.getDate() - 1);
-    }
-
-    const memberIds = downlineMembers.map(m => m.id);
-
-    const todayBets = memberIds.length > 0 ? await prisma.bet.aggregate({
-      where: {
-        userId: { in: memberIds },
-        createdAt: { gte: today },
-        status: { in: ['won', 'lost'] },
-      },
-      _sum: { payout: true, amount: true },
-    }) : { _sum: { payout: 0, amount: 0 } };
-
-    const totalBet = Number(todayBets._sum.amount || 0);
-    const totalPayout = Number(todayBets._sum.payout || 0);
-    const memberWinLoss = totalPayout - totalBet;
-    const rebatePercent = 0.041;
-    const totalRebate = totalBet * rebatePercent;
-    const superiorSettlement = memberWinLoss + totalRebate;
+    // Get downline member count
+    const downlineCount = await getAgentDownlineMemberCount(agentId);
 
     res.json({
       success: true,
       data: {
         ...agent,
+        downlineMemberCount: downlineCount,
         agentLineWinCap: agent.agentLineWinCap || {
           enabled: false,
-          dailyCap: null,
-          weeklyCap: null,
-          monthlyCap: null,
-          currentWin: 0,
-        },
-        downlineStats: {
-          memberCount: downlineMembers.length,
-          todayBet: totalBet,
-          todayPayout: totalPayout,
-          memberWinLoss,
-          totalRebate,
-          superiorSettlement,
-          status: superiorSettlement > 0 ? 'green' : 'red',
+          controlDirection: 'win',
+          controlPercentage: 50,
         },
       },
     });
   } catch (error) {
-    console.error('Get agent line win cap error:', error);
+    console.error('Get agent control error:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-// Set agent line win cap
+// Set control for an agent line
 router.put('/agents/:agentId', async (req, res) => {
   try {
     const { agentId } = req.params;
-    const data = agentLineWinCapSchema.parse(req.body);
+    const data = agentLineControlSchema.parse(req.body);
     const currentUser = req.user!;
 
     const agent = await prisma.user.findUnique({
@@ -366,7 +305,7 @@ router.put('/agents/:agentId', async (req, res) => {
     await prisma.operationLog.create({
       data: {
         operatorId: currentUser.userId,
-        action: 'update_agent_line_win_cap',
+        action: 'update_agent_line_control',
         targetType: 'user',
         targetId: agentId,
         details: { username: agent.username, ...data },
@@ -379,13 +318,13 @@ router.put('/agents/:agentId', async (req, res) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ success: false, error: 'Invalid input', details: error.errors });
     }
-    console.error('Set agent line win cap error:', error);
+    console.error('Set agent line control error:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-// Reset agent line current win
-router.post('/agents/:agentId/reset', async (req, res) => {
+// Delete (disable) control for an agent line
+router.delete('/agents/:agentId', async (req, res) => {
   try {
     const { agentId } = req.params;
     const currentUser = req.user!;
@@ -394,44 +333,40 @@ router.post('/agents/:agentId/reset', async (req, res) => {
       where: { agentId },
     });
 
-    if (!control) {
-      return res.status(404).json({ success: false, error: 'Agent line win cap not found' });
+    if (control) {
+      await prisma.agentLineWinCap.delete({
+        where: { agentId },
+      });
+
+      // Log operation
+      await prisma.operationLog.create({
+        data: {
+          operatorId: currentUser.userId,
+          action: 'delete_agent_line_control',
+          targetType: 'user',
+          targetId: agentId,
+          details: {},
+          ipAddress: Array.isArray(req.ip) ? req.ip[0] : req.ip,
+        },
+      });
     }
 
-    const updated = await prisma.agentLineWinCap.update({
-      where: { agentId },
-      data: { currentWin: 0 },
-    });
-
-    // Log operation
-    await prisma.operationLog.create({
-      data: {
-        operatorId: currentUser.userId,
-        action: 'reset_agent_line_win_cap',
-        targetType: 'user',
-        targetId: agentId,
-        details: { previousWin: control.currentWin },
-        ipAddress: Array.isArray(req.ip) ? req.ip[0] : req.ip,
-      },
-    });
-
-    res.json({ success: true, data: updated });
+    res.json({ success: true });
   } catch (error) {
-    console.error('Reset agent line win cap error:', error);
+    console.error('Delete agent line control error:', error);
     res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
-// Helper function to get all downline members recursively
-async function getAgentDownlineMembers(agentId: string): Promise<{ id: string; username: string }[]> {
-  const members: { id: string; username: string }[] = [];
+// Helper function to get downline member count recursively
+async function getAgentDownlineMemberCount(agentId: string): Promise<number> {
+  let count = 0;
 
-  // Get direct members
-  const directMembers = await prisma.user.findMany({
+  // Get direct members count
+  const directMembers = await prisma.user.count({
     where: { parentAgentId: agentId, role: 'member' },
-    select: { id: true, username: true },
   });
-  members.push(...directMembers);
+  count += directMembers;
 
   // Get sub-agents and their members recursively
   const subAgents = await prisma.user.findMany({
@@ -440,11 +375,11 @@ async function getAgentDownlineMembers(agentId: string): Promise<{ id: string; u
   });
 
   for (const subAgent of subAgents) {
-    const subMembers = await getAgentDownlineMembers(subAgent.id);
-    members.push(...subMembers);
+    const subCount = await getAgentDownlineMemberCount(subAgent.id);
+    count += subCount;
   }
 
-  return members;
+  return count;
 }
 
 export default router;

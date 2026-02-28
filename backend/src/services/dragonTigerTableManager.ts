@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
 import { prisma } from '../lib/prisma.js';
 import { createShoe, burnCards, playDragonTigerRound, calculateDTBetResult, type Card, type DragonTigerRoundResult, type DragonTigerBetType } from '../utils/dragonTigerLogic.js';
-import { playControlledDragonTigerRound } from '../utils/gameResultControl.js';
+import { playControlledDragonTigerRound, type BettingUserInfo } from '../utils/gameResultControl.js';
 import { applyWinCap } from '../utils/winCapCheck.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
 import { generateFakeBets } from './fakeBetGenerator.js';
@@ -378,8 +378,20 @@ async function handleTableDealingPhase(io: TypedServer, tableId: string): Promis
     roundId: state.roundId,
   });
 
+  // Collect betting users info for control
+  const bettingUsers: BettingUserInfo[] = [];
+  for (const [userId, bets] of state.currentBets.entries()) {
+    for (const bet of bets) {
+      bettingUsers.push({
+        userId,
+        betType: bet.type,
+        amount: bet.amount,
+      });
+    }
+  }
+
   // Play round (with control if active)
-  const roundResult = await playControlledDragonTigerRound(state.currentShoe);
+  const roundResult = await playControlledDragonTigerRound(state.currentShoe, bettingUsers);
   state.cardsRemaining = state.currentShoe.length;
 
   console.log(

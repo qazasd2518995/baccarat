@@ -1,17 +1,15 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Search, X, Users, UserCheck, RotateCcw, Settings } from 'lucide-react';
+import { Search, X, Users, UserCheck, Settings, Trash2 } from 'lucide-react';
 import { winControlApi } from '../services/api';
 import { useToastStore } from '../store/toastStore';
 
 interface WinCapControl {
   id: string;
   enabled: boolean;
-  dailyCap: number | null;
-  weeklyCap: number | null;
-  monthlyCap: number | null;
-  currentWin: number;
+  controlDirection: 'win' | 'lose';  // 'win' = 讓他贏, 'lose' = 讓他輸
+  controlPercentage: number;  // 控制機率 1-100%
   note: string | null;
 }
 
@@ -48,9 +46,8 @@ export default function WinControl() {
   const [selectedItem, setSelectedItem] = useState<Member | Agent | null>(null);
   const [formData, setFormData] = useState({
     enabled: false,
-    dailyCap: '',
-    weeklyCap: '',
-    monthlyCap: '',
+    controlDirection: 'win' as 'win' | 'lose',
+    controlPercentage: 50,
     note: '',
   });
 
@@ -104,9 +101,8 @@ export default function WinControl() {
 
     setFormData({
       enabled: winCap?.enabled || false,
-      dailyCap: winCap?.dailyCap?.toString() || '',
-      weeklyCap: winCap?.weeklyCap?.toString() || '',
-      monthlyCap: winCap?.monthlyCap?.toString() || '',
+      controlDirection: winCap?.controlDirection || 'win',
+      controlPercentage: winCap?.controlPercentage || 50,
       note: winCap?.note || '',
     });
     setShowModal(true);
@@ -118,16 +114,15 @@ export default function WinControl() {
     try {
       const data = {
         enabled: formData.enabled,
-        dailyCap: formData.dailyCap ? Number(formData.dailyCap) : null,
-        weeklyCap: formData.weeklyCap ? Number(formData.weeklyCap) : null,
-        monthlyCap: formData.monthlyCap ? Number(formData.monthlyCap) : null,
+        controlDirection: formData.controlDirection,
+        controlPercentage: formData.controlPercentage,
         note: formData.note || null,
       };
 
       if (activeTab === 'members') {
-        await winControlApi.setMemberWinCap(selectedItem.id, data);
+        await winControlApi.setMemberControl(selectedItem.id, data);
       } else {
-        await winControlApi.setAgentLineWinCap(selectedItem.id, data);
+        await winControlApi.setAgentLineControl(selectedItem.id, data);
       }
 
       toast.success('保存成功');
@@ -138,35 +133,53 @@ export default function WinControl() {
         fetchAgents();
       }
     } catch (error) {
-      console.error('Failed to save win cap:', error);
+      console.error('Failed to save control:', error);
       toast.error('保存失敗');
     }
   };
 
-  const handleReset = async (item: Member | Agent) => {
+  const handleDelete = async (item: Member | Agent) => {
+    if (!confirm(`確定要刪除 ${item.username} 的控制設定嗎？`)) return;
+
     try {
       if (activeTab === 'members') {
-        await winControlApi.resetMemberWinCap(item.id);
+        await winControlApi.deleteMemberControl(item.id);
       } else {
-        await winControlApi.resetAgentLineWinCap(item.id);
+        await winControlApi.deleteAgentLineControl(item.id);
       }
-      toast.success('重置成功');
+      toast.success('刪除成功');
       if (activeTab === 'members') {
         fetchMembers();
       } else {
         fetchAgents();
       }
     } catch (error) {
-      console.error('Failed to reset win cap:', error);
-      toast.error('重置失敗');
+      console.error('Failed to delete control:', error);
+      toast.error('刪除失敗');
     }
+  };
+
+  const getControlDisplay = (control: WinCapControl | null) => {
+    if (!control?.enabled) {
+      return { label: '未啟用', className: 'bg-gray-500/20 text-gray-400' };
+    }
+    const direction = control.controlDirection === 'win' ? '贏' : '輸';
+    return {
+      label: `${control.controlPercentage}% ${direction}`,
+      className: control.controlDirection === 'win'
+        ? 'bg-green-500/20 text-green-400'
+        : 'bg-red-500/20 text-red-400'
+    };
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-white">輸贏控制</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-white">輸贏控制</h1>
+          <p className="text-gray-400 text-sm mt-1">設定會員或代理線的輸贏機率控制</p>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -230,122 +243,105 @@ export default function WinControl() {
                 <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">層級/下線</th>
               )}
               <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">餘額</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">控制狀態</th>
-              <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">當前贏取</th>
+              <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">控制設定</th>
               <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">操作</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[#333]">
             {loading ? (
               <tr>
-                <td colSpan={activeTab === 'members' ? 7 : 7} className="px-6 py-8 text-center text-gray-400">
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
                   {t('loading')}
                 </td>
               </tr>
             ) : (activeTab === 'members' ? members : agents).length === 0 ? (
               <tr>
-                <td colSpan={activeTab === 'members' ? 7 : 7} className="px-6 py-8 text-center text-gray-400">
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
                   {t('noData')}
                 </td>
               </tr>
             ) : activeTab === 'members' ? (
-              members.map((member) => (
-                <tr key={member.id} className="hover:bg-[#252525] transition-colors">
-                  <td className="px-6 py-4 text-white font-medium">{member.username}</td>
-                  <td className="px-6 py-4 text-gray-300">{member.nickname || '-'}</td>
-                  <td className="px-6 py-4 text-gray-300">
-                    {member.parentAgent?.username || '-'}
-                  </td>
-                  <td className="px-6 py-4 text-amber-400 font-medium">
-                    {Number(member.balance).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      member.winCapControl?.enabled
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-gray-500/20 text-gray-400'
-                    }`}>
-                      {member.winCapControl?.enabled ? '已啟用' : '未啟用'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`font-medium ${
-                      Number(member.winCapControl?.currentWin || 0) > 0 ? 'text-green-400' : 'text-gray-400'
-                    }`}>
-                      {Number(member.winCapControl?.currentWin || 0).toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => openEditModal(member)}
-                        className="p-2 hover:bg-[#333] text-gray-400 hover:text-amber-400 rounded-lg transition-colors"
-                        title="設定"
-                      >
-                        <Settings className="w-4 h-4" />
-                      </button>
-                      {member.winCapControl?.enabled && (
+              members.map((member) => {
+                const display = getControlDisplay(member.winCapControl);
+                return (
+                  <tr key={member.id} className="hover:bg-[#252525] transition-colors">
+                    <td className="px-6 py-4 text-white font-medium">{member.username}</td>
+                    <td className="px-6 py-4 text-gray-300">{member.nickname || '-'}</td>
+                    <td className="px-6 py-4 text-gray-300">
+                      {member.parentAgent?.username || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-amber-400 font-medium">
+                      {Number(member.balance).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${display.className}`}>
+                        {display.label}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => handleReset(member)}
-                          className="p-2 hover:bg-[#333] text-gray-400 hover:text-blue-400 rounded-lg transition-colors"
-                          title="重置計數"
+                          onClick={() => openEditModal(member)}
+                          className="p-2 hover:bg-[#333] text-gray-400 hover:text-amber-400 rounded-lg transition-colors"
+                          title="設定"
                         >
-                          <RotateCcw className="w-4 h-4" />
+                          <Settings className="w-4 h-4" />
                         </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
+                        {member.winCapControl?.enabled && (
+                          <button
+                            onClick={() => handleDelete(member)}
+                            className="p-2 hover:bg-[#333] text-gray-400 hover:text-red-400 rounded-lg transition-colors"
+                            title="刪除控制"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
-              agents.map((agent) => (
-                <tr key={agent.id} className="hover:bg-[#252525] transition-colors">
-                  <td className="px-6 py-4 text-white font-medium">{agent.username}</td>
-                  <td className="px-6 py-4 text-gray-300">{agent.nickname || '-'}</td>
-                  <td className="px-6 py-4 text-gray-300">
-                    L{agent.agentLevel} / {agent._count.subUsers} 人
-                  </td>
-                  <td className="px-6 py-4 text-amber-400 font-medium">
-                    {Number(agent.balance).toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      agent.agentLineWinCap?.enabled
-                        ? 'bg-green-500/20 text-green-400'
-                        : 'bg-gray-500/20 text-gray-400'
-                    }`}>
-                      {agent.agentLineWinCap?.enabled ? '已啟用' : '未啟用'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`font-medium ${
-                      Number(agent.agentLineWinCap?.currentWin || 0) > 0 ? 'text-green-400' : 'text-gray-400'
-                    }`}>
-                      {Number(agent.agentLineWinCap?.currentWin || 0).toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => openEditModal(agent)}
-                        className="p-2 hover:bg-[#333] text-gray-400 hover:text-amber-400 rounded-lg transition-colors"
-                        title="設定"
-                      >
-                        <Settings className="w-4 h-4" />
-                      </button>
-                      {agent.agentLineWinCap?.enabled && (
+              agents.map((agent) => {
+                const display = getControlDisplay(agent.agentLineWinCap);
+                return (
+                  <tr key={agent.id} className="hover:bg-[#252525] transition-colors">
+                    <td className="px-6 py-4 text-white font-medium">{agent.username}</td>
+                    <td className="px-6 py-4 text-gray-300">{agent.nickname || '-'}</td>
+                    <td className="px-6 py-4 text-gray-300">
+                      L{agent.agentLevel} / {agent._count.subUsers} 人
+                    </td>
+                    <td className="px-6 py-4 text-amber-400 font-medium">
+                      {Number(agent.balance).toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${display.className}`}>
+                        {display.label}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
                         <button
-                          onClick={() => handleReset(agent)}
-                          className="p-2 hover:bg-[#333] text-gray-400 hover:text-blue-400 rounded-lg transition-colors"
-                          title="重置計數"
+                          onClick={() => openEditModal(agent)}
+                          className="p-2 hover:bg-[#333] text-gray-400 hover:text-amber-400 rounded-lg transition-colors"
+                          title="設定"
                         >
-                          <RotateCcw className="w-4 h-4" />
+                          <Settings className="w-4 h-4" />
                         </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
+                        {agent.agentLineWinCap?.enabled && (
+                          <button
+                            onClick={() => handleDelete(agent)}
+                            className="p-2 hover:bg-[#333] text-gray-400 hover:text-red-400 rounded-lg transition-colors"
+                            title="刪除控制"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -384,40 +380,54 @@ export default function WinControl() {
                 </button>
               </div>
 
-              {/* Daily Cap */}
+              {/* Control Direction */}
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">日封頂金額</label>
-                <input
-                  type="number"
-                  value={formData.dailyCap}
-                  onChange={(e) => setFormData({ ...formData, dailyCap: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
-                  placeholder="不限制"
-                />
+                <label className="block text-sm font-medium text-gray-400 mb-2">控制方向</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setFormData({ ...formData, controlDirection: 'win' })}
+                    className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+                      formData.controlDirection === 'win'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-[#252525] text-gray-400 hover:bg-[#333]'
+                    }`}
+                  >
+                    讓他贏
+                  </button>
+                  <button
+                    onClick={() => setFormData({ ...formData, controlDirection: 'lose' })}
+                    className={`flex-1 py-3 rounded-xl font-medium transition-colors ${
+                      formData.controlDirection === 'lose'
+                        ? 'bg-red-500 text-white'
+                        : 'bg-[#252525] text-gray-400 hover:bg-[#333]'
+                    }`}
+                  >
+                    讓他輸
+                  </button>
+                </div>
               </div>
 
-              {/* Weekly Cap */}
+              {/* Control Percentage */}
               <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">週封頂金額</label>
+                <label className="block text-sm font-medium text-gray-400 mb-2">
+                  控制機率: <span className="text-amber-400">{formData.controlPercentage}%</span>
+                </label>
                 <input
-                  type="number"
-                  value={formData.weeklyCap}
-                  onChange={(e) => setFormData({ ...formData, weeklyCap: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
-                  placeholder="不限制"
+                  type="range"
+                  min="1"
+                  max="100"
+                  value={formData.controlPercentage}
+                  onChange={(e) => setFormData({ ...formData, controlPercentage: Number(e.target.value) })}
+                  className="w-full h-2 bg-[#333] rounded-lg appearance-none cursor-pointer accent-amber-500"
                 />
-              </div>
-
-              {/* Monthly Cap */}
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">月封頂金額</label>
-                <input
-                  type="number"
-                  value={formData.monthlyCap}
-                  onChange={(e) => setFormData({ ...formData, monthlyCap: e.target.value })}
-                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
-                  placeholder="不限制"
-                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>1%</span>
+                  <span>50%</span>
+                  <span>100%</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  例如設定 70% 贏，表示 70% 機率會控制讓他贏，30% 機率自然開獎
+                </p>
               </div>
 
               {/* Note */}

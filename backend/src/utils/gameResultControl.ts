@@ -1,8 +1,10 @@
 /**
  * 遊戲開獎控制模組
  *
- * 根據當前的手動偵測控制設定，決定是否需要干預開獎結果
- * 讓平台達到目標上級交收
+ * 支援三種控制類型：
+ * 1. 自動偵測控制 (ManualDetectionControl) - 根據目標上級交收控制
+ * 2. 會員輸贏控制 (WinCapControl) - 針對特定會員的機率控制
+ * 3. 代理線輸贏控制 (AgentLineWinCap) - 針對代理線下所有會員的機率控制
  */
 
 import { prisma } from '../lib/prisma.js';
@@ -96,14 +98,130 @@ async function calculateCurrentSettlement(
   return superiorSettlement;
 }
 
-// 檢查是否需要控制開獎
+// ============================================
+// 控制決策介面
+// ============================================
+
 interface ControlDecision {
   shouldControl: boolean;
   favorHouse: boolean;  // true = 讓莊家贏，false = 讓閒家贏（百家樂）或 讓龍贏/虎贏
   controlPercentage: number;
+  source?: string;  // 控制來源
 }
 
-async function checkControlNeeded(): Promise<ControlDecision> {
+// ============================================
+// 檢查會員/代理線輸贏控制
+// ============================================
+
+interface BettingUserInfo {
+  userId: string;
+  betType: string;  // 'player', 'banker', 'tie', 'dragon', 'tiger', etc.
+  amount: number;
+}
+
+async function checkMemberAgentControl(bettingUsers: BettingUserInfo[]): Promise<ControlDecision> {
+  try {
+    if (bettingUsers.length === 0) {
+      return { shouldControl: false, favorHouse: false, controlPercentage: 0 };
+    }
+
+    // 取得所有下注用戶的 ID
+    const userIds = [...new Set(bettingUsers.map(u => u.userId))];
+
+    // 1. 檢查會員個人控制
+    const memberControls = await prisma.winCapControl.findMany({
+      where: {
+        userId: { in: userIds },
+        enabled: true,
+      },
+      include: {
+        user: { select: { username: true } },
+      },
+    });
+
+    for (const control of memberControls) {
+      const random = randomInt(100);
+      if (random < control.controlPercentage) {
+        const favorHouse = control.controlDirection === 'lose';  // 'lose' = 讓他輸 = 平台贏
+        console.log(`[GameControl] 會員控制啟動: user=${control.user.username}, direction=${control.controlDirection}, percentage=${control.controlPercentage}%, favorHouse=${favorHouse}`);
+        return {
+          shouldControl: true,
+          favorHouse,
+          controlPercentage: control.controlPercentage,
+          source: `member:${control.user.username}`,
+        };
+      }
+    }
+
+    // 2. 檢查代理線控制
+    // 獲取用戶的上級代理
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, parentAgentId: true },
+    });
+
+    const agentIds = [...new Set(users.map(u => u.parentAgentId).filter(Boolean))] as string[];
+
+    if (agentIds.length > 0) {
+      // 遞歸獲取所有上級代理（含直屬和更上層）
+      const allAgentIds = new Set<string>(agentIds);
+
+      // 獲取上級代理的上級
+      const getParentAgents = async (ids: string[]): Promise<void> => {
+        const agents = await prisma.user.findMany({
+          where: { id: { in: ids } },
+          select: { parentAgentId: true },
+        });
+        const parentIds = agents.map(a => a.parentAgentId).filter(Boolean) as string[];
+        for (const pid of parentIds) {
+          if (!allAgentIds.has(pid)) {
+            allAgentIds.add(pid);
+          }
+        }
+        if (parentIds.length > 0) {
+          await getParentAgents(parentIds);
+        }
+      };
+
+      await getParentAgents(agentIds);
+
+      const agentLineControls = await prisma.agentLineWinCap.findMany({
+        where: {
+          agentId: { in: [...allAgentIds] },
+          enabled: true,
+        },
+        include: {
+          agent: { select: { username: true } },
+        },
+      });
+
+      for (const control of agentLineControls) {
+        const random = randomInt(100);
+        if (random < control.controlPercentage) {
+          const favorHouse = control.controlDirection === 'lose';
+          console.log(`[GameControl] 代理線控制啟動: agent=${control.agent.username}, direction=${control.controlDirection}, percentage=${control.controlPercentage}%, favorHouse=${favorHouse}`);
+          return {
+            shouldControl: true,
+            favorHouse,
+            controlPercentage: control.controlPercentage,
+            source: `agent_line:${control.agent.username}`,
+          };
+        }
+      }
+    }
+
+    return { shouldControl: false, favorHouse: false, controlPercentage: 0 };
+  } catch (error) {
+    console.error('[GameControl] 檢查會員/代理控制失敗:', error);
+    return { shouldControl: false, favorHouse: false, controlPercentage: 0 };
+  }
+}
+
+// ============================================
+// 檢查自動偵測控制
+// ============================================
+
+async function checkAutoDetectionControl(): Promise<ControlDecision> {
   try {
     // 獲取所有活動的控制
     const activeControls = await prisma.manualDetectionControl.findMany({
@@ -137,11 +255,12 @@ async function checkControlNeeded(): Promise<ControlDecision> {
         // 根據控制機率決定是否這局進行控制
         const random = randomInt(100);
         if (random < control.controlPercentage) {
-          console.log(`[GameControl] 控制啟動: scope=${control.scope}, 當前=${currentSettlement.toFixed(2)}, 目標=${targetSettlement.toFixed(2)}, favorHouse=${shouldControlDirection}`);
+          console.log(`[GameControl] 自動偵測控制啟動: scope=${control.scope}, 當前=${currentSettlement.toFixed(2)}, 目標=${targetSettlement.toFixed(2)}, favorHouse=${shouldControlDirection}`);
           return {
             shouldControl: true,
             favorHouse: shouldControlDirection, // true = 讓平台贏（莊家贏）
             controlPercentage: control.controlPercentage,
+            source: `auto_detection:${control.scope}`,
           };
         }
       }
@@ -160,15 +279,32 @@ async function checkControlNeeded(): Promise<ControlDecision> {
             completionSettlement: currentSettlement,
           },
         });
-        console.log(`[GameControl] 控制達標: scope=${control.scope}, 最終交收=${currentSettlement.toFixed(2)}`);
+        console.log(`[GameControl] 自動偵測達標: scope=${control.scope}, 最終交收=${currentSettlement.toFixed(2)}`);
       }
     }
 
     return { shouldControl: false, favorHouse: false, controlPercentage: 0 };
   } catch (error) {
-    console.error('[GameControl] 檢查控制失敗:', error);
+    console.error('[GameControl] 檢查自動偵測控制失敗:', error);
     return { shouldControl: false, favorHouse: false, controlPercentage: 0 };
   }
+}
+
+// ============================================
+// 統一控制檢查（優先順序：會員 > 代理線 > 自動偵測）
+// ============================================
+
+async function checkControlNeeded(bettingUsers?: BettingUserInfo[]): Promise<ControlDecision> {
+  // 1. 先檢查會員/代理線控制（針對性控制優先）
+  if (bettingUsers && bettingUsers.length > 0) {
+    const memberAgentControl = await checkMemberAgentControl(bettingUsers);
+    if (memberAgentControl.shouldControl) {
+      return memberAgentControl;
+    }
+  }
+
+  // 2. 再檢查自動偵測控制
+  return checkAutoDetectionControl();
 }
 
 // ============================================
@@ -179,8 +315,11 @@ async function checkControlNeeded(): Promise<ControlDecision> {
  * 控制百家樂開獎結果
  * 通過多次模擬，選擇符合控制方向的結果
  */
-export async function playControlledBaccaratRound(shoe: Card[]): Promise<RoundResult> {
-  const control = await checkControlNeeded();
+export async function playControlledBaccaratRound(
+  shoe: Card[],
+  bettingUsers?: BettingUserInfo[]
+): Promise<RoundResult> {
+  const control = await checkControlNeeded(bettingUsers);
 
   if (!control.shouldControl) {
     // 不需要控制，正常開獎
@@ -226,7 +365,7 @@ export async function playControlledBaccaratRound(shoe: Card[]): Promise<RoundRe
       shoe.pop();
     }
 
-    console.log(`[GameControl] 百家樂控制結果: ${bestResult.result} (P:${bestResult.playerPoints} vs B:${bestResult.bankerPoints})`);
+    console.log(`[GameControl] 百家樂控制結果: ${bestResult.result} (P:${bestResult.playerPoints} vs B:${bestResult.bankerPoints}) [${control.source}]`);
     return bestResult;
   }
 
@@ -323,8 +462,11 @@ function simulateBaccaratRound(shoe: Card[]): RoundResult {
 /**
  * 控制龍虎開獎結果
  */
-export async function playControlledDragonTigerRound(shoe: Card[]): Promise<DragonTigerRoundResult> {
-  const control = await checkControlNeeded();
+export async function playControlledDragonTigerRound(
+  shoe: Card[],
+  bettingUsers?: BettingUserInfo[]
+): Promise<DragonTigerRoundResult> {
+  const control = await checkControlNeeded(bettingUsers);
 
   if (!control.shouldControl) {
     return originalPlayDragonTigerRound(shoe);
@@ -385,7 +527,7 @@ export async function playControlledDragonTigerRound(shoe: Card[]): Promise<Drag
       shoe.push(dragonCard);
 
       const finalResult = originalPlayDragonTigerRound(shoe);
-      console.log(`[GameControl] 龍虎控制結果: ${finalResult.result} (D:${finalResult.dragonValue} vs T:${finalResult.tigerValue})`);
+      console.log(`[GameControl] 龍虎控制結果: ${finalResult.result} (D:${finalResult.dragonValue} vs T:${finalResult.tigerValue}) [${control.source}]`);
       return finalResult;
     }
   }
@@ -395,4 +537,5 @@ export async function playControlledDragonTigerRound(shoe: Card[]): Promise<Drag
 }
 
 // 導出給其他模組使用
-export { checkControlNeeded };
+export { checkControlNeeded, checkMemberAgentControl, checkAutoDetectionControl };
+export type { BettingUserInfo, ControlDecision };

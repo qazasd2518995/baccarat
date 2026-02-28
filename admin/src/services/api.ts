@@ -387,27 +387,25 @@ export const winControlApi = {
   getMembers: (params?: { search?: string; page?: number; limit?: number }) =>
     api.get('/win-control/members', { params }),
   getMember: (userId: string) => api.get(`/win-control/members/${userId}`),
-  setMemberWinCap: (userId: string, data: {
+  setMemberControl: (userId: string, data: {
     enabled: boolean;
-    dailyCap?: number | null;
-    weeklyCap?: number | null;
-    monthlyCap?: number | null;
+    controlDirection: 'win' | 'lose';
+    controlPercentage: number;
     note?: string | null;
   }) => api.put(`/win-control/members/${userId}`, data),
-  resetMemberWinCap: (userId: string) => api.post(`/win-control/members/${userId}/reset`),
+  deleteMemberControl: (userId: string) => api.delete(`/win-control/members/${userId}`),
 
   // 代理線輸贏控制
   getAgents: (params?: { search?: string; page?: number; limit?: number }) =>
     api.get('/win-control/agents', { params }),
   getAgent: (agentId: string) => api.get(`/win-control/agents/${agentId}`),
-  setAgentLineWinCap: (agentId: string, data: {
+  setAgentLineControl: (agentId: string, data: {
     enabled: boolean;
-    dailyCap?: number | null;
-    weeklyCap?: number | null;
-    monthlyCap?: number | null;
+    controlDirection: 'win' | 'lose';
+    controlPercentage: number;
     note?: string | null;
   }) => api.put(`/win-control/agents/${agentId}`, data),
-  resetAgentLineWinCap: (agentId: string) => api.post(`/win-control/agents/${agentId}/reset`),
+  deleteAgentLineControl: (agentId: string) => api.delete(`/win-control/agents/${agentId}`),
 };
 
 // Manual Detection API (自動偵測)

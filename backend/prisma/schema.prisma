@@ -293,36 +293,32 @@ model DepositControl {
   @@map("deposit_controls")
 }
 
-// 會員封頂控制
+// 會員輸贏控制（機率控制）
 model WinCapControl {
-  id         String   @id @default(uuid())
-  userId     String   @unique @map("user_id")
-  user       User     @relation(fields: [userId], references: [id])
-  enabled    Boolean  @default(false)
-  dailyCap   Decimal? @map("daily_cap") @db.Decimal(15, 2)
-  weeklyCap  Decimal? @map("weekly_cap") @db.Decimal(15, 2)
-  monthlyCap Decimal? @map("monthly_cap") @db.Decimal(15, 2)
-  currentWin Decimal  @default(0) @map("current_win") @db.Decimal(15, 2)
-  note       String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id                String   @id @default(uuid())
+  userId            String   @unique @map("user_id")
+  user              User     @relation(fields: [userId], references: [id])
+  enabled           Boolean  @default(false)
+  controlDirection  String   @default("win") @map("control_direction")  // 'win' = 讓他贏, 'lose' = 讓他輸
+  controlPercentage Int      @default(50) @map("control_percentage")    // 控制機率 1-100%
+  note              String?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   @@map("win_cap_controls")
 }
 
-// 代理線封頂控制
+// 代理線輸贏控制（機率控制）
 model AgentLineWinCap {
-  id         String   @id @default(uuid())
-  agentId    String   @unique @map("agent_id")
-  agent      User     @relation(fields: [agentId], references: [id])
-  enabled    Boolean  @default(false)
-  dailyCap   Decimal? @map("daily_cap") @db.Decimal(15, 2)
-  weeklyCap  Decimal? @map("weekly_cap") @db.Decimal(15, 2)
-  monthlyCap Decimal? @map("monthly_cap") @db.Decimal(15, 2)
-  currentWin Decimal  @default(0) @map("current_win") @db.Decimal(15, 2)
-  note       String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id                String   @id @default(uuid())
+  agentId           String   @unique @map("agent_id")
+  agent             User     @relation(fields: [agentId], references: [id])
+  enabled           Boolean  @default(false)
+  controlDirection  String   @default("win") @map("control_direction")  // 'win' = 讓線下贏, 'lose' = 讓線下輸
+  controlPercentage Int      @default(50) @map("control_percentage")    // 控制機率 1-100%
+  note              String?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   @@map("agent_line_win_caps")
 }

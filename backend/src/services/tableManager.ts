@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
 import { prisma } from '../lib/prisma.js';
 import { createShoe, burnCards, playRound, calculateBetResult, type Card, type RoundResult } from '../utils/gameLogic.js';
-import { playControlledBaccaratRound } from '../utils/gameResultControl.js';
+import { playControlledBaccaratRound, type BettingUserInfo } from '../utils/gameResultControl.js';
 import { applyWinCap } from '../utils/winCapCheck.js';
 import type { GamePhase, BetEntry, BetType } from '../socket/types.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
@@ -384,8 +384,20 @@ async function handleTableDealingPhase(io: TypedServer, tableId: string): Promis
     roundId: state.roundId,
   });
 
+  // Collect betting users info for control
+  const bettingUsers: BettingUserInfo[] = [];
+  for (const [userId, bets] of state.currentBets.entries()) {
+    for (const bet of bets) {
+      bettingUsers.push({
+        userId,
+        betType: bet.type,
+        amount: bet.amount,
+      });
+    }
+  }
+
   // Play round (with control if active)
-  const roundResult = await playControlledBaccaratRound(state.currentShoe);
+  const roundResult = await playControlledBaccaratRound(state.currentShoe, bettingUsers);
   state.cardsRemaining = state.currentShoe.length;
 
   console.log(

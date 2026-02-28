@@ -106,13 +106,12 @@ router.put('/deposit-control/:userId', async (req, res) => {
   }
 });
 
-// ============ Win Cap Control ============
+// ============ Win Cap Control (新版: 機率控制) ============
 
 const winCapControlSchema = z.object({
   enabled: z.boolean(),
-  dailyCap: z.number().positive().nullable().optional(),
-  weeklyCap: z.number().positive().nullable().optional(),
-  monthlyCap: z.number().positive().nullable().optional(),
+  controlDirection: z.enum(['win', 'lose']).optional(),
+  controlPercentage: z.number().min(1).max(100).optional(),
   note: z.string().nullable().optional(),
 });
 
@@ -142,10 +141,8 @@ router.get('/win-cap/:userId', async (req, res) => {
 
     res.json(control || {
       enabled: false,
-      dailyCap: null,
-      weeklyCap: null,
-      monthlyCap: null,
-      currentWin: 0,
+      controlDirection: 'win',
+      controlPercentage: 50,
       note: null,
     });
   } catch (error) {
@@ -179,9 +176,17 @@ router.put('/win-cap/:userId', async (req, res) => {
       where: { userId },
       create: {
         userId,
-        ...data,
+        enabled: data.enabled,
+        controlDirection: data.controlDirection || 'win',
+        controlPercentage: data.controlPercentage || 50,
+        note: data.note,
       },
-      update: data,
+      update: {
+        enabled: data.enabled,
+        controlDirection: data.controlDirection,
+        controlPercentage: data.controlPercentage,
+        note: data.note,
+      },
     });
 
     // Log operation
@@ -206,8 +211,8 @@ router.put('/win-cap/:userId', async (req, res) => {
   }
 });
 
-// Reset current win for a user
-router.post('/win-cap/:userId/reset', async (req, res) => {
+// Delete win cap control for a user
+router.delete('/win-cap/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const currentUser = req.user!;
@@ -216,41 +221,37 @@ router.post('/win-cap/:userId/reset', async (req, res) => {
       where: { userId },
     });
 
-    if (!control) {
-      return res.status(404).json({ error: 'Win cap control not found' });
+    if (control) {
+      await prisma.winCapControl.delete({
+        where: { userId },
+      });
+
+      // Log operation
+      await prisma.operationLog.create({
+        data: {
+          operatorId: currentUser.userId,
+          action: 'delete_win_cap',
+          targetType: 'user',
+          targetId: userId,
+          details: {},
+          ipAddress: Array.isArray(req.ip) ? req.ip[0] : req.ip,
+        },
+      });
     }
 
-    const updated = await prisma.winCapControl.update({
-      where: { userId },
-      data: { currentWin: 0 },
-    });
-
-    // Log operation
-    await prisma.operationLog.create({
-      data: {
-        operatorId: currentUser.userId,
-        action: 'reset_win_cap',
-        targetType: 'user',
-        targetId: userId,
-        details: { previousWin: control.currentWin },
-        ipAddress: Array.isArray(req.ip) ? req.ip[0] : req.ip,
-      },
-    });
-
-    res.json(updated);
+    res.json({ success: true });
   } catch (error) {
-    console.error('Reset win cap error:', error);
+    console.error('Delete win cap error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// ============ Agent Line Win Cap ============
+// ============ Agent Line Win Cap (新版: 機率控制) ============
 
 const agentLineWinCapSchema = z.object({
   enabled: z.boolean(),
-  dailyCap: z.number().positive().nullable().optional(),
-  weeklyCap: z.number().positive().nullable().optional(),
-  monthlyCap: z.number().positive().nullable().optional(),
+  controlDirection: z.enum(['win', 'lose']).optional(),
+  controlPercentage: z.number().min(1).max(100).optional(),
   note: z.string().nullable().optional(),
 });
 
@@ -274,10 +275,8 @@ router.get('/agent-line-cap/:agentId', requireRole('admin'), async (req, res) =>
 
     res.json(control || {
       enabled: false,
-      dailyCap: null,
-      weeklyCap: null,
-      monthlyCap: null,
-      currentWin: 0,
+      controlDirection: 'win',
+      controlPercentage: 50,
       note: null,
     });
   } catch (error) {
@@ -306,9 +305,17 @@ router.put('/agent-line-cap/:agentId', requireRole('admin'), async (req, res) =>
       where: { agentId },
       create: {
         agentId,
-        ...data,
+        enabled: data.enabled,
+        controlDirection: data.controlDirection || 'win',
+        controlPercentage: data.controlPercentage || 50,
+        note: data.note,
       },
-      update: data,
+      update: {
+        enabled: data.enabled,
+        controlDirection: data.controlDirection,
+        controlPercentage: data.controlPercentage,
+        note: data.note,
+      },
     });
 
     // Log operation
@@ -368,7 +375,7 @@ router.get('/summary/:userId', async (req, res) => {
         role: targetUser.role,
       },
       depositControl: depositControl || { enabled: false },
-      winCapControl: winCapControl || { enabled: false, currentWin: 0 },
+      winCapControl: winCapControl || { enabled: false, controlDirection: 'win', controlPercentage: 50 },
       bettingLimit: bettingLimit || null,
     });
   } catch (error) {
