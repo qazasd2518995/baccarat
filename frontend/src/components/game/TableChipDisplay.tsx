@@ -87,35 +87,53 @@ function pickDenomination(amount: number): number {
   return 100;
 }
 
+function getStackCount(amount: number): number {
+  if (amount >= 50000) return 6;
+  if (amount >= 20000) return 5;
+  if (amount >= 10000) return 4;
+  if (amount >= 5000) return 3;
+  if (amount >= 1000) return 2;
+  return 1;
+}
+
 export const FakeChipStack = memo(function FakeChipStack({ amount, compact = false }: FakeChipStackProps) {
   if (amount <= 0) return null;
 
   const denomination = pickDenomination(amount);
+  const count = getStackCount(amount);
 
-  // Mobile: tiny chips to avoid blocking odds; Desktop (sm+): larger chips
-  const mobileSize = compact ? 8 : 10;
-  const desktopSize = compact ? 18 : 24;
+  // Chip sizes per breakpoint
+  const mobileSize = compact ? 10 : 12;
+  const desktopSize = compact ? 20 : 26;
+
+  // Vertical offset between chips in the stack
+  const mobileGap = 2;
+  const desktopGap = 3;
+
+  const mobileStackH = mobileSize + (count - 1) * mobileGap;
+  const desktopStackH = desktopSize + (count - 1) * desktopGap;
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.5 }}
-      animate={{ opacity: 0.7, scale: 1 }}
-      className="pointer-events-none flex items-center gap-px sm:gap-1"
+      animate={{ opacity: 0.75, scale: 1 }}
+      className="pointer-events-none"
     >
-      {/* Mobile — single chip only, minimal footprint */}
-      <div className="relative sm:hidden" style={{ width: mobileSize, height: mobileSize }}>
-        <div className="absolute left-0 bottom-0">
-          <CasinoChip size={mobileSize} value={denomination} />
-        </div>
+      {/* Mobile chip stack */}
+      <div className="relative sm:hidden" style={{ width: mobileSize, height: mobileStackH }}>
+        {Array.from({ length: count }, (_, i) => (
+          <div key={i} className="absolute left-0" style={{ bottom: i * mobileGap }}>
+            <CasinoChip size={mobileSize} value={denomination} />
+          </div>
+        ))}
       </div>
       {/* Desktop chip stack */}
-      <div className="relative hidden sm:block" style={{ width: desktopSize, height: desktopSize + 3 }}>
-        <div className="absolute left-0" style={{ bottom: 3 }}>
-          <CasinoChip size={desktopSize} value={denomination} />
-        </div>
-        <div className="absolute left-0" style={{ bottom: 6 }}>
-          <CasinoChip size={desktopSize} value={denomination} />
-        </div>
+      <div className="relative hidden sm:block" style={{ width: desktopSize, height: desktopStackH }}>
+        {Array.from({ length: count }, (_, i) => (
+          <div key={i} className="absolute left-0" style={{ bottom: i * desktopGap }}>
+            <CasinoChip size={desktopSize} value={denomination} />
+          </div>
+        ))}
       </div>
     </motion.div>
   );
