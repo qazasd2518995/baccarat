@@ -12,7 +12,6 @@ import GameRounds from './pages/GameRounds';
 import Settings from './pages/Settings';
 import Notices from './pages/Notices';
 import Reports from './pages/Reports';
-import GameControl from './pages/GameControl';
 import WinControl from './pages/WinControl';
 import ManualDetection from './pages/ManualDetection';
 import ToastContainer from './components/Toast';
@@ -57,7 +56,6 @@ function App() {
           <Route path="member/index" element={<AgentManagement />} />
           <Route path="log/index" element={<Logs />} />
           <Route path="game/rounds" element={<GameRounds />} />
-          <Route path="game/control" element={<GameControl />} />
           <Route path="game/win-control" element={<WinControl />} />
           <Route path="game/manual-detection" element={<ManualDetection />} />
           <Route path="settings" element={<Settings />} />
