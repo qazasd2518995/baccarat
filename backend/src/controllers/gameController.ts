@@ -426,7 +426,7 @@ export async function newShoe(req: Request, res: Response) {
   }
 }
 
-// Get all game rounds (admin endpoint)
+// Get all baccarat game rounds (admin endpoint)
 export async function getAllRounds(req: Request, res: Response) {
   try {
     const { page = '1', limit = '20', result, from, to } = req.query;
@@ -477,6 +477,61 @@ export async function getAllRounds(req: Request, res: Response) {
     });
   } catch (error) {
     console.error('Get all rounds error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+// Get all dragon tiger rounds (admin endpoint)
+export async function getAllDragonTigerRounds(req: Request, res: Response) {
+  try {
+    const { page = '1', limit = '20', result, from, to } = req.query;
+
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+
+    const where: any = {};
+
+    if (result && result !== 'all') {
+      where.result = result as string;
+    }
+
+    if (from || to) {
+      where.createdAt = {};
+      if (from) where.createdAt.gte = new Date(from as string);
+      if (to) {
+        const toDate = new Date(to as string);
+        toDate.setHours(23, 59, 59, 999);
+        where.createdAt.lte = toDate;
+      }
+    }
+
+    const [rounds, total] = await Promise.all([
+      prisma.dragonTigerRound.findMany({
+        where,
+        skip,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: {
+            select: { bets: true },
+          },
+        },
+      }),
+      prisma.dragonTigerRound.count({ where }),
+    ]);
+
+    res.json({
+      rounds,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+      },
+    });
+  } catch (error) {
+    console.error('Get all dragon tiger rounds error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }

@@ -69,6 +69,21 @@ export interface GameRound {
   createdAt: string;
 }
 
+export type DragonTigerResult = 'dragon' | 'tiger' | 'tie';
+
+export interface DragonTigerRound {
+  id: string;
+  roundNumber: number;
+  shoeNumber: number;
+  dragonCard?: Card;
+  tigerCard?: Card;
+  dragonValue: number;
+  tigerValue: number;
+  result: DragonTigerResult | null;
+  isSuitedTie: boolean;
+  createdAt: string;
+}
+
 // API response types
 export interface PaginatedResponse<_T> {
   pagination: {
@@ -89,6 +104,11 @@ export interface TransactionsResponse extends PaginatedResponse<Transaction> {
 
 export interface GameRoundsResponse extends PaginatedResponse<GameRound> {
   rounds: GameRound[];
+  total?: number;
+}
+
+export interface DragonTigerRoundsResponse extends PaginatedResponse<DragonTigerRound> {
+  rounds: DragonTigerRound[];
   total?: number;
 }
 

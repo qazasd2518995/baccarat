@@ -5,6 +5,7 @@ import type {
   UsersResponse,
   TransactionsResponse,
   GameRoundsResponse,
+  DragonTigerRoundsResponse,
   LoginResponse,
   DashboardStats,
 } from '../types';
@@ -103,6 +104,13 @@ export const gameApi = {
     page?: number;
     limit?: number;
   }) => api.get<GameRoundsResponse>('/game/rounds', { params }),
+
+  getDragonTigerRounds: (params?: {
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }) => api.get<DragonTigerRoundsResponse>('/game/dragon-tiger-rounds', { params }),
 
   getStats: () => api.get<DashboardStats>('/game/stats'),
 };

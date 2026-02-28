@@ -7,6 +7,7 @@ import {
   newShoe,
   getBetStats,
   getAllRounds,
+  getAllDragonTigerRounds,
   getMyLimits,
 } from '../controllers/gameController.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
@@ -25,8 +26,11 @@ router.post('/play', playGame);
 // Get game history
 router.get('/history', getGameHistory);
 
-// Get all game rounds (admin/agent)
+// Get all baccarat game rounds (admin/agent)
 router.get('/rounds', requireRole('admin', 'agent'), getAllRounds);
+
+// Get all dragon tiger game rounds (admin/agent)
+router.get('/dragon-tiger-rounds', requireRole('admin', 'agent'), getAllDragonTigerRounds);
 
 // Get roadmap data
 router.get('/roadmap', getRoadmap);

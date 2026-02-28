@@ -185,3 +185,13 @@ export function CardGroup({ cards, points, label, color, size = 'sm' }: CardGrou
     </div>
   );
 }
+
+// SingleCard component for displaying a single card (Dragon Tiger)
+interface SingleCardProps {
+  card: Card;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+export function SingleCard({ card, size = 'md' }: SingleCardProps) {
+  return <PlayingCard card={card} size={size} />;
+}
