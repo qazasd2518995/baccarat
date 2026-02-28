@@ -13,7 +13,6 @@ import Settings from './pages/Settings';
 import Notices from './pages/Notices';
 import Reports from './pages/Reports';
 import GameControl from './pages/GameControl';
-import OperationLogs from './pages/OperationLogs';
 import WinControl from './pages/WinControl';
 import ManualDetection from './pages/ManualDetection';
 import ToastContainer from './components/Toast';
@@ -64,7 +63,6 @@ function App() {
           <Route path="settings" element={<Settings />} />
           <Route path="notices" element={<Notices />} />
           <Route path="reports" element={<Reports />} />
-          <Route path="operation-logs" element={<OperationLogs />} />
         </Route>
 
         {/* Fallback */}

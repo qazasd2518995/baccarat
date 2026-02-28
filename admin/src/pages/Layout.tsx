@@ -15,7 +15,6 @@ import {
   Bell,
   BarChart3,
   Joystick,
-  ClipboardList,
   Menu,
   X,
   Target,
@@ -36,7 +35,6 @@ const NAV_ITEMS = [
   { path: '/notices', icon: Bell, label: '公告管理' },
   { path: '/settings', icon: Settings, label: '系统设置' },
   { path: '/log/index', icon: ScrollText, label: '日志' },
-  { path: '/operation-logs', icon: ClipboardList, label: '操作日志' },
 ];
 
 export default function Layout() {
