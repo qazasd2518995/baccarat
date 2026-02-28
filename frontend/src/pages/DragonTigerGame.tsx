@@ -834,6 +834,11 @@ export default function DragonTigerGame() {
       {/* Flying chips overlay */}
       <FlyingChipOverlay chips={flyingChips} chipSize={32} />
 
+      {/* Fake bet stats — page top-left corner */}
+      <div className="fixed top-1 left-1 sm:top-2 sm:left-2 z-[55] pointer-events-none">
+        <FakeBetStats fakeBets={fakeBets} gameType="dragonTiger" />
+      </div>
+
       {/* Top Header Bar - Hidden on mobile, shown on lg+ */}
       <header className="hidden lg:flex h-11 bg-[#0d1117] items-center justify-between px-4 border-b border-gray-800/50">
         {/* Left - Back & Info */}
@@ -1195,10 +1200,6 @@ export default function DragonTigerGame() {
 
             </div>
 
-            {/* Fake bet stats - left of dealer */}
-            <div className="absolute top-[8%] sm:top-[12%] left-2 sm:left-4 z-30 pointer-events-none">
-              <FakeBetStats fakeBets={fakeBets} gameType="dragonTiger" />
-            </div>
 
             {/* Result Overlay */}
             <AnimatePresence>

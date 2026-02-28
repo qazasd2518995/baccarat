@@ -57,7 +57,7 @@ function DealerModelInner({ isDealing, url }: { isDealing: boolean; url: string 
 
   return (
     <group ref={groupRef}>
-      <primitive object={gltf.scene} scale={0.05} position={[0, -3.5, 0]} />
+      <primitive object={gltf.scene} scale={4.5} position={[0, -4, 0]} />
     </group>
   );
 }
@@ -72,7 +72,7 @@ function DealerLoadingFallback() {
   );
 }
 
-export default function DealerAvatar({ isDealing, dealerName, model = 'v2' }: DealerAvatarProps) {
+export default function DealerAvatar({ isDealing, model = 'v2' }: DealerAvatarProps) {
   // Only preload the model we actually need
   useEffect(() => {
     useGLTF.preload(MODEL_URLS[model]);
@@ -97,24 +97,7 @@ export default function DealerAvatar({ isDealing, dealerName, model = 'v2' }: De
         </Canvas>
       </div>
 
-      {dealerName && (
-        <>
-          {/* Mobile: Name on right side */}
-          <div
-            className="sm:hidden absolute top-1/2 -translate-y-1/2 right-0 bg-black/70 text-white text-[9px] px-2 py-0.5 rounded-full border border-[#d4af37]/30 whitespace-nowrap backdrop-blur-sm z-50"
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
-          >
-            {dealerName}
-          </div>
-          {/* Desktop: Name at bottom center */}
-          <div
-            className="hidden sm:block absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-3 py-1 rounded-full border border-[#d4af37]/30 whitespace-nowrap backdrop-blur-sm z-50"
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.4)' }}
-          >
-            {dealerName}
-          </div>
-        </>
-      )}
+      {/* Dealer name badge is now rendered by DealerTable3D */}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   User,
   Users,
   Spade,
+  Swords,
   LayoutGrid,
   Heart,
   FileText,
@@ -335,13 +336,7 @@ export default function Lobby() {
     <div className="h-full bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
       {/* Main Content — no top header */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Mobile menu toggle — floating button */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="lg:hidden fixed top-3 right-3 z-[60] p-2 bg-[#141922] border border-gray-700 rounded-lg text-gray-400 hover:text-white"
-        >
-          {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        {/* Mobile menu toggle — now inside the tab bar below */}
         {/* Mobile Menu Overlay */}
         {mobileMenuOpen && (
           <div
@@ -539,7 +534,7 @@ export default function Lobby() {
               {[
                 { id: 'all', labelKey: 'allGames', icon: LayoutGrid },
                 { id: 'baccarat', labelKey: 'baccarat', icon: Spade },
-                { id: 'dt', labelKey: 'dragonTiger', icon: null },
+                { id: 'dt', labelKey: 'dragonTiger', icon: Swords },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -554,6 +549,14 @@ export default function Lobby() {
                   {t(tab.labelKey)}
                 </button>
               ))}
+
+              {/* Hamburger menu — inside tab bar, mobile only */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="lg:hidden ml-auto flex items-center px-2 py-1 rounded text-gray-500 hover:text-gray-300 transition"
+              >
+                {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              </button>
             </div>
 
             <div className="hidden sm:block flex-1" />

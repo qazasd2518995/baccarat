@@ -90,28 +90,33 @@ function pickDenomination(amount: number): number {
 export const FakeChipStack = memo(function FakeChipStack({ amount, compact = false }: FakeChipStackProps) {
   if (amount <= 0) return null;
 
-  const chipSize = compact ? 12 : 16;
   const denomination = pickDenomination(amount);
+
+  // Mobile: tiny chips to avoid blocking odds; Desktop (sm+): larger chips
+  const mobileSize = compact ? 8 : 10;
+  const desktopSize = compact ? 18 : 24;
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.5 }}
-      animate={{ opacity: 0.85, scale: 1 }}
-      className="pointer-events-none flex items-center gap-0.5"
+      animate={{ opacity: 0.7, scale: 1 }}
+      className="pointer-events-none flex items-center gap-px sm:gap-1"
     >
-      <div className="relative" style={{ width: chipSize, height: chipSize + 2 }}>
-        {/* Bottom chip (shadow) */}
-        <div className="absolute left-0" style={{ bottom: 2 }}>
-          <CasinoChip size={chipSize} value={denomination} />
-        </div>
-        {/* Top chip */}
-        <div className="absolute left-0" style={{ bottom: 4 }}>
-          <CasinoChip size={chipSize} value={denomination} />
+      {/* Mobile — single chip only, minimal footprint */}
+      <div className="relative sm:hidden" style={{ width: mobileSize, height: mobileSize }}>
+        <div className="absolute left-0 bottom-0">
+          <CasinoChip size={mobileSize} value={denomination} />
         </div>
       </div>
-      <span className={`${compact ? 'text-[7px]' : 'text-[8px]'} text-white/60 font-mono leading-none`}>
-        {formatAmount(amount)}
-      </span>
+      {/* Desktop chip stack */}
+      <div className="relative hidden sm:block" style={{ width: desktopSize, height: desktopSize + 3 }}>
+        <div className="absolute left-0" style={{ bottom: 3 }}>
+          <CasinoChip size={desktopSize} value={denomination} />
+        </div>
+        <div className="absolute left-0" style={{ bottom: 6 }}>
+          <CasinoChip size={desktopSize} value={denomination} />
+        </div>
+      </div>
     </motion.div>
   );
 });
