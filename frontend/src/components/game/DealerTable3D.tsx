@@ -351,7 +351,7 @@ export default function DealerTable3D({
           style={{ top: tableTop }}
         >
           <div
-            className="relative px-4 py-1 sm:px-6 sm:py-1.5 -translate-y-1/2"
+            className="relative px-2 py-0.5 sm:px-6 sm:py-1.5 -translate-y-1/2"
             style={{
               background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%)',
               borderRadius: '2px',
