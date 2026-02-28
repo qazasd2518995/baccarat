@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { memo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import DealerAvatar from './DealerAvatar';
 import type { DealerModel } from './DealerAvatar';
 import { useBreakpoint } from '../../hooks/useBreakpoint';
@@ -9,7 +11,94 @@ interface DealerTable3DProps {
   dealerName?: string;
   gameType?: 'baccarat' | 'dragonTiger' | 'bullBull';
   dealerModel?: DealerModel;
+  phase?: string;
 }
+
+// ——— Shuffling animation overlay ———
+const ShufflingOverlay = memo(function ShufflingOverlay() {
+  // 6 cards doing a riffle shuffle animation
+  const cards = [0, 1, 2, 3, 4, 5];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="absolute inset-0 z-40 flex flex-col items-center justify-center pointer-events-none"
+    >
+      {/* Dim overlay */}
+      <div className="absolute inset-0 bg-black/30" />
+
+      {/* Shuffling cards container */}
+      <div className="relative w-20 h-14 sm:w-28 sm:h-20">
+        {cards.map((i) => {
+          const isLeft = i % 2 === 0;
+          const delay = i * 0.12;
+          return (
+            <motion.div
+              key={i}
+              className="absolute top-0 rounded-sm sm:rounded"
+              style={{
+                width: '28px',
+                height: '40px',
+                left: '50%',
+                marginLeft: '-14px',
+                background: 'linear-gradient(135deg, #c0392b 0%, #e74c3c 30%, #c0392b 60%, #a93226 100%)',
+                border: '1.5px solid rgba(255,255,255,0.3)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+              }}
+              animate={{
+                x: isLeft
+                  ? [-20, 0, 20, 0, -20]
+                  : [20, 0, -20, 0, 20],
+                y: [0, -8, 0, -8, 0],
+                rotateZ: isLeft
+                  ? [-15, 0, 15, 0, -15]
+                  : [15, 0, -15, 0, 15],
+              }}
+              transition={{
+                duration: 1.2,
+                delay,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
+            >
+              {/* Card back pattern */}
+              <div
+                className="absolute inset-[2px] rounded-[1px]"
+                style={{
+                  background: `
+                    repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.08) 2px, rgba(255,255,255,0.08) 4px),
+                    linear-gradient(135deg, #a93226 0%, #c0392b 100%)
+                  `,
+                  border: '0.5px solid rgba(255,215,0,0.3)',
+                }}
+              />
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Shuffling text */}
+      <motion.div
+        className="relative mt-3 sm:mt-4"
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+      >
+        <span
+          className="text-[10px] sm:text-xs font-bold tracking-[0.25em]"
+          style={{
+            color: '#e8d48b',
+            textShadow: '0 0 10px rgba(212,175,55,0.5), 0 1px 3px rgba(0,0,0,0.8)',
+          }}
+        >
+          洗牌中...
+        </span>
+      </motion.div>
+    </motion.div>
+  );
+});
 
 const FELT_COLORS = {
   baccarat:    { from: '#0d4a2a', via: '#0a3d22', to: '#07301a' },
@@ -31,6 +120,7 @@ export default function DealerTable3D({
   dealerName,
   gameType = 'baccarat',
   dealerModel = 'v2',
+  phase,
 }: DealerTable3DProps) {
   const bp = useBreakpoint();
   const felt = FELT_COLORS[gameType];
@@ -566,6 +656,11 @@ export default function DealerTable3D({
             <div className="absolute inset-0" style={{ transformStyle: 'flat' }}>
               {children}
             </div>
+
+            {/* Shuffling overlay */}
+            <AnimatePresence>
+              {phase === 'sealed' && <ShufflingOverlay />}
+            </AnimatePresence>
           </div>
         </div>
 

@@ -396,7 +396,7 @@ export default function DragonTigerGame() {
   const [followLoading, setFollowLoading] = useState(false);
 
   // Current dealer name — varies per table
-  const dealerNames = ['小美', '花花', '安琪', '曉婷', '佳琪', '雅芳', '詩涵', '宛如', '心怡', '美玲'];
+  const dealerNames = ['Coco', '若汐', '梓涵', '雨桐', '詩涵', '欣妍', 'Mia', 'Luna', 'Ivy', 'Yuna', 'Lena', 'Zoe'];
   const currentDealerName = dealerNames[
     (tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % dealerNames.length
   ];
@@ -1120,6 +1120,7 @@ export default function DragonTigerGame() {
             dealerName={currentDealerName}
             gameType="dragonTiger"
             dealerModel={dealerModelForTable}
+            phase={phase}
           >
             {/* Round Info - Hidden on mobile, compact on tablet */}
             <div className="hidden sm:block absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 rounded px-2 sm:px-3 py-1 text-xs sm:text-sm z-20">

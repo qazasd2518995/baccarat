@@ -434,7 +434,7 @@ export default function Game() {
   const prevConfirmedBetsRef = useRef<number>(0);
 
   // Current dealer name — varies per table
-  const dealerNames = ['花花', '小美', '安琪', '曉婷', '佳琪', '雅芳', '詩涵', '宛如', '心怡', '美玲'];
+  const dealerNames = ['若汐', '梓涵', '雨桐', '詩涵', '欣妍', 'Mia', 'Coco', 'Luna', 'Ivy', 'Yuna', 'Lena', 'Zoe'];
   const currentDealerName = dealerNames[
     (tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % dealerNames.length
   ];
@@ -1359,6 +1359,7 @@ export default function Game() {
             dealerName={currentDealerName}
             gameType="baccarat"
             dealerModel={dealerModelForTable}
+            phase={phase}
           >
 
               {/* Top info bar */}

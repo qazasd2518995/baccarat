@@ -436,10 +436,11 @@ export default function BullBullGame() {
       <DealerTable3D
         isDealing={phase === 'dealing'}
         dealerName={(() => {
-          const names = ['宛如', '花花', '安琪', '曉婷', '佳琪', '雅芳', '詩涵', '小美', '心怡', '美玲'];
+          const names = ['Yuna', '若汐', '梓涵', '雨桐', '詩涵', '欣妍', 'Mia', 'Coco', 'Luna', 'Ivy', 'Lena', 'Zoe'];
           return names[(tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % names.length];
         })()}
         gameType="bullBull"
+        phase={phase}
         dealerModel="v3"
       >
         <div className="absolute inset-0 overflow-auto p-2 sm:p-4 pb-32 sm:pb-36">
