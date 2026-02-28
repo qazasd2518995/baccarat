@@ -395,8 +395,11 @@ export default function DragonTigerGame() {
   const [isFollowingDealer, setIsFollowingDealer] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
 
-  // Current dealer name
-  const currentDealerName = '小美';
+  // Current dealer name — varies per table
+  const dealerNames = ['小美', '花花', '安琪', '曉婷', '佳琪', '雅芳', '詩涵', '宛如', '心怡', '美玲'];
+  const currentDealerName = dealerNames[
+    (tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % dealerNames.length
+  ];
 
   // Check initial follow status
   useEffect(() => {

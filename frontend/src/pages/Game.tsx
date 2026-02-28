@@ -433,8 +433,11 @@ export default function Game() {
   // Previous confirmed bets count to detect new confirmations
   const prevConfirmedBetsRef = useRef<number>(0);
 
-  // Current dealer name (could come from table selection in the future)
-  const currentDealerName = '花花';
+  // Current dealer name — varies per table
+  const dealerNames = ['花花', '小美', '安琪', '曉婷', '佳琪', '雅芳', '詩涵', '宛如', '心怡', '美玲'];
+  const currentDealerName = dealerNames[
+    (tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % dealerNames.length
+  ];
 
   // Check initial follow status
   useEffect(() => {
@@ -2286,7 +2289,7 @@ export default function Game() {
       <GiftModal
         isOpen={isGiftOpen}
         onClose={() => setIsGiftOpen(false)}
-        dealerName="花花"
+        dealerName={currentDealerName}
         balance={balance}
       />
       <ResultsProportionModal isOpen={isProportionOpen} onClose={() => setIsProportionOpen(false)} />
