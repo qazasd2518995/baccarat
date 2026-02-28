@@ -4,9 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
   FileText,
-  History,
   Users,
-  ScrollText,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -32,7 +30,6 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { path: '/', icon: LayoutDashboard, label: '仪表盘' },
   { path: '/report/agent', icon: FileText, label: '账务报表' },
-  { path: '/bet/index', icon: History, label: '投注记录' },
   { path: '/game/rounds', icon: Gamepad2, label: '开奖记录' },
   { path: '/member/index', icon: Users, label: '下线代理管理' },
   {
@@ -45,7 +42,6 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { path: '/settings', icon: Settings, label: '系统设置' },
-  { path: '/log/index', icon: ScrollText, label: '日志' },
 ];
 
 export default function Layout() {

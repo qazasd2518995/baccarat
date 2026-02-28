@@ -5,9 +5,7 @@ import Login from './pages/Login';
 import Layout from './pages/Layout';
 import Dashboard from './pages/Dashboard';
 import AgentReport from './pages/AgentReport';
-import BettingRecords from './pages/BettingRecords';
 import AgentManagement from './pages/AgentManagement';
-import Logs from './pages/Logs';
 import GameRounds from './pages/GameRounds';
 import Settings from './pages/Settings';
 import Notices from './pages/Notices';
@@ -51,9 +49,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="report/agent" element={<AgentReport />} />
-          <Route path="bet/index" element={<BettingRecords />} />
           <Route path="member/index" element={<AgentManagement />} />
-          <Route path="log/index" element={<Logs />} />
           <Route path="game/rounds" element={<GameRounds />} />
           <Route path="game/win-control" element={<WinControl />} />
           <Route path="game/manual-detection" element={<ManualDetection />} />
