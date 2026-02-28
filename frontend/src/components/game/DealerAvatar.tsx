@@ -57,7 +57,7 @@ function DealerModelInner({ isDealing, url }: { isDealing: boolean; url: string 
 
   return (
     <group ref={groupRef}>
-      <primitive object={gltf.scene} scale={4.5} position={[0, -4, 0]} />
+      <primitive object={gltf.scene} scale={4.5} position={[0, -3, 0]} />
     </group>
   );
 }

@@ -834,11 +834,6 @@ export default function DragonTigerGame() {
       {/* Flying chips overlay */}
       <FlyingChipOverlay chips={flyingChips} chipSize={32} />
 
-      {/* Fake bet stats — page top-left corner */}
-      <div className="fixed top-1 left-1 sm:top-2 sm:left-2 z-[55] pointer-events-none">
-        <FakeBetStats fakeBets={fakeBets} gameType="dragonTiger" />
-      </div>
-
       {/* Top Header Bar - Hidden on mobile, shown on lg+ */}
       <header className="hidden lg:flex h-11 bg-[#0d1117] items-center justify-between px-4 border-b border-gray-800/50">
         {/* Left - Back & Info */}
@@ -1110,6 +1105,11 @@ export default function DragonTigerGame() {
         <div className="flex-1 flex flex-col min-w-0 min-h-0 relative">
           {/* Countdown timer — over entire game area */}
           <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
+
+          {/* Fake bet stats — below countdown timer */}
+          <div className="absolute top-[72px] sm:top-[94px] lg:top-[120px] left-2 sm:left-3 z-30 pointer-events-none">
+            <FakeBetStats fakeBets={fakeBets} gameType="dragonTiger" />
+          </div>
 
           {/* Video Area - 3D Dealer Table */}
           <DealerTable3D

@@ -342,58 +342,62 @@ export default function DealerTable3D({
           model={dealerModel}
         />
 
-        {/* ——— Dealer Name Badge — centered at bottom of dealer zone ——— */}
-        {dealerName && (
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+      </div>
+
+      {/* ——— Dealer Name Badge — above table, not inside dealer zone so it won't be covered ——— */}
+      {dealerName && (
+        <div
+          className="absolute left-1/2 -translate-x-1/2 z-30 pointer-events-none"
+          style={{ top: tableTop }}
+        >
+          <div
+            className="relative px-4 py-1 sm:px-6 sm:py-1.5 -translate-y-1/2"
+            style={{
+              background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%)',
+              borderRadius: '2px',
+              border: '1px solid rgba(212,175,55,0.5)',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 12px rgba(212,175,55,0.15)',
+            }}
+          >
+            {/* Top gold accent line */}
             <div
-              className="relative px-4 py-1 sm:px-6 sm:py-1.5"
+              className="absolute -top-px left-2 right-2 h-[2px]"
+              style={{ background: 'linear-gradient(90deg, transparent, #d4af37, #f0d060, #d4af37, transparent)' }}
+            />
+            {/* Bottom gold accent line */}
+            <div
+              className="absolute -bottom-px left-3 right-3 h-[1px]"
+              style={{ background: 'linear-gradient(90deg, transparent, #d4af37 30%, #d4af37 70%, transparent)' }}
+            />
+            {/* Left decorative bracket */}
+            <div
+              className="absolute left-1 top-1/2 -translate-y-1/2 w-[3px] h-[60%]"
               style={{
-                background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%)',
-                borderRadius: '2px',
-                border: '1px solid rgba(212,175,55,0.5)',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 12px rgba(212,175,55,0.15)',
+                background: 'linear-gradient(to bottom, transparent, #d4af37, transparent)',
+                borderRadius: '1px',
+              }}
+            />
+            {/* Right decorative bracket */}
+            <div
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-[3px] h-[60%]"
+              style={{
+                background: 'linear-gradient(to bottom, transparent, #d4af37, transparent)',
+                borderRadius: '1px',
+              }}
+            />
+            {/* Name text */}
+            <span
+              className="relative text-[10px] sm:text-sm font-bold tracking-[0.15em] sm:tracking-[0.2em]"
+              style={{
+                color: '#e8d48b',
+                textShadow: '0 0 8px rgba(212,175,55,0.4), 0 1px 2px rgba(0,0,0,0.8)',
               }}
             >
-              {/* Top gold accent line */}
-              <div
-                className="absolute -top-px left-2 right-2 h-[2px]"
-                style={{ background: 'linear-gradient(90deg, transparent, #d4af37, #f0d060, #d4af37, transparent)' }}
-              />
-              {/* Bottom gold accent line */}
-              <div
-                className="absolute -bottom-px left-3 right-3 h-[1px]"
-                style={{ background: 'linear-gradient(90deg, transparent, #d4af37 30%, #d4af37 70%, transparent)' }}
-              />
-              {/* Left decorative bracket */}
-              <div
-                className="absolute left-1 top-1/2 -translate-y-1/2 w-[3px] h-[60%]"
-                style={{
-                  background: 'linear-gradient(to bottom, transparent, #d4af37, transparent)',
-                  borderRadius: '1px',
-                }}
-              />
-              {/* Right decorative bracket */}
-              <div
-                className="absolute right-1 top-1/2 -translate-y-1/2 w-[3px] h-[60%]"
-                style={{
-                  background: 'linear-gradient(to bottom, transparent, #d4af37, transparent)',
-                  borderRadius: '1px',
-                }}
-              />
-              {/* Name text */}
-              <span
-                className="relative text-[10px] sm:text-sm font-bold tracking-[0.15em] sm:tracking-[0.2em]"
-                style={{
-                  color: '#e8d48b',
-                  textShadow: '0 0 8px rgba(212,175,55,0.4), 0 1px 2px rgba(0,0,0,0.8)',
-                }}
-              >
-                {dealerName}
-              </span>
-            </div>
+              {dealerName}
+            </span>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* === Table Surface — positioned below dealer with overlap === */}
       <div
