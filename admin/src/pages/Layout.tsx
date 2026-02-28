@@ -10,27 +10,40 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Gamepad2,
   Settings,
   Bell,
-  BarChart3,
   Menu,
   X,
   Target,
   Activity,
+  Headphones,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
-const NAV_ITEMS = [
+interface NavItem {
+  path?: string;
+  icon: any;
+  label: string;
+  children?: { path: string; icon: any; label: string }[];
+}
+
+const NAV_ITEMS: NavItem[] = [
   { path: '/', icon: LayoutDashboard, label: '仪表盘' },
   { path: '/report/agent', icon: FileText, label: '账务报表' },
-  { path: '/reports', icon: BarChart3, label: '综合报表' },
   { path: '/bet/index', icon: History, label: '投注记录' },
-  { path: '/game/rounds', icon: Gamepad2, label: '游戏记录' },
-  { path: '/game/win-control', icon: Target, label: '输赢控制' },
-  { path: '/game/manual-detection', icon: Activity, label: '自动侦测' },
+  { path: '/game/rounds', icon: Gamepad2, label: '开奖记录' },
   { path: '/member/index', icon: Users, label: '下线代理管理' },
-  { path: '/notices', icon: Bell, label: '公告管理' },
+  {
+    icon: Headphones,
+    label: '客服功能',
+    children: [
+      { path: '/game/win-control', icon: Target, label: '输赢控制' },
+      { path: '/game/manual-detection', icon: Activity, label: '自动侦测' },
+      { path: '/notices', icon: Bell, label: '公告管理' },
+    ],
+  },
   { path: '/settings', icon: Settings, label: '系统设置' },
   { path: '/log/index', icon: ScrollText, label: '日志' },
 ];
@@ -41,15 +54,126 @@ export default function Layout() {
   const { user, logout } = useAuthStore();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState<string[]>(['客服功能']);
 
   // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
+  // Auto-expand parent menu if child is active
+  useEffect(() => {
+    NAV_ITEMS.forEach((item) => {
+      if (item.children) {
+        const isChildActive = item.children.some((child) => location.pathname === child.path);
+        if (isChildActive && !expandedMenus.includes(item.label)) {
+          setExpandedMenus((prev) => [...prev, item.label]);
+        }
+      }
+    });
+  }, [location.pathname]);
+
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const toggleMenu = (label: string) => {
+    setExpandedMenus((prev) =>
+      prev.includes(label) ? prev.filter((l) => l !== label) : [...prev, label]
+    );
+  };
+
+  const renderNavItem = (item: NavItem, isMobile: boolean = false) => {
+    const IconComponent = item.icon;
+    const showLabel = isMobile || !sidebarCollapsed;
+
+    if (item.children) {
+      const isExpanded = expandedMenus.includes(item.label);
+      const isChildActive = item.children.some((child) => location.pathname === child.path);
+
+      return (
+        <div key={item.label}>
+          <button
+            onClick={() => toggleMenu(item.label)}
+            className={`w-full flex items-center gap-3 px-4 py-3 mx-2 my-0.5 rounded-lg transition-all ${
+              isChildActive
+                ? 'bg-amber-500/10 text-amber-400'
+                : 'text-gray-400 hover:bg-[#2a2a2a] hover:text-white'
+            }`}
+          >
+            <IconComponent className="w-5 h-5 flex-shrink-0" />
+            {showLabel && (
+              <>
+                <span className="font-medium text-sm whitespace-nowrap flex-1 text-left">
+                  {item.label}
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                />
+              </>
+            )}
+          </button>
+          <AnimatePresence>
+            {isExpanded && showLabel && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                {item.children.map((child) => {
+                  const ChildIcon = child.icon;
+                  return (
+                    <NavLink
+                      key={child.path}
+                      to={child.path}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-4 py-2.5 mx-2 ml-6 my-0.5 rounded-lg transition-all ${
+                          isActive
+                            ? 'bg-amber-500/20 text-amber-400 border-l-2 border-amber-400'
+                            : 'text-gray-400 hover:bg-[#2a2a2a] hover:text-white'
+                        }`
+                      }
+                    >
+                      <ChildIcon className="w-4 h-4 flex-shrink-0" />
+                      <span className="font-medium text-sm whitespace-nowrap">{child.label}</span>
+                    </NavLink>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      );
+    }
+
+    return (
+      <NavLink
+        key={item.path}
+        to={item.path!}
+        end={item.path === '/'}
+        className={({ isActive }) =>
+          `flex items-center gap-3 px-4 py-3 mx-2 my-0.5 rounded-lg transition-all ${
+            isActive
+              ? 'bg-amber-500/20 text-amber-400 border-l-2 border-amber-400'
+              : 'text-gray-400 hover:bg-[#2a2a2a] hover:text-white'
+          }`
+        }
+      >
+        <IconComponent className="w-5 h-5 flex-shrink-0" />
+        {showLabel && (
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="font-medium text-sm whitespace-nowrap"
+          >
+            {item.label}
+          </motion.span>
+        )}
+      </NavLink>
+    );
   };
 
   return (
@@ -93,34 +217,7 @@ export default function Layout() {
 
         {/* Navigation */}
         <nav className="flex-1 py-4 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
-            const IconComponent = item.icon;
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === '/'}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 mx-2 my-0.5 rounded-lg transition-all ${
-                    isActive
-                      ? 'bg-amber-500/20 text-amber-400 border-l-2 border-amber-400'
-                      : 'text-gray-400 hover:bg-[#2a2a2a] hover:text-white'
-                  }`
-                }
-              >
-                <IconComponent className="w-5 h-5 flex-shrink-0" />
-                {!sidebarCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="font-medium text-sm whitespace-nowrap"
-                  >
-                    {item.label}
-                  </motion.span>
-                )}
-              </NavLink>
-            );
-          })}
+          {NAV_ITEMS.map((item) => renderNavItem(item))}
         </nav>
 
         {/* Collapse button */}
@@ -164,28 +261,7 @@ export default function Layout() {
 
             {/* Navigation */}
             <nav className="flex-1 py-4 overflow-y-auto">
-              {NAV_ITEMS.map((item) => {
-                const IconComponent = item.icon;
-                return (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    end={item.path === '/'}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-4 py-3 mx-2 my-0.5 rounded-lg transition-all ${
-                        isActive
-                          ? 'bg-amber-500/20 text-amber-400 border-l-2 border-amber-400'
-                          : 'text-gray-400 hover:bg-[#2a2a2a] hover:text-white'
-                      }`
-                    }
-                  >
-                    <IconComponent className="w-5 h-5 flex-shrink-0" />
-                    <span className="font-medium text-sm whitespace-nowrap">
-                      {item.label}
-                    </span>
-                  </NavLink>
-                );
-              })}
+              {NAV_ITEMS.map((item) => renderNavItem(item, true))}
             </nav>
 
             {/* Logout in mobile */}

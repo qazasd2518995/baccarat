@@ -11,7 +11,6 @@ import Logs from './pages/Logs';
 import GameRounds from './pages/GameRounds';
 import Settings from './pages/Settings';
 import Notices from './pages/Notices';
-import Reports from './pages/Reports';
 import WinControl from './pages/WinControl';
 import ManualDetection from './pages/ManualDetection';
 import ToastContainer from './components/Toast';
@@ -60,7 +59,6 @@ function App() {
           <Route path="game/manual-detection" element={<ManualDetection />} />
           <Route path="settings" element={<Settings />} />
           <Route path="notices" element={<Notices />} />
-          <Route path="reports" element={<Reports />} />
         </Route>
 
         {/* Fallback */}
