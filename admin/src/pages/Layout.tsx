@@ -24,6 +24,7 @@ interface NavItem {
   path?: string;
   icon: any;
   label: string;
+  adminOnly?: boolean;
   children?: { path: string; icon: any; label: string }[];
 }
 
@@ -35,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     icon: Headphones,
     label: '客服功能',
+    adminOnly: true,
     children: [
       { path: '/game/win-control', icon: Target, label: '输赢控制' },
       { path: '/game/manual-detection', icon: Activity, label: '自动侦测' },
@@ -213,7 +215,7 @@ export default function Layout() {
 
         {/* Navigation */}
         <nav className="flex-1 py-4 overflow-y-auto">
-          {NAV_ITEMS.map((item) => renderNavItem(item))}
+          {NAV_ITEMS.filter((item) => !item.adminOnly || user?.role === 'admin').map((item) => renderNavItem(item))}
         </nav>
 
         {/* Collapse button */}
@@ -257,7 +259,7 @@ export default function Layout() {
 
             {/* Navigation */}
             <nav className="flex-1 py-4 overflow-y-auto">
-              {NAV_ITEMS.map((item) => renderNavItem(item, true))}
+              {NAV_ITEMS.filter((item) => !item.adminOnly || user?.role === 'admin').map((item) => renderNavItem(item, true))}
             </nav>
 
             {/* Logout in mobile */}

@@ -29,6 +29,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Admin Only Route component (requires admin role)
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, user } = useAuthStore();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Only admin can access these routes
+  if (user?.role !== 'admin') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -51,10 +67,10 @@ function App() {
           <Route path="report/agent" element={<AgentReport />} />
           <Route path="member/index" element={<AgentManagement />} />
           <Route path="game/rounds" element={<GameRounds />} />
-          <Route path="game/win-control" element={<WinControl />} />
-          <Route path="game/manual-detection" element={<ManualDetection />} />
+          <Route path="game/win-control" element={<AdminRoute><WinControl /></AdminRoute>} />
+          <Route path="game/manual-detection" element={<AdminRoute><ManualDetection /></AdminRoute>} />
           <Route path="settings" element={<Settings />} />
-          <Route path="notices" element={<Notices />} />
+          <Route path="notices" element={<AdminRoute><Notices /></AdminRoute>} />
         </Route>
 
         {/* Fallback */}
