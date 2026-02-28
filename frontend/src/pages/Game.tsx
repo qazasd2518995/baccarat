@@ -577,7 +577,7 @@ export default function Game() {
   const fakeAmounts = useFakeChipAmounts(fakeBets, phase);
 
   // Can place bets only during betting phase
-  const canBet = phase === 'betting' && isConnected;
+  const canBet = phase === 'betting' && isConnected && !isShuffling;
 
   // Card animation: track whether cards arrived via reconnect (skip animation)
   // Normal flow: phase changes to 'dealing' first, then cards arrive individually
@@ -2127,7 +2127,7 @@ export default function Game() {
                 <User className="w-6 h-6 text-white" />
               </div>
               <div>
-                <div className="text-sm font-bold text-white">花花</div>
+                <div className="text-sm font-bold text-white">{currentDealerName}</div>
                 <div className="text-xs text-gray-400">@129 Round {roundNumber}</div>
                 <div className="text-xs text-gray-500">Run 24</div>
               </div>
