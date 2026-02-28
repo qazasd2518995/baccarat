@@ -637,7 +637,7 @@ export default function DragonTigerGame() {
     prevConfirmedBetsRef.current = 0;
   }, [roundNumber]);
 
-  const canBet = phase === 'betting' && isConnected;
+  const canBet = phase === 'betting' && isConnected && !isShuffling;
   const hasPendingBets = pendingBets.length > 0;
   const hasConfirmedBets = confirmedBets.length > 0;
 
@@ -1365,7 +1365,7 @@ export default function DragonTigerGame() {
                           const cellIdx = predRow * COLS + predCol;
                           if (cellIdx < TOTAL) {
                             cells[cellIdx] = {
-                              data: { result: askRoadMode, roundNumber: 0, isSuitedTie: false, dragonValue: 0, tigerValue: 0 },
+                              data: { result: askRoadMode, roundNumber: '', isSuitedTie: false, dragonValue: 0, tigerValue: 0 },
                               predicted: true,
                             };
                           }

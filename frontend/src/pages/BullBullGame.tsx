@@ -330,7 +330,7 @@ export default function BullBullGame() {
     prevConfirmedBetsRef.current = 0;
   }, [roundNumber]);
 
-  const canBet = phase === 'betting';
+  const canBet = phase === 'betting' && !isShuffling;
   const hasPendingBets = pendingBets.length > 0;
   const hasConfirmedBets = confirmedBets.length > 0;
 

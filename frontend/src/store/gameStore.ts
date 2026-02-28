@@ -63,8 +63,8 @@ interface GameStore {
   setTimeRemaining: (time: number) => void;
   roundId: string | null;
   setRoundId: (id: string | null) => void;
-  roundNumber: number;
-  setRoundNumber: (num: number) => void;
+  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
+  setRoundNumber: (num: string) => void;
 
   // Balance
   balance: number;
@@ -114,7 +114,7 @@ interface GameStore {
 
   // Roadmap data
   roadmapData: Array<{
-    roundNumber: number;
+    roundNumber: string;
     result: GameResult;
     playerPair: boolean;
     bankerPair: boolean;
@@ -123,7 +123,7 @@ interface GameStore {
     totalCards: number;
   }>;
   setRoadmapData: (data: Array<{
-    roundNumber: number;
+    roundNumber: string;
     result: GameResult;
     playerPair: boolean;
     bankerPair: boolean;
@@ -191,7 +191,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setTimeRemaining: (time) => set({ timeRemaining: time }),
   roundId: null,
   setRoundId: (id) => set({ roundId: id }),
-  roundNumber: 0,
+  roundNumber: '',
   setRoundNumber: (num) => set({ roundNumber: num }),
 
   // Balance
@@ -367,7 +367,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       phase: 'betting',
       timeRemaining: 0,
       roundId: null,
-      roundNumber: 0,
+      roundNumber: '',
       balance: 0,
       pendingBets: [],
       confirmedBets: [],

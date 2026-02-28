@@ -3,6 +3,7 @@ import type { Card, RoundResult, CalculateBetOptions } from '../utils/gameLogic.
 import { calculateBetResult } from '../utils/gameLogic.js';
 import { applyWinCap } from '../utils/winCapCheck.js';
 import type { BetEntry, BetType } from '../socket/types.js';
+import { generateRoundNumber, initializeCounter } from '../utils/roundNumberGenerator.js';
 
 // Re-export GamePhase type for other modules
 export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
@@ -11,7 +12,7 @@ export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
 // Current round info stored in memory
 export interface CurrentRound {
   id: string;
-  roundNumber: number;
+  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
   shoeNumber: number;
   startedAt: Date;
   playerCards: Card[];
@@ -29,12 +30,12 @@ interface PersistedState {
   roundCounter: number;
   cardsRemaining: number;
   shuffledDeck: Card[] | null;
+  lastRoundNumber: string | null;
 }
 
 // In-memory state
 let currentPhase: GamePhase = 'betting';
 let currentRound: CurrentRound | null = null;
-let roundCounter = 0;
 let shoeNumber = 1;
 let cardsRemaining = 416;
 let shuffledDeck: Card[] | null = null;
@@ -75,11 +76,17 @@ export async function loadPersistedState(): Promise<void> {
     }
 
     shoeNumber = state.shoeNumber;
-    roundCounter = state.roundCounter;
     cardsRemaining = state.cardsRemaining;
     shuffledDeck = state.shuffledDeck as Card[] | null;
 
-    console.log(`[GameState] Loaded persisted state: shoe #${shoeNumber}, round #${roundCounter}, cards remaining: ${cardsRemaining}`);
+    // Initialize round number generator from last round in database
+    const lastRound = await prisma.gameRound.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: { roundNumber: true },
+    });
+    initializeCounter('baccarat', lastRound?.roundNumber ?? null);
+
+    console.log(`[GameState] Loaded persisted state: shoe #${shoeNumber}, cards remaining: ${cardsRemaining}`);
   } catch (error) {
     console.error('[GameState] Failed to load persisted state:', error);
     // Continue with default values
@@ -88,18 +95,19 @@ export async function loadPersistedState(): Promise<void> {
 
 export async function savePersistedState(): Promise<void> {
   try {
+    // roundCounter in DB is deprecated but kept for compatibility
     await prisma.gameState.upsert({
       where: { id: SINGLETON_ID },
       update: {
         shoeNumber,
-        roundCounter,
+        roundCounter: 0,  // Deprecated, kept for DB compatibility
         cardsRemaining,
         shuffledDeck: undefined,
       },
       create: {
         id: SINGLETON_ID,
         shoeNumber,
-        roundCounter,
+        roundCounter: 0,
         cardsRemaining,
         shuffledDeck: undefined,
       },
@@ -162,14 +170,15 @@ export function getCurrentRound(): CurrentRound | null {
 }
 
 export function getRoundCounter(): number {
-  return roundCounter;
+  // Deprecated: kept for compatibility
+  return 0;
 }
 
 export async function createNewRound(): Promise<CurrentRound> {
-  roundCounter++;
+  const roundNumber = generateRoundNumber('baccarat');
   currentRound = {
-    id: `round-${Date.now()}-${roundCounter}`,
-    roundNumber: roundCounter,
+    id: `round-${Date.now()}-${roundNumber}`,
+    roundNumber,
     shoeNumber,
     startedAt: new Date(),
     playerCards: [],
@@ -181,7 +190,7 @@ export async function createNewRound(): Promise<CurrentRound> {
     bankerPair: false,
   };
 
-  // Persist the new round counter
+  // Persist state
   await savePersistedState();
 
   return currentRound;
@@ -639,7 +648,7 @@ export function getGameState(userId?: string) {
   return {
     phase: currentPhase,
     roundId: currentRound?.id || null,
-    roundNumber: currentRound?.roundNumber || 0,
+    roundNumber: currentRound?.roundNumber || '',
     shoeNumber: currentRound?.shoeNumber || 1,
     timeRemaining,
     playerCards: currentRound?.playerCards || [],

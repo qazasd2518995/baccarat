@@ -2,6 +2,7 @@ import { prisma } from '../lib/prisma.js';
 import type { Card, DragonTigerRoundResult, DragonTigerBetType } from '../utils/dragonTigerLogic.js';
 import { calculateDTBetResult } from '../utils/dragonTigerLogic.js';
 import { applyWinCap } from '../utils/winCapCheck.js';
+import { generateRoundNumber, initializeCounter } from '../utils/roundNumberGenerator.js';
 
 // Re-export GamePhase type for other modules
 export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
@@ -10,7 +11,7 @@ export type GamePhase = 'betting' | 'sealed' | 'dealing' | 'result';
 // Current round info stored in memory
 export interface DragonTigerCurrentRound {
   id: string;
-  roundNumber: number;
+  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
   shoeNumber: number;
   startedAt: Date;
   dragonCard: Card | null;
@@ -38,7 +39,6 @@ interface PersistedState {
 // In-memory state
 let currentPhase: GamePhase = 'betting';
 let currentRound: DragonTigerCurrentRound | null = null;
-let roundCounter = 0;
 let shoeNumber = 1;
 let cardsRemaining = 416;
 let shuffledDeck: Card[] | null = null;
@@ -76,11 +76,17 @@ export async function loadPersistedState(): Promise<void> {
     }
 
     shoeNumber = state.shoeNumber;
-    roundCounter = state.roundCounter;
     cardsRemaining = state.cardsRemaining;
     shuffledDeck = state.shuffledDeck as Card[] | null;
 
-    console.log(`[DragonTigerState] Loaded persisted state: shoe #${shoeNumber}, round #${roundCounter}, cards remaining: ${cardsRemaining}`);
+    // Initialize round number generator from last round in database
+    const lastRound = await prisma.dragonTigerRound.findFirst({
+      orderBy: { createdAt: 'desc' },
+      select: { roundNumber: true },
+    });
+    initializeCounter('dragon_tiger', lastRound?.roundNumber ?? null);
+
+    console.log(`[DragonTigerState] Loaded persisted state: shoe #${shoeNumber}, cards remaining: ${cardsRemaining}`);
   } catch (error) {
     console.error('[DragonTigerState] Failed to load persisted state:', error);
     // Continue with default values
@@ -89,18 +95,19 @@ export async function loadPersistedState(): Promise<void> {
 
 export async function savePersistedState(): Promise<void> {
   try {
+    // roundCounter in DB is deprecated but kept for compatibility
     await prisma.dragonTigerGameState.upsert({
       where: { id: SINGLETON_ID },
       update: {
         shoeNumber,
-        roundCounter,
+        roundCounter: 0,
         cardsRemaining,
         shuffledDeck: undefined,
       },
       create: {
         id: SINGLETON_ID,
         shoeNumber,
-        roundCounter,
+        roundCounter: 0,
         cardsRemaining,
         shuffledDeck: undefined,
       },
@@ -163,14 +170,15 @@ export function getCurrentRound(): DragonTigerCurrentRound | null {
 }
 
 export function getRoundCounter(): number {
-  return roundCounter;
+  // Deprecated: kept for compatibility
+  return 0;
 }
 
 export async function createNewRound(): Promise<DragonTigerCurrentRound> {
-  roundCounter++;
+  const roundNumber = generateRoundNumber('dragon_tiger');
   currentRound = {
-    id: `dt-round-${Date.now()}-${roundCounter}`,
-    roundNumber: roundCounter,
+    id: `dt-round-${Date.now()}-${roundNumber}`,
+    roundNumber,
     shoeNumber,
     startedAt: new Date(),
     dragonCard: null,
@@ -181,7 +189,7 @@ export async function createNewRound(): Promise<DragonTigerCurrentRound> {
     isSuitedTie: false,
   };
 
-  // Persist the new round counter
+  // Persist state
   await savePersistedState();
 
   return currentRound;
@@ -636,7 +644,7 @@ export function getGameState(userId?: string) {
   return {
     phase: currentPhase,
     roundId: currentRound?.id || null,
-    roundNumber: currentRound?.roundNumber || 0,
+    roundNumber: currentRound?.roundNumber || '',
     shoeNumber: currentRound?.shoeNumber || 1,
     timeRemaining,
     dragonCard: currentRound?.dragonCard || null,

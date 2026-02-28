@@ -50,7 +50,7 @@ interface Table {
   roadmap: { banker: number; player: number; tie: number };
   gameType: 'baccarat' | 'dragonTiger' | 'bullBull';
   shoeNumber: number;
-  roundNumber: number;
+  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
   hasGoodRoad?: boolean;
   roadHistory: RoadHistoryEntry[];
 }
@@ -116,11 +116,11 @@ export default function Lobby() {
     tableId: string;
     phase: 'betting' | 'sealed' | 'dealing' | 'result';
     timeRemaining: number;
-    roundNumber: number;
+    roundNumber: string;
     shoeNumber: number;
     lastResult?: 'player' | 'banker' | 'tie';
     lastRoundEntry?: {
-      roundNumber: number;
+      roundNumber: string;
       result: string;
       playerPair: boolean;
       bankerPair: boolean;
@@ -244,10 +244,10 @@ export default function Lobby() {
           players: number;
           isActive: boolean;
           shoeNumber: number;
-          roundNumber: number;
+          roundNumber: string;
           roadmap: { banker: number; player: number; tie: number };
           lastResults?: string[];
-          roadHistory?: Array<{ roundNumber: number; result: string; playerPair: boolean; bankerPair: boolean }>;
+          roadHistory?: Array<{ roundNumber: string; result: string; playerPair: boolean; bankerPair: boolean }>;
           status?: string;
           countdown?: number;
           hasGoodRoad?: boolean;

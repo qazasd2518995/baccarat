@@ -9,7 +9,7 @@ export interface BigRoadCell {
 }
 
 export interface RoadHistoryEntry {
-  roundNumber?: number;
+  roundNumber?: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
   result: 'player' | 'banker' | 'tie';
   playerPair: boolean;
   bankerPair: boolean;

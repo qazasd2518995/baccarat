@@ -1673,7 +1673,7 @@ export default function Game() {
                           const cellIdx = predRow * COLS + predCol;
                           if (cellIdx < TOTAL) {
                             cells[cellIdx] = {
-                              data: { result: askRoadMode as GameResult, playerPair: false, bankerPair: false, roundNumber: 0, playerPoints: 0, bankerPoints: 0, totalCards: 0 },
+                              data: { result: askRoadMode as GameResult, playerPair: false, bankerPair: false, roundNumber: '', playerPoints: 0, bankerPoints: 0, totalCards: 0 },
                               predicted: true,
                             };
                           }

@@ -157,7 +157,7 @@ model Transaction {
 
 model GameRound {
   id           String      @id @default(uuid())
-  roundNumber  Int         @default(autoincrement()) @map("round_number")
+  roundNumber  String      @map("round_number")  // Format: YYYYMMDDNNN (e.g., 20260228001)
   shoeNumber   Int         @default(1) @map("shoe_number")
   tableId      String?     @map("table_id")
   table        GameTable?  @relation(fields: [tableId], references: [id])
@@ -198,7 +198,7 @@ model Bet {
 // Dragon Tiger game round
 model DragonTigerRound {
   id          String     @id @default(uuid())
-  roundNumber Int        @default(autoincrement()) @map("round_number")
+  roundNumber String     @map("round_number")  // Format: YYYYMMDDNNN (e.g., 20260228001)
   shoeNumber  Int        @default(1) @map("shoe_number")
   tableId     String?    @map("table_id")
   table       GameTable? @relation(fields: [tableId], references: [id])
@@ -219,7 +219,7 @@ model DragonTigerRound {
 // Bull Bull game round
 model BullBullRound {
   id            String      @id @default(uuid())
-  roundNumber   Int         @default(autoincrement()) @map("round_number")
+  roundNumber   String      @map("round_number")  // Format: YYYYMMDDNNN (e.g., 20260228001)
   shoeNumber    Int         @default(1) @map("shoe_number")
   tableId       String?     @map("table_id")
   table         GameTable?  @relation(fields: [tableId], references: [id])

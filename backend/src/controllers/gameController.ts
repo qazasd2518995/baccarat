@@ -10,6 +10,7 @@ import {
   Card,
   RoundResult,
 } from '../utils/gameLogic.js';
+import { generateRoundNumber } from '../utils/roundNumberGenerator.js';
 
 
 // In-memory shoe (in production, use Redis)
@@ -118,6 +119,7 @@ export async function playGame(req: Request, res: Response) {
       // Create game round
       const gameRound = await tx.gameRound.create({
         data: {
+          roundNumber: generateRoundNumber('baccarat_api'),
           shoeNumber: currentShoeNumber,
           playerCards: roundResult.playerCards as any,
           bankerCards: roundResult.bankerCards as any,

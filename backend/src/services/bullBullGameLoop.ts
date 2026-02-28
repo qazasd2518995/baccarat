@@ -221,7 +221,7 @@ async function handleDealingPhase(io: Server): Promise<void> {
         tableId: table.id,
         phase: 'dealing' as any,
         timeRemaining: 0,
-        roundNumber: 0,
+        roundNumber: '',  // New shoe, no round yet
         shoeNumber: getShoeNumber(),
         roadmap: { banker: 0, player: 0, tie: 0 },
         newShoe: true,
@@ -291,7 +291,7 @@ async function handleDealingPhase(io: Server): Promise<void> {
   // Emit final result
   io.to('table:bullbull').emit('bb:result', {
     roundId: round?.id || '',
-    roundNumber: round?.roundNumber || 0,
+    roundNumber: round?.roundNumber || '',
     banker: {
       cards: roundResult.banker.cards,
       rank: roundResult.banker.rank,
@@ -343,6 +343,7 @@ async function handleResultPhase(io: Server, duration: number): Promise<void> {
     // Persist round to database
     const savedRound = await prisma.bullBullRound.create({
       data: {
+        roundNumber: round.roundNumber,
         shoeNumber: round.shoeNumber,
         bankerCards: round.banker.cards as any,
         player1Cards: round.player1.cards as any,
@@ -405,7 +406,7 @@ async function handleResultPhase(io: Server, duration: number): Promise<void> {
         tableId: updatedTable.id,
         phase: 'result',
         timeRemaining: Math.floor(duration / 1000),
-        roundNumber: updatedTable.roundNumber,
+        roundNumber: round.roundNumber,  // Use formatted round number
         shoeNumber: updatedTable.shoeNumber,
         lastResult: bankerWinCount >= 2 ? 'banker' : 'player', // Banker wins if beat 2+ players
         roadmap: {

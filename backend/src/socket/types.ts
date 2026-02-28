@@ -20,7 +20,7 @@ export interface BetEntry {
 export interface GameStateEvent {
   phase: GamePhase;
   roundId: string | null;
-  roundNumber: number;
+  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
   shoeNumber: number;
   timeRemaining: number;
   cardsRemaining: number;
@@ -58,7 +58,7 @@ export interface CardDealtEvent {
 // Round result
 export interface RoundResultEvent {
   roundId: string;
-  roundNumber: number;
+  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
   result: GameResult;
   playerCards: Card[];
   bankerCards: Card[];
@@ -105,7 +105,7 @@ export interface ErrorEvent {
 // Roadmap update
 export interface RoadmapUpdateEvent {
   recentRounds: Array<{
-    roundNumber: number;
+    roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
     result: GameResult;
     playerPair: boolean;
     bankerPair: boolean;
@@ -120,11 +120,11 @@ export interface TableUpdateEvent {
   tableId: string;
   phase: GamePhase;
   timeRemaining: number;
-  roundNumber: number;
+  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
   shoeNumber: number;
   lastResult?: GameResult;
   lastRoundEntry?: {
-    roundNumber: number;
+    roundNumber: string;
     result: string;
     playerPair: boolean;
     bankerPair: boolean;

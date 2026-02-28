@@ -31,7 +31,7 @@ export type BetStatus = 'pending' | 'won' | 'lost' | 'refunded';
 
 export interface GameRound {
   id: string;
-  roundNumber: number;
+  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
   shoeNumber: number;
   playerCards: Card[];
   bankerCards: Card[];
@@ -116,7 +116,7 @@ export interface TransactionsResponse extends PaginatedResponse<Transaction> {
 // Roadmap types for display
 export interface RoadmapEntry {
   id: string;
-  roundNumber: number;
+  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
   result: GameResult;
   playerPair: boolean;
   bankerPair: boolean;

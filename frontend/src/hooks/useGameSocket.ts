@@ -103,7 +103,7 @@ export function useGameSocket(tableId?: string) {
       setPhase(data.phase);
       setTimeRemaining(data.timeRemaining);
       setRoundId(data.roundId);
-      setRoundNumber(data.roundNumber || 0);
+      setRoundNumber(data.roundNumber || '');
       setShoeInfo(data.shoeNumber || 1, data.cardsRemaining || 416);
 
       if (data.playerCards && data.bankerCards) {

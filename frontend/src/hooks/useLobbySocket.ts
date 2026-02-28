@@ -10,11 +10,11 @@ interface TableUpdate {
   tableId: string;
   phase: 'betting' | 'sealed' | 'dealing' | 'result';
   timeRemaining: number;
-  roundNumber: number;
+  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
   shoeNumber: number;
   lastResult?: 'player' | 'banker' | 'tie';
   lastRoundEntry?: {
-    roundNumber: number;
+    roundNumber: string;
     result: string;
     playerPair: boolean;
     bankerPair: boolean;

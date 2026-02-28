@@ -49,8 +49,8 @@ interface BullBullStore {
   setTimeRemaining: (time: number) => void;
   roundId: string | null;
   setRoundId: (id: string | null) => void;
-  roundNumber: number;
-  setRoundNumber: (num: number) => void;
+  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
+  setRoundNumber: (num: string) => void;
 
   // Balance
   balance: number;
@@ -107,7 +107,7 @@ interface BullBullStore {
 
   // Roadmap data
   roadmapData: Array<{
-    roundNumber: number;
+    roundNumber: string;
     bankerRank: string;
     player1Rank: string;
     player2Rank: string;
@@ -117,7 +117,7 @@ interface BullBullStore {
     player3Result: string;
   }>;
   setRoadmapData: (data: Array<{
-    roundNumber: number;
+    roundNumber: string;
     bankerRank: string;
     player1Rank: string;
     player2Rank: string;
@@ -177,7 +177,7 @@ export const useBullBullStore = create<BullBullStore>((set, get) => ({
   setTimeRemaining: (time) => set({ timeRemaining: time }),
   roundId: null,
   setRoundId: (id) => set({ roundId: id }),
-  roundNumber: 0,
+  roundNumber: '',
   setRoundNumber: (num) => set({ roundNumber: num }),
 
   // Balance
@@ -361,7 +361,7 @@ export const useBullBullStore = create<BullBullStore>((set, get) => ({
       phase: 'betting',
       timeRemaining: 0,
       roundId: null,
-      roundNumber: 0,
+      roundNumber: '',
       balance: 0,
       pendingBets: [],
       confirmedBets: [],

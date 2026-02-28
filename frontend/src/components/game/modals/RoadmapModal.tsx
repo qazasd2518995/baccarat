@@ -6,7 +6,7 @@ import type { GameResult } from '../../../types';
 import { buildBigRoadColumns, buildBigRoadGrid, buildDerivedRoadFlat } from '../../../utils/roadmap';
 
 type RoadmapEntry = {
-  roundNumber: number;
+  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
   result: GameResult;
   playerPair: boolean;
   bankerPair: boolean;

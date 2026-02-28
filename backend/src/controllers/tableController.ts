@@ -44,7 +44,7 @@ export async function getTables(req: Request, res: Response) {
 
     // Build road history for each table — try cache first, fallback to DB
     const tableIds = tables.map((t) => t.id);
-    const roadHistoryMap = new Map<string, Array<{ roundNumber: number; result: string; playerPair: boolean; bankerPair: boolean }>>();
+    const roadHistoryMap = new Map<string, Array<{ roundNumber: string; result: string; playerPair: boolean; bankerPair: boolean }>>();
 
     // First, try to get from in-memory cache
     for (const table of tables) {

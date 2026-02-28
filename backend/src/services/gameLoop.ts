@@ -225,7 +225,7 @@ async function handleDealingPhase(io: TypedServer): Promise<void> {
         tableId: table.id,
         phase: 'dealing' as const,
         timeRemaining: 0,
-        roundNumber: 0,
+        roundNumber: '',  // New shoe, no round yet
         shoeNumber: getShoeNumber(),
         roadmap: { banker: 0, player: 0, tie: 0 },
         newShoe: true,
@@ -320,7 +320,7 @@ async function handleDealingPhase(io: TypedServer): Promise<void> {
   // Emit final result
   io.to('table:default').emit('game:result', {
     roundId: round?.id || '',
-    roundNumber: round?.roundNumber || 0,
+    roundNumber: round?.roundNumber || '',
     result: roundResult.result,
     playerCards: roundResult.playerCards,
     bankerCards: roundResult.bankerCards,
@@ -356,6 +356,7 @@ async function handleResultPhase(io: TypedServer, duration: number): Promise<voi
     // Persist round to database
     const savedRound = await prisma.gameRound.create({
       data: {
+        roundNumber: round.roundNumber,
         shoeNumber: round.shoeNumber,
         tableId: baccaratTable?.id || null,
         playerCards: round.playerCards as any,
@@ -419,7 +420,7 @@ async function handleResultPhase(io: TypedServer, duration: number): Promise<voi
         tableId: updatedTable.id,
         phase: 'result',
         timeRemaining: Math.floor(duration / 1000),
-        roundNumber: updatedTable.roundNumber,
+        roundNumber: round.roundNumber,  // Use the formatted round number
         shoeNumber: updatedTable.shoeNumber,
         lastResult: round.result,
         lastRoundEntry: {

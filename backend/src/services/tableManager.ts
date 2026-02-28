@@ -6,6 +6,7 @@ import type { GamePhase, BetEntry, BetType } from '../socket/types.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
 import { generateFakeBets } from './fakeBetGenerator.js';
 import { fluctuatePlayerCount } from './fakePlayerCount.js';
+import { generateRoundNumber, initializeCounter } from '../utils/roundNumberGenerator.js';
 
 
 // Type-safe Socket.io server
@@ -26,13 +27,13 @@ interface TableState {
   phase: GamePhase;
   timeRemaining: number;
   roundId: string | null;
-  roundNumber: number;
+  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
   shoeNumber: number;
   cardsRemaining: number;
   currentShoe: Card[];
   currentRound: {
     id: string;
-    roundNumber: number;
+    roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
     shoeNumber: number;
     startedAt: Date;
     playerCards: Card[];
@@ -63,7 +64,7 @@ function getTableState(tableId: string): TableState {
       phase: 'betting',
       timeRemaining: 0,
       roundId: null,
-      roundNumber: 0,
+      roundNumber: '',
       shoeNumber: 1,
       cardsRemaining: shoe.length,
       currentShoe: shoe,
@@ -87,10 +88,18 @@ async function loadTableState(tableId: string): Promise<void> {
     if (saved && saved.shuffledDeck) {
       const state = getTableState(tableId);
       state.shoeNumber = saved.shoeNumber;
-      state.roundNumber = saved.roundCounter;
       state.currentShoe = saved.shuffledDeck as unknown as Card[];
       state.cardsRemaining = saved.cardsRemaining;
-      console.log(`[Table ${tableId}] Loaded persisted state: shoe #${state.shoeNumber}, round #${state.roundNumber}`);
+
+      // Initialize round number generator from last round in database for this table
+      const lastRound = await prisma.gameRound.findFirst({
+        where: { tableId },
+        orderBy: { createdAt: 'desc' },
+        select: { roundNumber: true },
+      });
+      initializeCounter(`baccarat_table_${tableId}`, lastRound?.roundNumber ?? null);
+
+      console.log(`[Table ${tableId}] Loaded persisted state: shoe #${state.shoeNumber}`);
     }
   } catch (error) {
     console.error(`[Table ${tableId}] Failed to load persisted state:`, error);
@@ -102,11 +111,12 @@ async function saveTableState(tableId: string): Promise<void> {
   const state = tables.get(tableId);
   if (!state) return;
   try {
+    // roundCounter in DB is deprecated but kept for compatibility
     await prisma.gameTableState.upsert({
       where: { tableId },
       update: {
         shoeNumber: state.shoeNumber,
-        roundCounter: state.roundNumber,
+        roundCounter: state.cachedRoadmap.length,  // Use count for backward compatibility
         cardsRemaining: state.cardsRemaining,
         shuffledDeck: undefined,
       },
@@ -114,7 +124,7 @@ async function saveTableState(tableId: string): Promise<void> {
         tableId,
         gameType: 'baccarat',
         shoeNumber: state.shoeNumber,
-        roundCounter: state.roundNumber,
+        roundCounter: state.cachedRoadmap.length,
         cardsRemaining: state.cardsRemaining,
         shuffledDeck: undefined,
       },
@@ -162,12 +172,17 @@ export async function startTableLoop(io: TypedServer, tableId: string, startDela
   const bankerWins = shoeRounds.filter(r => r.result === 'banker').length;
   const playerWins = shoeRounds.filter(r => r.result === 'player').length;
   const tieCount = shoeRounds.filter(r => r.result === 'tie').length;
-  state.roundNumber = shoeRounds.length;
+
+  // Get last round number from cache or initialize
+  const lastRound = shoeRounds[shoeRounds.length - 1];
+  state.roundNumber = lastRound?.roundNumber ?? '';
+  initializeCounter(`baccarat_table_${tableId}`, state.roundNumber || null);
+
   await prisma.gameTable.update({
     where: { id: tableId },
     data: {
       shoeNumber: state.shoeNumber,
-      roundNumber: state.roundNumber,
+      roundNumber: shoeRounds.length,  // Keep as count for DB compatibility
       bankerWins,
       playerWins,
       tieCount,
@@ -213,11 +228,12 @@ async function handleTableBettingPhase(
   const state = getTableState(tableId);
   const roomName = getTableRoom(tableId);
 
-  // Create new round
-  state.roundNumber++;
+  // Create new round with date-based round number
+  const roundNumber = generateRoundNumber(`baccarat_table_${tableId}`);
+  state.roundNumber = roundNumber;
   state.currentRound = {
-    id: `table-${tableId}-round-${Date.now()}-${state.roundNumber}`,
-    roundNumber: state.roundNumber,
+    id: `table-${tableId}-round-${Date.now()}-${roundNumber}`,
+    roundNumber,
     shoeNumber: state.shoeNumber,
     startedAt: new Date(),
     playerCards: [],
@@ -230,7 +246,7 @@ async function handleTableBettingPhase(
   };
   state.roundId = state.currentRound.id;
 
-  console.log(`[Table ${tableId}] New round #${state.roundNumber} started in shoe #${state.shoeNumber}`);
+  console.log(`[Table ${tableId}] New round ${roundNumber} started in shoe #${state.shoeNumber}`);
 
   // Broadcast phase change
   io.to(roomName).emit('game:phase', {
@@ -327,13 +343,13 @@ async function handleTableDealingPhase(io: TypedServer, tableId: string): Promis
   // Check for reshuffle
   if (state.currentShoe.length < 20) {
     state.shoeNumber++;
-    state.roundNumber = 0;
+    state.roundNumber = '';  // Will be set on next round
     state.cachedRoadmap = [];
     state.currentShoe = createShoe();
     burnCards(state.currentShoe);
     state.cardsRemaining = state.currentShoe.length;
 
-    // Reset GameTable statistics in DB
+    // Reset GameTable statistics in DB (roundNumber is deprecated, kept for compatibility)
     await prisma.gameTable.update({
       where: { id: tableId },
       data: {
@@ -352,7 +368,7 @@ async function handleTableDealingPhase(io: TypedServer, tableId: string): Promis
       tableId,
       phase: 'dealing' as const,
       timeRemaining: 0,
-      roundNumber: 0,
+      roundNumber: '',  // New shoe, no round yet
       shoeNumber: state.shoeNumber,
       roadmap: { banker: 0, player: 0, tie: 0 },
       newShoe: true,
@@ -474,6 +490,7 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
     // Save to database with tableId
     const savedRound = await prisma.gameRound.create({
       data: {
+        roundNumber: round.roundNumber,
         shoeNumber: round.shoeNumber,
         tableId,
         playerCards: round.playerCards as any,
@@ -608,7 +625,7 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
         tableId: updatedTable.id,
         phase: 'result',
         timeRemaining: Math.floor(duration / 1000),
-        roundNumber: updatedTable.roundNumber,
+        roundNumber: round.roundNumber,  // Use formatted round number
         shoeNumber: updatedTable.shoeNumber,
         lastResult: round.result,
         lastRoundEntry: {

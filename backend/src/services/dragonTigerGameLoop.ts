@@ -221,7 +221,7 @@ async function handleDealingPhase(io: Server): Promise<void> {
         tableId: table.id,
         phase: 'dealing' as any,
         timeRemaining: 0,
-        roundNumber: 0,
+        roundNumber: '',  // New shoe, no round yet
         shoeNumber: getShoeNumber(),
         roadmap: { banker: 0, player: 0, tie: 0 },
         newShoe: true,
@@ -271,7 +271,7 @@ async function handleDealingPhase(io: Server): Promise<void> {
   // Emit final result
   io.to('table:dragontiger').emit('dt:result', {
     roundId: round?.id || '',
-    roundNumber: round?.roundNumber || 0,
+    roundNumber: round?.roundNumber || '',
     result: roundResult.result,
     dragonCard: roundResult.dragonCard,
     tigerCard: roundResult.tigerCard,
@@ -311,6 +311,7 @@ async function handleResultPhase(io: Server, duration: number): Promise<void> {
     // Persist round to database
     const savedRound = await prisma.dragonTigerRound.create({
       data: {
+        roundNumber: round.roundNumber,
         shoeNumber: round.shoeNumber,
         dragonCard: round.dragonCard as any,
         tigerCard: round.tigerCard as any,
@@ -366,7 +367,7 @@ async function handleResultPhase(io: Server, duration: number): Promise<void> {
         tableId: updatedTable.id,
         phase: 'result',
         timeRemaining: Math.floor(duration / 1000),
-        roundNumber: updatedTable.roundNumber,
+        roundNumber: round.roundNumber,  // Use formatted round number
         shoeNumber: updatedTable.shoeNumber,
         lastResult: round.result === 'dragon' ? 'banker' : round.result === 'tiger' ? 'player' : 'tie',
         roadmap: {
