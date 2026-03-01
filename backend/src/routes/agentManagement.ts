@@ -1163,25 +1163,9 @@ router.get('/platforms', async (req: Request, res: Response) => {
     // If no platforms exist, seed default ones
     if (platforms.length === 0) {
       const defaultPlatforms = [
-        // 電子
-        { category: '電子', platformCode: 'EVOPLAY', platformName: 'EVOPLAY' },
-        { category: '電子', platformCode: 'GALAXSYS', platformName: 'GALAXSYS' },
-        { category: '電子', platformCode: 'GB', platformName: 'GB' },
-        { category: '電子', platformCode: '9Game', platformName: '9Game' },
-        { category: '電子', platformCode: 'PANDA', platformName: 'PANDA' },
-        { category: '電子', platformCode: 'RSG', platformName: 'RSG' },
-        { category: '電子', platformCode: 'Slotmill', platformName: 'Slotmill' },
-        // 真人百家2館
-        { category: '真人百家2館', platformCode: '卡利真人', platformName: '卡利真人' },
-        { category: '真人百家2館', platformCode: 'DG真人', platformName: 'DG真人' },
-        { category: '真人百家2館', platformCode: 'EEAI', platformName: 'EEAI' },
-        // 真人百家1館
-        { category: '真人百家1館', platformCode: 'MT真人', platformName: 'MT真人' },
-        { category: '真人百家1館', platformCode: 'RC真人', platformName: 'RC真人' },
-        { category: '真人百家1館', platformCode: 'T9真人', platformName: 'T9真人' },
-        { category: '真人百家1館', platformCode: '華利高真人電投', platformName: '華利高真人電投' },
-        // 體育
-        { category: '體育', platformCode: 'SUPER體育', platformName: 'SUPER體育' },
+        // JW真人
+        { category: 'JW真人', platformCode: 'JW百家樂', platformName: 'JW百家樂' },
+        { category: 'JW真人', platformCode: 'JW龍虎', platformName: 'JW龍虎' },
       ];
 
       await prisma.gamePlatform.createMany({

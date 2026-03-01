@@ -717,9 +717,8 @@ router.get('/platform-detail', requireRole('admin', 'agent'), async (req: Reques
       let platform = 'JW百家樂'; // Default
       if (bet.dragonTigerRoundId) {
         platform = 'JW龍虎';
-      } else if (bet.bullBullRoundId) {
-        platform = 'JW牛牛';
       }
+      // Note: bullBullRoundId is kept for backward compatibility but not displayed as separate platform
 
       if (!platformMap[platform]) {
         platformMap[platform] = {
