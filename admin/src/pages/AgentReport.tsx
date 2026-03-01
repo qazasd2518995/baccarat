@@ -109,7 +109,6 @@ const PLATFORM_CATEGORIES = [
 const ALL_PLATFORMS = [
   'JW百家樂',
   'JW龍虎',
-  'JW牛牛',
 ];
 
 export default function AgentReport() {
