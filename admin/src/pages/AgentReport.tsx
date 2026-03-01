@@ -591,10 +591,13 @@ export default function AgentReport() {
                         <td className="px-4 py-3">
                           <button
                             onClick={() => handleAgentClick(agent.id)}
-                            className="text-left hover:text-amber-400 transition-colors"
+                            className="text-left group cursor-pointer"
                           >
-                            <div className="text-amber-400 font-medium">{agent.nickname || agent.username}</div>
-                            <div className="text-amber-400 text-xs">{agent.username}</div>
+                            <div className="text-amber-400 font-medium group-hover:text-amber-300 group-hover:underline transition-colors flex items-center gap-1">
+                              {agent.nickname || agent.username}
+                              <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </div>
+                            <div className="text-gray-500 text-xs group-hover:text-gray-400 transition-colors">{agent.username}</div>
                           </button>
                         </td>
                         <td className="px-4 py-3 text-center text-white">{agent.agentLevel}級代理</td>
