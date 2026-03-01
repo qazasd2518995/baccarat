@@ -173,7 +173,7 @@ export default function AgentReport() {
                 账号：<span className="text-white">{data.currentUser.username}</span>
               </span>
               <span className="text-gray-400">
-                层级：<span className="text-amber-400">{data.currentUser.agentLevel}级代理</span>
+                层级：<span className="text-amber-400">{data.currentUser.agentLevel === 0 ? '管理员' : `${data.currentUser.agentLevel}级代理`}</span>
               </span>
             </div>
             <div className="flex items-center gap-6 text-sm">

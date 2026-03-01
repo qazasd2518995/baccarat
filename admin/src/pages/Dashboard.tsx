@@ -65,6 +65,7 @@ export default function Dashboard() {
   };
 
   const getAgentLevelText = (level: number) => {
+    if (level === 0) return '管理员';
     const levels: Record<number, string> = {
       1: '1级代理',
       2: '2级代理',

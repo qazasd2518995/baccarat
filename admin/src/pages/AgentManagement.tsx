@@ -362,7 +362,7 @@ export default function AgentManagement() {
           className="bg-[#252525] border border-[#333] rounded-xl p-3 flex items-center gap-6 text-sm"
         >
           <span className="text-gray-400">
-            代理层级：<span className="text-amber-400">{dashboard.agentLevel}级代理</span>
+            代理层级：<span className="text-amber-400">{dashboard.agentLevel === 0 ? '管理员' : `${dashboard.agentLevel}级代理`}</span>
           </span>
           <span className="text-gray-400">
             账号：<span className="text-white">{dashboard.username}</span>
