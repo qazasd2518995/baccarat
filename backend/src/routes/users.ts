@@ -13,6 +13,7 @@ import {
   updateNotificationSettings,
 } from '../controllers/notificationSettingsController.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { prisma } from '../lib/prisma.js';
 
 const router = Router();
 
@@ -43,5 +44,16 @@ router.patch('/:id/notification-settings', updateNotificationSettings);
 
 // Fix user hierarchy (admin only) - sets admin as level 0 and assigns orphan members
 router.post('/fix-hierarchy', requireRole('admin'), fixUserHierarchy);
+
+// Fix admin level - simple endpoint to set all admin users to level 0
+router.post('/fix-admin-level', requireRole('admin'), async (req, res) => {
+  try {
+    const result = await prisma.$executeRaw`UPDATE users SET agent_level = 0 WHERE role = 'admin'`;
+    res.json({ success: true, message: `Updated ${result} admin user(s) to level 0` });
+  } catch (error) {
+    console.error('Fix admin level error:', error);
+    res.status(500).json({ error: 'Failed to fix admin level' });
+  }
+});
 
 export default router;
