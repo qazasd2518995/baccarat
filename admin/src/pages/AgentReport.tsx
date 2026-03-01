@@ -299,71 +299,86 @@ export default function AgentReport() {
   // Summary Row Component (for top cards when viewing sub-agent)
   const SummaryCard = ({ title, summaryData, showDetailBtn = false }: { title: string; summaryData: SummaryData | AgentReportData; showDetailBtn?: boolean }) => (
     <div className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden">
-      <table className="w-full text-sm">
+      <table className="w-full text-sm table-fixed">
+        <colgroup>
+          <col style={{ width: '10%' }} />
+          <col style={{ width: '7%' }} />
+          <col style={{ width: '7%' }} />
+          <col style={{ width: '8%' }} />
+          <col style={{ width: '8%' }} />
+          <col style={{ width: '8%' }} />
+          <col style={{ width: '7%' }} />
+          <col style={{ width: '7%' }} />
+          <col style={{ width: '7%' }} />
+          <col style={{ width: '7%' }} />
+          <col style={{ width: '7%' }} />
+          <col style={{ width: '8%' }} />
+          <col style={{ width: '9%' }} />
+        </colgroup>
         <tbody>
           <tr>
-            <td className="px-4 py-3 border-r border-[#333] min-w-[120px]">
-              <div className="text-white font-medium">{title}</div>
+            <td className="px-3 py-3 border-r border-[#333]">
+              <div className="text-white font-medium truncate">{title}</div>
               {'username' in summaryData && (
-                <div className="text-gray-500 text-xs">{summaryData.username}</div>
+                <div className="text-gray-500 text-xs truncate">{summaryData.username}</div>
               )}
             </td>
-            <td className="px-4 py-3 text-center border-r border-[#333]">
+            <td className="px-2 py-3 text-center border-r border-[#333]">
               <div className="text-gray-500 text-xs">代理層級</div>
               <div className="text-white">{summaryData.agentLevel >= 0 ? `${summaryData.agentLevel}級代理` : '5級代理'}</div>
             </td>
-            <td className="px-4 py-3 text-center border-r border-[#333]">
+            <td className="px-2 py-3 text-center border-r border-[#333]">
               <div className="text-gray-500 text-xs">注單筆數</div>
               <div className="text-white">{summaryData.betCount.toLocaleString()}</div>
             </td>
-            <td className="px-4 py-3 text-center border-r border-[#333]">
+            <td className="px-2 py-3 text-center border-r border-[#333]">
               <div className="text-gray-500 text-xs">下注金額</div>
               <div className="text-white">{formatCurrency(summaryData.betAmount)}</div>
             </td>
-            <td className="px-4 py-3 text-center border-r border-[#333]">
+            <td className="px-2 py-3 text-center border-r border-[#333]">
               <div className="text-gray-500 text-xs">有效投注</div>
               <div className="text-white">{formatCurrency(summaryData.validBet)}</div>
             </td>
-            <td className="px-4 py-3 text-center border-r border-[#333]">
+            <td className="px-2 py-3 text-center border-r border-[#333]">
               <div className="text-gray-500 text-xs">會員輸贏</div>
               <div className={getValueColor(summaryData.memberWinLoss)}>{formatCurrency(summaryData.memberWinLoss)}</div>
             </td>
-            <td className="px-4 py-3 text-center border-r border-[#333]">
+            <td className="px-2 py-3 text-center border-r border-[#333]">
               <div className="text-gray-500 text-xs">會員退水</div>
               <div className="text-white">{formatCurrency(summaryData.memberRebate)}</div>
             </td>
-            <td className="px-4 py-3 text-center border-r border-[#333]">
+            <td className="px-2 py-3 text-center border-r border-[#333]">
               <div className="text-gray-500 text-xs">個人佔成</div>
               <div className="text-white">{formatCurrency(summaryData.personalShare)}</div>
             </td>
-            <td className="px-4 py-3 text-center border-r border-[#333]">
+            <td className="px-2 py-3 text-center border-r border-[#333]">
               <div className="text-gray-500 text-xs">個人退水</div>
               <div className={getValueColor(summaryData.personalRebate)}>{formatCurrency(summaryData.personalRebate)}</div>
             </td>
-            <td className="px-4 py-3 text-center border-r border-[#333]">
+            <td className="px-2 py-3 text-center border-r border-[#333]">
               <div className="text-gray-500 text-xs">應收下線</div>
               <div className="text-white">{formatCurrency(summaryData.receivable)}</div>
             </td>
-            <td className="px-4 py-3 text-center border-r border-[#333]">
+            <td className="px-2 py-3 text-center border-r border-[#333]">
               <div className="text-gray-500 text-xs">應繳上線</div>
               <div className={getValueColor(summaryData.payable)}>{formatCurrency(summaryData.payable)}</div>
             </td>
-            <td className="px-4 py-3 text-center border-r border-[#333]">
+            <td className="px-2 py-3 text-center border-r border-[#333]">
               <div className="text-gray-500 text-xs">個人盈虧</div>
               <div className={getValueColor(summaryData.profit)}>{formatCurrency(summaryData.profit)}</div>
             </td>
-            {showDetailBtn && 'id' in summaryData ? (
-              <td className="px-4 py-3 text-center">
+            <td className="px-2 py-3 text-center">
+              {showDetailBtn && 'id' in summaryData ? (
                 <button
                   onClick={() => handleDetailClick(summaryData as AgentReportData)}
                   className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-black text-xs font-medium rounded transition-colors"
                 >
                   明細
                 </button>
-              </td>
-            ) : (
-              <td className="px-4 py-3"></td>
-            )}
+              ) : (
+                <span className="px-3 py-1 text-xs invisible">佔位</span>
+              )}
+            </td>
           </tr>
         </tbody>
       </table>
