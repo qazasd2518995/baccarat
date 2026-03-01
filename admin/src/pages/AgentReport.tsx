@@ -6,6 +6,8 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronLeft,
+  FileText,
+  Settings,
 } from 'lucide-react';
 import { agentReportApi } from '../services/api';
 
@@ -35,6 +37,20 @@ interface AgentReportData {
   profit: number;
 }
 
+interface SummaryData {
+  agentLevel: number;
+  betCount: number;
+  betAmount: number;
+  validBet: number;
+  memberWinLoss: number;
+  memberRebate: number;
+  personalShare: number;
+  personalRebate: number;
+  receivable: number;
+  payable: number;
+  profit: number;
+}
+
 interface MemberReportData {
   id: string;
   username: string;
@@ -45,17 +61,26 @@ interface MemberReportData {
   memberWinLoss: number;
 }
 
+interface BreadcrumbItem {
+  id: string;
+  username: string;
+  nickname: string | null;
+}
+
 interface ReportResponse {
   currentUser: AgentReportData;
   agents?: AgentReportData[];
   members?: MemberReportData[];
+  subAgentsSummary?: SummaryData;
+  directMembersSummary?: SummaryData;
+  breadcrumb?: BreadcrumbItem[];
   dateRange: {
     startDate: string;
     endDate: string;
   };
 }
 
-// Platform categories and their platforms
+// Platform categories
 const PLATFORM_CATEGORIES = [
   { key: 'electronic', label: '電 子' },
   { key: 'lottery', label: '幸運奪寶' },
@@ -89,6 +114,7 @@ export default function AgentReport() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [viewAgentId, setViewAgentId] = useState<string | null>(null);
 
   const quickFilters: QuickFilter[] = [
     { key: 'today', label: '今 日' },
@@ -101,7 +127,7 @@ export default function AgentReport() {
 
   useEffect(() => {
     fetchData();
-  }, [activeTab, quickFilter]);
+  }, [activeTab, quickFilter, viewAgentId]);
 
   const fetchData = async () => {
     try {
@@ -114,6 +140,9 @@ export default function AgentReport() {
       }
       if (searchQuery) {
         params[activeTab === 'agent' ? 'agentId' : 'memberId'] = searchQuery;
+      }
+      if (viewAgentId) {
+        params.viewAgentId = viewAgentId;
       }
 
       const res = activeTab === 'agent'
@@ -136,15 +165,15 @@ export default function AgentReport() {
   const handleExport = () => {
     if (!data) return;
 
-    let csvContent = '\uFEFF'; // UTF-8 BOM for Excel
+    let csvContent = '\uFEFF';
 
     if (activeTab === 'agent') {
-      csvContent += '代理账号,名称,层级,注单数,下注金额,有效投注,会员输赢,会员退水\n';
+      csvContent += '代理帳號,名稱,層級,注單筆數,下注金額,有效投注,會員輸贏,會員退水,個人佔成,個人退水,應收下線,應繳上線,個人盈虧\n';
       data.agents?.forEach((a) => {
-        csvContent += `${a.username},${a.nickname || ''},${a.agentLevel}级代理,${a.betCount},${a.betAmount},${a.validBet},${a.memberWinLoss},${a.memberRebate}\n`;
+        csvContent += `${a.username},${a.nickname || ''},${a.agentLevel}級代理,${a.betCount},${a.betAmount},${a.validBet},${a.memberWinLoss},${a.memberRebate},${a.personalShare},${a.personalRebate},${a.receivable},${a.payable},${a.profit}\n`;
       });
     } else {
-      csvContent += '会员账号,名称,注单数,下注金额,有效投注,会员输赢\n';
+      csvContent += '會員帳號,名稱,注單筆數,下注金額,有效投注,會員輸贏\n';
       data.members?.forEach((m) => {
         csvContent += `${m.username},${m.nickname || ''},${m.betCount},${m.betAmount},${m.validBet},${m.memberWinLoss}\n`;
       });
@@ -154,7 +183,7 @@ export default function AgentReport() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${activeTab === 'agent' ? '代理报表' : '会员报表'}_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `${activeTab === 'agent' ? '代理報表' : '會員報表'}_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -166,8 +195,8 @@ export default function AgentReport() {
   };
 
   const getValueColor = (value: number) => {
-    if (value > 0) return 'text-green-400';
-    if (value < 0) return 'text-red-400';
+    if (value > 0) return 'text-green-500';
+    if (value < 0) return 'text-red-500';
     return 'text-gray-400';
   };
 
@@ -183,10 +212,7 @@ export default function AgentReport() {
     });
   };
 
-  const selectAllPlatforms = () => {
-    setSelectedPlatforms(new Set(ALL_PLATFORMS));
-  };
-
+  const selectAllPlatforms = () => setSelectedPlatforms(new Set(ALL_PLATFORMS));
   const invertSelection = () => {
     setSelectedPlatforms((prev) => {
       const newSet = new Set<string>();
@@ -196,15 +222,86 @@ export default function AgentReport() {
       return newSet;
     });
   };
+  const clearSelection = () => setSelectedPlatforms(new Set());
 
-  const clearSelection = () => {
-    setSelectedPlatforms(new Set());
+  const handleAgentClick = (agentId: string) => {
+    setViewAgentId(agentId);
+  };
+
+  const handleBreadcrumbClick = (agentId: string, index: number) => {
+    if (index === 0) {
+      setViewAgentId(null);
+    } else {
+      setViewAgentId(agentId);
+    }
+  };
+
+  const handleGoBack = () => {
+    if (data?.breadcrumb && data.breadcrumb.length > 1) {
+      const parentIndex = data.breadcrumb.length - 2;
+      if (parentIndex === 0) {
+        setViewAgentId(null);
+      } else {
+        setViewAgentId(data.breadcrumb[parentIndex].id);
+      }
+    }
   };
 
   // Pagination
   const items = activeTab === 'agent' ? (data?.agents || []) : (data?.members || []);
   const totalPages = Math.ceil(items.length / pageSize);
   const paginatedItems = items.slice((page - 1) * pageSize, page * pageSize);
+
+  // Summary card component
+  const SummaryCard = ({ title, data: summaryData }: { title: string; data: SummaryData }) => (
+    <div className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden">
+      <div className="grid grid-cols-11 text-sm">
+        <div className="p-3 text-center border-r border-[#333]">
+          <div className="text-amber-400 font-medium">{title}</div>
+        </div>
+        <div className="p-3 text-center border-r border-[#333]">
+          <div className="text-gray-500 text-xs">代理層級</div>
+          <div className="text-white">{summaryData.agentLevel}級代理</div>
+        </div>
+        <div className="p-3 text-center border-r border-[#333]">
+          <div className="text-gray-500 text-xs">注單筆數</div>
+          <div className="text-white">{summaryData.betCount.toLocaleString()}</div>
+        </div>
+        <div className="p-3 text-center border-r border-[#333]">
+          <div className="text-gray-500 text-xs">下注金額</div>
+          <div className="text-white">{formatCurrency(summaryData.betAmount)}</div>
+        </div>
+        <div className="p-3 text-center border-r border-[#333]">
+          <div className="text-gray-500 text-xs">有效投注</div>
+          <div className="text-white">{formatCurrency(summaryData.validBet)}</div>
+        </div>
+        <div className="p-3 text-center border-r border-[#333]">
+          <div className="text-gray-500 text-xs">會員輸贏</div>
+          <div className={getValueColor(summaryData.memberWinLoss)}>{formatCurrency(summaryData.memberWinLoss)}</div>
+        </div>
+        <div className="p-3 text-center border-r border-[#333]">
+          <div className="text-gray-500 text-xs">會員退水</div>
+          <div className="text-white">{formatCurrency(summaryData.memberRebate)}</div>
+        </div>
+        <div className="p-3 text-center border-r border-[#333]">
+          <div className="text-gray-500 text-xs">個人佔成</div>
+          <div className="text-white">{formatCurrency(summaryData.personalShare)}</div>
+        </div>
+        <div className="p-3 text-center border-r border-[#333]">
+          <div className="text-gray-500 text-xs">個人退水</div>
+          <div className={getValueColor(summaryData.personalRebate)}>{formatCurrency(summaryData.personalRebate)}</div>
+        </div>
+        <div className="p-3 text-center border-r border-[#333]">
+          <div className="text-gray-500 text-xs">應收下線</div>
+          <div className="text-white">{formatCurrency(summaryData.receivable)}</div>
+        </div>
+        <div className="p-3 text-center">
+          <div className="text-gray-500 text-xs">個人盈虧</div>
+          <div className={getValueColor(summaryData.profit)}>{formatCurrency(summaryData.profit)}</div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -253,7 +350,7 @@ export default function AgentReport() {
       {/* Tabs */}
       <div className="grid grid-cols-2 gap-0 bg-[#1a1a1a] rounded-lg overflow-hidden border border-[#333]">
         <button
-          onClick={() => setActiveTab('agent')}
+          onClick={() => { setActiveTab('agent'); setViewAgentId(null); }}
           className={`py-3 text-center font-medium transition-all ${
             activeTab === 'agent'
               ? 'bg-amber-500 text-black'
@@ -263,7 +360,7 @@ export default function AgentReport() {
           遊戲代理報表
         </button>
         <button
-          onClick={() => setActiveTab('member')}
+          onClick={() => { setActiveTab('member'); setViewAgentId(null); }}
           className={`py-3 text-center font-medium transition-all ${
             activeTab === 'member'
               ? 'bg-amber-500 text-black'
@@ -287,7 +384,6 @@ export default function AgentReport() {
           )}
           <span className="text-white font-medium">進階篩選</span>
 
-          {/* Category quick buttons (shown when collapsed) */}
           {!showFilters && (
             <div className="flex flex-wrap gap-2 ml-4">
               {PLATFORM_CATEGORIES.map((cat) => (
@@ -312,7 +408,6 @@ export default function AgentReport() {
               className="border-t border-[#333] overflow-hidden"
             >
               <div className="p-4 space-y-4">
-                {/* Category Buttons */}
                 <div className="flex flex-wrap gap-2">
                   {PLATFORM_CATEGORIES.map((cat) => (
                     <button
@@ -322,27 +417,17 @@ export default function AgentReport() {
                       {cat.label}
                     </button>
                   ))}
-                  <button
-                    onClick={selectAllPlatforms}
-                    className="px-4 py-2 border border-dashed border-gray-600 text-gray-300 text-sm rounded hover:border-amber-500 hover:text-amber-400 transition-colors"
-                  >
+                  <button onClick={selectAllPlatforms} className="px-4 py-2 border border-dashed border-gray-600 text-gray-300 text-sm rounded hover:border-amber-500 hover:text-amber-400 transition-colors">
                     全 選
                   </button>
-                  <button
-                    onClick={invertSelection}
-                    className="px-4 py-2 border border-dashed border-gray-600 text-gray-300 text-sm rounded hover:border-amber-500 hover:text-amber-400 transition-colors"
-                  >
+                  <button onClick={invertSelection} className="px-4 py-2 border border-dashed border-gray-600 text-gray-300 text-sm rounded hover:border-amber-500 hover:text-amber-400 transition-colors">
                     反 選
                   </button>
-                  <button
-                    onClick={clearSelection}
-                    className="px-4 py-2 border border-dashed border-gray-600 text-gray-300 text-sm rounded hover:border-amber-500 hover:text-amber-400 transition-colors"
-                  >
+                  <button onClick={clearSelection} className="px-4 py-2 border border-dashed border-gray-600 text-gray-300 text-sm rounded hover:border-amber-500 hover:text-amber-400 transition-colors">
                     清 除
                   </button>
                 </div>
 
-                {/* Platform Checkboxes */}
                 <div className="grid grid-cols-6 gap-3 pt-2">
                   {ALL_PLATFORMS.map((platform, idx) => (
                     <label
@@ -367,7 +452,6 @@ export default function AgentReport() {
 
       {/* Quick Filters, Search, Date Range */}
       <div className="flex flex-wrap items-center gap-4">
-        {/* Quick Filters */}
         <div className="flex items-center gap-2">
           <span className="text-gray-400 text-sm">快速篩選</span>
           <div className="flex gap-1">
@@ -387,7 +471,6 @@ export default function AgentReport() {
           </div>
         </div>
 
-        {/* Agent/Member Search */}
         <div className="flex items-center gap-2">
           <span className="text-gray-400 text-sm">{activeTab === 'agent' ? '代理帳號' : '會員帳號'}</span>
           <input
@@ -399,30 +482,26 @@ export default function AgentReport() {
           />
         </div>
 
-        {/* Date Range */}
         <div className="flex items-center gap-2">
           <span className="text-red-400 text-sm">*</span>
           <span className="text-gray-400 text-sm">查詢時間</span>
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500"
-            />
-            <span className="text-gray-400">→</span>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500"
-            />
-          </div>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500"
+          />
+          <span className="text-gray-400">→</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500"
+          />
         </div>
 
         <div className="flex-1" />
 
-        {/* Export & Search Buttons */}
         <div className="flex items-center gap-2">
           <button
             onClick={handleExport}
@@ -441,6 +520,31 @@ export default function AgentReport() {
         </div>
       </div>
 
+      {/* Breadcrumb */}
+      {data?.breadcrumb && data.breadcrumb.length > 1 && (
+        <div className="flex items-center gap-2 text-sm">
+          {data.breadcrumb.map((item, index) => (
+            <span key={item.id} className="flex items-center gap-2">
+              {index > 0 && <span className="text-gray-500">/</span>}
+              <button
+                onClick={() => handleBreadcrumbClick(item.id, index)}
+                className={`hover:text-amber-400 transition-colors ${
+                  index === data.breadcrumb!.length - 1 ? 'text-white' : 'text-amber-400'
+                }`}
+              >
+                {item.nickname || item.username}
+              </button>
+            </span>
+          ))}
+          <button
+            onClick={handleGoBack}
+            className="ml-4 px-3 py-1 text-gray-400 hover:text-white text-sm border border-[#444] rounded transition-colors"
+          >
+            返回上一級
+          </button>
+        </div>
+      )}
+
       {/* Data Display */}
       {loading ? (
         <div className="flex items-center justify-center h-64">
@@ -448,52 +552,81 @@ export default function AgentReport() {
         </div>
       ) : activeTab === 'agent' ? (
         <div className="space-y-3">
+          {/* Summary Cards - only show when viewing a sub-agent */}
+          {viewAgentId && data?.subAgentsSummary && (
+            <SummaryCard title="下線代理輸贏總和" data={data.subAgentsSummary} />
+          )}
+          {viewAgentId && data?.directMembersSummary && (
+            <SummaryCard title="直屬會員輸贏總和" data={data.directMembersSummary} />
+          )}
+
           {/* Section Header */}
           <div className="text-amber-400 font-medium text-sm">
             {data?.currentUser.nickname || data?.currentUser.username}
           </div>
 
-          {/* Agent Cards */}
+          {/* Agent Table */}
           {paginatedItems.length > 0 ? (
-            (paginatedItems as AgentReportData[]).map((agent) => (
-              <div
-                key={agent.id}
-                className="bg-[#f5f5f5] rounded-lg overflow-hidden"
-              >
-                <div className="grid grid-cols-7 divide-x divide-gray-300">
-                  <div className="p-4 text-center">
-                    <div className="text-amber-600 font-bold text-sm">{agent.nickname || agent.username}</div>
-                    <div className="text-amber-600 text-xs">{agent.username}</div>
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="text-gray-500 text-xs">代理層級</div>
-                    <div className="text-gray-800 font-medium">{agent.agentLevel}級代理</div>
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="text-gray-500 text-xs">注單筆數</div>
-                    <div className="text-gray-800 font-medium">{agent.betCount.toLocaleString()}</div>
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="text-gray-500 text-xs">下注金額</div>
-                    <div className="text-gray-800 font-medium">{formatCurrency(agent.betAmount)}</div>
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="text-gray-500 text-xs">有效投注</div>
-                    <div className="text-gray-800 font-medium">{formatCurrency(agent.validBet)}</div>
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="text-gray-500 text-xs">會員輸贏</div>
-                    <div className={`font-medium ${agent.memberWinLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(agent.memberWinLoss)}
-                    </div>
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="text-gray-500 text-xs">會員退水</div>
-                    <div className="text-gray-800 font-medium">{formatCurrency(agent.memberRebate)}</div>
-                  </div>
-                </div>
+            <div className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-[#252525] text-gray-400">
+                      <th className="px-4 py-3 text-left">代理帳號</th>
+                      <th className="px-4 py-3 text-center">代理層級</th>
+                      <th className="px-4 py-3 text-right">注單筆數</th>
+                      <th className="px-4 py-3 text-right">下注金額</th>
+                      <th className="px-4 py-3 text-right">有效投注</th>
+                      <th className="px-4 py-3 text-right">會員輸贏</th>
+                      <th className="px-4 py-3 text-right">會員退水</th>
+                      <th className="px-4 py-3 text-right">個人佔成</th>
+                      <th className="px-4 py-3 text-right">個人退水</th>
+                      <th className="px-4 py-3 text-right">應收下線</th>
+                      <th className="px-4 py-3 text-right">個人盈虧</th>
+                      <th className="px-4 py-3 text-center">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(paginatedItems as AgentReportData[]).map((agent, index) => (
+                      <tr
+                        key={agent.id}
+                        className={`border-t border-[#333] hover:bg-[#252525] ${index % 2 === 0 ? 'bg-[#1a1a1a]' : 'bg-[#1e1e1e]'}`}
+                      >
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => handleAgentClick(agent.id)}
+                            className="text-left hover:text-amber-400 transition-colors"
+                          >
+                            <div className="text-amber-400 font-medium">{agent.nickname || agent.username}</div>
+                            <div className="text-amber-400 text-xs">{agent.username}</div>
+                          </button>
+                        </td>
+                        <td className="px-4 py-3 text-center text-white">{agent.agentLevel}級代理</td>
+                        <td className="px-4 py-3 text-right text-white">{agent.betCount.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right text-white">{formatCurrency(agent.betAmount)}</td>
+                        <td className="px-4 py-3 text-right text-white">{formatCurrency(agent.validBet)}</td>
+                        <td className={`px-4 py-3 text-right ${getValueColor(agent.memberWinLoss)}`}>{formatCurrency(agent.memberWinLoss)}</td>
+                        <td className="px-4 py-3 text-right text-white">{formatCurrency(agent.memberRebate)}</td>
+                        <td className="px-4 py-3 text-right text-white">{formatCurrency(agent.personalShare)}</td>
+                        <td className={`px-4 py-3 text-right ${getValueColor(agent.personalRebate)}`}>{formatCurrency(agent.personalRebate)}</td>
+                        <td className="px-4 py-3 text-right text-white">{formatCurrency(agent.receivable)}</td>
+                        <td className={`px-4 py-3 text-right font-medium ${getValueColor(agent.profit)}`}>{formatCurrency(agent.profit)}</td>
+                        <td className="px-4 py-3 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button className="text-amber-400 hover:text-amber-300 text-xs">
+                              <FileText className="w-4 h-4" />
+                            </button>
+                            <button className="text-gray-400 hover:text-white text-xs">
+                              <Settings className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))
+            </div>
           ) : (
             <div className="bg-[#1a1a1a] border border-[#333] rounded-lg p-8 text-center text-gray-400">
               暫無數據
@@ -502,44 +635,45 @@ export default function AgentReport() {
         </div>
       ) : (
         <div className="space-y-3">
-          {/* Section Header */}
           <div className="text-amber-400 font-medium text-sm">
             {data?.currentUser.nickname || data?.currentUser.username}
           </div>
 
-          {/* Member Cards */}
           {paginatedItems.length > 0 ? (
-            (paginatedItems as MemberReportData[]).map((member) => (
-              <div
-                key={member.id}
-                className="bg-[#f5f5f5] rounded-lg overflow-hidden"
-              >
-                <div className="grid grid-cols-5 divide-x divide-gray-300">
-                  <div className="p-4 text-center">
-                    <div className="text-amber-600 font-bold text-sm">{member.nickname || member.username}</div>
-                    <div className="text-amber-600 text-xs">{member.username}</div>
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="text-gray-500 text-xs">注單筆數</div>
-                    <div className="text-gray-800 font-medium">{member.betCount.toLocaleString()}</div>
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="text-gray-500 text-xs">下注金額</div>
-                    <div className="text-gray-800 font-medium">{formatCurrency(member.betAmount)}</div>
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="text-gray-500 text-xs">有效投注</div>
-                    <div className="text-gray-800 font-medium">{formatCurrency(member.validBet)}</div>
-                  </div>
-                  <div className="p-4 text-center">
-                    <div className="text-gray-500 text-xs">會員輸贏</div>
-                    <div className={`font-medium ${member.memberWinLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(member.memberWinLoss)}
-                    </div>
-                  </div>
-                </div>
+            <div className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-[#252525] text-gray-400">
+                      <th className="px-4 py-3 text-left">會員帳號</th>
+                      <th className="px-4 py-3 text-right">注單筆數</th>
+                      <th className="px-4 py-3 text-right">下注金額</th>
+                      <th className="px-4 py-3 text-right">有效投注</th>
+                      <th className="px-4 py-3 text-right">會員輸贏</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(paginatedItems as MemberReportData[]).map((member, index) => (
+                      <tr
+                        key={member.id}
+                        className={`border-t border-[#333] hover:bg-[#252525] ${index % 2 === 0 ? 'bg-[#1a1a1a]' : 'bg-[#1e1e1e]'}`}
+                      >
+                        <td className="px-4 py-3">
+                          <div className="text-amber-400 font-medium">{member.nickname || member.username}</div>
+                          <div className="text-amber-400 text-xs">{member.username}</div>
+                        </td>
+                        <td className="px-4 py-3 text-right text-white">{member.betCount.toLocaleString()}</td>
+                        <td className="px-4 py-3 text-right text-white">{formatCurrency(member.betAmount)}</td>
+                        <td className="px-4 py-3 text-right text-white">{formatCurrency(member.validBet)}</td>
+                        <td className={`px-4 py-3 text-right font-medium ${getValueColor(member.memberWinLoss)}`}>
+                          {formatCurrency(member.memberWinLoss)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            ))
+            </div>
           ) : (
             <div className="bg-[#1a1a1a] border border-[#333] rounded-lg p-8 text-center text-gray-400">
               暫無數據
@@ -577,7 +711,7 @@ export default function AgentReport() {
             })}
             <button
               onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
+              disabled={page === totalPages || totalPages === 0}
               className="p-1.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <ChevronRight className="w-4 h-4" />

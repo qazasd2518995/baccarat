@@ -324,6 +324,7 @@ export const agentManagementApi = {
 export const agentReportApi = {
   getAgentReport: (params?: {
     agentId?: string;
+    viewAgentId?: string;
     quickFilter?: string;
     startDate?: string;
     endDate?: string;

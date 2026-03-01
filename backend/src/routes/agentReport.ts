@@ -175,15 +175,129 @@ async function calculateAgentReport(agentId: string, startDate: Date, endDate: D
   };
 }
 
+// Helper to get direct downline members only (not recursive)
+async function getDirectDownlineMembers(agentId: string): Promise<string[]> {
+  const members = await prisma.user.findMany({
+    where: { parentAgentId: agentId, role: 'member' },
+    select: { id: true }
+  });
+  return members.map(m => m.id);
+}
+
+// Helper to calculate direct members report (only direct members, not sub-agents' members)
+async function calculateDirectMembersReport(agentId: string, startDate: Date, endDate: Date) {
+  const memberIds = await getDirectDownlineMembers(agentId);
+
+  let betCount = 0;
+  let betAmount = 0;
+  let validBet = 0;
+  let memberWinLoss = 0;
+
+  for (const memberId of memberIds) {
+    const stats = await calculateBettingStats(memberId, startDate, endDate);
+    betCount += stats.betCount;
+    betAmount += stats.betAmount;
+    validBet += stats.validBet;
+    memberWinLoss += stats.memberWinLoss;
+  }
+
+  const agent = await prisma.user.findUnique({
+    where: { id: agentId },
+    select: { sharePercent: true, rebatePercent: true, agentLevel: true }
+  });
+
+  const sharePercent = Number(agent?.sharePercent || 0);
+  const rebatePercent = Number(agent?.rebatePercent || 0);
+
+  const memberRebate = validBet * (rebatePercent / 100);
+  const personalShare = Math.abs(memberWinLoss) * (sharePercent / 100);
+  const personalRebate = memberRebate;
+  const receivable = memberWinLoss < 0 ? Math.abs(memberWinLoss) - personalShare : 0;
+  const payable = memberWinLoss > 0 ? memberWinLoss + memberRebate : memberRebate;
+  const profit = receivable - payable;
+
+  return {
+    agentLevel: agent?.agentLevel || 5,
+    betCount,
+    betAmount,
+    validBet,
+    memberWinLoss,
+    memberRebate,
+    personalShare,
+    personalRebate,
+    receivable,
+    payable,
+    profit
+  };
+}
+
+// Helper to calculate sub-agents report (only sub-agents, not direct members)
+async function calculateSubAgentsReport(agentId: string, startDate: Date, endDate: Date) {
+  // Get direct sub-agents
+  const directAgents = await prisma.user.findMany({
+    where: { parentAgentId: agentId, role: 'agent' },
+    select: { id: true }
+  });
+
+  let betCount = 0;
+  let betAmount = 0;
+  let validBet = 0;
+  let memberWinLoss = 0;
+
+  for (const subAgent of directAgents) {
+    // Get all members under this sub-agent (recursively)
+    const memberIds = await getAllDownlineMembers(subAgent.id);
+    for (const memberId of memberIds) {
+      const stats = await calculateBettingStats(memberId, startDate, endDate);
+      betCount += stats.betCount;
+      betAmount += stats.betAmount;
+      validBet += stats.validBet;
+      memberWinLoss += stats.memberWinLoss;
+    }
+  }
+
+  const agent = await prisma.user.findUnique({
+    where: { id: agentId },
+    select: { sharePercent: true, rebatePercent: true, agentLevel: true }
+  });
+
+  const sharePercent = Number(agent?.sharePercent || 0);
+  const rebatePercent = Number(agent?.rebatePercent || 0);
+
+  const memberRebate = validBet * (rebatePercent / 100);
+  const personalShare = Math.abs(memberWinLoss) * (sharePercent / 100);
+  const personalRebate = memberRebate;
+  const receivable = memberWinLoss < 0 ? Math.abs(memberWinLoss) - personalShare : 0;
+  const payable = memberWinLoss > 0 ? memberWinLoss + memberRebate : memberRebate;
+  const profit = receivable - payable;
+
+  return {
+    agentLevel: agent?.agentLevel || 5,
+    betCount,
+    betAmount,
+    validBet,
+    memberWinLoss,
+    memberRebate,
+    personalShare,
+    personalRebate,
+    receivable,
+    payable,
+    profit
+  };
+}
+
 /**
  * GET /api/agent-report/agent
  * 遊戲代理報表
+ * - viewAgentId: 查看特定代理的直屬下線（用於層級導航）
+ * - agentId: 搜索過濾
  */
 router.get('/agent', requireRole('admin', 'agent'), async (req: Request, res: Response) => {
   try {
     const currentUser = req.user!;
     const {
       agentId,
+      viewAgentId,
       quickFilter = 'today',
       startDate: startDateStr,
       endDate: endDateStr
@@ -200,35 +314,20 @@ router.get('/agent', requireRole('admin', 'agent'), async (req: Request, res: Re
       dateRange = getDateRange(quickFilter as string);
     }
 
-    // Get current user's report
-    const currentUserReport = await calculateAgentReport(currentUser.userId, dateRange.startDate, dateRange.endDate);
-    const currentUserData = await prisma.user.findUnique({
-      where: { id: currentUser.userId },
-      select: { username: true, nickname: true, agentLevel: true, sharePercent: true, rebatePercent: true }
-    });
+    // Determine which agent to view (current user or specific agent)
+    const targetAgentId = viewAgentId ? String(viewAgentId) : currentUser.userId;
 
-    // Get all downline agent IDs recursively
-    const allAgentIds = await getAllDownlineAgents(currentUser.userId);
-
-    // Build filter for agents
-    let agentFilter: any = {
-      id: { in: allAgentIds }
-    };
-
-    if (agentId) {
-      agentFilter.AND = [
-        { id: { in: allAgentIds } },
-        {
-          OR: [
-            { username: { contains: agentId as string, mode: 'insensitive' } },
-            { nickname: { contains: agentId as string, mode: 'insensitive' } }
-          ]
-        }
-      ];
+    // Verify the target agent is within current user's downline (or is the current user)
+    if (viewAgentId && viewAgentId !== currentUser.userId) {
+      const allDownlineAgents = await getAllDownlineAgents(currentUser.userId);
+      if (!allDownlineAgents.includes(targetAgentId)) {
+        return res.status(403).json({ error: 'Access denied to this agent' });
+      }
     }
 
-    const downlineAgents = await prisma.user.findMany({
-      where: agentFilter,
+    // Get target agent's data
+    const targetAgentData = await prisma.user.findUnique({
+      where: { id: targetAgentId },
       select: {
         id: true,
         username: true,
@@ -236,16 +335,49 @@ router.get('/agent', requireRole('admin', 'agent'), async (req: Request, res: Re
         agentLevel: true,
         sharePercent: true,
         rebatePercent: true,
+        parentAgentId: true,
         parentAgent: {
-          select: { username: true }
+          select: { id: true, username: true, nickname: true }
         }
+      }
+    });
+
+    if (!targetAgentData) {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    // Get target agent's total report
+    const targetAgentReport = await calculateAgentReport(targetAgentId, dateRange.startDate, dateRange.endDate);
+
+    // Get direct downline agents only (not recursive)
+    let directAgentFilter: any = {
+      parentAgentId: targetAgentId,
+      role: 'agent'
+    };
+
+    if (agentId) {
+      directAgentFilter.OR = [
+        { username: { contains: agentId as string, mode: 'insensitive' } },
+        { nickname: { contains: agentId as string, mode: 'insensitive' } }
+      ];
+    }
+
+    const directDownlineAgents = await prisma.user.findMany({
+      where: directAgentFilter,
+      select: {
+        id: true,
+        username: true,
+        nickname: true,
+        agentLevel: true,
+        sharePercent: true,
+        rebatePercent: true
       },
       orderBy: [{ agentLevel: 'asc' }, { createdAt: 'asc' }]
     });
 
-    // Calculate report for each downline agent
+    // Calculate report for each direct downline agent
     const agentReports = await Promise.all(
-      downlineAgents.map(async (agent) => {
+      directDownlineAgents.map(async (agent) => {
         const report = await calculateAgentReport(agent.id, dateRange.startDate, dateRange.endDate);
         return {
           id: agent.id,
@@ -259,17 +391,59 @@ router.get('/agent', requireRole('admin', 'agent'), async (req: Request, res: Re
       })
     );
 
+    // Calculate sub-agents summary (下線代理輸贏總和)
+    const subAgentsSummary = await calculateSubAgentsReport(targetAgentId, dateRange.startDate, dateRange.endDate);
+
+    // Calculate direct members summary (直屬會員輸贏總和)
+    const directMembersSummary = await calculateDirectMembersReport(targetAgentId, dateRange.startDate, dateRange.endDate);
+
+    // Build breadcrumb path
+    const breadcrumb: Array<{ id: string; username: string; nickname: string | null }> = [];
+
+    // Start from root (current logged-in user)
+    const rootUser = await prisma.user.findUnique({
+      where: { id: currentUser.userId },
+      select: { id: true, username: true, nickname: true }
+    });
+    if (rootUser) {
+      breadcrumb.push({ id: rootUser.id, username: rootUser.username, nickname: rootUser.nickname });
+    }
+
+    // Build path from root to target
+    if (targetAgentId !== currentUser.userId) {
+      const pathToTarget: Array<{ id: string; username: string; nickname: string | null }> = [];
+      let currentId = targetAgentId;
+
+      while (currentId && currentId !== currentUser.userId) {
+        const user = await prisma.user.findUnique({
+          where: { id: currentId },
+          select: { id: true, username: true, nickname: true, parentAgentId: true }
+        });
+        if (user) {
+          pathToTarget.unshift({ id: user.id, username: user.username, nickname: user.nickname });
+          currentId = user.parentAgentId || '';
+        } else {
+          break;
+        }
+      }
+
+      breadcrumb.push(...pathToTarget);
+    }
+
     res.json({
       currentUser: {
-        id: currentUser.userId,
-        username: currentUserData?.username,
-        nickname: currentUserData?.nickname,
-        agentLevel: currentUserData?.agentLevel,
-        sharePercent: Number(currentUserData?.sharePercent),
-        rebatePercent: Number(currentUserData?.rebatePercent),
-        ...currentUserReport
+        id: targetAgentId,
+        username: targetAgentData.username,
+        nickname: targetAgentData.nickname,
+        agentLevel: targetAgentData.agentLevel,
+        sharePercent: Number(targetAgentData.sharePercent),
+        rebatePercent: Number(targetAgentData.rebatePercent),
+        ...targetAgentReport
       },
       agents: agentReports,
+      subAgentsSummary,
+      directMembersSummary,
+      breadcrumb,
       dateRange: {
         startDate: dateRange.startDate.toISOString(),
         endDate: dateRange.endDate.toISOString()
