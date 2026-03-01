@@ -549,15 +549,34 @@ router.get('/member', requireRole('admin', 'agent'), async (req: Request, res: R
       );
     }
 
+    // Get target agent's share/rebate settings for member calculations
+    const agentSharePercent = Number(targetAgentData?.sharePercent) || 0;
+    const agentRebatePercent = Number(targetAgentData?.rebatePercent) || 0;
+
     // Calculate report for each member
     const memberReports = await Promise.all(
       filteredMembers.map(async (member) => {
         const stats = await calculateBettingStats(member.id, dateRange.startDate, dateRange.endDate);
+
+        // Calculate member-specific fields based on agent's share/rebate settings
+        const memberRebate = stats.validBet * (agentRebatePercent / 100);
+        const personalShare = Math.abs(stats.memberWinLoss) * (agentSharePercent / 100);
+        const personalRebate = memberRebate;
+        const receivable = stats.memberWinLoss < 0 ? Math.abs(stats.memberWinLoss) : 0;
+        const payable = stats.memberWinLoss > 0 ? stats.memberWinLoss + memberRebate : memberRebate;
+        const profit = receivable - payable + personalShare + personalRebate;
+
         return {
           id: member.id,
           username: member.username,
           nickname: member.nickname,
-          ...stats
+          ...stats,
+          memberRebate,
+          personalShare,
+          personalRebate,
+          receivable,
+          payable,
+          profit
         };
       })
     );
