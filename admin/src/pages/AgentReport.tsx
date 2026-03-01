@@ -471,7 +471,7 @@ export default function AgentReport() {
       {/* Tabs */}
       <div className="grid grid-cols-2 gap-0 bg-[#1a1a1a] rounded-lg overflow-hidden border border-[#333]">
         <button
-          onClick={() => { setActiveTab('agent'); setViewAgentId(null); }}
+          onClick={() => setActiveTab('agent')}
           className={`py-3 text-center font-medium transition-all ${
             activeTab === 'agent'
               ? 'bg-amber-500 text-black'
@@ -481,7 +481,7 @@ export default function AgentReport() {
           遊戲代理報表
         </button>
         <button
-          onClick={() => { setActiveTab('member'); setViewAgentId(null); }}
+          onClick={() => setActiveTab('member')}
           className={`py-3 text-center font-medium transition-all ${
             activeTab === 'member'
               ? 'bg-amber-500 text-black'

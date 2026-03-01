@@ -123,6 +123,43 @@ async function getAllDownlineAgents(agentId: string): Promise<string[]> {
   return agentIds;
 }
 
+// Helper to build breadcrumb path from root user to target
+async function buildBreadcrumb(rootUserId: string, targetAgentId: string): Promise<Array<{ id: string; username: string; nickname: string | null }>> {
+  const breadcrumb: Array<{ id: string; username: string; nickname: string | null }> = [];
+
+  // Start from root (current logged-in user)
+  const rootUser = await prisma.user.findUnique({
+    where: { id: rootUserId },
+    select: { id: true, username: true, nickname: true }
+  });
+  if (rootUser) {
+    breadcrumb.push({ id: rootUser.id, username: rootUser.username, nickname: rootUser.nickname });
+  }
+
+  // Build path from root to target
+  if (targetAgentId !== rootUserId) {
+    const pathToTarget: Array<{ id: string; username: string; nickname: string | null }> = [];
+    let currentId = targetAgentId;
+
+    while (currentId && currentId !== rootUserId) {
+      const user = await prisma.user.findUnique({
+        where: { id: currentId },
+        select: { id: true, username: true, nickname: true, parentAgentId: true }
+      });
+      if (user) {
+        pathToTarget.unshift({ id: user.id, username: user.username, nickname: user.nickname });
+        currentId = user.parentAgentId || '';
+      } else {
+        break;
+      }
+    }
+
+    breadcrumb.push(...pathToTarget);
+  }
+
+  return breadcrumb;
+}
+
 // Helper to calculate agent report
 async function calculateAgentReport(agentId: string, startDate: Date, endDate: Date) {
   // Get all members under this agent
@@ -417,37 +454,7 @@ router.get('/agent', requireRole('admin', 'agent'), async (req: Request, res: Re
     const directMembersSummary = await calculateDirectMembersReport(targetAgentId, dateRange.startDate, dateRange.endDate);
 
     // Build breadcrumb path
-    const breadcrumb: Array<{ id: string; username: string; nickname: string | null }> = [];
-
-    // Start from root (current logged-in user)
-    const rootUser = await prisma.user.findUnique({
-      where: { id: currentUser.userId },
-      select: { id: true, username: true, nickname: true }
-    });
-    if (rootUser) {
-      breadcrumb.push({ id: rootUser.id, username: rootUser.username, nickname: rootUser.nickname });
-    }
-
-    // Build path from root to target
-    if (targetAgentId !== currentUser.userId) {
-      const pathToTarget: Array<{ id: string; username: string; nickname: string | null }> = [];
-      let currentId = targetAgentId;
-
-      while (currentId && currentId !== currentUser.userId) {
-        const user = await prisma.user.findUnique({
-          where: { id: currentId },
-          select: { id: true, username: true, nickname: true, parentAgentId: true }
-        });
-        if (user) {
-          pathToTarget.unshift({ id: user.id, username: user.username, nickname: user.nickname });
-          currentId = user.parentAgentId || '';
-        } else {
-          break;
-        }
-      }
-
-      breadcrumb.push(...pathToTarget);
-    }
+    const breadcrumb = await buildBreadcrumb(currentUser.userId, targetAgentId);
 
     res.json({
       currentUser: {
@@ -483,6 +490,7 @@ router.get('/member', requireRole('admin', 'agent'), async (req: Request, res: R
     const currentUser = req.user!;
     const {
       memberId,
+      viewAgentId,
       quickFilter = 'today',
       startDate: startDateStr,
       endDate: endDateStr
@@ -499,49 +507,51 @@ router.get('/member', requireRole('admin', 'agent'), async (req: Request, res: R
       dateRange = getDateRange(quickFilter as string);
     }
 
-    // Get current user's total report
-    const currentUserReport = await calculateAgentReport(currentUser.userId, dateRange.startDate, dateRange.endDate);
-    const currentUserData = await prisma.user.findUnique({
-      where: { id: currentUser.userId },
+    // Determine target agent ID (either viewAgentId or currentUser)
+    const targetAgentId = viewAgentId ? String(viewAgentId) : currentUser.userId;
+
+    // Validate viewAgentId is a downline of current user
+    if (viewAgentId) {
+      const allDownlineIds = await getAllDownlineAgents(currentUser.userId);
+      if (!allDownlineIds.includes(String(viewAgentId)) && targetAgentId !== currentUser.userId) {
+        return res.status(403).json({ error: 'Access denied to this agent' });
+      }
+    }
+
+    // Get target agent's report
+    const targetAgentReport = await calculateAgentReport(targetAgentId, dateRange.startDate, dateRange.endDate);
+    const targetAgentData = await prisma.user.findUnique({
+      where: { id: targetAgentId },
       select: { username: true, nickname: true, agentLevel: true, sharePercent: true, rebatePercent: true }
     });
 
-    // Get all downline member IDs recursively (includes sub-agents' members)
-    const allMemberIds = await getAllDownlineMembers(currentUser.userId);
-
-    // Build filter for members
-    let memberFilter: any = {
-      id: { in: allMemberIds }
-    };
-
-    if (memberId) {
-      memberFilter.AND = [
-        { id: { in: allMemberIds } },
-        {
-          OR: [
-            { username: { contains: memberId as string, mode: 'insensitive' } },
-            { nickname: { contains: memberId as string, mode: 'insensitive' } }
-          ]
-        }
-      ];
-    }
-
-    const downlineMembers = await prisma.user.findMany({
-      where: memberFilter,
+    // Get direct members of the target agent (not recursive - only direct members)
+    const directMembers = await prisma.user.findMany({
+      where: {
+        parentAgentId: targetAgentId,
+        role: 'member'
+      },
       select: {
         id: true,
         username: true,
         nickname: true,
-        parentAgent: {
-          select: { username: true }
-        }
       },
       orderBy: { createdAt: 'asc' }
     });
 
+    // Apply search filter if provided
+    let filteredMembers = directMembers;
+    if (memberId) {
+      const searchTerm = (memberId as string).toLowerCase();
+      filteredMembers = directMembers.filter(m =>
+        m.username.toLowerCase().includes(searchTerm) ||
+        (m.nickname && m.nickname.toLowerCase().includes(searchTerm))
+      );
+    }
+
     // Calculate report for each member
     const memberReports = await Promise.all(
-      downlineMembers.map(async (member) => {
+      filteredMembers.map(async (member) => {
         const stats = await calculateBettingStats(member.id, dateRange.startDate, dateRange.endDate);
         return {
           id: member.id,
@@ -552,17 +562,21 @@ router.get('/member', requireRole('admin', 'agent'), async (req: Request, res: R
       })
     );
 
+    // Build breadcrumb
+    const breadcrumb = await buildBreadcrumb(currentUser.userId, targetAgentId);
+
     res.json({
       currentUser: {
-        id: currentUser.userId,
-        username: currentUserData?.username,
-        nickname: currentUserData?.nickname,
-        agentLevel: currentUserData?.agentLevel,
-        sharePercent: Number(currentUserData?.sharePercent),
-        rebatePercent: Number(currentUserData?.rebatePercent),
-        ...currentUserReport
+        id: targetAgentId,
+        username: targetAgentData?.username,
+        nickname: targetAgentData?.nickname,
+        agentLevel: targetAgentData?.agentLevel,
+        sharePercent: Number(targetAgentData?.sharePercent),
+        rebatePercent: Number(targetAgentData?.rebatePercent),
+        ...targetAgentReport
       },
       members: memberReports,
+      breadcrumb,
       dateRange: {
         startDate: dateRange.startDate.toISOString(),
         endDate: dateRange.endDate.toISOString()
