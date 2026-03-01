@@ -150,16 +150,19 @@ async function calculateAgentReport(agentId: string, startDate: Date, endDate: D
   const sharePercent = Number(agent?.sharePercent || 0);
   const rebatePercent = Number(agent?.rebatePercent || 0);
 
-  // Calculate derived values
+  // 會員退水 = 有效投注 * 退水比例
   const memberRebate = validBet * (rebatePercent / 100);
+  // 個人佔成 = |會員輸贏| * 佔成比例（代理從會員輸贏中獲得的佔成）
   const personalShare = Math.abs(memberWinLoss) * (sharePercent / 100);
+  // 個人退水 = 會員退水
   const personalRebate = memberRebate;
 
-  // For agent: receivable is what downline owes us, payable is what we owe upline
-  // If member loses, agent receives; if member wins, agent pays
-  const receivable = memberWinLoss < 0 ? Math.abs(memberWinLoss) - personalShare : 0;
+  // 應收下線：會員輸錢時，代理應收取的金額（會員輸的錢）
+  const receivable = memberWinLoss < 0 ? Math.abs(memberWinLoss) : 0;
+  // 應繳上線：會員贏錢時，代理應繳給上線的金額（會員贏的錢 + 退水）
   const payable = memberWinLoss > 0 ? memberWinLoss + memberRebate : memberRebate;
-  const profit = receivable - payable;
+  // 個人盈虧 = 應收下線 - 應繳上線 + 個人佔成 + 個人退水
+  const profit = receivable - payable + personalShare + personalRebate;
 
   return {
     betCount,
@@ -209,15 +212,23 @@ async function calculateDirectMembersReport(agentId: string, startDate: Date, en
   const sharePercent = Number(agent?.sharePercent || 0);
   const rebatePercent = Number(agent?.rebatePercent || 0);
 
+  // 會員退水 = 有效投注 * 退水比例
   const memberRebate = validBet * (rebatePercent / 100);
+  // 個人佔成 = |會員輸贏| * 佔成比例
   const personalShare = Math.abs(memberWinLoss) * (sharePercent / 100);
+  // 個人退水 = 會員退水（代理從退水中獲得的）
   const personalRebate = memberRebate;
-  const receivable = memberWinLoss < 0 ? Math.abs(memberWinLoss) - personalShare : 0;
+
+  // 應收下線：會員輸錢時，代理應收 = 會員輸的錢（正值）
+  // 應繳上線：會員贏錢時，代理應繳 = 會員贏的錢 + 退水
+  // 個人盈虧 = 應收下線 - 應繳上線 + 個人佔成 + 個人退水
+  const receivable = memberWinLoss < 0 ? Math.abs(memberWinLoss) : 0;
   const payable = memberWinLoss > 0 ? memberWinLoss + memberRebate : memberRebate;
-  const profit = receivable - payable;
+  const profit = receivable - payable + personalShare + personalRebate;
 
   return {
-    agentLevel: agent?.agentLevel || 5,
+    // 直屬會員沒有代理層級概念，用 -1 表示
+    agentLevel: -1,
     betCount,
     betAmount,
     validBet,
@@ -264,15 +275,23 @@ async function calculateSubAgentsReport(agentId: string, startDate: Date, endDat
   const sharePercent = Number(agent?.sharePercent || 0);
   const rebatePercent = Number(agent?.rebatePercent || 0);
 
+  // 會員退水 = 有效投注 * 退水比例
   const memberRebate = validBet * (rebatePercent / 100);
+  // 個人佔成 = |會員輸贏| * 佔成比例
   const personalShare = Math.abs(memberWinLoss) * (sharePercent / 100);
+  // 個人退水 = 會員退水
   const personalRebate = memberRebate;
-  const receivable = memberWinLoss < 0 ? Math.abs(memberWinLoss) - personalShare : 0;
+
+  // 應收下線：下線代理應繳給我的（會員輸錢時）
+  const receivable = memberWinLoss < 0 ? Math.abs(memberWinLoss) : 0;
+  // 應繳上線：我應繳給上線的
   const payable = memberWinLoss > 0 ? memberWinLoss + memberRebate : memberRebate;
-  const profit = receivable - payable;
+  // 個人盈虧
+  const profit = receivable - payable + personalShare + personalRebate;
 
   return {
-    agentLevel: agent?.agentLevel || 5,
+    // 下線代理沒有單一層級概念，用 -2 表示
+    agentLevel: -2,
     betCount,
     betAmount,
     validBet,

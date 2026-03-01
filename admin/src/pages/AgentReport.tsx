@@ -255,13 +255,9 @@ export default function AgentReport() {
   // Summary card component
   const SummaryCard = ({ title, data: summaryData }: { title: string; data: SummaryData }) => (
     <div className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden">
-      <div className="grid grid-cols-11 text-sm">
-        <div className="p-3 text-center border-r border-[#333]">
-          <div className="text-amber-400 font-medium">{title}</div>
-        </div>
-        <div className="p-3 text-center border-r border-[#333]">
-          <div className="text-gray-500 text-xs">代理層級</div>
-          <div className="text-white">{summaryData.agentLevel}級代理</div>
+      <div className="grid grid-cols-10 text-sm">
+        <div className="p-3 text-center border-r border-[#333] bg-[#252525]">
+          <div className="text-amber-400 font-medium text-xs">{title}</div>
         </div>
         <div className="p-3 text-center border-r border-[#333]">
           <div className="text-gray-500 text-xs">注單筆數</div>
@@ -289,7 +285,7 @@ export default function AgentReport() {
         </div>
         <div className="p-3 text-center border-r border-[#333]">
           <div className="text-gray-500 text-xs">個人退水</div>
-          <div className={getValueColor(summaryData.personalRebate)}>{formatCurrency(summaryData.personalRebate)}</div>
+          <div className="text-green-500">{formatCurrency(summaryData.personalRebate)}</div>
         </div>
         <div className="p-3 text-center border-r border-[#333]">
           <div className="text-gray-500 text-xs">應收下線</div>
