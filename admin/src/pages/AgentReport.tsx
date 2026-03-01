@@ -270,31 +270,19 @@ export default function AgentReport() {
     // 模擬平台明細數據（實際應該從 API 獲取）
     const platforms = ['DG真人', 'MT真人', 'SUPER體育', 'T9真人'];
     const mockDetails: PlatformDetail[] = platforms.map((platform) => {
-      // 隨機分配數據到各平台
       const ratio = Math.random() * 0.4 + 0.1;
-      const betCount = Math.floor(agent.betCount * ratio);
-      const betAmount = agent.betAmount * ratio;
-      const validBet = agent.validBet * ratio;
-      const memberWinLoss = agent.memberWinLoss * ratio;
-      const memberRebate = agent.memberRebate * ratio;
-      const personalShare = agent.personalShare * ratio;
-      const personalRebate = agent.personalRebate * ratio;
-      const receivable = agent.receivable * ratio;
-      const payable = agent.payable * ratio;
-      const profit = agent.profit * ratio;
-
       return {
         platform,
-        betCount,
-        betAmount,
-        validBet,
-        memberWinLoss,
-        memberRebate,
-        personalShare,
-        personalRebate,
-        receivable,
-        payable,
-        profit,
+        betCount: Math.floor(agent.betCount * ratio),
+        betAmount: agent.betAmount * ratio,
+        validBet: agent.validBet * ratio,
+        memberWinLoss: agent.memberWinLoss * ratio,
+        memberRebate: agent.memberRebate * ratio,
+        personalShare: agent.personalShare * ratio,
+        personalRebate: agent.personalRebate * ratio,
+        receivable: agent.receivable * ratio,
+        payable: agent.payable * ratio,
+        profit: agent.profit * ratio,
         sharePercent: agent.sharePercent,
         rebatePercent: agent.rebatePercent,
       };
@@ -308,37 +296,101 @@ export default function AgentReport() {
   const totalPages = Math.ceil(items.length / pageSize);
   const paginatedItems = items.slice((page - 1) * pageSize, page * pageSize);
 
-  // Summary row component (table style, matching the main table columns)
-  const SummaryRow = ({ title, summaryData, showLevel = true }: { title: string; summaryData: SummaryData | AgentReportData; showLevel?: boolean }) => {
-    const levelText = 'agentLevel' in summaryData && summaryData.agentLevel >= 0
-      ? `${summaryData.agentLevel}級代理`
-      : '5級代理';
-
-    return (
-      <tr className="border-t border-[#333] bg-[#1a1a1a]">
-        <td className="px-4 py-3">
-          <div className="text-white font-medium">{title}</div>
-        </td>
-        <td className="px-4 py-3 text-center text-white">{showLevel ? levelText : '-'}</td>
-        <td className="px-4 py-3 text-right text-white">{summaryData.betCount.toLocaleString()}</td>
-        <td className="px-4 py-3 text-right text-white">{formatCurrency(summaryData.betAmount)}</td>
-        <td className="px-4 py-3 text-right text-white">{formatCurrency(summaryData.validBet)}</td>
-        <td className={`px-4 py-3 text-right ${getValueColor(summaryData.memberWinLoss)}`}>{formatCurrency(summaryData.memberWinLoss)}</td>
-        <td className="px-4 py-3 text-right text-white">{formatCurrency(summaryData.memberRebate)}</td>
-        <td className="px-4 py-3 text-right text-white">{formatCurrency(summaryData.personalShare)}</td>
-        <td className={`px-4 py-3 text-right ${getValueColor(summaryData.personalRebate)}`}>{formatCurrency(summaryData.personalRebate)}</td>
-        <td className="px-4 py-3 text-right text-white">{formatCurrency(summaryData.receivable)}</td>
-        <td className={`px-4 py-3 text-right ${getValueColor(summaryData.payable)}`}>{formatCurrency(summaryData.payable)}</td>
-        <td className={`px-4 py-3 text-right font-medium ${getValueColor(summaryData.profit)}`}>{formatCurrency(summaryData.profit)}</td>
-        <td className="px-4 py-3"></td>
-      </tr>
-    );
-  };
+  // Summary Row Component (for top cards when viewing sub-agent)
+  const SummaryCard = ({ title, summaryData, showDetailBtn = false }: { title: string; summaryData: SummaryData | AgentReportData; showDetailBtn?: boolean }) => (
+    <div className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden">
+      <table className="w-full text-sm">
+        <tbody>
+          <tr>
+            <td className="px-4 py-3 border-r border-[#333] min-w-[120px]">
+              <div className="text-white font-medium">{title}</div>
+              {'username' in summaryData && (
+                <div className="text-gray-500 text-xs">{summaryData.username}</div>
+              )}
+            </td>
+            <td className="px-4 py-3 text-center border-r border-[#333]">
+              <div className="text-gray-500 text-xs">代理層級</div>
+              <div className="text-white">{summaryData.agentLevel >= 0 ? `${summaryData.agentLevel}級代理` : '5級代理'}</div>
+            </td>
+            <td className="px-4 py-3 text-center border-r border-[#333]">
+              <div className="text-gray-500 text-xs">注單筆數</div>
+              <div className="text-white">{summaryData.betCount.toLocaleString()}</div>
+            </td>
+            <td className="px-4 py-3 text-center border-r border-[#333]">
+              <div className="text-gray-500 text-xs">下注金額</div>
+              <div className="text-white">{formatCurrency(summaryData.betAmount)}</div>
+            </td>
+            <td className="px-4 py-3 text-center border-r border-[#333]">
+              <div className="text-gray-500 text-xs">有效投注</div>
+              <div className="text-white">{formatCurrency(summaryData.validBet)}</div>
+            </td>
+            <td className="px-4 py-3 text-center border-r border-[#333]">
+              <div className="text-gray-500 text-xs">會員輸贏</div>
+              <div className={getValueColor(summaryData.memberWinLoss)}>{formatCurrency(summaryData.memberWinLoss)}</div>
+            </td>
+            <td className="px-4 py-3 text-center border-r border-[#333]">
+              <div className="text-gray-500 text-xs">會員退水</div>
+              <div className="text-white">{formatCurrency(summaryData.memberRebate)}</div>
+            </td>
+            <td className="px-4 py-3 text-center border-r border-[#333]">
+              <div className="text-gray-500 text-xs">個人佔成</div>
+              <div className="text-white">{formatCurrency(summaryData.personalShare)}</div>
+            </td>
+            <td className="px-4 py-3 text-center border-r border-[#333]">
+              <div className="text-gray-500 text-xs">個人退水</div>
+              <div className={getValueColor(summaryData.personalRebate)}>{formatCurrency(summaryData.personalRebate)}</div>
+            </td>
+            <td className="px-4 py-3 text-center border-r border-[#333]">
+              <div className="text-gray-500 text-xs">應收下線</div>
+              <div className="text-white">{formatCurrency(summaryData.receivable)}</div>
+            </td>
+            <td className="px-4 py-3 text-center border-r border-[#333]">
+              <div className="text-gray-500 text-xs">應繳上線</div>
+              <div className={getValueColor(summaryData.payable)}>{formatCurrency(summaryData.payable)}</div>
+            </td>
+            <td className="px-4 py-3 text-center border-r border-[#333]">
+              <div className="text-gray-500 text-xs">個人盈虧</div>
+              <div className={getValueColor(summaryData.profit)}>{formatCurrency(summaryData.profit)}</div>
+            </td>
+            {showDetailBtn && 'id' in summaryData ? (
+              <td className="px-4 py-3 text-center">
+                <button
+                  onClick={() => handleDetailClick(summaryData as AgentReportData)}
+                  className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-black text-xs font-medium rounded transition-colors"
+                >
+                  明細
+                </button>
+              </td>
+            ) : (
+              <td className="px-4 py-3"></td>
+            )}
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
-      {/* Current User Summary Card */}
-      {data && (
+      {/* Top Summary Cards - Show when viewing sub-agent */}
+      {viewAgentId && data && (
+        <div className="space-y-2">
+          {data.subAgentsSummary && (
+            <SummaryCard title="下線代理輸贏總和" summaryData={data.subAgentsSummary} />
+          )}
+          {data.directMembersSummary && (
+            <SummaryCard title="直屬會員輸贏總和" summaryData={data.directMembersSummary} />
+          )}
+          <SummaryCard
+            title={data.currentUser.nickname || data.currentUser.username}
+            summaryData={data.currentUser}
+            showDetailBtn={true}
+          />
+        </div>
+      )}
+
+      {/* Current User Summary Card - Show only at root level */}
+      {!viewAgentId && data && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -606,53 +658,6 @@ export default function AgentReport() {
         </div>
       ) : activeTab === 'agent' ? (
         <div className="space-y-3">
-          {/* Section Header - only show when not viewing sub-agent */}
-          {!viewAgentId && (
-            <div className="text-amber-400 font-medium text-sm">
-              {data?.currentUser.nickname || data?.currentUser.username}
-            </div>
-          )}
-
-          {/* Summary Table - show when viewing a sub-agent */}
-          {viewAgentId && data && (
-            <div className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-[#252525] text-gray-400">
-                      <th className="px-4 py-3 text-left min-w-[120px]">項目</th>
-                      <th className="px-4 py-3 text-center">代理層級</th>
-                      <th className="px-4 py-3 text-right">注單筆數</th>
-                      <th className="px-4 py-3 text-right">下注金額</th>
-                      <th className="px-4 py-3 text-right">有效投注</th>
-                      <th className="px-4 py-3 text-right">會員輸贏</th>
-                      <th className="px-4 py-3 text-right">會員退水</th>
-                      <th className="px-4 py-3 text-right">個人佔成</th>
-                      <th className="px-4 py-3 text-right">個人退水</th>
-                      <th className="px-4 py-3 text-right">應收下線</th>
-                      <th className="px-4 py-3 text-right">應繳上線</th>
-                      <th className="px-4 py-3 text-right">個人盈虧</th>
-                      <th className="px-4 py-3 text-center w-20"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.subAgentsSummary && (
-                      <SummaryRow title="下線代理輸贏總和" summaryData={data.subAgentsSummary} showLevel={true} />
-                    )}
-                    {data.directMembersSummary && (
-                      <SummaryRow title="直屬會員輸贏總和" summaryData={data.directMembersSummary} showLevel={true} />
-                    )}
-                    <SummaryRow
-                      title={data.currentUser.nickname || data.currentUser.username}
-                      summaryData={data.currentUser}
-                      showLevel={true}
-                    />
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
           {/* Agent Table */}
           {paginatedItems.length > 0 ? (
             <div className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden">
@@ -672,7 +677,7 @@ export default function AgentReport() {
                       <th className="px-4 py-3 text-right">應收下線</th>
                       <th className="px-4 py-3 text-right">應繳上線</th>
                       <th className="px-4 py-3 text-right">個人盈虧</th>
-                      <th className="px-4 py-3 text-center w-20">操作</th>
+                      <th className="px-4 py-3 text-center">操作</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -705,12 +710,17 @@ export default function AgentReport() {
                         <td className={`px-4 py-3 text-right ${getValueColor(agent.payable)}`}>{formatCurrency(agent.payable)}</td>
                         <td className={`px-4 py-3 text-right font-medium ${getValueColor(agent.profit)}`}>{formatCurrency(agent.profit)}</td>
                         <td className="px-4 py-3 text-center">
-                          <button
-                            onClick={() => handleDetailClick(agent)}
-                            className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-black text-xs font-medium rounded transition-colors"
-                          >
-                            明細
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => handleDetailClick(agent)}
+                              className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-black text-xs font-medium rounded transition-colors"
+                            >
+                              明細
+                            </button>
+                            <button className="px-2 py-1 bg-gray-600 hover:bg-gray-500 text-white text-xs font-medium rounded transition-colors">
+                              佔成/退水
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -726,10 +736,6 @@ export default function AgentReport() {
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="text-amber-400 font-medium text-sm">
-            {data?.currentUser.nickname || data?.currentUser.username}
-          </div>
-
           {paginatedItems.length > 0 ? (
             <div className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
