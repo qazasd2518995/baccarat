@@ -1163,9 +1163,8 @@ router.get('/platforms', async (req: Request, res: Response) => {
     // If no platforms exist, seed default ones
     if (platforms.length === 0) {
       const defaultPlatforms = [
-        // JW真人
-        { category: 'JW真人', platformCode: 'JW百家樂', platformName: 'JW百家樂' },
-        { category: 'JW真人', platformCode: 'JW龍虎', platformName: 'JW龍虎' },
+        // JW 九贏百家
+        { category: 'JW 九贏百家', platformCode: 'JW', platformName: 'JW 九贏百家' },
       ];
 
       await prisma.gamePlatform.createMany({

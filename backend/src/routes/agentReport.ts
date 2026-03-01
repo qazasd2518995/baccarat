@@ -705,23 +705,28 @@ router.get('/platform-detail', requireRole('admin', 'agent'), async (req: Reques
       }
     });
 
-    // Group by platform
-    const platformMap: Record<string, {
+    // Group by game type (廳) for detailed breakdown
+    const gameTypeMap: Record<string, {
       betCount: number;
       betAmount: number;
       validBet: number;
       memberWinLoss: number;
     }> = {};
 
-    for (const bet of bets) {
-      let platform = 'JW百家樂'; // Default
-      if (bet.dragonTigerRoundId) {
-        platform = 'JW龍虎';
-      }
-      // Note: bullBullRoundId is kept for backward compatibility but not displayed as separate platform
+    // Also calculate totals for the single platform "JW 九贏百家"
+    let totalBetCount = 0, totalBetAmount = 0, totalValidBet = 0, totalMemberWinLoss = 0;
 
-      if (!platformMap[platform]) {
-        platformMap[platform] = {
+    for (const bet of bets) {
+      // Determine game type (廳)
+      let gameType = '百家樂廳'; // Default for roundId (baccarat)
+      if (bet.dragonTigerRoundId) {
+        gameType = '龍虎廳';
+      } else if (bet.bullBullRoundId) {
+        gameType = '牛牛廳';
+      }
+
+      if (!gameTypeMap[gameType]) {
+        gameTypeMap[gameType] = {
           betCount: 0,
           betAmount: 0,
           validBet: 0,
@@ -729,19 +734,29 @@ router.get('/platform-detail', requireRole('admin', 'agent'), async (req: Reques
         };
       }
 
-      platformMap[platform].betCount++;
-      platformMap[platform].betAmount += Number(bet.amount);
-      platformMap[platform].validBet += Number(bet.amount);
-
+      const amount = Number(bet.amount);
+      let winLoss = 0;
       if (bet.status === 'won' && bet.payout) {
-        platformMap[platform].memberWinLoss += Number(bet.payout) - Number(bet.amount);
+        winLoss = Number(bet.payout) - amount;
       } else if (bet.status === 'lost') {
-        platformMap[platform].memberWinLoss -= Number(bet.amount);
+        winLoss = -amount;
       }
+
+      // Update game type stats
+      gameTypeMap[gameType].betCount++;
+      gameTypeMap[gameType].betAmount += amount;
+      gameTypeMap[gameType].validBet += amount;
+      gameTypeMap[gameType].memberWinLoss += winLoss;
+
+      // Update totals
+      totalBetCount++;
+      totalBetAmount += amount;
+      totalValidBet += amount;
+      totalMemberWinLoss += winLoss;
     }
 
-    // Calculate financial fields for each platform
-    const platformDetails = Object.entries(platformMap).map(([platform, stats]) => {
+    // Calculate financial fields for each game type (廳)
+    const gameTypeDetails = Object.entries(gameTypeMap).map(([gameType, stats]) => {
       const memberRebate = stats.validBet * (rebatePercent / 100);
       const personalShare = Math.abs(stats.memberWinLoss) * (sharePercent / 100);
       const personalRebate = memberRebate;
@@ -750,7 +765,7 @@ router.get('/platform-detail', requireRole('admin', 'agent'), async (req: Reques
       const profit = receivable - payable + personalShare + personalRebate;
 
       return {
-        platform,
+        platform: gameType, // 廳名稱
         ...stats,
         memberRebate,
         personalShare,
@@ -763,14 +778,27 @@ router.get('/platform-detail', requireRole('admin', 'agent'), async (req: Reques
       };
     });
 
-    // Calculate totals
-    let totalBetCount = 0, totalBetAmount = 0, totalValidBet = 0, totalMemberWinLoss = 0;
-    for (const detail of platformDetails) {
-      totalBetCount += detail.betCount;
-      totalBetAmount += detail.betAmount;
-      totalValidBet += detail.validBet;
-      totalMemberWinLoss += detail.memberWinLoss;
-    }
+    // Create single platform entry "JW 九贏百家" containing all game types
+    const platformDetails = totalBetCount > 0 ? [{
+      platform: 'JW 九贏百家',
+      betCount: totalBetCount,
+      betAmount: totalBetAmount,
+      validBet: totalValidBet,
+      memberWinLoss: totalMemberWinLoss,
+      memberRebate: totalValidBet * (rebatePercent / 100),
+      personalShare: Math.abs(totalMemberWinLoss) * (sharePercent / 100),
+      personalRebate: totalValidBet * (rebatePercent / 100),
+      receivable: totalMemberWinLoss < 0 ? Math.abs(totalMemberWinLoss) : 0,
+      payable: totalMemberWinLoss > 0 ? totalMemberWinLoss + totalValidBet * (rebatePercent / 100) : totalValidBet * (rebatePercent / 100),
+      profit: (totalMemberWinLoss < 0 ? Math.abs(totalMemberWinLoss) : 0) -
+              (totalMemberWinLoss > 0 ? totalMemberWinLoss + totalValidBet * (rebatePercent / 100) : totalValidBet * (rebatePercent / 100)) +
+              Math.abs(totalMemberWinLoss) * (sharePercent / 100) +
+              totalValidBet * (rebatePercent / 100),
+      sharePercent,
+      rebatePercent,
+      // Include game type breakdown
+      gameTypes: gameTypeDetails
+    }] : [];
 
     const totalMemberRebate = totalValidBet * (rebatePercent / 100);
     const totalPersonalShare = Math.abs(totalMemberWinLoss) * (sharePercent / 100);

@@ -103,12 +103,11 @@ interface PlatformDetail {
 
 // Platform categories - JW Games
 const PLATFORM_CATEGORIES = [
-  { key: 'jw_live', label: 'JW真人' },
+  { key: 'jw', label: 'JW 九贏百家' },
 ];
 
 const ALL_PLATFORMS = [
-  'JW百家樂',
-  'JW龍虎',
+  'JW 九贏百家',
 ];
 
 export default function AgentReport() {
