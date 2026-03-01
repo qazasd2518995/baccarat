@@ -397,6 +397,29 @@ export default function Login() {
                 <div className="absolute -inset-4 rounded-3xl opacity-50 blur-xl" style={{ background: 'radial-gradient(circle, rgba(212, 175, 55, 0.4) 0%, transparent 70%)' }} />
               </motion.div>
 
+              {/* Brand Logo JW */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.45 }}
+                className="flex items-center justify-center gap-2 mb-2"
+              >
+                <span
+                  className="text-3xl sm:text-5xl font-black tracking-tighter"
+                  style={{
+                    fontFamily: 'system-ui',
+                    background: 'linear-gradient(135deg, #ffd700 0%, #f5d17a 25%, #d4af37 50%, #f5d17a 75%, #ffd700 100%)',
+                    backgroundSize: '200% auto',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    animation: 'shimmer 3s linear infinite',
+                    textShadow: '0 0 30px rgba(212, 175, 55, 0.3)',
+                  }}
+                >
+                  JW
+                </span>
+              </motion.div>
+
               {/* Title */}
               <motion.h1
                 initial={{ opacity: 0 }}
@@ -411,7 +434,7 @@ export default function Login() {
                   animation: 'shimmer 3s linear infinite',
                 }}
               >
-                {i18n.language === 'zh' ? '皇家百家乐' : 'ROYAL BACCARAT'}
+                {i18n.language === 'zh' ? '九贏百家' : 'JIU WIN BACCARAT'}
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0 }}
@@ -602,7 +625,7 @@ export default function Login() {
             className="text-center mt-4 sm:mt-8"
           >
             <p className="text-xs tracking-widest" style={{ color: 'rgba(212, 175, 55, 0.4)' }}>
-              © 2025 {i18n.language === 'zh' ? '皇家游戏 · 尊贵百家乐' : 'ROYAL GAMING · PREMIUM BACCARAT'}
+              © 2025 {i18n.language === 'zh' ? '九贏百家 · JIU WIN BACCARAT' : 'JIU WIN · PREMIUM BACCARAT'}
             </p>
             <p className="text-xs mt-2" style={{ color: 'rgba(255, 255, 255, 0.2)' }}>
               {i18n.language === 'zh' ? '奢华 · 刺激 · 公平' : 'LUXURY · THRILL · FAIR'}

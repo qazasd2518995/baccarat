@@ -333,8 +333,8 @@ const resources = {
       // Login
       enterUsername: '请输入用户名',
       enterPassword: '请输入密码',
-      royalGaming: '皇家游戏',
-      premiumBaccarat: '尊贵百家乐',
+      royalGaming: '九贏百家',
+      premiumBaccarat: 'JIU WIN BACCARAT',
 
       // Game Settings Modal
       languageSetting: '语言设置',
@@ -817,7 +817,7 @@ const resources = {
       // Login
       enterUsername: 'Enter username',
       enterPassword: 'Enter password',
-      royalGaming: 'ROYAL GAMING',
+      royalGaming: 'JIU WIN',
       premiumBaccarat: 'PREMIUM BACCARAT',
 
       // Game Settings Modal

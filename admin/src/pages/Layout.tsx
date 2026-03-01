@@ -196,19 +196,24 @@ export default function Layout() {
         className="hidden lg:flex bg-[#1e1e1e] border-r border-[#333] flex-col"
       >
         {/* Logo */}
-        <div className="h-14 flex items-center justify-center border-b border-[#333]">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-lg flex items-center justify-center">
-              <span className="text-black font-bold text-sm">RP</span>
+        <div className="h-16 flex items-center justify-center border-b border-[#333] bg-gradient-to-r from-[#1a1a1a] to-[#252525]">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-400/30">
+              <span className="text-black font-black text-sm tracking-tighter" style={{ fontFamily: 'system-ui' }}>JW</span>
             </div>
             {!sidebarCollapsed && (
-              <motion.span
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-amber-400 font-bold text-base tracking-wide"
+                className="flex flex-col"
               >
-                代理后台
-              </motion.span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 font-black text-sm tracking-wide" style={{ fontFamily: 'system-ui' }}>
+                  九贏百家
+                </span>
+                <span className="text-gray-500 text-[10px] tracking-widest">
+                  代理后台
+                </span>
+              </motion.div>
             )}
           </div>
         </div>
@@ -240,14 +245,19 @@ export default function Layout() {
             className="fixed left-0 top-0 bottom-0 w-[280px] bg-[#1e1e1e] border-r border-[#333] flex flex-col z-50 lg:hidden"
           >
             {/* Logo */}
-            <div className="h-14 flex items-center justify-between px-4 border-b border-[#333]">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-lg flex items-center justify-center">
-                  <span className="text-black font-bold text-sm">RP</span>
+            <div className="h-16 flex items-center justify-between px-4 border-b border-[#333] bg-gradient-to-r from-[#1a1a1a] to-[#252525]">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-400/30">
+                  <span className="text-black font-black text-sm tracking-tighter" style={{ fontFamily: 'system-ui' }}>JW</span>
                 </div>
-                <span className="text-amber-400 font-bold text-base tracking-wide">
-                  代理后台
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 font-black text-sm tracking-wide" style={{ fontFamily: 'system-ui' }}>
+                    九贏百家
+                  </span>
+                  <span className="text-gray-500 text-[10px] tracking-widest">
+                    代理后台
+                  </span>
+                </div>
               </div>
               <button
                 onClick={() => setMobileMenuOpen(false)}

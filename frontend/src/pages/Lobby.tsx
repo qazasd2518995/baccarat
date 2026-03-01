@@ -353,12 +353,19 @@ export default function Lobby() {
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           lg:flex
         `}>
-          {/* OFA LIVE Header */}
+          {/* JW 九贏百家 Header */}
           <div className="p-4 border-b border-gray-800/50">
             <div className="flex items-center gap-2 mb-4">
-              <div className="text-orange-500 font-bold tracking-wider">
-                <span className="text-xl">OFA</span>
-                <span className="text-sm text-gray-400">{t('live')}</span>
+              <div className="w-10 h-10 bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-400/30">
+                <span className="text-black font-black text-sm tracking-tighter" style={{ fontFamily: 'system-ui' }}>JW</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 font-black text-sm tracking-wide" style={{ fontFamily: 'system-ui' }}>
+                  九贏百家
+                </span>
+                <span className="text-gray-500 text-[10px] tracking-widest">
+                  JIU WIN
+                </span>
               </div>
             </div>
 

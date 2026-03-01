@@ -1226,12 +1226,17 @@ export default function Game() {
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Left Sidebar - User Info (hidden on mobile/tablet) */}
         <div className="hidden xl:flex w-60 bg-[#141922] border-r border-gray-800/50 flex-col shrink-0">
-          {/* OFA LIVE Header */}
+          {/* JW 九贏百家 Header */}
           <div className="p-4 border-b border-gray-800/50">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-orange-500 font-bold tracking-wider">
-                <span className="text-lg">OFA</span>
-                <span className="text-sm text-gray-400">{t('live')}</span>
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 rounded-lg flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-400/30">
+                  <span className="text-black font-black text-xs tracking-tighter" style={{ fontFamily: 'system-ui' }}>JW</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 font-black text-xs tracking-wide" style={{ fontFamily: 'system-ui' }}>九贏百家</span>
+                  <span className="text-gray-500 text-[8px] tracking-widest">JIU WIN</span>
+                </div>
               </div>
               {/* Language Toggle */}
               <button

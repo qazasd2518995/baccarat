@@ -28,17 +28,18 @@ export default function GameHeader() {
         <motion.div
           initial={{ rotate: -10 }}
           animate={{ rotate: 0 }}
-          className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center"
+          className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/30 border border-amber-400/30"
         >
-          <Spade className="w-6 h-6 text-black" />
+          <span className="text-black font-black text-lg tracking-tighter" style={{ fontFamily: 'system-ui' }}>JW</span>
         </motion.div>
         <div>
           <h1
-            className="font-en-display text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600"
+            className="text-xl font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500"
+            style={{ fontFamily: 'system-ui' }}
           >
-            BACCARAT
+            九贏百家
           </h1>
-          <p className="text-xs text-slate-500 tracking-widest">ROYAL GAMING</p>
+          <p className="text-[10px] text-amber-500/50 tracking-widest">JIU WIN BACCARAT</p>
         </div>
       </div>
 

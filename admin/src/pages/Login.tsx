@@ -409,22 +409,42 @@ export default function Login() {
                 <div className="absolute -inset-4 rounded-3xl opacity-50 blur-xl" style={{ background: 'radial-gradient(circle, rgba(212, 175, 55, 0.4) 0%, transparent 70%)' }} />
               </motion.div>
 
-              {/* Title */}
-              <motion.h1
+              {/* Brand Name */}
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="text-4xl font-bold mb-3"
+                className="mb-2"
+              >
+                <span
+                  className="text-5xl font-black tracking-tight"
+                  style={{
+                    fontFamily: "system-ui, -apple-system, sans-serif",
+                    background: 'linear-gradient(135deg, #ffd700 0%, #f5d17a 25%, #d4af37 50%, #f5d17a 75%, #ffd700 100%)',
+                    backgroundSize: '200% auto',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    animation: 'shimmer 3s linear infinite',
+                    textShadow: '0 0 40px rgba(212, 175, 55, 0.3)',
+                  }}
+                >
+                  JW
+                </span>
+              </motion.div>
+              <motion.h1
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.55 }}
+                className="text-3xl font-bold mb-3"
                 style={{
                   fontFamily: "'Noto Serif SC', 'Playfair Display', serif",
                   background: 'linear-gradient(135deg, #ffd700 0%, #f5d17a 25%, #d4af37 50%, #f5d17a 75%, #ffd700 100%)',
                   backgroundSize: '200% auto',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
-                  animation: 'shimmer 3s linear infinite',
                 }}
               >
-                {i18n.language === 'zh' ? '管理系统' : 'ADMIN SYSTEM'}
+                {i18n.language === 'zh' ? '九贏百家' : 'JIU WIN BACCARAT'}
               </motion.h1>
               <motion.p
                 initial={{ opacity: 0 }}
@@ -433,7 +453,7 @@ export default function Login() {
                 className="text-sm tracking-[0.3em] uppercase"
                 style={{ color: 'rgba(212, 175, 55, 0.6)' }}
               >
-                {i18n.language === 'zh' ? '百家乐后台管理' : 'Baccarat Management Console'}
+                {i18n.language === 'zh' ? '代理后台管理' : 'Agent Management Console'}
               </motion.p>
 
               {/* Decorative line */}
@@ -691,7 +711,7 @@ export default function Login() {
             className="text-center mt-8"
           >
             <p className="text-xs tracking-widest" style={{ color: 'rgba(212, 175, 55, 0.4)' }}>
-              © 2025 {i18n.language === 'zh' ? '皇家百家乐 · 管理系统' : 'ROYAL BACCARAT · ADMIN SYSTEM'}
+              © 2025 {i18n.language === 'zh' ? 'JW 九贏百家 · 代理系统' : 'JW JIU WIN BACCARAT · AGENT SYSTEM'}
             </p>
             <p className="text-xs mt-2" style={{ color: 'rgba(255, 255, 255, 0.2)' }}>
               {i18n.language === 'zh' ? '安全 · 高效 · 专业' : 'SECURE · EFFICIENT · PROFESSIONAL'}
