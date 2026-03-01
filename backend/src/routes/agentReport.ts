@@ -608,6 +608,209 @@ router.get('/member', requireRole('admin', 'agent'), async (req: Request, res: R
 });
 
 /**
+ * GET /api/agent-report/platform-detail
+ * 獲取代理或會員的平台明細
+ */
+router.get('/platform-detail', requireRole('admin', 'agent'), async (req: Request, res: Response) => {
+  try {
+    const currentUser = req.user!;
+    const {
+      targetId,
+      targetType = 'agent', // 'agent' or 'member'
+      quickFilter = 'today',
+      startDate: startDateStr,
+      endDate: endDateStr
+    } = req.query;
+
+    if (!targetId) {
+      return res.status(400).json({ error: 'targetId is required' });
+    }
+
+    // Determine date range
+    let dateRange: { startDate: Date; endDate: Date };
+    if (startDateStr && endDateStr) {
+      dateRange = {
+        startDate: new Date(startDateStr as string),
+        endDate: new Date(endDateStr as string)
+      };
+    } else {
+      dateRange = getDateRange(quickFilter as string);
+    }
+
+    // Validate access - target must be a downline
+    const targetIdStr = String(targetId);
+    if (targetType === 'agent') {
+      const allDownlineIds = await getAllDownlineAgents(currentUser.userId);
+      if (!allDownlineIds.includes(targetIdStr) && targetIdStr !== currentUser.userId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    } else {
+      const allMemberIds = await getAllDownlineMembers(currentUser.userId);
+      if (!allMemberIds.includes(targetIdStr)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    // Get target user info
+    const targetUser = await prisma.user.findUnique({
+      where: { id: targetIdStr },
+      select: {
+        id: true,
+        username: true,
+        nickname: true,
+        sharePercent: true,
+        rebatePercent: true,
+        parentAgent: {
+          select: { sharePercent: true, rebatePercent: true }
+        }
+      }
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // For members, use parent agent's share/rebate settings
+    const sharePercent = targetType === 'member' && targetUser.parentAgent
+      ? Number(targetUser.parentAgent.sharePercent)
+      : Number(targetUser.sharePercent);
+    const rebatePercent = targetType === 'member' && targetUser.parentAgent
+      ? Number(targetUser.parentAgent.rebatePercent)
+      : Number(targetUser.rebatePercent);
+
+    // Get member IDs to calculate
+    let memberIds: string[];
+    if (targetType === 'agent') {
+      memberIds = await getAllDownlineMembers(targetIdStr);
+    } else {
+      memberIds = [targetIdStr];
+    }
+
+    // Get bets grouped by game type (platform)
+    const bets = await prisma.bet.findMany({
+      where: {
+        userId: { in: memberIds },
+        createdAt: {
+          gte: dateRange.startDate,
+          lt: dateRange.endDate
+        }
+      },
+      select: {
+        amount: true,
+        payout: true,
+        status: true,
+        roundId: true,
+        dragonTigerRoundId: true,
+        bullBullRoundId: true
+      }
+    });
+
+    // Group by platform
+    const platformMap: Record<string, {
+      betCount: number;
+      betAmount: number;
+      validBet: number;
+      memberWinLoss: number;
+    }> = {};
+
+    for (const bet of bets) {
+      let platform = 'JW百家樂'; // Default
+      if (bet.dragonTigerRoundId) {
+        platform = 'JW龍虎';
+      } else if (bet.bullBullRoundId) {
+        platform = 'JW牛牛';
+      }
+
+      if (!platformMap[platform]) {
+        platformMap[platform] = {
+          betCount: 0,
+          betAmount: 0,
+          validBet: 0,
+          memberWinLoss: 0
+        };
+      }
+
+      platformMap[platform].betCount++;
+      platformMap[platform].betAmount += Number(bet.amount);
+      platformMap[platform].validBet += Number(bet.amount);
+
+      if (bet.status === 'won' && bet.payout) {
+        platformMap[platform].memberWinLoss += Number(bet.payout) - Number(bet.amount);
+      } else if (bet.status === 'lost') {
+        platformMap[platform].memberWinLoss -= Number(bet.amount);
+      }
+    }
+
+    // Calculate financial fields for each platform
+    const platformDetails = Object.entries(platformMap).map(([platform, stats]) => {
+      const memberRebate = stats.validBet * (rebatePercent / 100);
+      const personalShare = Math.abs(stats.memberWinLoss) * (sharePercent / 100);
+      const personalRebate = memberRebate;
+      const receivable = stats.memberWinLoss < 0 ? Math.abs(stats.memberWinLoss) : 0;
+      const payable = stats.memberWinLoss > 0 ? stats.memberWinLoss + memberRebate : memberRebate;
+      const profit = receivable - payable + personalShare + personalRebate;
+
+      return {
+        platform,
+        ...stats,
+        memberRebate,
+        personalShare,
+        personalRebate,
+        receivable,
+        payable,
+        profit,
+        sharePercent,
+        rebatePercent
+      };
+    });
+
+    // Calculate totals
+    let totalBetCount = 0, totalBetAmount = 0, totalValidBet = 0, totalMemberWinLoss = 0;
+    for (const detail of platformDetails) {
+      totalBetCount += detail.betCount;
+      totalBetAmount += detail.betAmount;
+      totalValidBet += detail.validBet;
+      totalMemberWinLoss += detail.memberWinLoss;
+    }
+
+    const totalMemberRebate = totalValidBet * (rebatePercent / 100);
+    const totalPersonalShare = Math.abs(totalMemberWinLoss) * (sharePercent / 100);
+    const totalPersonalRebate = totalMemberRebate;
+    const totalReceivable = totalMemberWinLoss < 0 ? Math.abs(totalMemberWinLoss) : 0;
+    const totalPayable = totalMemberWinLoss > 0 ? totalMemberWinLoss + totalMemberRebate : totalMemberRebate;
+    const totalProfit = totalReceivable - totalPayable + totalPersonalShare + totalPersonalRebate;
+
+    res.json({
+      summary: {
+        id: targetUser.id,
+        username: targetUser.username,
+        nickname: targetUser.nickname,
+        betCount: totalBetCount,
+        betAmount: totalBetAmount,
+        validBet: totalValidBet,
+        memberWinLoss: totalMemberWinLoss,
+        memberRebate: totalMemberRebate,
+        personalShare: totalPersonalShare,
+        personalRebate: totalPersonalRebate,
+        receivable: totalReceivable,
+        payable: totalPayable,
+        profit: totalProfit,
+        sharePercent,
+        rebatePercent
+      },
+      platforms: platformDetails,
+      dateRange: {
+        startDate: dateRange.startDate.toISOString(),
+        endDate: dateRange.endDate.toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('[AgentReport] Error fetching platform detail:', error);
+    res.status(500).json({ error: 'Failed to fetch platform detail' });
+  }
+});
+
+/**
  * GET /api/agent-report/dashboard
  * 儀表盤統計數據
  */

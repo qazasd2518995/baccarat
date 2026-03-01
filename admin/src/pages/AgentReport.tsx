@@ -101,26 +101,15 @@ interface PlatformDetail {
   rebatePercent: number;
 }
 
-// Platform categories
+// Platform categories - JW Games
 const PLATFORM_CATEGORIES = [
-  { key: 'electronic', label: '電 子' },
-  { key: 'lottery', label: '幸運奪寶' },
-  { key: 'bingo', label: 'BINGO_TW' },
-  { key: 'live3', label: '真人百家3館' },
-  { key: 'live2', label: '真人百家2館' },
-  { key: 'live1', label: '真人百家1館' },
-  { key: 'sports', label: '體 育' },
+  { key: 'jw_live', label: 'JW真人' },
 ];
 
 const ALL_PLATFORMS = [
-  'WOW', 'WOW', 'PANDA', 'Slotmill', 'Hacksaw', 'QT',
-  'QT', 'RSG', 'RSG', '9Game', 'ATG', 'ATG',
-  'GB', 'GB', 'RG', 'ZG', 'EG', 'GR',
-  'GR', 'WE', 'GALAXSYS', 'TURBO', 'EVOPLAY', 'AMB',
-  '幸運奪寶', 'BINGO_TW', 'Playtech', '御博真人電投', 'SPlus', 'TG',
-  'WE Live', 'Sigma', 'PIX', 'IN-OUT', '100HP', '華利高真人電投',
-  'MT真人', 'EEAI', 'T9真人', 'DG真人', 'RC真人', '卡利真人',
-  '開元棋牌', 'SUPER體育',
+  'JW百家樂',
+  'JW龍虎',
+  'JW牛牛',
 ];
 
 export default function AgentReport() {
@@ -274,56 +263,52 @@ export default function AgentReport() {
     }
   };
 
-  const handleDetailClick = (agent: AgentReportData) => {
+  const handleDetailClick = async (agent: AgentReportData) => {
     setDetailAgent(agent);
-    // 模擬平台明細數據（實際應該從 API 獲取）
-    const platforms = ['DG真人', 'MT真人', 'SUPER體育', 'T9真人'];
-    const mockDetails: PlatformDetail[] = platforms.map((platform) => {
-      const ratio = Math.random() * 0.4 + 0.1;
-      return {
-        platform,
-        betCount: Math.floor(agent.betCount * ratio),
-        betAmount: agent.betAmount * ratio,
-        validBet: agent.validBet * ratio,
-        memberWinLoss: agent.memberWinLoss * ratio,
-        memberRebate: agent.memberRebate * ratio,
-        personalShare: agent.personalShare * ratio,
-        personalRebate: agent.personalRebate * ratio,
-        receivable: agent.receivable * ratio,
-        payable: agent.payable * ratio,
-        profit: agent.profit * ratio,
-        sharePercent: agent.sharePercent,
-        rebatePercent: agent.rebatePercent,
-      };
-    });
-    setPlatformDetails(mockDetails);
+    setPlatformDetails([]);
     setDetailModalOpen(true);
+
+    try {
+      const params: any = {
+        targetId: agent.id,
+        targetType: 'agent',
+        quickFilter
+      };
+      if (startDate && endDate) {
+        params.startDate = startDate;
+        params.endDate = endDate;
+        delete params.quickFilter;
+      }
+
+      const res = await agentReportApi.getPlatformDetail(params);
+      setPlatformDetails(res.data.platforms || []);
+    } catch (err) {
+      console.error('Failed to fetch platform detail:', err);
+    }
   };
 
-  const handleMemberDetailClick = (member: MemberReportData) => {
+  const handleMemberDetailClick = async (member: MemberReportData) => {
     setDetailMember(member);
-    // 模擬平台明細數據（實際應該從 API 獲取）
-    const platforms = ['DG真人', 'MT真人', 'SUPER體育', 'T9真人'];
-    const mockDetails: PlatformDetail[] = platforms.map((platform) => {
-      const ratio = Math.random() * 0.4 + 0.1;
-      return {
-        platform,
-        betCount: Math.floor(member.betCount * ratio),
-        betAmount: member.betAmount * ratio,
-        validBet: member.validBet * ratio,
-        memberWinLoss: member.memberWinLoss * ratio,
-        memberRebate: member.memberRebate * ratio,
-        personalShare: member.personalShare * ratio,
-        personalRebate: member.personalRebate * ratio,
-        receivable: member.receivable * ratio,
-        payable: member.payable * ratio,
-        profit: member.profit * ratio,
-        sharePercent: 0,
-        rebatePercent: 0,
-      };
-    });
-    setMemberPlatformDetails(mockDetails);
+    setMemberPlatformDetails([]);
     setMemberDetailModalOpen(true);
+
+    try {
+      const params: any = {
+        targetId: member.id,
+        targetType: 'member',
+        quickFilter
+      };
+      if (startDate && endDate) {
+        params.startDate = startDate;
+        params.endDate = endDate;
+        delete params.quickFilter;
+      }
+
+      const res = await agentReportApi.getPlatformDetail(params);
+      setMemberPlatformDetails(res.data.platforms || []);
+    } catch (err) {
+      console.error('Failed to fetch member platform detail:', err);
+    }
   };
 
   // Pagination

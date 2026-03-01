@@ -332,10 +332,19 @@ export const agentReportApi = {
 
   getMemberReport: (params?: {
     memberId?: string;
+    viewAgentId?: string;
     quickFilter?: string;
     startDate?: string;
     endDate?: string;
   }) => api.get('/agent-report/member', { params }),
+
+  getPlatformDetail: (params: {
+    targetId: string;
+    targetType: 'agent' | 'member';
+    quickFilter?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => api.get('/agent-report/platform-detail', { params }),
 
   getDashboard: () => api.get('/agent-report/dashboard'),
 };
