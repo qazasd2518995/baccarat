@@ -150,7 +150,8 @@ export const noticeApi = {
 
   togglePublish: (id: string) => api.patch(`/notices/${id}/publish`),
 
-  getPublicNotices: () => api.get('/notices/public'),
+  getPublicNotices: (target?: 'agent_dashboard' | 'game_marquee') =>
+    api.get('/notices/public', { params: target ? { target } : {} }),
 };
 
 // Operation Log API

@@ -13,6 +13,7 @@ import {
   Link2
 } from 'lucide-react';
 import { agentReportApi } from '../services/api';
+import DashboardNotices from '../components/DashboardNotices';
 
 interface DashboardData {
   user: {
@@ -191,6 +192,9 @@ export default function Dashboard() {
           </p>
         </div>
       </motion.div>
+
+      {/* Dashboard Notices */}
+      <DashboardNotices />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

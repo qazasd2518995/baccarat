@@ -5,25 +5,65 @@ import { z } from 'zod';
 
 const router = Router();
 
-// All routes require admin role
-router.use(authenticate);
-router.use(requireRole('admin'));
-
 // Validation schemas
 const createNoticeSchema = z.object({
   title: z.string().min(1).max(200),
   content: z.string().min(1),
   type: z.enum(['info', 'warning', 'urgent']).default('info'),
+  displayTarget: z.enum(['agent_dashboard', 'game_marquee', 'both']).default('both'),
   isPinned: z.boolean().default(false),
   isPublished: z.boolean().default(true),
 });
 
 const updateNoticeSchema = createNoticeSchema.partial();
 
+// Public endpoint - Get published notices (for public display) - NO AUTH REQUIRED
+router.get('/public', async (req, res) => {
+  try {
+    const { target } = req.query;
+
+    const where: any = { isPublished: true };
+
+    // Filter by display target if specified
+    if (target === 'agent_dashboard') {
+      where.displayTarget = { in: ['agent_dashboard', 'both'] };
+    } else if (target === 'game_marquee') {
+      where.displayTarget = { in: ['game_marquee', 'both'] };
+    }
+
+    const notices = await prisma.notice.findMany({
+      where,
+      orderBy: [
+        { isPinned: 'desc' },
+        { createdAt: 'desc' },
+      ],
+      take: 20,
+      select: {
+        id: true,
+        title: true,
+        content: true,
+        type: true,
+        displayTarget: true,
+        isPinned: true,
+        createdAt: true,
+      },
+    });
+
+    res.json(notices);
+  } catch (error) {
+    console.error('Get public notices error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// All remaining routes require admin role
+router.use(authenticate);
+router.use(requireRole('admin'));
+
 // Get all notices (with pagination)
 router.get('/', async (req, res) => {
   try {
-    const { page = '1', limit = '20', type, published } = req.query;
+    const { page = '1', limit = '20', type, published, displayTarget } = req.query;
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
@@ -35,6 +75,9 @@ router.get('/', async (req, res) => {
     }
     if (published !== undefined) {
       where.isPublished = published === 'true';
+    }
+    if (displayTarget && displayTarget !== 'all') {
+      where.displayTarget = displayTarget as string;
     }
 
     const [notices, total] = await Promise.all([
@@ -70,32 +113,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get published notices (for public display)
-router.get('/public', async (req, res) => {
-  try {
-    const notices = await prisma.notice.findMany({
-      where: { isPublished: true },
-      orderBy: [
-        { isPinned: 'desc' },
-        { createdAt: 'desc' },
-      ],
-      take: 20,
-      select: {
-        id: true,
-        title: true,
-        content: true,
-        type: true,
-        isPinned: true,
-        createdAt: true,
-      },
-    });
-
-    res.json(notices);
-  } catch (error) {
-    console.error('Get public notices error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 // Get single notice
 router.get('/:id', async (req, res) => {

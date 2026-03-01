@@ -11,6 +11,7 @@ interface Notice {
   title: string;
   content: string;
   type: 'info' | 'warning' | 'urgent';
+  displayTarget: 'agent_dashboard' | 'game_marquee' | 'both';
   isPinned: boolean;
   isPublished: boolean;
   createdAt: string;
@@ -25,21 +26,27 @@ export default function Notices() {
   const [editingNotice, setEditingNotice] = useState<Notice | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
   const [deleting, setDeleting] = useState(false);
+  const [filterTarget, setFilterTarget] = useState<'all' | 'agent_dashboard' | 'game_marquee' | 'both'>('all');
   const [formData, setFormData] = useState({
     title: '',
     content: '',
     type: 'info' as 'info' | 'warning' | 'urgent',
+    displayTarget: 'both' as 'agent_dashboard' | 'game_marquee' | 'both',
     isPinned: false,
     isPublished: true,
   });
 
   useEffect(() => {
     fetchNotices();
-  }, []);
+  }, [filterTarget]);
 
   const fetchNotices = async () => {
     try {
-      const { data } = await noticeApi.getNotices({ limit: 50 });
+      const params: { limit: number; displayTarget?: string } = { limit: 50 };
+      if (filterTarget !== 'all') {
+        params.displayTarget = filterTarget;
+      }
+      const { data } = await noticeApi.getNotices(params);
       setNotices(data.notices || []);
     } catch (error) {
       console.error('Failed to fetch notices:', error);
@@ -54,6 +61,7 @@ export default function Notices() {
       title: '',
       content: '',
       type: 'info',
+      displayTarget: 'both',
       isPinned: false,
       isPublished: true,
     });
@@ -66,6 +74,7 @@ export default function Notices() {
       title: notice.title,
       content: notice.content,
       type: notice.type,
+      displayTarget: notice.displayTarget || 'both',
       isPinned: notice.isPinned,
       isPublished: notice.isPublished,
     });
@@ -121,20 +130,58 @@ export default function Notices() {
     }
   };
 
+  const getTargetColor = (target: string) => {
+    switch (target) {
+      case 'agent_dashboard': return 'text-purple-400 bg-purple-500/20';
+      case 'game_marquee': return 'text-cyan-400 bg-cyan-500/20';
+      default: return 'text-green-400 bg-green-500/20';
+    }
+  };
+
+  const getTargetText = (target: string) => {
+    switch (target) {
+      case 'agent_dashboard': return '代理儀表板';
+      case 'game_marquee': return '跑馬燈';
+      default: return '全部';
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-white">{t('notices')}</h1>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-xl transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          创建公告
-        </motion.button>
+        <div className="flex items-center gap-3">
+          {/* Filter Tabs */}
+          <div className="flex items-center gap-1 bg-[#252525] rounded-lg p-1">
+            {[
+              { key: 'all', label: '全部' },
+              { key: 'agent_dashboard', label: '代理公告' },
+              { key: 'game_marquee', label: '跑馬燈' },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setFilterTarget(tab.key as typeof filterTarget)}
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                  filterTarget === tab.key
+                    ? 'bg-amber-500 text-black font-medium'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={openCreateModal}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-xl transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            创建公告
+          </motion.button>
+        </div>
       </div>
 
       {/* Notice List */}
@@ -158,6 +205,9 @@ export default function Notices() {
                   )}
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(notice.type)}`}>
                     {getTypeText(notice.type)}
+                  </span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTargetColor(notice.displayTarget)}`}>
+                    {getTargetText(notice.displayTarget)}
                   </span>
                   {!notice.isPublished && (
                     <span className="px-2 py-1 rounded-full text-xs font-medium bg-[#444] text-gray-300">
@@ -235,6 +285,18 @@ export default function Notices() {
                   <option value="info">信息</option>
                   <option value="warning">警告</option>
                   <option value="urgent">紧急</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">顯示位置</label>
+                <select
+                  value={formData.displayTarget}
+                  onChange={(e) => setFormData({ ...formData, displayTarget: e.target.value as any })}
+                  className="w-full px-4 py-3 bg-[#252525] border border-[#444] rounded-xl text-white focus:outline-none focus:border-amber-500"
+                >
+                  <option value="both">全部（代理+跑馬燈）</option>
+                  <option value="agent_dashboard">僅代理儀表板</option>
+                  <option value="game_marquee">僅跑馬燈</option>
                 </select>
               </div>
               <div className="flex items-center gap-6">

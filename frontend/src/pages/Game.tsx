@@ -62,6 +62,7 @@ import GameLoadingScreen from '../components/game/GameLoadingScreen';
 import LobbyRoadmap from '../components/lobby/LobbyRoadmap';
 import MarqueeChat, { useMarqueeChat, MarqueeQuickButtons } from '../components/game/MarqueeChat';
 import { FlyingChipOverlay, useFlyingChips, ChipStack } from '../components/game/BetAreaChips';
+import NoticeMarquee from '../components/game/NoticeMarquee';
 
 // Chip component - uses CasinoChip SVG
 function Chip({ value, selected, onClick, disabled, small, extraSmall }: { value: number | string; selected: boolean; onClick: () => void; disabled?: boolean; small?: boolean; extraSmall?: boolean }) {
@@ -1065,6 +1066,9 @@ export default function Game() {
 
       {/* Flying chips overlay */}
       <FlyingChipOverlay chips={flyingChips} chipSize={32} />
+
+      {/* Notice Marquee */}
+      <NoticeMarquee />
 
       {/* Top Header Bar - Desktop only */}
       <header className="hidden lg:flex h-11 bg-[#0d1117] items-center justify-between px-2 sm:px-4 border-b border-gray-800/50">

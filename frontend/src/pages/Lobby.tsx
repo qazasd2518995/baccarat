@@ -32,6 +32,7 @@ import {
   FollowingListModal,
 } from '../components/game/modals';
 import LobbyRoadmap from '../components/lobby/LobbyRoadmap';
+import NoticeMarquee from '../components/game/NoticeMarquee';
 import { useGLTF } from '@react-three/drei';
 import { ALL_MODEL_URLS } from '../components/game/DealerAvatar';
 import type { RoadHistoryEntry } from '../utils/roadmap';
@@ -334,6 +335,9 @@ export default function Lobby() {
 
   return (
     <div className="h-full bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
+      {/* Notice Marquee */}
+      <NoticeMarquee />
+
       {/* Main Content — no top header */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Mobile menu toggle — now inside the tab bar below */}

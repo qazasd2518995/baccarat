@@ -90,6 +90,12 @@ enum NoticeType {
   urgent
 }
 
+enum NoticeDisplayTarget {
+  agent_dashboard
+  game_marquee
+  both
+}
+
 model User {
   id              String      @id @default(uuid())
   username        String      @unique
@@ -325,16 +331,17 @@ model AgentLineWinCap {
 
 // 公告
 model Notice {
-  id          String     @id @default(uuid())
-  title       String
-  content     String
-  type        NoticeType @default(info)
-  isPinned    Boolean    @default(false) @map("is_pinned")
-  isPublished Boolean    @default(true) @map("is_published")
-  createdBy   String     @map("created_by")
-  creator     User       @relation(fields: [createdBy], references: [id])
-  createdAt   DateTime   @default(now()) @map("created_at")
-  updatedAt   DateTime   @updatedAt @map("updated_at")
+  id            String              @id @default(uuid())
+  title         String
+  content       String
+  type          NoticeType          @default(info)
+  displayTarget NoticeDisplayTarget @default(both) @map("display_target")
+  isPinned      Boolean             @default(false) @map("is_pinned")
+  isPublished   Boolean             @default(true) @map("is_published")
+  createdBy     String              @map("created_by")
+  creator       User                @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
 
   @@map("notices")
 }

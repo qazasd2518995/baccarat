@@ -52,6 +52,7 @@ import MarqueeChat, { useMarqueeChat, MarqueeQuickButtons } from '../components/
 import { useFakeChipAmounts, FakeChipStack, FakeBetStats } from '../components/game/TableChipDisplay';
 import DragonTigerRoadmap from '../components/game/DragonTigerRoadmap';
 import { FlyingChipOverlay, useFlyingChips, ChipStack } from '../components/game/BetAreaChips';
+import NoticeMarquee from '../components/game/NoticeMarquee';
 import {
   GameSettingsModal,
   GameRulesModal,
@@ -837,6 +838,9 @@ export default function DragonTigerGame() {
 
       {/* Flying chips overlay */}
       <FlyingChipOverlay chips={flyingChips} chipSize={32} />
+
+      {/* Notice Marquee */}
+      <NoticeMarquee />
 
       {/* Top Header Bar - Hidden on mobile, shown on lg+ */}
       <header className="hidden lg:flex h-11 bg-[#0d1117] items-center justify-between px-4 border-b border-gray-800/50">

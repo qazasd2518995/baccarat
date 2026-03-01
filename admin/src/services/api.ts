@@ -127,12 +127,17 @@ export const noticeApi = {
     limit?: number;
     type?: string;
     published?: boolean;
+    displayTarget?: string;
   }) => api.get('/notices', { params }),
+
+  getPublicNotices: (target?: 'agent_dashboard' | 'game_marquee') =>
+    api.get('/notices/public', { params: target ? { target } : {} }),
 
   createNotice: (data: {
     title: string;
     content: string;
     type?: 'info' | 'warning' | 'urgent';
+    displayTarget?: 'agent_dashboard' | 'game_marquee' | 'both';
     isPinned?: boolean;
     isPublished?: boolean;
   }) => api.post('/notices', data),
@@ -141,6 +146,7 @@ export const noticeApi = {
     title?: string;
     content?: string;
     type?: 'info' | 'warning' | 'urgent';
+    displayTarget?: 'agent_dashboard' | 'game_marquee' | 'both';
     isPinned?: boolean;
     isPublished?: boolean;
   }) => api.put(`/notices/${id}`, data),
