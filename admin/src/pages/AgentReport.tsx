@@ -139,6 +139,60 @@ export default function AgentReport() {
     { key: 'lastMonth', label: '上 月' },
   ];
 
+  // 計算快速篩選對應的日期範圍
+  const getDateRangeForFilter = (filterKey: string): { start: string; end: string } => {
+    const today = new Date();
+    const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
+    switch (filterKey) {
+      case 'today':
+        return { start: formatDate(today), end: formatDate(today) };
+      case 'yesterday': {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        return { start: formatDate(yesterday), end: formatDate(yesterday) };
+      }
+      case 'thisWeek': {
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        return { start: formatDate(startOfWeek), end: formatDate(today) };
+      }
+      case 'lastWeek': {
+        const startOfLastWeek = new Date(today);
+        startOfLastWeek.setDate(today.getDate() - today.getDay() - 7);
+        const endOfLastWeek = new Date(startOfLastWeek);
+        endOfLastWeek.setDate(startOfLastWeek.getDate() + 6);
+        return { start: formatDate(startOfLastWeek), end: formatDate(endOfLastWeek) };
+      }
+      case 'thisMonth': {
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        return { start: formatDate(startOfMonth), end: formatDate(today) };
+      }
+      case 'lastMonth': {
+        const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        return { start: formatDate(startOfLastMonth), end: formatDate(endOfLastMonth) };
+      }
+      default:
+        return { start: formatDate(today), end: formatDate(today) };
+    }
+  };
+
+  // 點擊快速篩選時更新日期
+  const handleQuickFilterClick = (filterKey: string) => {
+    const { start, end } = getDateRangeForFilter(filterKey);
+    setQuickFilter(filterKey);
+    setStartDate(start);
+    setEndDate(end);
+  };
+
+  // 初始化日期（根據預設的 quickFilter）
+  useEffect(() => {
+    const { start, end } = getDateRangeForFilter(quickFilter);
+    setStartDate(start);
+    setEndDate(end);
+  }, []);
+
   useEffect(() => {
     fetchData();
   }, [activeTab, quickFilter, viewAgentId]);
@@ -597,7 +651,7 @@ export default function AgentReport() {
             {quickFilters.map((filter) => (
               <button
                 key={filter.key}
-                onClick={() => setQuickFilter(filter.key)}
+                onClick={() => handleQuickFilterClick(filter.key)}
                 className={`px-3 py-1.5 rounded text-sm transition-all ${
                   quickFilter === filter.key
                     ? 'bg-amber-500 text-black font-medium'
