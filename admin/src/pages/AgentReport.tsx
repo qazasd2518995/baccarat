@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
   Download,
-  Calendar,
   ChevronDown,
   ChevronRight,
-  RefreshCw,
-  Filter
+  ChevronLeft,
 } from 'lucide-react';
 import { agentReportApi } from '../services/api';
 
@@ -57,22 +55,48 @@ interface ReportResponse {
   };
 }
 
+// Platform categories and their platforms
+const PLATFORM_CATEGORIES = [
+  { key: 'electronic', label: '電 子' },
+  { key: 'lottery', label: '幸運奪寶' },
+  { key: 'bingo', label: 'BINGO_TW' },
+  { key: 'live3', label: '真人百家3館' },
+  { key: 'live2', label: '真人百家2館' },
+  { key: 'live1', label: '真人百家1館' },
+  { key: 'sports', label: '體 育' },
+];
+
+const ALL_PLATFORMS = [
+  'WOW', 'WOW', 'PANDA', 'Slotmill', 'Hacksaw', 'QT',
+  'QT', 'RSG', 'RSG', '9Game', 'ATG', 'ATG',
+  'GB', 'GB', 'RG', 'ZG', 'EG', 'GR',
+  'GR', 'WE', 'GALAXSYS', 'TURBO', 'EVOPLAY', 'AMB',
+  '幸運奪寶', 'BINGO_TW', 'Playtech', '御博真人電投', 'SPlus', 'TG',
+  'WE Live', 'Sigma', 'PIX', 'IN-OUT', '100HP', '華利高真人電投',
+  'MT真人', 'EEAI', 'T9真人', 'DG真人', 'RC真人', '卡利真人',
+  '開元棋牌', 'SUPER體育',
+];
+
 export default function AgentReport() {
   const [activeTab, setActiveTab] = useState<TabType>('agent');
   const [data, setData] = useState<ReportResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
-  const [quickFilter, setQuickFilter] = useState('today');
+  const [quickFilter, setQuickFilter] = useState('lastMonth');
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const quickFilters: QuickFilter[] = [
-    { key: 'today', label: '今日' },
-    { key: 'yesterday', label: '昨日' },
-    { key: 'thisWeek', label: '本周' },
-    { key: 'lastWeek', label: '上周' },
-    { key: 'thisMonth', label: '本月' },
-    { key: 'lastMonth', label: '上月' },
+    { key: 'today', label: '今 日' },
+    { key: 'yesterday', label: '昨 日' },
+    { key: 'thisWeek', label: '本 週' },
+    { key: 'lastWeek', label: '上 週' },
+    { key: 'thisMonth', label: '本 月' },
+    { key: 'lastMonth', label: '上 月' },
   ];
 
   useEffect(() => {
@@ -97,6 +121,7 @@ export default function AgentReport() {
         : await agentReportApi.getMemberReport(params);
 
       setData(res.data);
+      setPage(1);
     } catch (err) {
       console.error('Failed to fetch report:', err);
     } finally {
@@ -114,9 +139,9 @@ export default function AgentReport() {
     let csvContent = '\uFEFF'; // UTF-8 BOM for Excel
 
     if (activeTab === 'agent') {
-      csvContent += '代理账号,名称,层级,注单数,下注金额,有效投注,会员输赢,会员退水,个人占成,个人退水,应收下线,应缴上线,个人盈亏\n';
+      csvContent += '代理账号,名称,层级,注单数,下注金额,有效投注,会员输赢,会员退水\n';
       data.agents?.forEach((a) => {
-        csvContent += `${a.username},${a.nickname || ''},${a.agentLevel},${a.betCount},${a.betAmount},${a.validBet},${a.memberWinLoss},${a.memberRebate},${a.personalShare},${a.personalRebate},${a.receivable},${a.payable},${a.profit}\n`;
+        csvContent += `${a.username},${a.nickname || ''},${a.agentLevel}级代理,${a.betCount},${a.betAmount},${a.validBet},${a.memberWinLoss},${a.memberRebate}\n`;
       });
     } else {
       csvContent += '会员账号,名称,注单数,下注金额,有效投注,会员输赢\n';
@@ -136,13 +161,6 @@ export default function AgentReport() {
     URL.revokeObjectURL(url);
   };
 
-  const handleReset = () => {
-    setSearchQuery('');
-    setStartDate('');
-    setEndDate('');
-    setQuickFilter('today');
-  };
-
   const formatCurrency = (value: number) => {
     return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
@@ -150,370 +168,434 @@ export default function AgentReport() {
   const getValueColor = (value: number) => {
     if (value > 0) return 'text-green-400';
     if (value < 0) return 'text-red-400';
-    return 'text-white';
+    return 'text-gray-400';
   };
 
-  const tabs = [
-    { key: 'agent' as TabType, label: '游戏代理报表' },
-    { key: 'member' as TabType, label: '游戏会员报表' },
-  ];
+  const togglePlatform = (platform: string) => {
+    setSelectedPlatforms((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(platform)) {
+        newSet.delete(platform);
+      } else {
+        newSet.add(platform);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllPlatforms = () => {
+    setSelectedPlatforms(new Set(ALL_PLATFORMS));
+  };
+
+  const invertSelection = () => {
+    setSelectedPlatforms((prev) => {
+      const newSet = new Set<string>();
+      ALL_PLATFORMS.forEach((p) => {
+        if (!prev.has(p)) newSet.add(p);
+      });
+      return newSet;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedPlatforms(new Set());
+  };
+
+  // Pagination
+  const items = activeTab === 'agent' ? (data?.agents || []) : (data?.members || []);
+  const totalPages = Math.ceil(items.length / pageSize);
+  const paginatedItems = items.slice((page - 1) * pageSize, page * pageSize);
 
   return (
-    <div className="space-y-6">
-      {/* Current User Summary Bar */}
+    <div className="space-y-4">
+      {/* Current User Summary Card */}
       {data && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-[#1e1e1e] to-[#252525] border border-[#333] rounded-xl p-4"
+          className="bg-[#1a1a1a] border-2 border-amber-500/50 rounded-lg overflow-hidden"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6 text-sm">
-              <span className="text-gray-400">
-                账号：<span className="text-white">{data.currentUser.username}</span>
-              </span>
-              <span className="text-gray-400">
-                层级：<span className="text-amber-400">{data.currentUser.agentLevel === 0 ? '管理员' : `${data.currentUser.agentLevel}级代理`}</span>
-              </span>
+          <div className="grid grid-cols-7 divide-x divide-[#333]">
+            <div className="p-4 text-center">
+              <div className="text-amber-400 font-bold text-sm">{data.currentUser.nickname || data.currentUser.username}</div>
+              <div className="text-amber-400 text-xs">{data.currentUser.username}</div>
             </div>
-            <div className="flex items-center gap-6 text-sm">
-              <span className="text-gray-400">
-                注单数：<span className="text-white">{data.currentUser.betCount}</span>
-              </span>
-              <span className="text-gray-400">
-                有效投注：<span className="text-white">{formatCurrency(data.currentUser.validBet)}</span>
-              </span>
-              <span className="text-gray-400">
-                会员输赢：<span className={getValueColor(data.currentUser.memberWinLoss)}>
-                  {formatCurrency(data.currentUser.memberWinLoss)}
-                </span>
-              </span>
-              <span className="text-gray-400">
-                个人盈亏：<span className={getValueColor(data.currentUser.profit)}>
-                  {formatCurrency(data.currentUser.profit)}
-                </span>
-              </span>
+            <div className="p-4 text-center">
+              <div className="text-gray-400 text-xs">代理層級</div>
+              <div className="text-white font-medium">{data.currentUser.agentLevel === 0 ? '管理員' : `${data.currentUser.agentLevel}級代理`}</div>
+            </div>
+            <div className="p-4 text-center">
+              <div className="text-gray-400 text-xs">注單筆數</div>
+              <div className="text-white font-medium">{data.currentUser.betCount.toLocaleString()}</div>
+            </div>
+            <div className="p-4 text-center">
+              <div className="text-gray-400 text-xs">下注金額</div>
+              <div className="text-white font-medium">{formatCurrency(data.currentUser.betAmount)}</div>
+            </div>
+            <div className="p-4 text-center">
+              <div className="text-gray-400 text-xs">有效投注</div>
+              <div className="text-white font-medium">{formatCurrency(data.currentUser.validBet)}</div>
+            </div>
+            <div className="p-4 text-center">
+              <div className="text-gray-400 text-xs">會員輸贏</div>
+              <div className={`font-medium ${getValueColor(data.currentUser.memberWinLoss)}`}>
+                {formatCurrency(data.currentUser.memberWinLoss)}
+              </div>
+            </div>
+            <div className="p-4 text-center">
+              <div className="text-gray-400 text-xs">會員退水</div>
+              <div className="text-white font-medium">{formatCurrency(data.currentUser.memberRebate)}</div>
             </div>
           </div>
         </motion.div>
       )}
 
       {/* Tabs */}
-      <div className="flex items-center gap-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              activeTab === tab.key
-                ? 'bg-amber-500/20 text-amber-400'
-                : 'text-gray-400 hover:bg-[#2a2a2a] hover:text-white'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="grid grid-cols-2 gap-0 bg-[#1a1a1a] rounded-lg overflow-hidden border border-[#333]">
+        <button
+          onClick={() => setActiveTab('agent')}
+          className={`py-3 text-center font-medium transition-all ${
+            activeTab === 'agent'
+              ? 'bg-amber-500 text-black'
+              : 'text-gray-400 hover:text-white hover:bg-[#252525]'
+          }`}
+        >
+          遊戲代理報表
+        </button>
+        <button
+          onClick={() => setActiveTab('member')}
+          className={`py-3 text-center font-medium transition-all ${
+            activeTab === 'member'
+              ? 'bg-amber-500 text-black'
+              : 'text-gray-400 hover:text-white hover:bg-[#252525]'
+          }`}
+        >
+          遊戲會員報表
+        </button>
       </div>
 
-      {/* Filters Panel */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="bg-[#1e1e1e] border border-[#333] rounded-xl overflow-hidden"
-      >
-        {/* Filter Header */}
+      {/* Advanced Filters Collapsible */}
+      <div className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden">
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="w-full flex items-center justify-between p-4 hover:bg-[#252525] transition-colors"
+          className="w-full flex items-center gap-3 p-4 hover:bg-[#252525] transition-colors"
         >
-          <div className="flex items-center gap-2 text-white">
-            <Filter className="w-4 h-4" />
-            <span className="font-medium">进阶筛选</span>
-          </div>
           {showFilters ? (
             <ChevronDown className="w-4 h-4 text-gray-400" />
           ) : (
             <ChevronRight className="w-4 h-4 text-gray-400" />
           )}
+          <span className="text-white font-medium">進階篩選</span>
+
+          {/* Category quick buttons (shown when collapsed) */}
+          {!showFilters && (
+            <div className="flex flex-wrap gap-2 ml-4">
+              {PLATFORM_CATEGORIES.map((cat) => (
+                <span
+                  key={cat.key}
+                  className="px-3 py-1 border border-dashed border-gray-600 text-gray-400 text-sm rounded"
+                >
+                  {cat.label}
+                </span>
+              ))}
+            </div>
+          )}
         </button>
 
-        {/* Filter Content */}
-        {showFilters && (
-          <div className="border-t border-[#333] p-4 space-y-4">
-            {/* Quick Filters */}
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm min-w-fit">快速筛选：</span>
-              <div className="flex flex-wrap gap-2">
-                {quickFilters.map((filter) => (
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="border-t border-[#333] overflow-hidden"
+            >
+              <div className="p-4 space-y-4">
+                {/* Category Buttons */}
+                <div className="flex flex-wrap gap-2">
+                  {PLATFORM_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.key}
+                      className="px-4 py-2 border border-dashed border-gray-600 text-gray-300 text-sm rounded hover:border-amber-500 hover:text-amber-400 transition-colors"
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
                   <button
-                    key={filter.key}
-                    onClick={() => setQuickFilter(filter.key)}
-                    className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
-                      quickFilter === filter.key
-                        ? 'bg-amber-500 text-black font-medium'
-                        : 'bg-[#2a2a2a] text-gray-400 hover:text-white'
-                    }`}
+                    onClick={selectAllPlatforms}
+                    className="px-4 py-2 border border-dashed border-gray-600 text-gray-300 text-sm rounded hover:border-amber-500 hover:text-amber-400 transition-colors"
                   >
-                    {filter.label}
+                    全 選
                   </button>
-                ))}
-              </div>
-            </div>
+                  <button
+                    onClick={invertSelection}
+                    className="px-4 py-2 border border-dashed border-gray-600 text-gray-300 text-sm rounded hover:border-amber-500 hover:text-amber-400 transition-colors"
+                  >
+                    反 選
+                  </button>
+                  <button
+                    onClick={clearSelection}
+                    className="px-4 py-2 border border-dashed border-gray-600 text-gray-300 text-sm rounded hover:border-amber-500 hover:text-amber-400 transition-colors"
+                  >
+                    清 除
+                  </button>
+                </div>
 
-            {/* Search and Date */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-sm">{activeTab === 'agent' ? '代理账号：' : '会员账号：'}</span>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500 w-40"
-                  placeholder="输入账号"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-sm">日期范围：</span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
-                  />
-                  <span className="text-gray-400">至</span>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
-                  />
+                {/* Platform Checkboxes */}
+                <div className="grid grid-cols-6 gap-3 pt-2">
+                  {ALL_PLATFORMS.map((platform, idx) => (
+                    <label
+                      key={`${platform}-${idx}`}
+                      className="flex items-center gap-2 text-gray-400 text-sm cursor-pointer hover:text-white"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedPlatforms.has(platform)}
+                        onChange={() => togglePlatform(platform)}
+                        className="w-4 h-4 rounded border-gray-600 bg-transparent text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
+                      />
+                      {platform}
+                    </label>
+                  ))}
                 </div>
               </div>
-            </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+      {/* Quick Filters, Search, Date Range */}
+      <div className="flex flex-wrap items-center gap-4">
+        {/* Quick Filters */}
+        <div className="flex items-center gap-2">
+          <span className="text-gray-400 text-sm">快速篩選</span>
+          <div className="flex gap-1">
+            {quickFilters.map((filter) => (
               <button
-                onClick={handleSearch}
-                className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium text-sm rounded-lg transition-colors"
+                key={filter.key}
+                onClick={() => setQuickFilter(filter.key)}
+                className={`px-3 py-1.5 rounded text-sm transition-all ${
+                  quickFilter === filter.key
+                    ? 'bg-amber-500 text-black font-medium'
+                    : 'bg-[#2a2a2a] text-gray-400 hover:text-white border border-[#444]'
+                }`}
               >
-                <Search className="w-4 h-4" />
-                查询
+                {filter.label}
               </button>
-              <button
-                onClick={handleReset}
-                className="flex items-center gap-2 px-4 py-2 bg-[#2a2a2a] text-gray-400 hover:text-white text-sm rounded-lg transition-colors"
-              >
-                <RefreshCw className="w-4 h-4" />
-                重置
-              </button>
-              <button
-                onClick={handleExport}
-                className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-400 hover:bg-green-500/30 text-sm rounded-lg transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                导出
-              </button>
-            </div>
+            ))}
           </div>
-        )}
-      </motion.div>
+        </div>
 
-      {/* Date Range Info */}
-      {data && (
-        <div className="flex items-center gap-2 text-sm text-gray-400">
-          <Calendar className="w-4 h-4" />
-          <span>
-            统计区间：{new Date(data.dateRange.startDate).toLocaleString('zh-CN')} 至{' '}
-            {new Date(data.dateRange.endDate).toLocaleString('zh-CN')}
-          </span>
+        {/* Agent/Member Search */}
+        <div className="flex items-center gap-2">
+          <span className="text-gray-400 text-sm">{activeTab === 'agent' ? '代理帳號' : '會員帳號'}</span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500 w-32"
+            placeholder="請輸入代..."
+          />
+        </div>
+
+        {/* Date Range */}
+        <div className="flex items-center gap-2">
+          <span className="text-red-400 text-sm">*</span>
+          <span className="text-gray-400 text-sm">查詢時間</span>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500"
+            />
+            <span className="text-gray-400">→</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1" />
+
+        {/* Export & Search Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-2 px-4 py-1.5 bg-[#2a2a2a] text-gray-300 hover:text-white border border-[#444] text-sm rounded transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            導出
+          </button>
+          <button
+            onClick={handleSearch}
+            className="flex items-center gap-2 px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-black font-medium text-sm rounded transition-colors"
+          >
+            <Search className="w-4 h-4" />
+            查詢
+          </button>
+        </div>
+      </div>
+
+      {/* Data Display */}
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-gray-400">加載中...</div>
+        </div>
+      ) : activeTab === 'agent' ? (
+        <div className="space-y-3">
+          {/* Section Header */}
+          <div className="text-amber-400 font-medium text-sm">
+            {data?.currentUser.nickname || data?.currentUser.username}
+          </div>
+
+          {/* Agent Cards */}
+          {paginatedItems.length > 0 ? (
+            (paginatedItems as AgentReportData[]).map((agent) => (
+              <div
+                key={agent.id}
+                className="bg-[#f5f5f5] rounded-lg overflow-hidden"
+              >
+                <div className="grid grid-cols-7 divide-x divide-gray-300">
+                  <div className="p-4 text-center">
+                    <div className="text-amber-600 font-bold text-sm">{agent.nickname || agent.username}</div>
+                    <div className="text-amber-600 text-xs">{agent.username}</div>
+                  </div>
+                  <div className="p-4 text-center">
+                    <div className="text-gray-500 text-xs">代理層級</div>
+                    <div className="text-gray-800 font-medium">{agent.agentLevel}級代理</div>
+                  </div>
+                  <div className="p-4 text-center">
+                    <div className="text-gray-500 text-xs">注單筆數</div>
+                    <div className="text-gray-800 font-medium">{agent.betCount.toLocaleString()}</div>
+                  </div>
+                  <div className="p-4 text-center">
+                    <div className="text-gray-500 text-xs">下注金額</div>
+                    <div className="text-gray-800 font-medium">{formatCurrency(agent.betAmount)}</div>
+                  </div>
+                  <div className="p-4 text-center">
+                    <div className="text-gray-500 text-xs">有效投注</div>
+                    <div className="text-gray-800 font-medium">{formatCurrency(agent.validBet)}</div>
+                  </div>
+                  <div className="p-4 text-center">
+                    <div className="text-gray-500 text-xs">會員輸贏</div>
+                    <div className={`font-medium ${agent.memberWinLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(agent.memberWinLoss)}
+                    </div>
+                  </div>
+                  <div className="p-4 text-center">
+                    <div className="text-gray-500 text-xs">會員退水</div>
+                    <div className="text-gray-800 font-medium">{formatCurrency(agent.memberRebate)}</div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="bg-[#1a1a1a] border border-[#333] rounded-lg p-8 text-center text-gray-400">
+              暫無數據
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {/* Section Header */}
+          <div className="text-amber-400 font-medium text-sm">
+            {data?.currentUser.nickname || data?.currentUser.username}
+          </div>
+
+          {/* Member Cards */}
+          {paginatedItems.length > 0 ? (
+            (paginatedItems as MemberReportData[]).map((member) => (
+              <div
+                key={member.id}
+                className="bg-[#f5f5f5] rounded-lg overflow-hidden"
+              >
+                <div className="grid grid-cols-5 divide-x divide-gray-300">
+                  <div className="p-4 text-center">
+                    <div className="text-amber-600 font-bold text-sm">{member.nickname || member.username}</div>
+                    <div className="text-amber-600 text-xs">{member.username}</div>
+                  </div>
+                  <div className="p-4 text-center">
+                    <div className="text-gray-500 text-xs">注單筆數</div>
+                    <div className="text-gray-800 font-medium">{member.betCount.toLocaleString()}</div>
+                  </div>
+                  <div className="p-4 text-center">
+                    <div className="text-gray-500 text-xs">下注金額</div>
+                    <div className="text-gray-800 font-medium">{formatCurrency(member.betAmount)}</div>
+                  </div>
+                  <div className="p-4 text-center">
+                    <div className="text-gray-500 text-xs">有效投注</div>
+                    <div className="text-gray-800 font-medium">{formatCurrency(member.validBet)}</div>
+                  </div>
+                  <div className="p-4 text-center">
+                    <div className="text-gray-500 text-xs">會員輸贏</div>
+                    <div className={`font-medium ${member.memberWinLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(member.memberWinLoss)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="bg-[#1a1a1a] border border-[#333] rounded-lg p-8 text-center text-gray-400">
+              暫無數據
+            </div>
+          )}
         </div>
       )}
 
-      {/* Data Table */}
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-gray-400">加载中...</div>
-        </div>
-      ) : activeTab === 'agent' ? (
-        <div className="bg-[#1e1e1e] border border-[#333] rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-[#252525]">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">代理账号</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">层级</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">注单数</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">下注金额</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">有效投注</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">会员输赢</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">会员退水</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">个人占成</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">个人退水</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">应收下线</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">应缴上线</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">个人盈亏</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data?.agents && data.agents.length > 0 ? (
-                  data.agents.map((agent, index) => (
-                    <tr
-                      key={agent.id}
-                      className={`border-t border-[#333] hover:bg-[#252525] transition-colors ${
-                        index % 2 === 0 ? 'bg-[#1e1e1e]' : 'bg-[#222]'
-                      }`}
-                    >
-                      <td className="px-4 py-3">
-                        <div>
-                          <span className="text-white font-medium">{agent.username}</span>
-                          {agent.nickname && (
-                            <span className="text-gray-400 text-sm ml-1">({agent.nickname})</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 rounded text-xs bg-amber-500/20 text-amber-400">
-                          {agent.agentLevel}级
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right text-white">{agent.betCount}</td>
-                      <td className="px-4 py-3 text-right text-white">{formatCurrency(agent.betAmount)}</td>
-                      <td className="px-4 py-3 text-right text-white">{formatCurrency(agent.validBet)}</td>
-                      <td className={`px-4 py-3 text-right font-medium ${getValueColor(agent.memberWinLoss)}`}>
-                        {formatCurrency(agent.memberWinLoss)}
-                      </td>
-                      <td className="px-4 py-3 text-right text-white">{formatCurrency(agent.memberRebate)}</td>
-                      <td className="px-4 py-3 text-right text-white">{formatCurrency(agent.personalShare)}</td>
-                      <td className="px-4 py-3 text-right text-white">{formatCurrency(agent.personalRebate)}</td>
-                      <td className={`px-4 py-3 text-right font-medium ${getValueColor(agent.receivable)}`}>
-                        {formatCurrency(agent.receivable)}
-                      </td>
-                      <td className={`px-4 py-3 text-right font-medium ${getValueColor(-agent.payable)}`}>
-                        {formatCurrency(agent.payable)}
-                      </td>
-                      <td className={`px-4 py-3 text-right font-bold ${getValueColor(agent.profit)}`}>
-                        {formatCurrency(agent.profit)}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={12} className="px-4 py-8 text-center text-gray-400">
-                      暂无数据
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-              {data?.agents && data.agents.length > 0 && (
-                <tfoot>
-                  <tr className="bg-[#252525] border-t border-[#333]">
-                    <td className="px-4 py-3 font-medium text-amber-400" colSpan={2}>合計</td>
-                    <td className="px-4 py-3 text-right font-medium text-white">
-                      {data.agents.reduce((sum, a) => sum + a.betCount, 0)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium text-white">
-                      {formatCurrency(data.agents.reduce((sum, a) => sum + a.betAmount, 0))}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium text-white">
-                      {formatCurrency(data.agents.reduce((sum, a) => sum + a.validBet, 0))}
-                    </td>
-                    <td className={`px-4 py-3 text-right font-medium ${getValueColor(data.agents.reduce((sum, a) => sum + a.memberWinLoss, 0))}`}>
-                      {formatCurrency(data.agents.reduce((sum, a) => sum + a.memberWinLoss, 0))}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium text-white">
-                      {formatCurrency(data.agents.reduce((sum, a) => sum + a.memberRebate, 0))}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium text-white">
-                      {formatCurrency(data.agents.reduce((sum, a) => sum + a.personalShare, 0))}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium text-white">
-                      {formatCurrency(data.agents.reduce((sum, a) => sum + a.personalRebate, 0))}
-                    </td>
-                    <td className={`px-4 py-3 text-right font-medium ${getValueColor(data.agents.reduce((sum, a) => sum + a.receivable, 0))}`}>
-                      {formatCurrency(data.agents.reduce((sum, a) => sum + a.receivable, 0))}
-                    </td>
-                    <td className={`px-4 py-3 text-right font-medium ${getValueColor(-data.agents.reduce((sum, a) => sum + a.payable, 0))}`}>
-                      {formatCurrency(data.agents.reduce((sum, a) => sum + a.payable, 0))}
-                    </td>
-                    <td className={`px-4 py-3 text-right font-bold ${getValueColor(data.agents.reduce((sum, a) => sum + a.profit, 0))}`}>
-                      {formatCurrency(data.agents.reduce((sum, a) => sum + a.profit, 0))}
-                    </td>
-                  </tr>
-                </tfoot>
-              )}
-            </table>
+      {/* Pagination */}
+      {items.length > 0 && (
+        <div className="flex items-center justify-end gap-4">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page === 1}
+              className="p-1.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const pageNum = i + 1;
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`w-8 h-8 rounded text-sm transition-colors ${
+                    page === pageNum
+                      ? 'bg-amber-500 text-black font-medium'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
+              disabled={page === totalPages}
+              className="p-1.5 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
-        </div>
-      ) : (
-        <div className="bg-[#1e1e1e] border border-[#333] rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-[#252525]">
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">会员账号</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">注单数</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">下注金额</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">有效投注</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase">会员输赢</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data?.members && data.members.length > 0 ? (
-                  data.members.map((member, index) => (
-                    <tr
-                      key={member.id}
-                      className={`border-t border-[#333] hover:bg-[#252525] transition-colors ${
-                        index % 2 === 0 ? 'bg-[#1e1e1e]' : 'bg-[#222]'
-                      }`}
-                    >
-                      <td className="px-4 py-3">
-                        <div>
-                          <span className="text-white font-medium">{member.username}</span>
-                          {member.nickname && (
-                            <span className="text-gray-400 text-sm ml-1">({member.nickname})</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right text-white">{member.betCount}</td>
-                      <td className="px-4 py-3 text-right text-white">{formatCurrency(member.betAmount)}</td>
-                      <td className="px-4 py-3 text-right text-white">{formatCurrency(member.validBet)}</td>
-                      <td className={`px-4 py-3 text-right font-medium ${getValueColor(member.memberWinLoss)}`}>
-                        {formatCurrency(member.memberWinLoss)}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
-                      暂无数据
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-              {data?.members && data.members.length > 0 && (
-                <tfoot>
-                  <tr className="bg-[#252525] border-t border-[#333]">
-                    <td className="px-4 py-3 font-medium text-amber-400">合計</td>
-                    <td className="px-4 py-3 text-right font-medium text-white">
-                      {data.members.reduce((sum, m) => sum + m.betCount, 0)}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium text-white">
-                      {formatCurrency(data.members.reduce((sum, m) => sum + m.betAmount, 0))}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium text-white">
-                      {formatCurrency(data.members.reduce((sum, m) => sum + m.validBet, 0))}
-                    </td>
-                    <td className={`px-4 py-3 text-right font-bold ${getValueColor(data.members.reduce((sum, m) => sum + m.memberWinLoss, 0))}`}>
-                      {formatCurrency(data.members.reduce((sum, m) => sum + m.memberWinLoss, 0))}
-                    </td>
-                  </tr>
-                </tfoot>
-              )}
-            </table>
-          </div>
+
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPage(1);
+            }}
+            className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500"
+          >
+            <option value={10}>10 條/頁</option>
+            <option value={20}>20 條/頁</option>
+            <option value={50}>50 條/頁</option>
+          </select>
         </div>
       )}
     </div>
