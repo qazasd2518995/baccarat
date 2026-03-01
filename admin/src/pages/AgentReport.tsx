@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronLeft,
+  X,
 } from 'lucide-react';
 import { agentReportApi } from '../services/api';
 
@@ -78,6 +79,22 @@ interface ReportResponse {
   };
 }
 
+interface PlatformDetail {
+  platform: string;
+  betCount: number;
+  betAmount: number;
+  validBet: number;
+  memberWinLoss: number;
+  memberRebate: number;
+  personalShare: number;
+  personalRebate: number;
+  receivable: number;
+  payable: number;
+  profit: number;
+  sharePercent: number;
+  rebatePercent: number;
+}
+
 // Platform categories
 const PLATFORM_CATEGORIES = [
   { key: 'electronic', label: '電 子' },
@@ -113,6 +130,9 @@ export default function AgentReport() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [viewAgentId, setViewAgentId] = useState<string | null>(null);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [detailAgent, setDetailAgent] = useState<AgentReportData | null>(null);
+  const [platformDetails, setPlatformDetails] = useState<PlatformDetail[]>([]);
 
   const quickFilters: QuickFilter[] = [
     { key: 'today', label: '今 日' },
@@ -243,6 +263,44 @@ export default function AgentReport() {
         setViewAgentId(data.breadcrumb[parentIndex].id);
       }
     }
+  };
+
+  const handleDetailClick = (agent: AgentReportData) => {
+    setDetailAgent(agent);
+    // 模擬平台明細數據（實際應該從 API 獲取）
+    const platforms = ['DG真人', 'MT真人', 'SUPER體育', 'T9真人'];
+    const mockDetails: PlatformDetail[] = platforms.map((platform) => {
+      // 隨機分配數據到各平台
+      const ratio = Math.random() * 0.4 + 0.1;
+      const betCount = Math.floor(agent.betCount * ratio);
+      const betAmount = agent.betAmount * ratio;
+      const validBet = agent.validBet * ratio;
+      const memberWinLoss = agent.memberWinLoss * ratio;
+      const memberRebate = agent.memberRebate * ratio;
+      const personalShare = agent.personalShare * ratio;
+      const personalRebate = agent.personalRebate * ratio;
+      const receivable = agent.receivable * ratio;
+      const payable = agent.payable * ratio;
+      const profit = agent.profit * ratio;
+
+      return {
+        platform,
+        betCount,
+        betAmount,
+        validBet,
+        memberWinLoss,
+        memberRebate,
+        personalShare,
+        personalRebate,
+        receivable,
+        payable,
+        profit,
+        sharePercent: agent.sharePercent,
+        rebatePercent: agent.rebatePercent,
+      };
+    });
+    setPlatformDetails(mockDetails);
+    setDetailModalOpen(true);
   };
 
   // Pagination
@@ -647,7 +705,10 @@ export default function AgentReport() {
                         <td className={`px-4 py-3 text-right ${getValueColor(agent.payable)}`}>{formatCurrency(agent.payable)}</td>
                         <td className={`px-4 py-3 text-right font-medium ${getValueColor(agent.profit)}`}>{formatCurrency(agent.profit)}</td>
                         <td className="px-4 py-3 text-center">
-                          <button className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-black text-xs font-medium rounded transition-colors">
+                          <button
+                            onClick={() => handleDetailClick(agent)}
+                            className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-black text-xs font-medium rounded transition-colors"
+                          >
                             明細
                           </button>
                         </td>
@@ -762,6 +823,188 @@ export default function AgentReport() {
           </select>
         </div>
       )}
+
+      {/* Detail Modal */}
+      <AnimatePresence>
+        {detailModalOpen && detailAgent && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+            onClick={() => setDetailModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-[#1a1a1a] border border-[#333] rounded-lg w-full max-w-7xl max-h-[90vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b border-[#333]">
+                <h2 className="text-white font-medium">查看詳情</h2>
+                <button
+                  onClick={() => setDetailModalOpen(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-4 overflow-auto max-h-[calc(90vh-120px)]">
+                {/* Agent Summary Row */}
+                <div className="bg-[#252525] border border-[#333] rounded-lg overflow-hidden mb-4">
+                  <table className="w-full text-sm">
+                    <tbody>
+                      <tr>
+                        <td className="px-4 py-3 border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">代理帳號</div>
+                          <div className="text-amber-400 font-medium">{detailAgent.nickname || detailAgent.username}</div>
+                          <div className="text-gray-500 text-xs">{detailAgent.username}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">注單筆數</div>
+                          <div className="text-white">{detailAgent.betCount.toLocaleString()}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">下注金額</div>
+                          <div className="text-white">{formatCurrency(detailAgent.betAmount)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">有效投注</div>
+                          <div className="text-white">{formatCurrency(detailAgent.validBet)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">會員輸贏</div>
+                          <div className={getValueColor(detailAgent.memberWinLoss)}>{formatCurrency(detailAgent.memberWinLoss)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">會員退水</div>
+                          <div className="text-white">{formatCurrency(detailAgent.memberRebate)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">個人佔成</div>
+                          <div className="text-white">{formatCurrency(detailAgent.personalShare)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">個人退水</div>
+                          <div className={getValueColor(detailAgent.personalRebate)}>{formatCurrency(detailAgent.personalRebate)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">應收下線</div>
+                          <div className="text-white">{formatCurrency(detailAgent.receivable)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">應繳上線</div>
+                          <div className={getValueColor(detailAgent.payable)}>{formatCurrency(detailAgent.payable)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <div className="text-gray-500 text-xs">個人盈虧</div>
+                          <div className={getValueColor(detailAgent.profit)}>{formatCurrency(detailAgent.profit)}</div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Export Button */}
+                <div className="flex justify-end mb-4">
+                  <button className="flex items-center gap-2 px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-black text-sm font-medium rounded transition-colors">
+                    <Download className="w-4 h-4" />
+                    導 出
+                  </button>
+                </div>
+
+                {/* Platform Details Table */}
+                <div className="bg-[#1e1e1e] border border-[#333] rounded-lg overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-[#252525] text-gray-400">
+                        <th className="px-4 py-3 text-left">廠商名稱</th>
+                        <th className="px-4 py-3 text-right">注單筆數</th>
+                        <th className="px-4 py-3 text-right">下注金額</th>
+                        <th className="px-4 py-3 text-right">有效投注</th>
+                        <th className="px-4 py-3 text-right">會員輸贏</th>
+                        <th className="px-4 py-3 text-right">會員退水</th>
+                        <th className="px-4 py-3 text-right">個人佔成</th>
+                        <th className="px-4 py-3 text-right">個人退水</th>
+                        <th className="px-4 py-3 text-right">應收下線</th>
+                        <th className="px-4 py-3 text-right">應繳上線</th>
+                        <th className="px-4 py-3 text-right">個人盈虧</th>
+                        <th className="px-4 py-3 text-center">佔成</th>
+                        <th className="px-4 py-3 text-center">退水</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {platformDetails.map((detail, index) => (
+                        <tr
+                          key={detail.platform}
+                          className={`border-t border-[#333] ${index % 2 === 0 ? 'bg-[#1e1e1e]' : 'bg-[#222]'}`}
+                        >
+                          <td className="px-4 py-3">
+                            <div className="text-gray-500 text-xs">廠商名稱</div>
+                            <div className="text-white font-medium">{detail.platform}</div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="text-gray-500 text-xs">注單筆數</div>
+                            <div className="text-white">{detail.betCount.toLocaleString()}</div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="text-gray-500 text-xs">下注金額</div>
+                            <div className="text-white">{formatCurrency(detail.betAmount)}</div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="text-gray-500 text-xs">有效投注</div>
+                            <div className="text-white">{formatCurrency(detail.validBet)}</div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="text-gray-500 text-xs">會員輸贏</div>
+                            <div className={getValueColor(detail.memberWinLoss)}>{formatCurrency(detail.memberWinLoss)}</div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="text-gray-500 text-xs">會員退水</div>
+                            <div className="text-white">{formatCurrency(detail.memberRebate)}</div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="text-gray-500 text-xs">個人佔成</div>
+                            <div className="text-white">{formatCurrency(detail.personalShare)}</div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="text-gray-500 text-xs">個人退水</div>
+                            <div className={getValueColor(detail.personalRebate)}>{formatCurrency(detail.personalRebate)}</div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="text-gray-500 text-xs">應收下線</div>
+                            <div className="text-white">{formatCurrency(detail.receivable)}</div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="text-gray-500 text-xs">應繳上線</div>
+                            <div className={getValueColor(detail.payable)}>{formatCurrency(detail.payable)}</div>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="text-gray-500 text-xs">個人盈虧</div>
+                            <div className={getValueColor(detail.profit)}>{formatCurrency(detail.profit)}</div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="text-gray-500 text-xs">佔成</div>
+                            <div className="text-white">{detail.sharePercent}%</div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="text-gray-500 text-xs">退水</div>
+                            <div className="text-white">{detail.rebatePercent}</div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
