@@ -679,46 +679,16 @@ export default function Lobby() {
           </div>
         </div>
 
-        {/* Right Sidebar - Hidden on mobile and tablet */}
-        <div className="hidden xl:flex w-56 bg-[#141922] border-l border-gray-800/50 flex-col shrink-0">
-          {/* Menu Links */}
-          <div className="p-4 space-y-1">
+        {/* Right Sidebar - Following List Only (Hidden on mobile and tablet) */}
+        <div className="hidden xl:flex w-48 bg-[#141922] border-l border-gray-800/50 flex-col shrink-0">
+          {/* Following List Button */}
+          <div className="p-4">
             <button
               onClick={() => setShowFollowingModal(true)}
               className="w-full text-left text-sm text-pink-400 flex items-center gap-2 py-2 px-3 hover:bg-gray-800/30 rounded transition-colors"
             >
               <Heart className="w-4 h-4" /> {t('followingList')}
             </button>
-            <button
-              onClick={() => setShowReportModal(true)}
-              className="w-full text-left text-sm text-gray-400 flex items-center gap-2 py-2 px-3 hover:bg-gray-800/30 rounded transition-colors"
-            >
-              <FileText className="w-4 h-4" /> {t('gameReport')}
-            </button>
-            <button
-              onClick={() => setShowSettingsModal(true)}
-              className="w-full text-left text-sm text-gray-400 flex items-center gap-2 py-2 px-3 hover:bg-gray-800/30 rounded transition-colors"
-            >
-              <Settings className="w-4 h-4" /> {t('gameSettings')}
-            </button>
-            <button
-              onClick={() => setShowRulesModal(true)}
-              className="w-full text-left text-sm text-gray-400 flex items-center gap-2 py-2 px-3 hover:bg-gray-800/30 rounded transition-colors"
-            >
-              <HelpCircle className="w-4 h-4" /> {t('gameRules')}
-            </button>
-          </div>
-
-          {/* Promotion Banner */}
-          <div className="mt-auto p-4">
-            <div className="bg-gradient-to-r from-orange-600/80 to-red-600/80 rounded-lg p-3 relative overflow-hidden">
-              <div className="relative z-10">
-                <div className="text-xs text-orange-200 mb-1">One Bet to Rule!</div>
-                <div className="text-white font-bold text-sm">NiuNiu Duel,</div>
-                <div className="text-white font-bold text-sm">Epic Bonuses!</div>
-              </div>
-              <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-yellow-400/20 rounded-full blur-xl" />
-            </div>
           </div>
         </div>
       </div>
