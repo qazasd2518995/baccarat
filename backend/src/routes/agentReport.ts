@@ -552,22 +552,23 @@ router.get('/member', requireRole('admin', 'agent'), async (req: Request, res: R
       );
     }
 
-    // Get target agent's share/rebate settings for member calculations
-    const agentSharePercent = Number(targetAgentData?.sharePercent) || 0;
-    const agentRebatePercent = Number(targetAgentData?.rebatePercent) || 0;
-
     // Calculate report for each member
+    // Note: Members don't have personal share/rebate - those are for agents only
+    // Member's profit is always 0, they only have win/loss
     const memberReportsAll = await Promise.all(
       filteredMembers.map(async (member) => {
         const stats = await calculateBettingStats(member.id, dateRange.startDate, dateRange.endDate);
 
-        // Calculate member-specific fields based on agent's share/rebate settings
-        const memberRebate = stats.validBet * (agentRebatePercent / 100);
-        const personalShare = Math.abs(stats.memberWinLoss) * (agentSharePercent / 100);
-        const personalRebate = memberRebate;
+        // For members: calculate from agent's perspective
+        // - memberRebate: rebate the agent gives to member (0 for now)
+        // - receivable: when member loses, agent receives from member
+        // - payable: when member wins, agent pays to member (shown as negative)
+        const memberRebate = 0; // Members don't receive rebate directly
+        const personalShare = 0; // Members don't have share
+        const personalRebate = 0; // Members don't have rebate income
         const receivable = stats.memberWinLoss < 0 ? Math.abs(stats.memberWinLoss) : 0;
-        const payable = stats.memberWinLoss > 0 ? stats.memberWinLoss + memberRebate : memberRebate;
-        const profit = receivable - payable + personalShare + personalRebate;
+        const payable = stats.memberWinLoss > 0 ? -stats.memberWinLoss : 0; // Negative because agent pays out
+        const profit = 0; // Member's personal profit is always 0 (they only have win/loss, not commission)
 
         return {
           id: member.id,
@@ -761,28 +762,69 @@ router.get('/platform-detail', requireRole('admin', 'agent'), async (req: Reques
       totalMemberWinLoss += winLoss;
     }
 
+    // Determine if this is a member or agent - members have different calculations
+    const isMember = targetType === 'member';
+
     // Calculate financial fields for each game type (廳)
     const gameTypeDetails = Object.entries(gameTypeMap).map(([gameType, stats]) => {
-      const memberRebate = stats.validBet * (rebatePercent / 100);
-      const personalShare = Math.abs(stats.memberWinLoss) * (sharePercent / 100);
-      const personalRebate = memberRebate;
-      const receivable = stats.memberWinLoss < 0 ? Math.abs(stats.memberWinLoss) : 0;
-      const payable = stats.memberWinLoss > 0 ? stats.memberWinLoss + memberRebate : memberRebate;
-      const profit = receivable - payable + personalShare + personalRebate;
-
-      return {
-        platform: gameType, // 廳名稱
-        ...stats,
-        memberRebate,
-        personalShare,
-        personalRebate,
-        receivable,
-        payable,
-        profit,
-        sharePercent,
-        rebatePercent
-      };
+      if (isMember) {
+        // For members: no personal share/rebate, profit is 0
+        const receivable = stats.memberWinLoss < 0 ? Math.abs(stats.memberWinLoss) : 0;
+        const payable = stats.memberWinLoss > 0 ? -stats.memberWinLoss : 0;
+        return {
+          platform: gameType,
+          ...stats,
+          memberRebate: 0,
+          personalShare: 0,
+          personalRebate: 0,
+          receivable,
+          payable,
+          profit: 0,
+          sharePercent: 0,
+          rebatePercent: 0
+        };
+      } else {
+        // For agents: calculate with share/rebate
+        const memberRebate = stats.validBet * (rebatePercent / 100);
+        const personalShare = Math.abs(stats.memberWinLoss) * (sharePercent / 100);
+        const personalRebate = memberRebate;
+        const receivable = stats.memberWinLoss < 0 ? Math.abs(stats.memberWinLoss) : 0;
+        const payable = stats.memberWinLoss > 0 ? stats.memberWinLoss + memberRebate : memberRebate;
+        const profit = receivable - payable + personalShare + personalRebate;
+        return {
+          platform: gameType,
+          ...stats,
+          memberRebate,
+          personalShare,
+          personalRebate,
+          receivable,
+          payable,
+          profit,
+          sharePercent,
+          rebatePercent
+        };
+      }
     });
+
+    // Calculate totals based on type
+    let totalMemberRebate: number, totalPersonalShare: number, totalPersonalRebate: number;
+    let totalReceivable: number, totalPayable: number, totalProfit: number;
+
+    if (isMember) {
+      totalMemberRebate = 0;
+      totalPersonalShare = 0;
+      totalPersonalRebate = 0;
+      totalReceivable = totalMemberWinLoss < 0 ? Math.abs(totalMemberWinLoss) : 0;
+      totalPayable = totalMemberWinLoss > 0 ? -totalMemberWinLoss : 0;
+      totalProfit = 0;
+    } else {
+      totalMemberRebate = totalValidBet * (rebatePercent / 100);
+      totalPersonalShare = Math.abs(totalMemberWinLoss) * (sharePercent / 100);
+      totalPersonalRebate = totalMemberRebate;
+      totalReceivable = totalMemberWinLoss < 0 ? Math.abs(totalMemberWinLoss) : 0;
+      totalPayable = totalMemberWinLoss > 0 ? totalMemberWinLoss + totalMemberRebate : totalMemberRebate;
+      totalProfit = totalReceivable - totalPayable + totalPersonalShare + totalPersonalRebate;
+    }
 
     // Create single platform entry "JW 九贏百家" containing all game types
     const platformDetails = totalBetCount > 0 ? [{
@@ -791,27 +833,17 @@ router.get('/platform-detail', requireRole('admin', 'agent'), async (req: Reques
       betAmount: totalBetAmount,
       validBet: totalValidBet,
       memberWinLoss: totalMemberWinLoss,
-      memberRebate: totalValidBet * (rebatePercent / 100),
-      personalShare: Math.abs(totalMemberWinLoss) * (sharePercent / 100),
-      personalRebate: totalValidBet * (rebatePercent / 100),
-      receivable: totalMemberWinLoss < 0 ? Math.abs(totalMemberWinLoss) : 0,
-      payable: totalMemberWinLoss > 0 ? totalMemberWinLoss + totalValidBet * (rebatePercent / 100) : totalValidBet * (rebatePercent / 100),
-      profit: (totalMemberWinLoss < 0 ? Math.abs(totalMemberWinLoss) : 0) -
-              (totalMemberWinLoss > 0 ? totalMemberWinLoss + totalValidBet * (rebatePercent / 100) : totalValidBet * (rebatePercent / 100)) +
-              Math.abs(totalMemberWinLoss) * (sharePercent / 100) +
-              totalValidBet * (rebatePercent / 100),
-      sharePercent,
-      rebatePercent,
+      memberRebate: totalMemberRebate,
+      personalShare: totalPersonalShare,
+      personalRebate: totalPersonalRebate,
+      receivable: totalReceivable,
+      payable: totalPayable,
+      profit: totalProfit,
+      sharePercent: isMember ? 0 : sharePercent,
+      rebatePercent: isMember ? 0 : rebatePercent,
       // Include game type breakdown
       gameTypes: gameTypeDetails
     }] : [];
-
-    const totalMemberRebate = totalValidBet * (rebatePercent / 100);
-    const totalPersonalShare = Math.abs(totalMemberWinLoss) * (sharePercent / 100);
-    const totalPersonalRebate = totalMemberRebate;
-    const totalReceivable = totalMemberWinLoss < 0 ? Math.abs(totalMemberWinLoss) : 0;
-    const totalPayable = totalMemberWinLoss > 0 ? totalMemberWinLoss + totalMemberRebate : totalMemberRebate;
-    const totalProfit = totalReceivable - totalPayable + totalPersonalShare + totalPersonalRebate;
 
     res.json({
       summary: {
