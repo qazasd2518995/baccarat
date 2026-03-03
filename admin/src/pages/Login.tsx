@@ -306,23 +306,23 @@ export default function Login() {
       />
 
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-3 sm:p-4">
         <motion.div
           initial={{ opacity: 0, y: 50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="w-full max-w-md"
+          className="w-full max-w-[340px] sm:max-w-md"
         >
           {/* Language Switcher */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="absolute -top-16 right-0"
+            className="absolute -top-12 sm:-top-16 right-0"
           >
             <button
               onClick={toggleLanguage}
-              className="group flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-500"
+              className="group flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-500"
               style={{
                 background: 'rgba(212, 175, 55, 0.1)',
                 border: '1px solid rgba(212, 175, 55, 0.3)',
@@ -344,7 +344,7 @@ export default function Login() {
 
           {/* Login Card */}
           <div
-            className="relative rounded-3xl p-10 overflow-hidden"
+            className="relative rounded-2xl sm:rounded-3xl p-5 sm:p-8 lg:p-10 overflow-hidden"
             style={{
               background: 'linear-gradient(135deg, rgba(15, 15, 25, 0.85) 0%, rgba(10, 10, 18, 0.95) 100%)',
               backdropFilter: 'blur(40px)',
@@ -360,7 +360,7 @@ export default function Login() {
             {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map((corner) => (
               <div
                 key={corner}
-                className={`absolute w-16 h-16 ${corner.includes('top') ? 'top-0' : 'bottom-0'} ${corner.includes('left') ? 'left-0' : 'right-0'}`}
+                className={`absolute w-10 h-10 sm:w-16 sm:h-16 ${corner.includes('top') ? 'top-0' : 'bottom-0'} ${corner.includes('left') ? 'left-0' : 'right-0'}`}
                 style={{
                   background: `linear-gradient(${corner === 'top-left' ? '135deg' : corner === 'top-right' ? '225deg' : corner === 'bottom-left' ? '45deg' : '315deg'}, rgba(212, 175, 55, 0.3) 0%, transparent 50%)`,
                 }}
@@ -385,14 +385,14 @@ export default function Login() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.6 }}
-              className="text-center mb-10 relative"
+              className="text-center mb-6 sm:mb-10 relative"
             >
               {/* Shield Icon for Admin */}
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ delay: 0.4, duration: 0.8, type: "spring" }}
-                className="w-20 h-20 mx-auto mb-6 relative"
+                className="w-14 h-14 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 relative"
               >
                 <div
                   className="absolute inset-0 rounded-2xl"
@@ -401,8 +401,8 @@ export default function Login() {
                     boxShadow: '0 10px 40px rgba(212, 175, 55, 0.4)'
                   }}
                 />
-                <div className="absolute inset-[3px] rounded-xl bg-gradient-to-br from-[#12121f] to-[#0a0a12] flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" className="w-10 h-10" fill="#ffd700">
+                <div className="absolute inset-[2px] sm:inset-[3px] rounded-xl bg-gradient-to-br from-[#12121f] to-[#0a0a12] flex items-center justify-center">
+                  <svg viewBox="0 0 24 24" className="w-7 h-7 sm:w-10 sm:h-10" fill="#ffd700">
                     <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z" />
                   </svg>
                 </div>
@@ -414,10 +414,10 @@ export default function Login() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="mb-2"
+                className="mb-1 sm:mb-2"
               >
                 <span
-                  className="text-5xl font-black tracking-tight"
+                  className="text-3xl sm:text-5xl font-black tracking-tight"
                   style={{
                     fontFamily: "system-ui, -apple-system, sans-serif",
                     background: 'linear-gradient(135deg, #ffd700 0%, #f5d17a 25%, #d4af37 50%, #f5d17a 75%, #ffd700 100%)',
@@ -435,7 +435,7 @@ export default function Login() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.55 }}
-                className="text-3xl font-bold mb-3"
+                className="text-xl sm:text-3xl font-bold mb-2 sm:mb-3"
                 style={{
                   fontFamily: "'Noto Serif SC', 'Playfair Display', serif",
                   background: 'linear-gradient(135deg, #ffd700 0%, #f5d17a 25%, #d4af37 50%, #f5d17a 75%, #ffd700 100%)',
@@ -450,7 +450,7 @@ export default function Login() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 }}
-                className="text-sm tracking-[0.3em] uppercase"
+                className="text-xs sm:text-sm tracking-[0.2em] sm:tracking-[0.3em] uppercase"
                 style={{ color: 'rgba(212, 175, 55, 0.6)' }}
               >
                 {i18n.language === 'zh' ? '代理后台管理' : 'Agent Management Console'}
@@ -461,19 +461,19 @@ export default function Login() {
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: 1 }}
                 transition={{ delay: 0.7, duration: 0.6 }}
-                className="mt-6 h-[1px] mx-auto w-32"
+                className="mt-4 sm:mt-6 h-[1px] mx-auto w-24 sm:w-32"
                 style={{ background: 'linear-gradient(90deg, transparent, #d4af37, transparent)' }}
               />
             </motion.div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
               {/* Error message */}
               {error && (
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="p-4 rounded-xl text-sm"
+                  className="p-3 sm:p-4 rounded-xl text-xs sm:text-sm"
                   style={{
                     background: 'linear-gradient(135deg, rgba(139, 0, 0, 0.3) 0%, rgba(100, 0, 0, 0.2) 100%)',
                     border: '1px solid rgba(255, 100, 100, 0.3)',
@@ -491,7 +491,7 @@ export default function Login() {
                 transition={{ delay: 0.4 }}
               >
                 <label
-                  className="block text-sm font-medium mb-3 tracking-wider"
+                  className="block text-xs sm:text-sm font-medium mb-2 sm:mb-3 tracking-wider"
                   style={{ color: '#d4af37' }}
                 >
                   {t('username')}
@@ -503,7 +503,7 @@ export default function Login() {
                     onChange={(e) => setUsername(e.target.value)}
                     onFocus={() => setFocusedField('username')}
                     onBlur={() => setFocusedField(null)}
-                    className="login-input w-full px-5 py-4 rounded-xl transition-all duration-500 outline-none text-base"
+                    className="login-input w-full px-4 sm:px-5 py-3 sm:py-4 rounded-xl transition-all duration-500 outline-none text-sm sm:text-base"
                     style={{
                       background: focusedField === 'username'
                         ? 'linear-gradient(135deg, rgba(30, 30, 50, 0.95) 0%, rgba(20, 20, 35, 0.98) 100%)'
@@ -533,7 +533,7 @@ export default function Login() {
                 transition={{ delay: 0.5 }}
               >
                 <label
-                  className="block text-sm font-medium mb-3 tracking-wider"
+                  className="block text-xs sm:text-sm font-medium mb-2 sm:mb-3 tracking-wider"
                   style={{ color: '#d4af37' }}
                 >
                   {t('password')}
@@ -545,7 +545,7 @@ export default function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     onFocus={() => setFocusedField('password')}
                     onBlur={() => setFocusedField(null)}
-                    className="login-input w-full px-5 py-4 rounded-xl transition-all duration-500 outline-none text-base"
+                    className="login-input w-full px-4 sm:px-5 py-3 sm:py-4 rounded-xl transition-all duration-500 outline-none text-sm sm:text-base"
                     style={{
                       background: focusedField === 'password'
                         ? 'linear-gradient(135deg, rgba(30, 30, 50, 0.95) 0%, rgba(20, 20, 35, 0.98) 100%)'
@@ -575,12 +575,12 @@ export default function Login() {
                 transition={{ delay: 0.55 }}
               >
                 <label
-                  className="block text-sm font-medium mb-3 tracking-wider"
+                  className="block text-xs sm:text-sm font-medium mb-2 sm:mb-3 tracking-wider"
                   style={{ color: '#d4af37' }}
                 >
                   {i18n.language === 'zh' ? '验证码' : 'Captcha'}
                 </label>
-                <div className="flex gap-4">
+                <div className="flex gap-2 sm:gap-4">
                   <div className="relative flex-1">
                     <input
                       type="text"
@@ -589,7 +589,7 @@ export default function Login() {
                       onFocus={() => setFocusedField('captcha')}
                       onBlur={() => setFocusedField(null)}
                       maxLength={4}
-                      className="login-input w-full px-5 py-4 rounded-xl transition-all duration-500 outline-none text-base text-center tracking-[0.5em]"
+                      className="login-input w-full px-4 sm:px-5 py-3 sm:py-4 rounded-xl transition-all duration-500 outline-none text-sm sm:text-base text-center tracking-[0.3em] sm:tracking-[0.5em]"
                       style={{
                         background: focusedField === 'captcha'
                           ? 'linear-gradient(135deg, rgba(30, 30, 50, 0.95) 0%, rgba(20, 20, 35, 0.98) 100%)'
@@ -616,18 +616,18 @@ export default function Login() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={refreshCaptcha}
-                    className="relative cursor-pointer select-none flex items-center justify-center gap-2 px-5 rounded-xl"
+                    className="relative cursor-pointer select-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-5 rounded-xl"
                     style={{
                       background: 'linear-gradient(135deg, rgba(20, 20, 35, 0.9) 0%, rgba(15, 15, 28, 0.95) 100%)',
                       border: '2px solid rgba(212, 175, 55, 0.3)',
-                      minWidth: '120px'
+                      minWidth: '90px'
                     }}
                   >
-                    <div className="flex gap-1">
+                    <div className="flex gap-0.5 sm:gap-1">
                       {captchaCode.split('').map((digit, i) => (
                         <span
                           key={i}
-                          className="text-2xl font-bold"
+                          className="text-lg sm:text-2xl font-bold"
                           style={{
                             fontFamily: "'Playfair Display', serif",
                             color: '#ffd700',
@@ -649,14 +649,14 @@ export default function Login() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.6 }}
-                className="pt-4"
+                className="pt-2 sm:pt-4"
               >
                 <motion.button
                   type="submit"
                   disabled={isLoading}
                   whileHover={{ scale: 1.02, y: -2 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full py-5 rounded-xl font-bold text-lg tracking-widest transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
+                  className="w-full py-3.5 sm:py-5 rounded-xl font-bold text-base sm:text-lg tracking-widest transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
                   style={{
                     background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #aa8c2c 100%)',
                     color: '#0a0a0f',
@@ -686,7 +686,7 @@ export default function Login() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.8 }}
-              className="mt-8 flex justify-center gap-4"
+              className="mt-5 sm:mt-8 flex justify-center gap-3 sm:gap-4"
             >
               {['♠', '♥', '♣', '♦'].map((suit, i) => (
                 <motion.span
@@ -694,7 +694,7 @@ export default function Login() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 0.4, y: 0 }}
                   transition={{ delay: 0.9 + i * 0.1 }}
-                  className="text-2xl"
+                  className="text-xl sm:text-2xl"
                   style={{ color: suit === '♥' || suit === '♦' ? '#8b0000' : '#d4af37' }}
                 >
                   {suit}
@@ -708,12 +708,12 @@ export default function Login() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
-            className="text-center mt-8"
+            className="text-center mt-5 sm:mt-8"
           >
-            <p className="text-xs tracking-widest" style={{ color: 'rgba(212, 175, 55, 0.4)' }}>
+            <p className="text-[10px] sm:text-xs tracking-widest" style={{ color: 'rgba(212, 175, 55, 0.4)' }}>
               © 2025 {i18n.language === 'zh' ? 'JW 九贏百家 · 代理系统' : 'JW JIU WIN BACCARAT · AGENT SYSTEM'}
             </p>
-            <p className="text-xs mt-2" style={{ color: 'rgba(255, 255, 255, 0.2)' }}>
+            <p className="text-[10px] sm:text-xs mt-1 sm:mt-2" style={{ color: 'rgba(255, 255, 255, 0.2)' }}>
               {i18n.language === 'zh' ? '安全 · 高效 · 专业' : 'SECURE · EFFICIENT · PROFESSIONAL'}
             </p>
           </motion.div>
