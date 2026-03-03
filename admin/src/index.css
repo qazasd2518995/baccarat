@@ -6,6 +6,23 @@
   --color-secondary: #1e293b;
 }
 
+/* Responsive font scaling */
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 640px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 16px;
+  }
+}
+
 /* Custom base styles */
 body {
   background-color: #0a0f1c;

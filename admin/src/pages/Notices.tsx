@@ -150,10 +150,10 @@ export default function Notices() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-white">{t('notices')}</h1>
-        <div className="flex items-center gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-white">{t('notices')}</h1>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
           {/* Filter Tabs */}
-          <div className="flex items-center gap-1 bg-[#252525] rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-[#252525] rounded-lg p-1 overflow-x-auto">
             {[
               { key: 'all', label: '全部' },
               { key: 'agent_dashboard', label: '代理公告' },
@@ -162,7 +162,7 @@ export default function Notices() {
               <button
                 key={tab.key}
                 onClick={() => setFilterTarget(tab.key as typeof filterTarget)}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                className={`px-3 py-1.5 text-sm rounded-md transition-colors whitespace-nowrap min-h-[40px] ${
                   filterTarget === tab.key
                     ? 'bg-amber-500 text-black font-medium'
                     : 'text-gray-400 hover:text-white'
@@ -176,7 +176,7 @@ export default function Notices() {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={openCreateModal}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-xl transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-xl transition-colors"
           >
             <Plus className="w-4 h-4" />
             创建公告
@@ -194,12 +194,12 @@ export default function Notices() {
           notices.map((notice) => (
             <div
               key={notice.id}
-              className={`bg-[#1e1e1e] rounded-xl p-6 border transition-colors ${
+              className={`bg-[#1e1e1e] rounded-xl p-4 sm:p-6 border transition-colors ${
                 notice.isPinned ? 'border-amber-500/50' : 'border-[#333]'
               }`}
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 sm:gap-0 mb-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   {notice.isPinned && (
                     <Pin className="w-4 h-4 text-amber-400" />
                   )}
@@ -215,16 +215,16 @@ export default function Notices() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <button
                     onClick={() => openEditModal(notice)}
-                    className="p-2 hover:bg-[#252525] text-gray-400 hover:text-white rounded-lg transition-colors"
+                    className="p-2.5 sm:p-2 hover:bg-[#252525] text-gray-400 hover:text-white rounded-lg transition-colors"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setDeleteConfirm({ open: true, id: notice.id })}
-                    className="p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
+                    className="p-2.5 sm:p-2 hover:bg-red-500/20 text-gray-400 hover:text-red-400 rounded-lg transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -246,7 +246,7 @@ export default function Notices() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#1e1e1e] rounded-2xl p-6 w-full max-w-lg mx-4 border border-[#333]"
+            className="bg-[#1e1e1e] rounded-2xl p-4 sm:p-6 w-full max-w-lg mx-2 sm:mx-4 border border-[#333] max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">

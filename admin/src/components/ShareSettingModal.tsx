@@ -221,46 +221,46 @@ export default function ShareSettingModal({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-[#1a1a1a] border border-[#333] rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-[#1a1a1a] border border-[#333] rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col mx-2 sm:mx-auto"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#333]">
-          <h2 className="text-white text-lg font-bold">编辑代理 - {agentName}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b border-[#333]">
+          <h2 className="text-white text-base sm:text-lg font-bold truncate pr-2">编辑代理 - {agentName}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-white p-1 flex-shrink-0">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {/* 快速设置 */}
-          <div className="bg-[#252525] rounded-lg p-4 mb-4">
-            <h3 className="text-white font-medium mb-3">快速设置</h3>
+          <div className="bg-[#252525] rounded-lg p-3 sm:p-4 mb-4">
+            <h3 className="text-white font-medium mb-3 text-sm sm:text-base">快速设置</h3>
 
             {/* 分类选择 */}
-            <div className="flex items-center gap-4 mb-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4">
               {categories.map(cat => (
-                <label key={cat.category} className="flex items-center gap-2 cursor-pointer">
+                <label key={cat.category} className="flex items-center gap-2 cursor-pointer min-h-[36px]">
                   <input
                     type="checkbox"
                     checked={selectedCategories.includes(cat.category)}
                     onChange={() => handleCategoryToggle(cat.category)}
                     className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded focus:ring-amber-500"
                   />
-                  <span className="text-white text-sm">{cat.category}</span>
+                  <span className="text-white text-xs sm:text-sm">{cat.category}</span>
                 </label>
               ))}
 
-              <div className="ml-auto flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto mt-2 sm:mt-0">
                 <button
                   onClick={handleSelectAll}
-                  className="px-3 py-1 bg-[#333] text-white text-sm rounded hover:bg-[#444] transition-colors"
+                  className="flex-1 sm:flex-none px-3 py-1.5 bg-[#333] text-white text-sm rounded hover:bg-[#444] transition-colors min-h-[36px]"
                 >
                   全 选
                 </button>
                 <button
                   onClick={handleSelectInverse}
-                  className="px-3 py-1 bg-[#333] text-white text-sm rounded hover:bg-[#444] transition-colors"
+                  className="flex-1 sm:flex-none px-3 py-1.5 bg-[#333] text-white text-sm rounded hover:bg-[#444] transition-colors min-h-[36px]"
                 >
                   反 选
                 </button>
@@ -268,18 +268,18 @@ export default function ShareSettingModal({
             </div>
 
             {/* 批量设置 */}
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
                 <input
                   type="number"
                   value={batchSharePercent}
                   onChange={(e) => setBatchSharePercent(e.target.value)}
                   placeholder="下级占成"
-                  className="w-32 px-3 py-2 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500"
+                  className="flex-1 sm:w-24 px-3 py-2 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500 min-h-[40px]"
                 />
                 <button
                   onClick={handleBatchSetShare}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black text-sm font-medium rounded transition-colors"
+                  className="px-3 sm:px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black text-xs sm:text-sm font-medium rounded transition-colors min-h-[40px] whitespace-nowrap"
                 >
                   设置占成
                 </button>
@@ -291,11 +291,11 @@ export default function ShareSettingModal({
                   value={batchRebatePercent}
                   onChange={(e) => setBatchRebatePercent(e.target.value)}
                   placeholder="下级退水"
-                  className="w-32 px-3 py-2 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500"
+                  className="flex-1 sm:w-24 px-3 py-2 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500 min-h-[40px]"
                 />
                 <button
                   onClick={handleBatchSetRebate}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black text-sm font-medium rounded transition-colors"
+                  className="px-3 sm:px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black text-xs sm:text-sm font-medium rounded transition-colors min-h-[40px] whitespace-nowrap"
                 >
                   设置退水
                 </button>
@@ -303,7 +303,7 @@ export default function ShareSettingModal({
 
               <button
                 onClick={() => onOpenHistory?.()}
-                className="ml-auto flex items-center gap-1 text-amber-400 hover:text-amber-300 text-sm"
+                className="flex items-center justify-center gap-1 text-amber-400 hover:text-amber-300 text-sm sm:ml-auto min-h-[40px]"
               >
                 <History className="w-4 h-4" />
                 占成/退水历史
@@ -321,110 +321,166 @@ export default function ShareSettingModal({
               暂无平台数据
             </div>
           ) : (
-          <div className="bg-[#252525] rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-[#1a1a1a]">
-                  <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">分类</th>
-                  <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">厂商</th>
-                  <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">占成可输入值</th>
-                  <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">退水可输入值</th>
-                  <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">
-                    下级占成 <span className="text-amber-400">✎</span>
-                  </th>
-                  <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">
-                    下级退水 <span className="text-amber-400">✎</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map((cat) => (
-                  <tr key={cat.category} className="border-t border-[#333]">
-                    <td className="px-4 py-3 text-white text-sm align-top">{cat.category}</td>
-                    <td className="px-4 py-3 text-gray-300 text-sm align-top">
-                      <div className="space-y-1">
-                        {cat.platforms.map(platform => (
-                          <div key={platform}>{platform}</div>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-400 text-sm align-top">
-                      <div className="space-y-1">
-                        {cat.platforms.map(() => (
-                          <div key={Math.random()}>0%-0%</div>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-center text-gray-400 text-sm align-top">
-                      <div className="space-y-1">
-                        {cat.platforms.map(() => (
-                          <div key={Math.random()}>0-0</div>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      <div className="space-y-1">
-                        {cat.platforms.map(platform => {
-                          const key = `${cat.category}-${platform}`;
-                          return (
-                            <div key={platform} className="flex items-center justify-center gap-1">
+          <>
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {categories.map((cat) => (
+                <div key={cat.category} className="bg-[#252525] rounded-lg p-3">
+                  <div className="text-amber-400 font-medium text-sm mb-3">{cat.category}</div>
+                  {cat.platforms.map(platform => {
+                    const key = `${cat.category}-${platform}`;
+                    return (
+                      <div key={platform} className="border-t border-[#333] pt-3 mt-3 first:border-0 first:pt-0 first:mt-0">
+                        <div className="text-white text-sm mb-2">{platform}</div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-gray-400 text-xs mb-1 block">下级占成</label>
+                            <div className="flex items-center gap-1">
                               <input
                                 type="number"
                                 value={settings[key]?.share || '0'}
                                 onChange={(e) => handleSettingChange(cat.category, platform, 'share', e.target.value)}
-                                className="w-16 px-2 py-1 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm text-center focus:outline-none focus:border-amber-500"
+                                className="flex-1 px-2 py-2 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm text-center focus:outline-none focus:border-amber-500 min-h-[40px]"
                               />
                               <button
                                 onClick={() => handleConfirmSetting(cat.category, platform, 'share')}
-                                className="p-1 text-green-400 hover:text-green-300"
+                                className="p-2 text-green-400 hover:text-green-300"
                               >
                                 <Check className="w-4 h-4" />
                               </button>
-                              <button
-                                onClick={() => handleClearSetting(cat.category, platform, 'share')}
-                                className="p-1 text-red-400 hover:text-red-300"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      <div className="space-y-1">
-                        {cat.platforms.map(platform => {
-                          const key = `${cat.category}-${platform}`;
-                          return (
-                            <div key={platform} className="flex items-center justify-center gap-1">
+                          </div>
+                          <div>
+                            <label className="text-gray-400 text-xs mb-1 block">下级退水</label>
+                            <div className="flex items-center gap-1">
                               <input
                                 type="number"
                                 value={settings[key]?.rebate || '0'}
                                 onChange={(e) => handleSettingChange(cat.category, platform, 'rebate', e.target.value)}
-                                className="w-16 px-2 py-1 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm text-center focus:outline-none focus:border-amber-500"
+                                className="flex-1 px-2 py-2 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm text-center focus:outline-none focus:border-amber-500 min-h-[40px]"
                               />
                               <button
                                 onClick={() => handleConfirmSetting(cat.category, platform, 'rebate')}
-                                className="p-1 text-green-400 hover:text-green-300"
+                                className="p-2 text-green-400 hover:text-green-300"
                               >
                                 <Check className="w-4 h-4" />
                               </button>
-                              <button
-                                onClick={() => handleClearSetting(cat.category, platform, 'rebate')}
-                                className="p-1 text-red-400 hover:text-red-300"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
                             </div>
-                          );
-                        })}
+                          </div>
+                        </div>
                       </div>
-                    </td>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden md:block bg-[#252525] rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-[#1a1a1a]">
+                    <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">分类</th>
+                    <th className="px-4 py-3 text-left text-gray-400 text-sm font-medium">厂商</th>
+                    <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">占成可输入值</th>
+                    <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">退水可输入值</th>
+                    <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">
+                      下级占成 <span className="text-amber-400">✎</span>
+                    </th>
+                    <th className="px-4 py-3 text-center text-gray-400 text-sm font-medium">
+                      下级退水 <span className="text-amber-400">✎</span>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {categories.map((cat) => (
+                    <tr key={cat.category} className="border-t border-[#333]">
+                      <td className="px-4 py-3 text-white text-sm align-top">{cat.category}</td>
+                      <td className="px-4 py-3 text-gray-300 text-sm align-top">
+                        <div className="space-y-1">
+                          {cat.platforms.map(platform => (
+                            <div key={platform}>{platform}</div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center text-gray-400 text-sm align-top">
+                        <div className="space-y-1">
+                          {cat.platforms.map(() => (
+                            <div key={Math.random()}>0%-0%</div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-center text-gray-400 text-sm align-top">
+                        <div className="space-y-1">
+                          {cat.platforms.map(() => (
+                            <div key={Math.random()}>0-0</div>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 align-top">
+                        <div className="space-y-1">
+                          {cat.platforms.map(platform => {
+                            const key = `${cat.category}-${platform}`;
+                            return (
+                              <div key={platform} className="flex items-center justify-center gap-1">
+                                <input
+                                  type="number"
+                                  value={settings[key]?.share || '0'}
+                                  onChange={(e) => handleSettingChange(cat.category, platform, 'share', e.target.value)}
+                                  className="w-16 px-2 py-1 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm text-center focus:outline-none focus:border-amber-500"
+                                />
+                                <button
+                                  onClick={() => handleConfirmSetting(cat.category, platform, 'share')}
+                                  className="p-1 text-green-400 hover:text-green-300"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleClearSetting(cat.category, platform, 'share')}
+                                  className="p-1 text-red-400 hover:text-red-300"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 align-top">
+                        <div className="space-y-1">
+                          {cat.platforms.map(platform => {
+                            const key = `${cat.category}-${platform}`;
+                            return (
+                              <div key={platform} className="flex items-center justify-center gap-1">
+                                <input
+                                  type="number"
+                                  value={settings[key]?.rebate || '0'}
+                                  onChange={(e) => handleSettingChange(cat.category, platform, 'rebate', e.target.value)}
+                                  className="w-16 px-2 py-1 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm text-center focus:outline-none focus:border-amber-500"
+                                />
+                                <button
+                                  onClick={() => handleConfirmSetting(cat.category, platform, 'rebate')}
+                                  className="p-1 text-green-400 hover:text-green-300"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleClearSetting(cat.category, platform, 'rebate')}
+                                  className="p-1 text-red-400 hover:text-red-300"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
           )}
 
           {/* 提示 */}
@@ -434,17 +490,17 @@ export default function ShareSettingModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-center gap-4 p-4 border-t border-[#333]">
+        <div className="flex items-center justify-center gap-3 sm:gap-4 p-3 sm:p-4 border-t border-[#333]">
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-[#333] text-white rounded-lg hover:bg-[#444] transition-colors"
+            className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 bg-[#333] text-white rounded-lg hover:bg-[#444] transition-colors min-h-[44px]"
           >
             取 消
           </button>
           <button
             onClick={handleSave}
             disabled={loading}
-            className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors disabled:opacity-50"
+            className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors disabled:opacity-50 min-h-[44px]"
           >
             {loading ? '保存中...' : '保 存'}
           </button>

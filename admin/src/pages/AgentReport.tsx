@@ -544,7 +544,7 @@ export default function AgentReport() {
       <div className="grid grid-cols-2 gap-0 bg-[#1a1a1a] rounded-lg overflow-hidden border border-[#333]">
         <button
           onClick={() => setActiveTab('agent')}
-          className={`py-3 text-center font-medium transition-all ${
+          className={`py-2.5 sm:py-3 text-center text-sm sm:text-base font-medium transition-all min-h-[44px] ${
             activeTab === 'agent'
               ? 'bg-amber-500 text-black'
               : 'text-gray-400 hover:text-white hover:bg-[#252525]'
@@ -554,7 +554,7 @@ export default function AgentReport() {
         </button>
         <button
           onClick={() => setActiveTab('member')}
-          className={`py-3 text-center font-medium transition-all ${
+          className={`py-2.5 sm:py-3 text-center text-sm sm:text-base font-medium transition-all min-h-[44px] ${
             activeTab === 'member'
               ? 'bg-amber-500 text-black'
               : 'text-gray-400 hover:text-white hover:bg-[#252525]'
@@ -621,11 +621,11 @@ export default function AgentReport() {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-6 gap-3 pt-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3 pt-2">
                   {ALL_PLATFORMS.map((platform, idx) => (
                     <label
                       key={`${platform}-${idx}`}
-                      className="flex items-center gap-2 text-gray-400 text-sm cursor-pointer hover:text-white"
+                      className="flex items-center gap-2 text-gray-400 text-xs sm:text-sm cursor-pointer hover:text-white min-h-[36px]"
                     >
                       <input
                         type="checkbox"
@@ -644,15 +644,16 @@ export default function AgentReport() {
       </div>
 
       {/* Quick Filters, Search, Date Range */}
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400 text-sm">快速篩選</span>
-          <div className="flex gap-1">
+      <div className="flex flex-col gap-3 sm:gap-4">
+        {/* Quick Filter Buttons */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-gray-400 text-xs sm:text-sm">快速篩選</span>
+          <div className="flex flex-wrap gap-1">
             {quickFilters.map((filter) => (
               <button
                 key={filter.key}
                 onClick={() => handleQuickFilterClick(filter.key)}
-                className={`px-3 py-1.5 rounded text-sm transition-all ${
+                className={`px-2 sm:px-3 py-1.5 rounded text-xs sm:text-sm transition-all min-h-[36px] ${
                   quickFilter === filter.key
                     ? 'bg-amber-500 text-black font-medium'
                     : 'bg-[#2a2a2a] text-gray-400 hover:text-white border border-[#444]'
@@ -664,52 +665,55 @@ export default function AgentReport() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400 text-sm">{activeTab === 'agent' ? '代理帳號' : '會員帳號'}</span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="請輸入代理帳號"
-            className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500 w-40"
-          />
-        </div>
+        {/* Search and Date Row */}
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400 text-xs sm:text-sm whitespace-nowrap">{activeTab === 'agent' ? '代理帳號' : '會員帳號'}</span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="請輸入代理帳號"
+              className="flex-1 sm:flex-none px-3 py-2 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500 sm:w-40 min-h-[40px]"
+            />
+          </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-red-400 text-sm">*</span>
-          <span className="text-gray-400 text-sm">查詢時間</span>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500"
-          />
-          <span className="text-gray-400">→</span>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="px-3 py-1.5 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500"
-          />
-        </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-red-400 text-sm">*</span>
+            <span className="text-gray-400 text-xs sm:text-sm whitespace-nowrap">查詢時間</span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="flex-1 sm:flex-none px-3 py-2 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500 min-h-[40px]"
+            />
+            <span className="text-gray-400 hidden sm:inline">→</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="flex-1 sm:flex-none px-3 py-2 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500 min-h-[40px]"
+            />
+          </div>
 
-        <div className="flex-1" />
+          <div className="hidden sm:block flex-1" />
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 px-4 py-1.5 bg-[#2a2a2a] text-gray-300 hover:text-white border border-[#444] text-sm rounded transition-colors"
-          >
-            <Download className="w-4 h-4" />
-            導出
-          </button>
-          <button
-            onClick={handleSearch}
-            className="flex items-center gap-2 px-4 py-1.5 bg-amber-500 hover:bg-amber-600 text-black font-medium text-sm rounded transition-colors"
-          >
-            <Search className="w-4 h-4" />
-            查詢
-          </button>
+          <div className="flex items-center gap-2 mt-2 sm:mt-0">
+            <button
+              onClick={handleExport}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#2a2a2a] text-gray-300 hover:text-white border border-[#444] text-sm rounded transition-colors min-h-[44px]"
+            >
+              <Download className="w-4 h-4" />
+              導出
+            </button>
+            <button
+              onClick={handleSearch}
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium text-sm rounded transition-colors min-h-[44px]"
+            >
+              <Search className="w-4 h-4" />
+              查詢
+            </button>
+          </div>
         </div>
       </div>
 

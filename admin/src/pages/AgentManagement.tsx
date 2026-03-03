@@ -380,7 +380,7 @@ export default function AgentManagement() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 md:grid-cols-5 gap-4"
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4"
         >
           <div className="bg-[#1e1e1e] border border-[#333] rounded-xl p-4">
             <div className="flex items-center gap-3">
@@ -451,7 +451,7 @@ export default function AgentManagement() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="bg-[#252525] border border-[#333] rounded-xl p-3 flex items-center gap-6 text-sm"
+          className="bg-[#252525] border border-[#333] rounded-xl p-3 flex flex-wrap items-center gap-3 sm:gap-6 text-xs sm:text-sm"
         >
           <span className="text-gray-400">
             代理层级：<span className="text-amber-400">{dashboard.agentLevel === 0 ? '管理员' : `${dashboard.agentLevel}级代理`}</span>
@@ -475,7 +475,7 @@ export default function AgentManagement() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#252525] border border-[#333] rounded-xl p-3 flex items-center gap-2"
+          className="bg-[#252525] border border-[#333] rounded-xl p-3 flex flex-wrap items-center gap-2"
         >
           <button
             onClick={handleGoBack}
@@ -512,14 +512,14 @@ export default function AgentManagement() {
       )}
 
       {/* Tabs */}
-      <div className="flex items-center border-b border-[#333]">
+      <div className="flex items-center border-b border-[#333] overflow-x-auto">
         {tabs.map((tab) => {
           const IconComponent = tab.icon;
           return (
             <button
               key={tab.key}
               onClick={() => { setActiveTab(tab.key); setCurrentPage(1); }}
-              className={`flex items-center gap-2 px-6 py-3 transition-all border-b-2 -mb-[2px] ${
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-3 transition-all border-b-2 -mb-[2px] whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'border-amber-500 text-amber-400 bg-amber-500/10'
                   : 'border-transparent text-gray-400 hover:text-white'
@@ -533,21 +533,21 @@ export default function AgentManagement() {
       </div>
 
       {/* Search and Actions */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2 flex-1">
           {/* 帳號搜索 */}
           <div className="flex items-center gap-2">
-            <span className="text-gray-400 text-sm whitespace-nowrap">
+            <span className="text-gray-400 text-xs sm:text-sm whitespace-nowrap">
               {activeTab === 'members' ? '会员账号' : activeTab === 'agents' ? '代理账号' : '子账号'}
             </span>
-            <div className="relative">
+            <div className="relative flex-1 sm:flex-none">
               <input
                 type="text"
                 placeholder={activeTab === 'agents' ? '请输入代理账号' : activeTab === 'members' ? '请输入会员账号' : '搜索子账号...'}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                className="w-48 px-3 py-2 bg-[#1e1e1e] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+                className="w-full sm:w-48 px-3 py-2 bg-[#1e1e1e] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
               />
             </div>
           </div>
@@ -571,43 +571,45 @@ export default function AgentManagement() {
 
           {/* 創建時間 (會員管理才顯示) */}
           {activeTab === 'members' && (
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm whitespace-nowrap">创建时间</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-gray-400 text-xs sm:text-sm whitespace-nowrap">创建时间</span>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="px-3 py-2 bg-[#1e1e1e] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+                className="flex-1 sm:flex-none px-3 py-2 bg-[#1e1e1e] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
                 placeholder="开始日期"
               />
-              <span className="text-gray-400">→</span>
+              <span className="text-gray-400 hidden sm:inline">→</span>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="px-3 py-2 bg-[#1e1e1e] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+                className="flex-1 sm:flex-none px-3 py-2 bg-[#1e1e1e] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
                 placeholder="结束日期"
               />
             </div>
           )}
 
-          <button
-            onClick={() => {
-              setSearchQuery('');
-              setStatusFilter('');
-              setStartDate('');
-              setEndDate('');
-            }}
-            className="px-4 py-2 bg-[#1e1e1e] border border-[#333] text-gray-400 hover:text-white text-sm rounded-lg transition-colors"
-          >
-            重置
-          </button>
-          <button
-            onClick={handleSearch}
-            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium text-sm rounded-lg transition-colors"
-          >
-            查询
-          </button>
+          <div className="flex items-center gap-2 mt-2 sm:mt-0">
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('');
+                setStartDate('');
+                setEndDate('');
+              }}
+              className="flex-1 sm:flex-none px-4 py-2 min-h-[44px] sm:min-h-0 bg-[#1e1e1e] border border-[#333] text-gray-400 hover:text-white text-sm rounded-lg transition-colors"
+            >
+              重置
+            </button>
+            <button
+              onClick={handleSearch}
+              className="flex-1 sm:flex-none px-4 py-2 min-h-[44px] sm:min-h-0 bg-amber-500 hover:bg-amber-600 text-black font-medium text-sm rounded-lg transition-colors"
+            >
+              查询
+            </button>
+          </div>
         </div>
 
         <button
@@ -618,7 +620,7 @@ export default function AgentManagement() {
               setShowCreateModal(true);
             }
           }}
-          className="flex items-center gap-2 px-4 py-2 border border-amber-500 text-amber-400 hover:bg-amber-500/10 font-medium text-sm rounded-lg transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 min-h-[44px] border border-amber-500 text-amber-400 hover:bg-amber-500/10 font-medium text-sm rounded-lg transition-colors w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           {activeTab === 'agents' ? '新建代理' : activeTab === 'members' ? '新建会员' : '新建'}
@@ -643,13 +645,13 @@ export default function AgentManagement() {
                 className="bg-[#1e1e1e] border border-[#333] rounded-xl overflow-hidden"
               >
                 {/* Agent Card */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
+                <div className="p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-0">
                     {/* Left: Agent Info */}
-                    <div className="flex items-start gap-4">
-                      <div className="text-center">
+                    <div className="flex flex-wrap items-start gap-3 sm:gap-4">
+                      <div className="text-center min-w-[60px]">
                         <p className="text-gray-400 text-xs mb-1">代理层级</p>
-                        <p className="text-white font-medium">{agent.agentLevel}级代理</p>
+                        <p className="text-white font-medium text-sm sm:text-base">{agent.agentLevel}级代理</p>
                       </div>
 
                       <div>
@@ -708,48 +710,48 @@ export default function AgentManagement() {
                     </div>
 
                     {/* Right: Status & Actions */}
-                    <div className="flex items-start gap-6">
+                    <div className="flex flex-wrap items-start gap-4 sm:gap-6 w-full sm:w-auto">
                       <div className="space-y-1">
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
                           <input
                             type="checkbox"
                             checked={agent.isLocked}
                             onChange={() => handleStatusChange(agent.id, agent.isLocked ? 'unlock' : 'lock')}
                             className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
                           />
-                          <span className="text-white text-sm">锁定登入</span>
+                          <span className="text-white text-xs sm:text-sm">锁定登入</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
                           <input
                             type="checkbox"
                             checked={agent.isFullDisabled}
                             onChange={() => handleStatusChange(agent.id, agent.isFullDisabled ? 'enable' : 'disable')}
                             className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
                           />
-                          <span className="text-white text-sm">全线禁用</span>
+                          <span className="text-white text-xs sm:text-sm">全线禁用</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
                           <input
                             type="checkbox"
                             checked={agent.isReadonly}
                             onChange={() => handleStatusChange(agent.id, agent.isReadonly ? 'unreadonly' : 'readonly')}
                             className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
                           />
-                          <span className="text-white text-sm">禁止投注/操作</span>
+                          <span className="text-white text-xs sm:text-sm">禁止投注/操作</span>
                         </label>
                       </div>
 
                       <div className="text-center">
                         <button
                           onClick={() => setConfirmModal({ open: true, agent, action: 'withdrawAll' })}
-                          className="text-amber-400 hover:text-amber-300 text-sm"
+                          className="text-amber-400 hover:text-amber-300 text-xs sm:text-sm min-h-[32px]"
                         >
                           抽取全线额度
                         </button>
                         <br />
                         <button
                           onClick={() => setEditAgentModal({ open: true, agent })}
-                          className="text-amber-400 hover:text-amber-300 text-sm"
+                          className="text-amber-400 hover:text-amber-300 text-xs sm:text-sm min-h-[32px]"
                         >
                           修改账号
                         </button>
@@ -758,11 +760,11 @@ export default function AgentManagement() {
                       <div className="text-center">
                         <p className="text-gray-400 text-xs mb-1">邀请码/复制邀请链接</p>
                         <div className="flex items-center gap-2">
-                          <span className="text-white">{agent.inviteCode || '-'}</span>
+                          <span className="text-white text-sm">{agent.inviteCode || '-'}</span>
                           {agent.inviteCode && (
                             <button
                               onClick={() => copyToClipboard(agent.inviteCode)}
-                              className="text-gray-400 hover:text-white"
+                              className="text-gray-400 hover:text-white p-1"
                             >
                               <Copy className="w-4 h-4" />
                             </button>
@@ -789,30 +791,30 @@ export default function AgentManagement() {
                 className="bg-[#1e1e1e] border border-[#333] rounded-xl overflow-hidden"
               >
                 {/* Member Card */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
+                <div className="p-3 sm:p-4">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 sm:gap-0">
                     {/* Left: Member Info */}
-                    <div className="flex items-start gap-4">
-                      <div className="text-center">
+                    <div className="flex flex-wrap items-start gap-3 sm:gap-4">
+                      <div className="text-center min-w-[80px]">
                         <p className="text-gray-400 text-xs mb-1">会员账号/复制账号</p>
                         <div className="flex items-center gap-2">
-                          <span className="text-amber-400 font-medium">{member.username}</span>
+                          <span className="text-amber-400 font-medium text-sm sm:text-base">{member.username}</span>
                           <button
                             onClick={() => copyToClipboard(member.username)}
-                            className="text-gray-400 hover:text-white"
+                            className="text-gray-400 hover:text-white p-1"
                           >
                             <Copy className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-gray-400 text-sm">({member.nickname || '无名称'})</p>
+                        <p className="text-gray-400 text-xs sm:text-sm">({member.nickname || '无名称'})</p>
                       </div>
 
-                      <div className="text-center">
+                      <div className="text-center min-w-[80px]">
                         <p className="text-gray-400 text-xs mb-1">所属代理名称</p>
-                        <p className="text-white font-medium">
+                        <p className="text-white font-medium text-sm sm:text-base">
                           {member.parentAgent?.nickname || member.parentAgent?.username || '-'}
                         </p>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-gray-400 text-xs sm:text-sm">
                           ({member.parentAgent?.username || '-'})
                         </p>
                       </div>
@@ -852,61 +854,61 @@ export default function AgentManagement() {
                     </div>
 
                     {/* Right: Status & Actions */}
-                    <div className="flex items-start gap-6">
+                    <div className="flex flex-wrap items-start gap-4 sm:gap-6 w-full sm:w-auto">
                       <div className="space-y-1">
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
                           <input
                             type="checkbox"
                             checked={member.isLocked}
                             onChange={() => handleStatusChange(member.id, member.isLocked ? 'unlock' : 'lock')}
                             className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
                           />
-                          <span className="text-white text-sm">锁定登入</span>
+                          <span className="text-white text-xs sm:text-sm">锁定登入</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
                           <input
                             type="checkbox"
                             checked={member.isFullDisabled}
                             onChange={() => handleStatusChange(member.id, member.isFullDisabled ? 'enable' : 'disable')}
                             className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
                           />
-                          <span className="text-white text-sm">全线禁用</span>
+                          <span className="text-white text-xs sm:text-sm">全线禁用</span>
                         </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
+                        <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
                           <input
                             type="checkbox"
                             checked={member.isReadonly}
                             onChange={() => handleStatusChange(member.id, member.isReadonly ? 'unreadonly' : 'readonly')}
                             className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
                           />
-                          <span className="text-white text-sm">禁止投注/操作</span>
+                          <span className="text-white text-xs sm:text-sm">禁止投注/操作</span>
                         </label>
                       </div>
 
                       <div className="text-center">
                         <button
                           onClick={() => setConfirmModal({ open: true, agent: member as any, action: 'withdrawAll' })}
-                          className="text-amber-400 hover:text-amber-300 text-sm"
+                          className="text-amber-400 hover:text-amber-300 text-xs sm:text-sm min-h-[32px]"
                         >
                           抽取全线额度
                         </button>
                         <br />
                         <button
                           onClick={() => setEditAgentModal({ open: true, agent: member as any })}
-                          className="text-amber-400 hover:text-amber-300 text-sm"
+                          className="text-amber-400 hover:text-amber-300 text-xs sm:text-sm min-h-[32px]"
                         >
                           修改账号
                         </button>
                       </div>
 
-                      <div className="text-center">
+                      <div className="text-center hidden sm:block">
                         <p className="text-gray-400 text-xs mb-1">手机号</p>
-                        <p className="text-white">-</p>
+                        <p className="text-white text-sm">-</p>
                       </div>
 
                       <div className="text-center">
                         <p className="text-gray-400 text-xs mb-1">创建时间</p>
-                        <p className="text-white text-sm">
+                        <p className="text-white text-xs sm:text-sm">
                           {new Date(member.createdAt).toLocaleString('zh-CN', {
                             year: 'numeric',
                             month: '2-digit',

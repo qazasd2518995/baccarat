@@ -39,14 +39,14 @@ export default function Modal({
   if (!isOpen) return null;
 
   const sizes = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
+    sm: 'sm:max-w-md',
+    md: 'sm:max-w-lg',
+    lg: 'sm:max-w-2xl',
+    xl: 'sm:max-w-4xl',
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -59,7 +59,7 @@ export default function Modal({
         className={`relative w-full ${sizes[size]} bg-[#1e1e1e] border border-[#333] rounded-xl shadow-2xl transform transition-all`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#333]">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-[#333]">
           <h2 className="text-lg font-semibold text-white">{title}</h2>
           {showClose && (
             <button
@@ -72,7 +72,7 @@ export default function Modal({
         </div>
 
         {/* Content */}
-        <div className="px-6 py-4 max-h-[calc(100vh-200px)] overflow-auto">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 max-h-[85vh] sm:max-h-[calc(100vh-200px)] overflow-auto">
           {children}
         </div>
       </div>
@@ -116,9 +116,9 @@ export function Button({
   };
 
   const sizes = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-sm',
-    lg: 'px-6 py-2.5 text-base',
+    sm: 'px-3 py-1.5 text-sm min-h-[40px]',
+    md: 'px-4 py-2 text-sm min-h-[44px]',
+    lg: 'px-6 py-2.5 text-base min-h-[48px]',
   };
 
   return (

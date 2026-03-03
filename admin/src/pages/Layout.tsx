@@ -244,7 +244,7 @@ export default function Layout() {
             animate={{ x: 0 }}
             exit={{ x: -280 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed left-0 top-0 bottom-0 w-[280px] bg-[#1e1e1e] border-r border-[#333] flex flex-col z-50 lg:hidden"
+            className="fixed left-0 top-0 bottom-0 w-[85vw] max-w-[280px] bg-[#1e1e1e] border-r border-[#333] flex flex-col z-50 lg:hidden"
           >
             {/* Logo */}
             <div className="h-16 flex items-center justify-between px-4 border-b border-[#333] bg-gradient-to-r from-[#1a1a1a] to-[#252525]">
@@ -291,7 +291,7 @@ export default function Layout() {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="h-14 bg-[#1e1e1e] border-b border-[#333] flex items-center justify-between px-4 lg:px-6">
+        <header className="h-14 bg-[#1e1e1e] border-b border-[#333] flex items-center justify-between px-3 sm:px-4 lg:px-6">
           {/* Mobile menu button */}
           <button
             onClick={() => setMobileMenuOpen(true)}
@@ -328,7 +328,7 @@ export default function Layout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-4 lg:p-6 overflow-auto bg-[#1a1a1a]">
+        <main className="flex-1 p-3 sm:p-4 lg:p-6 overflow-auto bg-[#1a1a1a]">
           <Outlet />
         </main>
       </div>
