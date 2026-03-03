@@ -225,6 +225,7 @@ export const agentManagementApi = {
     status?: string;
     page?: number;
     limit?: number;
+    viewAgentId?: string;
   }) => api.get('/agent-management/agents', { params }),
 
   createAgent: (data: {
@@ -244,6 +245,9 @@ export const agentManagementApi = {
     status?: string;
     page?: number;
     limit?: number;
+    viewAgentId?: string;
+    startDate?: string;
+    endDate?: string;
   }) => api.get('/agent-management/members', { params }),
 
   createMember: (data: {
@@ -251,6 +255,7 @@ export const agentManagementApi = {
     password: string;
     nickname?: string;
     initialBalance?: number;
+    betLimits?: string[];
   }) => api.post('/agent-management/members', data),
 
   // User Status
@@ -395,6 +400,7 @@ export const logsApi = {
 export const bettingApi = {
   getBettingRecords: (params?: {
     userId?: string;
+    username?: string;
     gameType?: string;
     status?: string;
     quickFilter?: string;

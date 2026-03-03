@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import AgentReport from './pages/AgentReport';
 import AgentManagement from './pages/AgentManagement';
 import GameRounds from './pages/GameRounds';
+import BettingRecords from './pages/BettingRecords';
 import Settings from './pages/Settings';
 import Notices from './pages/Notices';
 import WinControl from './pages/WinControl';
@@ -66,6 +67,7 @@ function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="report/agent" element={<AgentReport />} />
           <Route path="member/index" element={<AgentManagement />} />
+          <Route path="game/bets" element={<BettingRecords />} />
           <Route path="game/rounds" element={<GameRounds />} />
           <Route path="game/win-control" element={<AdminRoute><WinControl /></AdminRoute>} />
           <Route path="game/manual-detection" element={<AdminRoute><ManualDetection /></AdminRoute>} />

@@ -75,6 +75,10 @@ router.get('/dashboard', requireRole('admin', 'agent'), async (req: Request, res
       include: {
         parentAgent: {
           select: { nickname: true, username: true, sharePercent: true }
+        },
+        agentBetLimits: {
+          where: { enabled: true },
+          select: { limitRange: true }
         }
       }
     });
@@ -84,6 +88,25 @@ router.get('/dashboard', requireRole('admin', 'agent'), async (req: Request, res
     }
 
     const summary = await getDownlineSummary(user.id);
+
+    // 獲取當前代理可用的限紅
+    // 如果是 admin，返回所有限紅選項
+    // 如果是代理，返回該代理已設定的限紅
+    const defaultBetLimits = [
+      '100-1000', '100-3000', '100-5000', '100-10000',
+      '500-5000', '500-10000', '500-30000',
+      '1000-10000', '1000-30000', '1000-50000',
+    ];
+
+    let availableBetLimits: string[];
+    if (currentUser.role === 'admin') {
+      availableBetLimits = defaultBetLimits;
+    } else if (user.agentBetLimits.length > 0) {
+      availableBetLimits = user.agentBetLimits.map(l => l.limitRange);
+    } else {
+      // 如果代理沒有設定限紅，使用所有預設限紅
+      availableBetLimits = defaultBetLimits;
+    }
 
     res.json({
       id: user.id,
@@ -106,6 +129,7 @@ router.get('/dashboard', requireRole('admin', 'agent'), async (req: Request, res
         username: user.parentAgent.username,
         sharePercent: Number(user.parentAgent.sharePercent)
       } : null,
+      availableBetLimits,
       ...summary
     });
   } catch (error) {
@@ -114,6 +138,52 @@ router.get('/dashboard', requireRole('admin', 'agent'), async (req: Request, res
   }
 });
 
+// Helper to verify user is in downline chain
+async function isInDownlineChain(rootUserId: string, targetUserId: string): Promise<boolean> {
+  if (rootUserId === targetUserId) return true;
+
+  let currentId = targetUserId;
+  for (let i = 0; i < 10; i++) { // Max 10 levels deep
+    const user = await prisma.user.findUnique({
+      where: { id: currentId },
+      select: { parentAgentId: true }
+    });
+    if (!user || !user.parentAgentId) return false;
+    if (user.parentAgentId === rootUserId) return true;
+    currentId = user.parentAgentId;
+  }
+  return false;
+}
+
+// Helper to build breadcrumb for agent navigation
+async function buildBreadcrumb(rootUserId: string, targetUserId: string | null): Promise<Array<{ id: string; username: string; nickname: string | null }>> {
+  type BreadcrumbUser = { id: string; username: string; nickname: string | null; parentAgentId: string | null };
+
+  if (!targetUserId || targetUserId === rootUserId) {
+    const rootUser = await prisma.user.findUnique({
+      where: { id: rootUserId },
+      select: { id: true, username: true, nickname: true }
+    });
+    return rootUser ? [{ id: rootUser.id, username: rootUser.username, nickname: rootUser.nickname }] : [];
+  }
+
+  const breadcrumb: Array<{ id: string; username: string; nickname: string | null }> = [];
+  let currentId: string | null = targetUserId;
+
+  for (let i = 0; i < 10 && currentId; i++) {
+    const foundUser: BreadcrumbUser | null = await prisma.user.findUnique({
+      where: { id: currentId },
+      select: { id: true, username: true, nickname: true, parentAgentId: true }
+    });
+    if (!foundUser) break;
+    breadcrumb.unshift({ id: foundUser.id, username: foundUser.username, nickname: foundUser.nickname });
+    if (foundUser.id === rootUserId) break;
+    currentId = foundUser.parentAgentId;
+  }
+
+  return breadcrumb;
+}
+
 /**
  * GET /api/agent-management/agents
  * 獲取下線代理列表
@@ -121,10 +191,21 @@ router.get('/dashboard', requireRole('admin', 'agent'), async (req: Request, res
 router.get('/agents', requireRole('admin', 'agent'), async (req: Request, res: Response) => {
   try {
     const currentUser = req.user!;
-    const { search, status, page = '1', limit = '10' } = req.query;
+    const { search, status, page = '1', limit = '10', viewAgentId } = req.query;
+
+    // Determine which agent's downline to show
+    let targetAgentId = currentUser.userId;
+    if (viewAgentId && viewAgentId !== currentUser.userId) {
+      // Verify viewAgentId is in currentUser's downline chain
+      const isDownline = await isInDownlineChain(currentUser.userId, viewAgentId as string);
+      if (!isDownline) {
+        return res.status(403).json({ error: 'Cannot view this agent\'s downline' });
+      }
+      targetAgentId = viewAgentId as string;
+    }
 
     const where: any = {
-      parentAgentId: currentUser.userId,
+      parentAgentId: targetAgentId,
       role: 'agent'
     };
 
@@ -180,12 +261,28 @@ router.get('/agents', requireRole('admin', 'agent'), async (req: Request, res: R
       })
     );
 
+    // Build breadcrumb for navigation
+    const breadcrumb = await buildBreadcrumb(currentUser.userId, targetAgentId);
+
+    // Get current view agent info
+    const viewAgent = targetAgentId !== currentUser.userId
+      ? await prisma.user.findUnique({
+          where: { id: targetAgentId },
+          select: { id: true, username: true, nickname: true, agentLevel: true, balance: true }
+        })
+      : null;
+
     res.json({
       agents: agentsWithSummary,
       total,
       page: parseInt(page as string),
       limit: parseInt(limit as string),
-      totalPages: Math.ceil(total / parseInt(limit as string))
+      totalPages: Math.ceil(total / parseInt(limit as string)),
+      breadcrumb,
+      viewAgent: viewAgent ? {
+        ...viewAgent,
+        balance: Number(viewAgent.balance)
+      } : null
     });
   } catch (error) {
     console.error('[AgentManagement] Error fetching agents:', error);
@@ -200,10 +297,21 @@ router.get('/agents', requireRole('admin', 'agent'), async (req: Request, res: R
 router.get('/members', requireRole('admin', 'agent'), async (req: Request, res: Response) => {
   try {
     const currentUser = req.user!;
-    const { search, status, page = '1', limit = '10', startDate, endDate } = req.query;
+    const { search, status, page = '1', limit = '10', startDate, endDate, viewAgentId } = req.query;
+
+    // Determine which agent's members to show
+    let targetAgentId = currentUser.userId;
+    if (viewAgentId && viewAgentId !== currentUser.userId) {
+      // Verify viewAgentId is in currentUser's downline chain
+      const isDownline = await isInDownlineChain(currentUser.userId, viewAgentId as string);
+      if (!isDownline) {
+        return res.status(403).json({ error: 'Cannot view this agent\'s members' });
+      }
+      targetAgentId = viewAgentId as string;
+    }
 
     const where: any = {
-      parentAgentId: currentUser.userId,
+      parentAgentId: targetAgentId,
       role: 'member'
     };
 
@@ -242,18 +350,41 @@ router.get('/members', requireRole('admin', 'agent'), async (req: Request, res: 
           isReadonly: true,
           lastLoginIp: true,
           lastLoginAt: true,
-          createdAt: true
+          createdAt: true,
+          parentAgent: {
+            select: {
+              id: true,
+              username: true,
+              nickname: true
+            }
+          }
         }
       }),
       prisma.user.count({ where })
     ]);
+
+    // Build breadcrumb for navigation
+    const breadcrumb = await buildBreadcrumb(currentUser.userId, targetAgentId);
+
+    // Get current view agent info
+    const viewAgent = targetAgentId !== currentUser.userId
+      ? await prisma.user.findUnique({
+          where: { id: targetAgentId },
+          select: { id: true, username: true, nickname: true, agentLevel: true, balance: true }
+        })
+      : null;
 
     res.json({
       members: members.map(m => ({ ...m, balance: Number(m.balance) })),
       total,
       page: parseInt(page as string),
       limit: parseInt(limit as string),
-      totalPages: Math.ceil(total / parseInt(limit as string))
+      totalPages: Math.ceil(total / parseInt(limit as string)),
+      breadcrumb,
+      viewAgent: viewAgent ? {
+        ...viewAgent,
+        balance: Number(viewAgent.balance)
+      } : null
     });
   } catch (error) {
     console.error('[AgentManagement] Error fetching members:', error);
@@ -374,7 +505,7 @@ router.post('/agents', requireRole('admin', 'agent'), async (req: Request, res: 
 router.post('/members', requireRole('admin', 'agent'), async (req: Request, res: Response) => {
   try {
     const currentUser = req.user!;
-    const { username, password, nickname, initialBalance = 0 } = req.body;
+    const { username, password, nickname, initialBalance = 0, betLimits = [] } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });
@@ -406,6 +537,16 @@ router.post('/members', requireRole('admin', 'agent'), async (req: Request, res:
       }
     });
 
+    // Create bet limits for member if provided
+    if (betLimits.length > 0) {
+      const limitsData = betLimits.map((l: any) => ({
+        agentId: member.id,
+        limitRange: typeof l === 'string' ? l : l.limitRange,
+        enabled: typeof l === 'string' ? true : l.enabled !== false
+      }));
+      await prisma.agentBetLimit.createMany({ data: limitsData });
+    }
+
     // Log operation
     await prisma.operationLog.create({
       data: {
@@ -413,7 +554,7 @@ router.post('/members', requireRole('admin', 'agent'), async (req: Request, res:
         action: 'create_member',
         targetType: 'user',
         targetId: member.id,
-        details: { username, nickname },
+        details: { username, nickname, betLimits },
         ipAddress: req.ip || 'unknown'
       }
     });

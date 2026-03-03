@@ -28,6 +28,7 @@ import {
   Send,
   MapPin,
   CheckCircle,
+  AlertCircle,
   Coins,
   Music,
   Music2,
@@ -430,6 +431,9 @@ export default function Game() {
     bets: Array<{ type: string; amount: number }>;
     total: number;
   }>({ show: false, bets: [], total: 0 });
+
+  // Bet error notification (for limit validation failures)
+  const [betError, setBetError] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
 
   // Previous confirmed bets count to detect new confirmations
   const prevConfirmedBetsRef = useRef<number>(0);
@@ -947,7 +951,13 @@ export default function Game() {
   // Handle confirm - send pending bets to server
   const handleConfirm = () => {
     if (pendingBets.length === 0) return;
-    submitBets(isNoCommission);
+    const result = submitBets(isNoCommission);
+    if (!result.success && result.error) {
+      // Show error notification
+      setBetError({ show: true, message: result.error });
+      // Auto-hide after 3 seconds
+      setTimeout(() => setBetError({ show: false, message: '' }), 3000);
+    }
   };
 
   // Handle cancel - only clear pending bets (not confirmed)
@@ -2334,6 +2344,28 @@ export default function Game() {
                   <span>{t('total') || '总计'}</span>
                   <span>¥{betNotification.total.toLocaleString()}</span>
                 </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Bet Error Notification Toast (Limit Validation) */}
+      <AnimatePresence>
+        {betError.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -50, x: '-50%' }}
+            className="fixed top-16 left-1/2 z-[100] bg-gradient-to-r from-red-600 to-red-700 text-white px-5 py-3 rounded-lg shadow-2xl"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="font-bold text-sm mb-1">下注失敗</div>
+                <div className="text-xs">{betError.message}</div>
               </div>
             </div>
           </motion.div>

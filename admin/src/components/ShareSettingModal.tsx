@@ -48,10 +48,11 @@ export default function ShareSettingModal({
     try {
       setPlatformsLoading(true);
       const res = await agentManagementApi.getPlatforms();
-      const platformMap: Record<string, string[]> = res.data.platforms || res.data;
+      const platformMap: Record<string, any[]> = res.data.platforms || res.data;
       const cats: CategoryData[] = Object.entries(platformMap).map(([category, platforms]) => ({
         category,
-        platforms: platforms as string[],
+        // platforms could be objects with platformName or strings
+        platforms: platforms.map((p: any) => typeof p === 'string' ? p : p.platformName || p.platformCode || ''),
         settings: [],
       }));
       setCategories(cats);

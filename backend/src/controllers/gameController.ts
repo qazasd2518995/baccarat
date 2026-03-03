@@ -585,6 +585,331 @@ export async function getBetStats(req: Request, res: Response) {
   }
 }
 
+// Get all betting records (admin/agent endpoint for member betting records)
+export async function getBettingRecords(req: Request, res: Response) {
+  try {
+    const currentUser = req.user!;
+    const {
+      page = '1',
+      limit = '20',
+      userId,
+      username,
+      gameType,
+      status,
+      startDate,
+      endDate,
+      quickFilter
+    } = req.query;
+
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build date filter based on quickFilter or explicit dates
+    let dateFilter: any = {};
+    const now = new Date();
+
+    if (quickFilter) {
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      switch (quickFilter) {
+        case 'today':
+          dateFilter.gte = today;
+          dateFilter.lte = new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1);
+          break;
+        case 'yesterday':
+          const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+          dateFilter.gte = yesterday;
+          dateFilter.lte = new Date(today.getTime() - 1);
+          break;
+        case 'thisWeek':
+          const startOfWeek = new Date(today);
+          startOfWeek.setDate(today.getDate() - today.getDay());
+          dateFilter.gte = startOfWeek;
+          dateFilter.lte = now;
+          break;
+        case 'lastWeek':
+          const startOfLastWeek = new Date(today);
+          startOfLastWeek.setDate(today.getDate() - today.getDay() - 7);
+          const endOfLastWeek = new Date(startOfLastWeek);
+          endOfLastWeek.setDate(startOfLastWeek.getDate() + 6);
+          endOfLastWeek.setHours(23, 59, 59, 999);
+          dateFilter.gte = startOfLastWeek;
+          dateFilter.lte = endOfLastWeek;
+          break;
+        case 'thisMonth':
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          dateFilter.gte = startOfMonth;
+          dateFilter.lte = now;
+          break;
+        case 'lastMonth':
+          const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+          const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+          endOfLastMonth.setHours(23, 59, 59, 999);
+          dateFilter.gte = startOfLastMonth;
+          dateFilter.lte = endOfLastMonth;
+          break;
+      }
+    } else if (startDate || endDate) {
+      if (startDate) dateFilter.gte = new Date(startDate as string);
+      if (endDate) {
+        const end = new Date(endDate as string);
+        end.setHours(23, 59, 59, 999);
+        dateFilter.lte = end;
+      }
+    }
+
+    // Build where clause
+    const where: any = {};
+
+    if (Object.keys(dateFilter).length > 0) {
+      where.createdAt = dateFilter;
+    }
+
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+
+    // Handle user filtering
+    if (username) {
+      // Find user by username
+      const targetUser = await prisma.user.findFirst({
+        where: { username: username as string },
+        select: { id: true }
+      });
+      if (targetUser) {
+        where.userId = targetUser.id;
+      } else {
+        // No user found, return empty
+        return res.json({ bets: [], total: 0, stats: { deposit: 0, withdraw: 0, memberWinLoss: 0 } });
+      }
+    } else if (userId) {
+      where.userId = userId;
+    }
+
+    // If agent, only show bets from their downline members
+    if (currentUser.role === 'agent') {
+      // Get all members under this agent (recursively)
+      const getDownlineIds = async (agentId: string): Promise<string[]> => {
+        const directChildren = await prisma.user.findMany({
+          where: { parentAgentId: agentId },
+          select: { id: true, role: true }
+        });
+
+        let allIds: string[] = [];
+        for (const child of directChildren) {
+          if (child.role === 'member') {
+            allIds.push(child.id);
+          } else if (child.role === 'agent') {
+            const childDownline = await getDownlineIds(child.id);
+            allIds = allIds.concat(childDownline);
+          }
+        }
+        return allIds;
+      };
+
+      const downlineIds = await getDownlineIds(currentUser.userId);
+
+      if (where.userId) {
+        // Verify the requested user is in agent's downline
+        if (!downlineIds.includes(where.userId)) {
+          return res.json({ bets: [], total: 0, stats: { deposit: 0, withdraw: 0, memberWinLoss: 0 } });
+        }
+      } else {
+        // Filter to only downline members
+        where.userId = { in: downlineIds };
+      }
+    }
+
+    // Filter by game type if specified
+    if (gameType && gameType !== 'all') {
+      if (gameType === 'baccarat') {
+        where.roundId = { not: null };
+        where.dragonTigerRoundId = null;
+        where.bullBullRoundId = null;
+      } else if (gameType === 'dragontiger') {
+        where.dragonTigerRoundId = { not: null };
+      } else if (gameType === 'bullbull') {
+        where.bullBullRoundId = { not: null };
+      }
+    }
+
+    // Get bets with user and agent info
+    const [bets, total] = await Promise.all([
+      prisma.bet.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              nickname: true,
+              parentAgentId: true,
+              parentAgent: {
+                select: {
+                  id: true,
+                  username: true,
+                  parentAgentId: true,
+                  parentAgent: {
+                    select: {
+                      id: true,
+                      username: true,
+                      parentAgentId: true,
+                      parentAgent: {
+                        select: {
+                          id: true,
+                          username: true,
+                          parentAgentId: true,
+                          parentAgent: {
+                            select: { id: true, username: true }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          round: {
+            select: {
+              id: true,
+              roundNumber: true,
+              result: true
+            }
+          },
+          dragonTigerRound: {
+            select: {
+              id: true,
+              roundNumber: true,
+              result: true
+            }
+          },
+          bullBullRound: {
+            select: {
+              id: true,
+              roundNumber: true
+            }
+          }
+        },
+        skip,
+        take: limitNum,
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.bet.count({ where })
+    ]);
+
+    // Calculate stats for filtered data
+    const statsWhere = { ...where };
+    const stats = await prisma.bet.aggregate({
+      where: statsWhere,
+      _sum: {
+        amount: true,
+        payout: true
+      }
+    });
+
+    // Build agent hierarchy path for display
+    // Shows: "最高層/.../.../直接上層" (the hierarchy from top down to the member's direct parent)
+    const buildAgentPath = (user: any, currentUserId: string, currentUserRole: string): string => {
+      if (!user.parentAgent) return '';
+
+      const hierarchy: { id: string; username: string }[] = [];
+      let agent = user.parentAgent;
+
+      // Walk up the hierarchy and collect all agents
+      while (agent) {
+        hierarchy.unshift({ id: agent.id, username: agent.username });
+        agent = agent.parentAgent;
+      }
+
+      if (hierarchy.length === 0) return '';
+
+      // For admin: show all levels
+      // For agent: show from current agent's next level down (excluding current agent)
+      if (currentUserRole === 'admin') {
+        // Show all hierarchy with "/" separator
+        return hierarchy.map(a => a.username).join('/');
+      } else {
+        // For agent: find their position and show from next level down
+        const currentAgentIndex = hierarchy.findIndex(a => a.id === currentUserId);
+        if (currentAgentIndex >= 0) {
+          // Show from next level after current agent
+          const relevantHierarchy = hierarchy.slice(currentAgentIndex + 1);
+          return relevantHierarchy.map(a => a.username).join('/');
+        }
+        // If current user not found in hierarchy, show full path
+        return hierarchy.map(a => a.username).join('/');
+      }
+    };
+
+    // Transform bets for response
+    const transformedBets = bets.map(bet => {
+      const winLoss = bet.status === 'won'
+        ? Number(bet.payout) - Number(bet.amount)
+        : bet.status === 'lost'
+          ? -Number(bet.amount)
+          : 0;
+
+      // Determine game type and round number
+      let gameName = '百家樂';
+      let roundNumber = '';
+
+      if (bet.roundId && bet.round) {
+        gameName = '百家樂';
+        roundNumber = bet.round.roundNumber;
+      } else if (bet.dragonTigerRoundId && bet.dragonTigerRound) {
+        gameName = '龍虎';
+        roundNumber = bet.dragonTigerRound.roundNumber;
+      } else if (bet.bullBullRoundId && bet.bullBullRound) {
+        gameName = '牛牛';
+        roundNumber = bet.bullBullRound.roundNumber;
+      }
+
+      return {
+        id: bet.id,
+        createdAt: bet.createdAt,
+        status: bet.status,
+        platform: 'JW 九贏百家',
+        gameName,
+        roundNumber,
+        username: bet.user?.username || '',
+        parentAgentPath: buildAgentPath(bet.user, currentUser.userId, currentUser.role),
+        amount: Number(bet.amount),
+        validBet: Number(bet.amount),
+        memberWinLoss: winLoss,
+        memberRebate: 0,
+        profit: winLoss,
+        betType: bet.betType
+      };
+    });
+
+    // Calculate total member win/loss from stats
+    const totalBetAmount = Number(stats._sum.amount || 0);
+    const totalPayout = Number(stats._sum.payout || 0);
+    const memberWinLoss = totalPayout - totalBetAmount;
+
+    res.json({
+      bets: transformedBets,
+      total,
+      stats: {
+        deposit: 0, // Would need to query transactions
+        withdraw: 0,
+        memberWinLoss
+      },
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    console.error('Get betting records error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 // Default betting limits
 const DEFAULT_LIMITS = {
   playerMin: 10, playerMax: 100000,
@@ -600,35 +925,87 @@ export async function getMyLimits(req: Request, res: Response) {
 
     const user = await prisma.user.findUnique({
       where: { id: currentUser.userId },
-      include: { bettingLimit: true },
+      include: {
+        bettingLimit: true,
+        agentBetLimits: {
+          where: { enabled: true },
+          select: { limitRange: true }
+        }
+      },
     });
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Return user's limits or defaults
-    const limits = user.bettingLimit
-      ? {
-          player: { min: Number(user.bettingLimit.playerMin), max: Number(user.bettingLimit.playerMax) },
-          banker: { min: Number(user.bettingLimit.bankerMin), max: Number(user.bettingLimit.bankerMax) },
-          tie: { min: Number(user.bettingLimit.tieMin), max: Number(user.bettingLimit.tieMax) },
-          playerPair: { min: Number(user.bettingLimit.pairMin), max: Number(user.bettingLimit.pairMax) },
-          bankerPair: { min: Number(user.bettingLimit.pairMin), max: Number(user.bettingLimit.pairMax) },
-          super6: { min: Number(user.bettingLimit.pairMin), max: Number(user.bettingLimit.pairMax) },
+    // Parse limit ranges from agentBetLimits (e.g., "100-1000", "500-5000")
+    // Get the overall min and max from all enabled limit ranges
+    let minBet = DEFAULT_LIMITS.playerMin;
+    let maxBet = DEFAULT_LIMITS.playerMax;
+    const limitRanges: string[] = [];
+
+    if (user.agentBetLimits && user.agentBetLimits.length > 0) {
+      let overallMin = Infinity;
+      let overallMax = 0;
+
+      for (const limit of user.agentBetLimits) {
+        const parts = limit.limitRange.split('-');
+        if (parts.length === 2) {
+          const rangeMin = parseInt(parts[0]);
+          const rangeMax = parseInt(parts[1]);
+          if (!isNaN(rangeMin) && !isNaN(rangeMax)) {
+            overallMin = Math.min(overallMin, rangeMin);
+            overallMax = Math.max(overallMax, rangeMax);
+            limitRanges.push(limit.limitRange);
+          }
         }
-      : {
-          player: { min: DEFAULT_LIMITS.playerMin, max: DEFAULT_LIMITS.playerMax },
-          banker: { min: DEFAULT_LIMITS.bankerMin, max: DEFAULT_LIMITS.bankerMax },
-          tie: { min: DEFAULT_LIMITS.tieMin, max: DEFAULT_LIMITS.tieMax },
-          playerPair: { min: DEFAULT_LIMITS.pairMin, max: DEFAULT_LIMITS.pairMax },
-          bankerPair: { min: DEFAULT_LIMITS.pairMin, max: DEFAULT_LIMITS.pairMax },
-          super6: { min: DEFAULT_LIMITS.pairMin, max: DEFAULT_LIMITS.pairMax },
-        };
+      }
+
+      if (overallMin !== Infinity && overallMax > 0) {
+        minBet = overallMin;
+        maxBet = overallMax;
+      }
+    }
+
+    // Return user's limits based on agentBetLimits or bettingLimit or defaults
+    let limits;
+
+    if (limitRanges.length > 0) {
+      // Use parsed limits from agentBetLimits
+      limits = {
+        player: { min: minBet, max: maxBet },
+        banker: { min: minBet, max: maxBet },
+        tie: { min: minBet, max: maxBet },
+        playerPair: { min: minBet, max: maxBet },
+        bankerPair: { min: minBet, max: maxBet },
+        super6: { min: minBet, max: maxBet },
+      };
+    } else if (user.bettingLimit) {
+      // Fallback to old bettingLimit system
+      limits = {
+        player: { min: Number(user.bettingLimit.playerMin), max: Number(user.bettingLimit.playerMax) },
+        banker: { min: Number(user.bettingLimit.bankerMin), max: Number(user.bettingLimit.bankerMax) },
+        tie: { min: Number(user.bettingLimit.tieMin), max: Number(user.bettingLimit.tieMax) },
+        playerPair: { min: Number(user.bettingLimit.pairMin), max: Number(user.bettingLimit.pairMax) },
+        bankerPair: { min: Number(user.bettingLimit.pairMin), max: Number(user.bettingLimit.pairMax) },
+        super6: { min: Number(user.bettingLimit.pairMin), max: Number(user.bettingLimit.pairMax) },
+      };
+    } else {
+      // Default limits
+      limits = {
+        player: { min: DEFAULT_LIMITS.playerMin, max: DEFAULT_LIMITS.playerMax },
+        banker: { min: DEFAULT_LIMITS.bankerMin, max: DEFAULT_LIMITS.bankerMax },
+        tie: { min: DEFAULT_LIMITS.tieMin, max: DEFAULT_LIMITS.tieMax },
+        playerPair: { min: DEFAULT_LIMITS.pairMin, max: DEFAULT_LIMITS.pairMax },
+        bankerPair: { min: DEFAULT_LIMITS.pairMin, max: DEFAULT_LIMITS.pairMax },
+        super6: { min: DEFAULT_LIMITS.pairMin, max: DEFAULT_LIMITS.pairMax },
+      };
+    }
 
     res.json({
-      limitName: user.bettingLimit?.name || 'Default',
+      limitName: limitRanges.length > 0 ? limitRanges.join(', ') : (user.bettingLimit?.name || 'Default'),
       limits,
+      limitRanges, // Also return the raw limit ranges for display
     });
   } catch (error) {
     console.error('Get my limits error:', error);

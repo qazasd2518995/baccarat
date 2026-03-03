@@ -17,6 +17,7 @@ import {
   Target,
   Activity,
   Headphones,
+  Receipt,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
@@ -31,6 +32,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { path: '/', icon: LayoutDashboard, label: '仪表盘' },
   { path: '/report/agent', icon: FileText, label: '账务报表' },
+  { path: '/game/bets', icon: Receipt, label: '投注纪录' },
   { path: '/game/rounds', icon: Gamepad2, label: '开奖记录' },
   { path: '/member/index', icon: Users, label: '下线代理管理' },
   {

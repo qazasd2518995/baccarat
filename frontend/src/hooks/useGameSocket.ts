@@ -47,6 +47,7 @@ export function useGameSocket(tableId?: string) {
     setIsShuffling,
     pendingBets,
     phase,
+    bettingLimits,
   } = useGameStore();
 
   useEffect(() => {
@@ -268,19 +269,43 @@ export function useGameSocket(tableId?: string) {
   }, [isAuthenticated, token, tableId]);
 
   // Submit pending bets to server
-  const submitBets = useCallback((isNoCommission: boolean = false) => {
+  const submitBets = useCallback((isNoCommission: boolean = false): { success: boolean; error?: string } => {
     if (pendingBets.length === 0) {
-      return;
+      return { success: false, error: '沒有待確認的下注' };
     }
 
     if (phase !== 'betting') {
       console.warn('[useGameSocket] Cannot submit bets: not in betting phase');
-      return;
+      return { success: false, error: '目前不在下注階段' };
+    }
+
+    // Check betting limits for each pending bet
+    if (bettingLimits) {
+      for (const bet of pendingBets) {
+        const betType = bet.type as keyof typeof bettingLimits;
+        const limit = bettingLimits[betType];
+
+        if (limit) {
+          if (bet.amount < limit.min) {
+            return {
+              success: false,
+              error: `下注金額 ${bet.amount} 低於最低限紅 ${limit.min}`
+            };
+          }
+          if (bet.amount > limit.max) {
+            return {
+              success: false,
+              error: `下注金額 ${bet.amount} 超過最高限紅 ${limit.max}`
+            };
+          }
+        }
+      }
     }
 
     console.log('[useGameSocket] Submitting bets:', pendingBets, isNoCommission ? '(免佣)' : '');
     socketPlaceBet(pendingBets, isNoCommission);
-  }, [pendingBets, phase]);
+    return { success: true };
+  }, [pendingBets, phase, bettingLimits]);
 
   // Cancel all bets (pending and confirmed)
   const cancelBets = useCallback(() => {

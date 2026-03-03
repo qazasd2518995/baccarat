@@ -5,13 +5,15 @@ import {
   UserPlus,
   Building2,
   Wallet,
-  Search,
-  Lock,
-  Unlock,
   Plus,
   X,
   Copy,
-  Edit
+  Edit,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  ChevronRight,
+  ArrowLeft
 } from 'lucide-react';
 import { agentManagementApi } from '../services/api';
 import ShareSettingModal from '../components/ShareSettingModal';
@@ -63,9 +65,15 @@ interface Member {
   balance: number;
   status: string;
   isLocked: boolean;
+  isFullDisabled: boolean;
   isReadonly: boolean;
   createdAt: string;
   lastLoginAt: string | null;
+  parentAgent?: {
+    id: string;
+    username: string;
+    nickname: string | null;
+  } | null;
 }
 
 interface SubAccount {
@@ -87,6 +95,12 @@ const PERMISSION_LABELS: Record<string, string> = {
   viewLogs: '日志查看',
 };
 
+interface BreadcrumbItem {
+  id: string;
+  username: string;
+  nickname: string | null;
+}
+
 export default function AgentManagement() {
   const [activeTab, setActiveTab] = useState<TabType>('agents');
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
@@ -99,6 +113,11 @@ export default function AgentManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createStep, setCreateStep] = useState(1);
+
+  // Navigation state for viewing sub-agent's downline
+  const [viewAgentId, setViewAgentId] = useState<string | null>(null);
+  const [breadcrumb, setBreadcrumb] = useState<BreadcrumbItem[]>([]);
+  const [viewAgent, setViewAgent] = useState<{ id: string; username: string; nickname: string | null; agentLevel: number; balance: number } | null>(null);
 
   // Modal states
   const [shareSettingModal, setShareSettingModal] = useState<{ open: boolean; agent: Agent | null }>({ open: false, agent: null });
@@ -113,29 +132,57 @@ export default function AgentManagement() {
   const [createForm, setCreateForm] = useState({
     username: '',
     password: '',
+    confirmPassword: '',
     nickname: '',
     initialBalance: 0,
     sharePercent: 0,
     rebatePercent: 0,
     betLimits: [] as string[],
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [availableBetLimits, setAvailableBetLimits] = useState<string[]>([]);
+  const [memberCreateStep, setMemberCreateStep] = useState(1);
+
+  // Member search filters
+  const [statusFilter, setStatusFilter] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     fetchData();
-  }, [activeTab]);
+  }, [activeTab, viewAgentId]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const dashRes = await agentManagementApi.getDashboard();
       setDashboard(dashRes.data);
+      // 設定可用的限紅選項
+      if (dashRes.data.availableBetLimits) {
+        setAvailableBetLimits(dashRes.data.availableBetLimits);
+      }
 
       if (activeTab === 'agents') {
-        const res = await agentManagementApi.getAgents({ search: searchQuery });
+        const res = await agentManagementApi.getAgents({
+          search: searchQuery,
+          viewAgentId: viewAgentId || undefined
+        });
         setAgents(res.data.agents);
+        setBreadcrumb(res.data.breadcrumb || []);
+        setViewAgent(res.data.viewAgent || null);
       } else if (activeTab === 'members') {
-        const res = await agentManagementApi.getMembers({ search: searchQuery });
+        const res = await agentManagementApi.getMembers({
+          search: searchQuery,
+          viewAgentId: viewAgentId || undefined,
+          status: statusFilter || undefined,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined
+        });
         setMembers(res.data.members);
+        setBreadcrumb(res.data.breadcrumb || []);
+        setViewAgent(res.data.viewAgent || null);
       } else if (activeTab === 'subAccounts') {
         const res = await agentManagementApi.getSubAccounts();
         setSubAccounts(res.data.subAccounts || []);
@@ -144,6 +191,35 @@ export default function AgentManagement() {
       console.error('Failed to fetch data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle clicking on an agent to drill down
+  const handleAgentClick = (agentId: string) => {
+    setViewAgentId(agentId);
+    setCurrentPage(1);
+  };
+
+  // Handle breadcrumb navigation
+  const handleBreadcrumbClick = (agentId: string, index: number) => {
+    if (index === 0) {
+      setViewAgentId(null);
+    } else {
+      setViewAgentId(agentId);
+    }
+    setCurrentPage(1);
+  };
+
+  // Handle go back
+  const handleGoBack = () => {
+    if (breadcrumb.length > 1) {
+      const parentIndex = breadcrumb.length - 2;
+      if (parentIndex === 0) {
+        setViewAgentId(null);
+      } else {
+        setViewAgentId(breadcrumb[parentIndex].id);
+      }
+      setCurrentPage(1);
     }
   };
 
@@ -195,12 +271,22 @@ export default function AgentManagement() {
 
   const handleCreateAgent = async () => {
     try {
-      await agentManagementApi.createAgent(createForm);
+      await agentManagementApi.createAgent({
+        username: createForm.username,
+        password: createForm.password,
+        nickname: createForm.nickname,
+        initialBalance: createForm.initialBalance,
+        sharePercent: createForm.sharePercent,
+        rebatePercent: createForm.rebatePercent,
+        betLimits: createForm.betLimits,
+      });
       setShowCreateModal(false);
       setCreateStep(1);
+      setCreateError('');
       setCreateForm({
         username: '',
         password: '',
+        confirmPassword: '',
         nickname: '',
         initialBalance: 0,
         sharePercent: 0,
@@ -208,8 +294,9 @@ export default function AgentManagement() {
         betLimits: [],
       });
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create agent:', err);
+      setCreateError(err.response?.data?.error || '創建代理失敗');
     }
   };
 
@@ -220,11 +307,15 @@ export default function AgentManagement() {
         password: createForm.password,
         nickname: createForm.nickname,
         initialBalance: createForm.initialBalance,
+        betLimits: createForm.betLimits,
       });
       setShowCreateModal(false);
+      setMemberCreateStep(1);
+      setCreateError('');
       setCreateForm({
         username: '',
         password: '',
+        confirmPassword: '',
         nickname: '',
         initialBalance: 0,
         sharePercent: 0,
@@ -232,8 +323,9 @@ export default function AgentManagement() {
         betLimits: [],
       });
       fetchData();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create member:', err);
+      setCreateError(err.response?.data?.error || '創建會員失敗');
     }
   };
 
@@ -378,6 +470,47 @@ export default function AgentManagement() {
         </motion.div>
       )}
 
+      {/* Breadcrumb Navigation */}
+      {breadcrumb.length > 1 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-[#252525] border border-[#333] rounded-xl p-3 flex items-center gap-2"
+        >
+          <button
+            onClick={handleGoBack}
+            className="flex items-center gap-1 px-3 py-1.5 bg-[#333] hover:bg-[#444] text-white text-sm rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            返回上级
+          </button>
+          <div className="flex items-center gap-1 text-sm">
+            {breadcrumb.map((item, index) => (
+              <div key={item.id} className="flex items-center gap-1">
+                {index > 0 && <ChevronRight className="w-4 h-4 text-gray-500" />}
+                <button
+                  onClick={() => handleBreadcrumbClick(item.id, index)}
+                  className={`px-2 py-1 rounded transition-colors ${
+                    index === breadcrumb.length - 1
+                      ? 'bg-amber-500/20 text-amber-400 font-medium'
+                      : 'text-gray-400 hover:text-white hover:bg-[#333]'
+                  }`}
+                >
+                  {item.nickname || item.username}
+                </button>
+              </div>
+            ))}
+          </div>
+          {viewAgent && (
+            <div className="ml-auto text-sm text-gray-400">
+              <span className="text-amber-400">{viewAgent.agentLevel}级代理</span>
+              <span className="mx-2">|</span>
+              余额: <span className="text-amber-400 font-medium">{formatCurrency(viewAgent.balance)}</span>
+            </div>
+          )}
+        </motion.div>
+      )}
+
       {/* Tabs */}
       <div className="flex items-center border-b border-[#333]">
         {tabs.map((tab) => {
@@ -400,21 +533,71 @@ export default function AgentManagement() {
       </div>
 
       {/* Search and Actions */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 flex-1">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder={activeTab === 'agents' ? '请输入代理账号' : activeTab === 'members' ? '请输入会员账号' : '搜索子账号...'}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              className="w-full pl-10 pr-4 py-2 bg-[#1e1e1e] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
-            />
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap flex-1">
+          {/* 帳號搜索 */}
+          <div className="flex items-center gap-2">
+            <span className="text-gray-400 text-sm whitespace-nowrap">
+              {activeTab === 'members' ? '会员账号' : activeTab === 'agents' ? '代理账号' : '子账号'}
+            </span>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder={activeTab === 'agents' ? '请输入代理账号' : activeTab === 'members' ? '请输入会员账号' : '搜索子账号...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                className="w-48 px-3 py-2 bg-[#1e1e1e] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+              />
+            </div>
           </div>
+
+          {/* 帳號狀態 (會員管理才顯示) */}
+          {activeTab === 'members' && (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400 text-sm whitespace-nowrap">账号状态</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 bg-[#1e1e1e] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+              >
+                <option value="">请选择</option>
+                <option value="active">正常</option>
+                <option value="locked">锁定</option>
+                <option value="disabled">禁用</option>
+              </select>
+            </div>
+          )}
+
+          {/* 創建時間 (會員管理才顯示) */}
+          {activeTab === 'members' && (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400 text-sm whitespace-nowrap">创建时间</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-3 py-2 bg-[#1e1e1e] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+                placeholder="开始日期"
+              />
+              <span className="text-gray-400">→</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-3 py-2 bg-[#1e1e1e] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
+                placeholder="结束日期"
+              />
+            </div>
+          )}
+
           <button
-            onClick={() => setSearchQuery('')}
+            onClick={() => {
+              setSearchQuery('');
+              setStatusFilter('');
+              setStartDate('');
+              setEndDate('');
+            }}
             className="px-4 py-2 bg-[#1e1e1e] border border-[#333] text-gray-400 hover:text-white text-sm rounded-lg transition-colors"
           >
             重置
@@ -472,7 +655,13 @@ export default function AgentManagement() {
                       <div>
                         <p className="text-gray-400 text-xs mb-1">账号/复制账号密码</p>
                         <div className="flex items-center gap-2">
-                          <span className="text-amber-400 font-medium">{agent.username}</span>
+                          <button
+                            onClick={() => handleAgentClick(agent.id)}
+                            className="text-amber-400 font-medium hover:text-amber-300 hover:underline transition-colors"
+                            title="点击查看下线"
+                          >
+                            {agent.username}
+                          </button>
                           <button
                             onClick={() => copyToClipboard(`${agent.username}`)}
                             className="text-gray-400 hover:text-white"
@@ -597,49 +786,151 @@ export default function AgentManagement() {
                 key={member.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-[#1e1e1e] border border-[#333] rounded-xl p-4"
+                className="bg-[#1e1e1e] border border-[#333] rounded-xl overflow-hidden"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-green-400" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-white font-medium">{member.username}</span>
-                        <span className="text-gray-400 text-sm">({member.nickname || '无名称'})</span>
-                        {getStatusBadge(member.status, member.isLocked, false)}
+                {/* Member Card */}
+                <div className="p-4">
+                  <div className="flex items-start justify-between">
+                    {/* Left: Member Info */}
+                    <div className="flex items-start gap-4">
+                      <div className="text-center">
+                        <p className="text-gray-400 text-xs mb-1">会员账号/复制账号</p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-amber-400 font-medium">{member.username}</span>
+                          <button
+                            onClick={() => copyToClipboard(member.username)}
+                            className="text-gray-400 hover:text-white"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <p className="text-gray-400 text-sm">({member.nickname || '无名称'})</p>
                       </div>
-                      <div className="flex items-center gap-4 mt-1 text-xs text-gray-400">
-                        <span>创建时间：{new Date(member.createdAt).toLocaleString('zh-CN')}</span>
-                        <span>最后登入：{member.lastLoginAt ? new Date(member.lastLoginAt).toLocaleString('zh-CN') : '从未登入'}</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="flex items-center gap-6">
-                    <div className="text-right">
-                      <p className="text-amber-400 font-bold">{formatCurrency(member.balance)}</p>
-                      <p className="text-xs text-gray-400">余额</p>
+                      <div className="text-center">
+                        <p className="text-gray-400 text-xs mb-1">所属代理名称</p>
+                        <p className="text-white font-medium">
+                          {member.parentAgent?.nickname || member.parentAgent?.username || '-'}
+                        </p>
+                        <p className="text-gray-400 text-sm">
+                          ({member.parentAgent?.username || '-'})
+                        </p>
+                      </div>
+
+                      <div className="text-center">
+                        <p className="text-gray-400 text-xs mb-1">余额</p>
+                        <p
+                          className="text-amber-400 font-medium cursor-pointer hover:text-amber-300"
+                          onClick={() => setBalanceModal({ open: true, agent: member as any })}
+                        >
+                          {formatCurrency(member.balance)}
+                        </p>
+                      </div>
+
+                      <div className="text-center">
+                        <p className="text-gray-400 text-xs mb-1">&nbsp;</p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setShareSettingModal({ open: true, agent: member as any })}
+                            className="text-amber-400 hover:text-amber-300 text-sm"
+                          >
+                            厂商
+                          </button>
+                          <button
+                            className="text-amber-400 hover:text-amber-300 text-sm"
+                          >
+                            退水
+                          </button>
+                          <button
+                            onClick={() => setBetLimitModal({ open: true, agent: member as any })}
+                            className="text-amber-400 hover:text-amber-300 text-sm"
+                          >
+                            限红
+                          </button>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {member.isLocked ? (
+
+                    {/* Right: Status & Actions */}
+                    <div className="flex items-start gap-6">
+                      <div className="space-y-1">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={member.isLocked}
+                            onChange={() => handleStatusChange(member.id, member.isLocked ? 'unlock' : 'lock')}
+                            className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
+                          />
+                          <span className="text-white text-sm">锁定登入</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={member.isFullDisabled}
+                            onChange={() => handleStatusChange(member.id, member.isFullDisabled ? 'enable' : 'disable')}
+                            className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
+                          />
+                          <span className="text-white text-sm">全线禁用</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={member.isReadonly}
+                            onChange={() => handleStatusChange(member.id, member.isReadonly ? 'unreadonly' : 'readonly')}
+                            className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
+                          />
+                          <span className="text-white text-sm">禁止投注/操作</span>
+                        </label>
+                      </div>
+
+                      <div className="text-center">
                         <button
-                          onClick={() => handleStatusChange(member.id, 'unlock')}
-                          className="p-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30 transition-colors"
-                          title="解锁登入"
+                          onClick={() => setConfirmModal({ open: true, agent: member as any, action: 'withdrawAll' })}
+                          className="text-amber-400 hover:text-amber-300 text-sm"
                         >
-                          <Unlock className="w-4 h-4" />
+                          抽取全线额度
                         </button>
-                      ) : (
+                        <br />
                         <button
-                          onClick={() => handleStatusChange(member.id, 'lock')}
-                          className="p-2 bg-yellow-500/20 text-yellow-400 rounded-lg hover:bg-yellow-500/30 transition-colors"
-                          title="锁定登入"
+                          onClick={() => setEditAgentModal({ open: true, agent: member as any })}
+                          className="text-amber-400 hover:text-amber-300 text-sm"
                         >
-                          <Lock className="w-4 h-4" />
+                          修改账号
                         </button>
-                      )}
+                      </div>
+
+                      <div className="text-center">
+                        <p className="text-gray-400 text-xs mb-1">手机号</p>
+                        <p className="text-white">-</p>
+                      </div>
+
+                      <div className="text-center">
+                        <p className="text-gray-400 text-xs mb-1">创建时间</p>
+                        <p className="text-white text-sm">
+                          {new Date(member.createdAt).toLocaleString('zh-CN', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          }).replace(/\//g, '-')}
+                        </p>
+                      </div>
+
+                      <div className="text-center">
+                        <p className="text-gray-400 text-xs mb-1">最后登入时间</p>
+                        <p className="text-white text-sm">
+                          {member.lastLoginAt
+                            ? new Date(member.lastLoginAt).toLocaleString('zh-CN', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }).replace(/\//g, '-')
+                            : '-'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -762,12 +1053,23 @@ export default function AgentManagement() {
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-white text-lg font-bold">
-                {activeTab === 'agents' ? `创建代理 (${createStep}/5)` : '创建会员'}
+                {activeTab === 'agents' ? `創建代理 (${createStep}/2)` : `創建會員 (${memberCreateStep}/2)`}
               </h2>
               <button
                 onClick={() => {
                   setShowCreateModal(false);
                   setCreateStep(1);
+                  setCreateError('');
+                  setCreateForm({
+                    username: '',
+                    password: '',
+                    confirmPassword: '',
+                    nickname: '',
+                    initialBalance: 0,
+                    sharePercent: 0,
+                    rebatePercent: 0,
+                    betLimits: [],
+                  });
                 }}
                 className="text-gray-400 hover:text-white"
               >
@@ -775,38 +1077,116 @@ export default function AgentManagement() {
               </button>
             </div>
 
+            {createError && (
+              <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm">
+                {createError}
+              </div>
+            )}
+
             {activeTab === 'agents' ? (
               <>
                 {createStep === 1 && (
                   <div className="space-y-4">
+                    {/* 帳號設置 */}
                     <div>
-                      <label className="block text-gray-400 text-sm mb-1">账号 *</label>
-                      <input
-                        type="text"
-                        value={createForm.username}
-                        onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
-                        className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                        placeholder="请输入账号"
-                      />
+                      <label className="block text-gray-400 text-sm mb-1">
+                        <span className="text-red-400">*</span> 帳號設置
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={createForm.username}
+                          onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
+                          className="flex-1 px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
+                          placeholder="請輸入帳號"
+                          minLength={6}
+                          maxLength={12}
+                        />
+                        <button
+                          onClick={() => {
+                            // 自動生成帳號：6-12位英文加數字
+                            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                            const length = Math.floor(Math.random() * 7) + 6; // 6-12
+                            let result = '';
+                            // 確保至少有一個字母和一個數字
+                            result += chars.charAt(Math.floor(Math.random() * 52)); // 字母
+                            result += chars.charAt(52 + Math.floor(Math.random() * 10)); // 數字
+                            for (let i = 2; i < length; i++) {
+                              result += chars.charAt(Math.floor(Math.random() * chars.length));
+                            }
+                            // 打亂順序
+                            result = result.split('').sort(() => Math.random() - 0.5).join('');
+                            setCreateForm({ ...createForm, username: result });
+                          }}
+                          className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg flex items-center gap-2"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          自動生成
+                        </button>
+                      </div>
+                      <p className="text-gray-500 text-xs mt-1">帳號為英文加數字組成，格式為6-12位</p>
                     </div>
+
+                    {/* 密碼設置 */}
                     <div>
-                      <label className="block text-gray-400 text-sm mb-1">密码 *</label>
-                      <input
-                        type="password"
-                        value={createForm.password}
-                        onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                        className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                        placeholder="请输入密码"
-                      />
+                      <label className="block text-gray-400 text-sm mb-1">
+                        <span className="text-red-400">*</span> 密碼設置
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={createForm.password}
+                          onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                          className="w-full px-4 py-2 pr-10 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
+                          placeholder="請輸入密碼"
+                          minLength={8}
+                          maxLength={16}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      <p className="text-gray-500 text-xs mt-1">8-16位字符</p>
                     </div>
+
+                    {/* 確認密碼 */}
                     <div>
-                      <label className="block text-gray-400 text-sm mb-1">名称</label>
+                      <label className="block text-gray-400 text-sm mb-1">
+                        <span className="text-red-400">*</span> 確認密碼
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          value={createForm.confirmPassword}
+                          onChange={(e) => setCreateForm({ ...createForm, confirmPassword: e.target.value })}
+                          className="w-full px-4 py-2 pr-10 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
+                          placeholder="再次確認密碼"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 代理名稱 */}
+                    <div>
+                      <label className="block text-gray-400 text-sm mb-1">
+                        <span className="text-red-400">*</span> 代理名稱
+                      </label>
                       <input
                         type="text"
                         value={createForm.nickname}
                         onChange={(e) => setCreateForm({ ...createForm, nickname: e.target.value })}
                         className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                        placeholder="请输入名称"
+                        placeholder="請輸入代理名稱"
                       />
                     </div>
                   </div>
@@ -814,65 +1194,31 @@ export default function AgentManagement() {
 
                 {createStep === 2 && (
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-gray-400 text-sm mb-1">初始额度</label>
-                      <input
-                        type="number"
-                        value={createForm.initialBalance}
-                        onChange={(e) => setCreateForm({ ...createForm, initialBalance: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                        placeholder="0"
-                      />
+                    <div className="flex items-center justify-between">
+                      <label className="block text-gray-400 text-sm">限紅設定</label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setCreateForm({ ...createForm, betLimits: [...betLimitOptions] })}
+                          className="px-3 py-1 bg-[#2a2a2a] text-gray-300 hover:text-white border border-[#444] text-sm rounded transition-colors"
+                        >
+                          全選
+                        </button>
+                        <button
+                          onClick={() => {
+                            const inverted = betLimitOptions.filter(l => !createForm.betLimits.includes(l));
+                            setCreateForm({ ...createForm, betLimits: inverted });
+                          }}
+                          className="px-3 py-1 bg-[#2a2a2a] text-gray-300 hover:text-white border border-[#444] text-sm rounded transition-colors"
+                        >
+                          反選
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
-
-                {createStep === 3 && (
-                  <div className="space-y-4">
-                    <p className="text-gray-400 text-sm">厂商设定（预设开放所有）</p>
-                    <div className="bg-[#2a2a2a] rounded-lg p-4">
-                      <p className="text-white text-sm">此步骤暂时跳过，稍后可在占成设定中配置</p>
-                    </div>
-                  </div>
-                )}
-
-                {createStep === 4 && (
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-gray-400 text-sm mb-1">占成比例 (%)</label>
-                      <input
-                        type="number"
-                        value={createForm.sharePercent}
-                        onChange={(e) => setCreateForm({ ...createForm, sharePercent: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                        placeholder="0"
-                        min="0"
-                        max="100"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-400 text-sm mb-1">退水比例 (%)</label>
-                      <input
-                        type="number"
-                        value={createForm.rebatePercent}
-                        onChange={(e) => setCreateForm({ ...createForm, rebatePercent: parseFloat(e.target.value) || 0 })}
-                        className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                        placeholder="0"
-                        min="0"
-                        max="100"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {createStep === 5 && (
-                  <div className="space-y-4">
-                    <label className="block text-gray-400 text-sm mb-2">限红设定</label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                       {betLimitOptions.map((limit) => (
                         <label
                           key={limit}
-                          className="flex items-center gap-2 p-2 bg-[#2a2a2a] rounded-lg cursor-pointer hover:bg-[#333] transition-colors"
+                          className="flex items-center gap-3 p-3 bg-[#2a2a2a] rounded-lg cursor-pointer hover:bg-[#333] transition-colors"
                         >
                           <input
                             type="checkbox"
@@ -884,7 +1230,7 @@ export default function AgentManagement() {
                                 setCreateForm({ ...createForm, betLimits: createForm.betLimits.filter(l => l !== limit) });
                               }
                             }}
-                            className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded focus:ring-amber-500"
+                            className="w-5 h-5 text-amber-500 bg-[#333] border-[#444] rounded focus:ring-amber-500"
                           />
                           <span className="text-white text-sm">{limit}</span>
                         </label>
@@ -893,82 +1239,295 @@ export default function AgentManagement() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between mt-6">
+                <div className="flex items-center justify-center gap-3 mt-6">
                   <button
-                    onClick={() => setCreateStep(Math.max(1, createStep - 1))}
-                    disabled={createStep === 1}
-                    className="px-4 py-2 bg-[#2a2a2a] text-gray-400 rounded-lg disabled:opacity-50"
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setCreateStep(1);
+                      setCreateError('');
+                    }}
+                    className="px-6 py-2 bg-[#2a2a2a] text-gray-300 hover:text-white border border-[#444] rounded-lg"
                   >
-                    上一步
+                    取 消
                   </button>
-                  {createStep < 5 ? (
+                  {createStep > 1 && (
                     <button
-                      onClick={() => setCreateStep(createStep + 1)}
-                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg"
+                      onClick={() => setCreateStep(createStep - 1)}
+                      className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg"
+                    >
+                      上一步
+                    </button>
+                  )}
+                  {createStep < 2 ? (
+                    <button
+                      onClick={() => {
+                        // 驗證 Step 1
+                        if (!createForm.username || createForm.username.length < 6 || createForm.username.length > 12) {
+                          setCreateError('帳號必須為6-12位');
+                          return;
+                        }
+                        if (!/^[a-zA-Z0-9]+$/.test(createForm.username)) {
+                          setCreateError('帳號只能包含英文和數字');
+                          return;
+                        }
+                        if (!createForm.password || createForm.password.length < 8 || createForm.password.length > 16) {
+                          setCreateError('密碼必須為8-16位字符');
+                          return;
+                        }
+                        if (createForm.password !== createForm.confirmPassword) {
+                          setCreateError('兩次密碼不一致');
+                          return;
+                        }
+                        if (!createForm.nickname) {
+                          setCreateError('請輸入代理名稱');
+                          return;
+                        }
+                        setCreateError('');
+                        setCreateStep(createStep + 1);
+                      }}
+                      className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg"
                     >
                       下一步
                     </button>
                   ) : (
                     <button
-                      onClick={handleCreateAgent}
-                      className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg"
+                      onClick={() => {
+                        if (createForm.betLimits.length === 0) {
+                          setCreateError('請至少選擇一個限紅');
+                          return;
+                        }
+                        setCreateError('');
+                        handleCreateAgent();
+                      }}
+                      className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg"
                     >
-                      确认创建
+                      下一步
                     </button>
                   )}
                 </div>
               </>
             ) : (
               <>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-gray-400 text-sm mb-1">账号 *</label>
-                    <input
-                      type="text"
-                      value={createForm.username}
-                      onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
-                      className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                      placeholder="请输入账号"
-                    />
+                {/* 創建會員 - 2步驟流程 */}
+                {memberCreateStep === 1 && (
+                  <div className="space-y-4">
+                    {/* 帳號設置 */}
+                    <div>
+                      <label className="block text-gray-400 text-sm mb-1">
+                        <span className="text-red-400">*</span> 帳號設置
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={createForm.username}
+                          onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
+                          className="flex-1 px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
+                          placeholder="請輸入帳號"
+                          minLength={6}
+                          maxLength={12}
+                        />
+                        <button
+                          onClick={() => {
+                            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                            const length = Math.floor(Math.random() * 7) + 6;
+                            let result = '';
+                            result += chars.charAt(Math.floor(Math.random() * 52));
+                            result += chars.charAt(52 + Math.floor(Math.random() * 10));
+                            for (let i = 2; i < length; i++) {
+                              result += chars.charAt(Math.floor(Math.random() * chars.length));
+                            }
+                            result = result.split('').sort(() => Math.random() - 0.5).join('');
+                            setCreateForm({ ...createForm, username: result });
+                          }}
+                          className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg flex items-center gap-2"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                          自動生成
+                        </button>
+                      </div>
+                      <p className="text-gray-500 text-xs mt-1">帳號為英文加數字組成，格式為6-12位</p>
+                    </div>
+
+                    {/* 密碼設置 */}
+                    <div>
+                      <label className="block text-gray-400 text-sm mb-1">
+                        <span className="text-red-400">*</span> 密碼設置
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={createForm.password}
+                          onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                          className="w-full px-4 py-2 pr-10 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
+                          placeholder="請輸入密碼"
+                          minLength={8}
+                          maxLength={16}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      <p className="text-gray-500 text-xs mt-1">8-16位字符</p>
+                    </div>
+
+                    {/* 確認密碼 */}
+                    <div>
+                      <label className="block text-gray-400 text-sm mb-1">
+                        <span className="text-red-400">*</span> 確認密碼
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          value={createForm.confirmPassword}
+                          onChange={(e) => setCreateForm({ ...createForm, confirmPassword: e.target.value })}
+                          className="w-full px-4 py-2 pr-10 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
+                          placeholder="再次確認密碼"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 會員名稱 */}
+                    <div>
+                      <label className="block text-gray-400 text-sm mb-1">
+                        <span className="text-red-400">*</span> 會員名稱
+                      </label>
+                      <input
+                        type="text"
+                        value={createForm.nickname}
+                        onChange={(e) => setCreateForm({ ...createForm, nickname: e.target.value })}
+                        className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
+                        placeholder="請輸入會員名稱"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-gray-400 text-sm mb-1">密码 *</label>
-                    <input
-                      type="password"
-                      value={createForm.password}
-                      onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                      className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                      placeholder="请输入密码"
-                    />
+                )}
+
+                {memberCreateStep === 2 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-gray-400 text-sm">限紅設定</label>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setCreateForm({ ...createForm, betLimits: [...availableBetLimits] })}
+                          className="px-3 py-1 bg-[#2a2a2a] text-gray-300 hover:text-white border border-[#444] text-sm rounded transition-colors"
+                        >
+                          全選
+                        </button>
+                        <button
+                          onClick={() => {
+                            const inverted = availableBetLimits.filter(l => !createForm.betLimits.includes(l));
+                            setCreateForm({ ...createForm, betLimits: inverted });
+                          }}
+                          className="px-3 py-1 bg-[#2a2a2a] text-gray-300 hover:text-white border border-[#444] text-sm rounded transition-colors"
+                        >
+                          反選
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {availableBetLimits.map((limit) => (
+                        <label
+                          key={limit}
+                          className="flex items-center gap-3 p-3 bg-[#2a2a2a] rounded-lg cursor-pointer hover:bg-[#333] transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={createForm.betLimits.includes(limit)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setCreateForm({ ...createForm, betLimits: [...createForm.betLimits, limit] });
+                              } else {
+                                setCreateForm({ ...createForm, betLimits: createForm.betLimits.filter(l => l !== limit) });
+                              }
+                            }}
+                            className="w-5 h-5 text-amber-500 bg-[#333] border-[#444] rounded focus:ring-amber-500"
+                          />
+                          <span className="text-white text-sm">{limit}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {availableBetLimits.length === 0 && (
+                      <p className="text-gray-400 text-sm text-center py-4">暫無可用的限紅選項</p>
+                    )}
                   </div>
-                  <div>
-                    <label className="block text-gray-400 text-sm mb-1">名称</label>
-                    <input
-                      type="text"
-                      value={createForm.nickname}
-                      onChange={(e) => setCreateForm({ ...createForm, nickname: e.target.value })}
-                      className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                      placeholder="请输入名称"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-gray-400 text-sm mb-1">初始额度</label>
-                    <input
-                      type="number"
-                      value={createForm.initialBalance}
-                      onChange={(e) => setCreateForm({ ...createForm, initialBalance: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end mt-6">
+                )}
+
+                <div className="flex items-center justify-center gap-3 mt-6">
                   <button
-                    onClick={handleCreateMember}
-                    className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg"
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setMemberCreateStep(1);
+                      setCreateError('');
+                    }}
+                    className="px-6 py-2 bg-[#2a2a2a] text-gray-300 hover:text-white border border-[#444] rounded-lg"
                   >
-                    确认创建
+                    取 消
                   </button>
+                  {memberCreateStep > 1 && (
+                    <button
+                      onClick={() => setMemberCreateStep(memberCreateStep - 1)}
+                      className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg"
+                    >
+                      上一步
+                    </button>
+                  )}
+                  {memberCreateStep < 2 ? (
+                    <button
+                      onClick={() => {
+                        // 驗證 Step 1
+                        if (!createForm.username || createForm.username.length < 6 || createForm.username.length > 12) {
+                          setCreateError('帳號必須為6-12位');
+                          return;
+                        }
+                        if (!/^[a-zA-Z0-9]+$/.test(createForm.username)) {
+                          setCreateError('帳號只能包含英文和數字');
+                          return;
+                        }
+                        if (!createForm.password || createForm.password.length < 8 || createForm.password.length > 16) {
+                          setCreateError('密碼必須為8-16位字符');
+                          return;
+                        }
+                        if (createForm.password !== createForm.confirmPassword) {
+                          setCreateError('兩次密碼不一致');
+                          return;
+                        }
+                        if (!createForm.nickname) {
+                          setCreateError('請輸入會員名稱');
+                          return;
+                        }
+                        setCreateError('');
+                        setMemberCreateStep(2);
+                      }}
+                      className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg"
+                    >
+                      下一步
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        if (createForm.betLimits.length === 0) {
+                          setCreateError('請至少選擇一個限紅');
+                          return;
+                        }
+                        setCreateError('');
+                        handleCreateMember();
+                      }}
+                      className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg"
+                    >
+                      下一步
+                    </button>
+                  )}
                 </div>
               </>
             )}
