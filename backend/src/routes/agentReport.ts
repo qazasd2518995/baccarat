@@ -432,7 +432,7 @@ router.get('/agent', requireRole('admin', 'agent'), async (req: Request, res: Re
     });
 
     // Calculate report for each direct downline agent
-    const agentReports = await Promise.all(
+    const agentReportsAll = await Promise.all(
       directDownlineAgents.map(async (agent) => {
         const report = await calculateAgentReport(agent.id, dateRange.startDate, dateRange.endDate);
         return {
@@ -446,6 +446,9 @@ router.get('/agent', requireRole('admin', 'agent'), async (req: Request, res: Re
         };
       })
     );
+
+    // Filter out agents with no betting data
+    const agentReports = agentReportsAll.filter(agent => agent.betCount > 0);
 
     // Calculate sub-agents summary (下線代理輸贏總和)
     const subAgentsSummary = await calculateSubAgentsReport(targetAgentId, dateRange.startDate, dateRange.endDate);
@@ -554,7 +557,7 @@ router.get('/member', requireRole('admin', 'agent'), async (req: Request, res: R
     const agentRebatePercent = Number(targetAgentData?.rebatePercent) || 0;
 
     // Calculate report for each member
-    const memberReports = await Promise.all(
+    const memberReportsAll = await Promise.all(
       filteredMembers.map(async (member) => {
         const stats = await calculateBettingStats(member.id, dateRange.startDate, dateRange.endDate);
 
@@ -580,6 +583,9 @@ router.get('/member', requireRole('admin', 'agent'), async (req: Request, res: R
         };
       })
     );
+
+    // Filter out members with no betting data
+    const memberReports = memberReportsAll.filter(member => member.betCount > 0);
 
     // Build breadcrumb
     const breadcrumb = await buildBreadcrumb(currentUser.userId, targetAgentId);
