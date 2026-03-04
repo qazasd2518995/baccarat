@@ -22,6 +22,7 @@ import agentReportRoutes from './routes/agentReport.js';
 import logsRoutes from './routes/logs.js';
 import winControlRoutes from './routes/winControl.js';
 import manualDetectionRoutes from './routes/manualDetection.js';
+import seedRoutes from './routes/seed.js';
 import { initializeSocket } from './socket/index.js';
 import { setSocketInstance } from './socket/socketManager.js';
 import { startMultiTableGameLoop } from './services/multiTableGameLoop.js';
@@ -75,6 +76,7 @@ app.use('/api/agent-report', agentReportRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/win-control', winControlRoutes);
 app.use('/api/manual-detection', manualDetectionRoutes);
+app.use('/api/seed', seedRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
