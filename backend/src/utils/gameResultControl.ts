@@ -91,11 +91,9 @@ async function calculateCurrentSettlement(
   const totalBet = Number(bets._sum.amount || 0);
   const totalPayout = Number(bets._sum.payout || 0);
   const memberWinLoss = totalPayout - totalBet;
-  const rebatePercent = 0.041;
-  const totalRebate = totalBet * rebatePercent;
-  const superiorSettlement = memberWinLoss + totalRebate;
 
-  return superiorSettlement;
+  // 上級交收 = 會員輸贏（正數=會員贏/平台輸，負數=會員輸/平台贏）
+  return memberWinLoss;
 }
 
 // ============================================
