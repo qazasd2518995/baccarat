@@ -370,23 +370,8 @@ export default function AgentReport() {
 
   // Summary Row Component (for top cards when viewing sub-agent)
   const SummaryCard = ({ title, summaryData, showDetailBtn = false }: { title: string; summaryData: SummaryData | AgentReportData; showDetailBtn?: boolean }) => (
-    <div className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden">
-      <table className="w-full text-sm table-fixed">
-        <colgroup>
-          <col style={{ width: '10%' }} />
-          <col style={{ width: '7%' }} />
-          <col style={{ width: '7%' }} />
-          <col style={{ width: '8%' }} />
-          <col style={{ width: '8%' }} />
-          <col style={{ width: '8%' }} />
-          <col style={{ width: '7%' }} />
-          <col style={{ width: '7%' }} />
-          <col style={{ width: '7%' }} />
-          <col style={{ width: '7%' }} />
-          <col style={{ width: '7%' }} />
-          <col style={{ width: '8%' }} />
-          <col style={{ width: '9%' }} />
-        </colgroup>
+    <div className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-x-auto">
+      <table className="text-sm min-w-[900px]">
         <tbody>
           <tr>
             <td className="px-3 py-3 border-r border-[#333]">
@@ -481,9 +466,9 @@ export default function AgentReport() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-hidden"
+          className="bg-[#1a1a1a] border border-[#333] rounded-lg overflow-x-auto"
         >
-          <table className="w-full text-sm">
+          <table className="text-sm min-w-[900px]">
             <tbody>
               <tr>
                 <td className="px-4 py-3 border-r border-[#333]">
