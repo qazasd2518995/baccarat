@@ -62,7 +62,7 @@ export default function Roadmap({ data }: RoadmapProps) {
                   initial={cell ? { scale: 0 } : false}
                   animate={{ scale: 1 }}
                   className={`
-                    w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold
+                    w-5 h-5 shrink-0 aspect-square rounded-full flex items-center justify-center text-[8px] font-bold
                     ${cell ? RESULT_COLORS[cell.result] : 'bg-slate-700/30'}
                     ${cell?.playerPair ? 'ring-1 ring-blue-400 ring-offset-1 ring-offset-slate-900' : ''}
                     ${cell?.bankerPair ? 'ring-1 ring-red-400 ring-offset-1 ring-offset-slate-900' : ''}
@@ -107,7 +107,7 @@ export default function Roadmap({ data }: RoadmapProps) {
                   initial={cell ? { scale: 0 } : false}
                   animate={{ scale: 1 }}
                   className={`
-                    relative w-5 h-5 rounded-full flex items-center justify-center
+                    relative w-5 h-5 shrink-0 aspect-square rounded-full flex items-center justify-center
                     ${cell ? `border-2 ${RESULT_BORDERS[cell.result]} bg-transparent` : 'bg-slate-700/20'}
                   `}
                 >
@@ -159,7 +159,7 @@ export default function Roadmap({ data }: RoadmapProps) {
                 <div
                   key={`${rowIndex}-${colIndex}`}
                   className={`
-                    w-3 h-3 rounded-full
+                    w-3 h-3 shrink-0 aspect-square rounded-full
                     ${cell === 'red' ? 'bg-red-500' : cell === 'blue' ? 'bg-blue-500' : 'bg-slate-700/20'}
                   `}
                 />
