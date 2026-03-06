@@ -176,7 +176,7 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
       />
 
       {/* Players container */}
-      <div className="flex items-center justify-center gap-1 px-2 py-2 sm:py-2.5 overflow-x-auto scrollbar-hide">
+      <div className="flex items-center justify-center gap-0.5 sm:gap-1 px-1 sm:px-2 py-1 sm:py-2 overflow-x-auto scrollbar-hide">
         {players.map((player, index) => (
           <motion.div
             key={player.id}
@@ -187,30 +187,30 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
           >
             {/* Player card */}
             <div
-              className="relative px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg"
+              className="relative px-1 py-1 sm:px-2 sm:py-1.5 rounded-md sm:rounded-lg"
               style={{
                 background: 'linear-gradient(145deg, rgba(40,45,55,0.9) 0%, rgba(25,30,40,0.95) 100%)',
                 border: '1px solid rgba(100,110,130,0.3)',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
-                minWidth: '58px',
+                minWidth: '44px',
               }}
             >
               {/* Avatar with flag */}
-              <div className="flex justify-center mb-1">
+              <div className="flex justify-center mb-0.5 sm:mb-1">
                 <div className="relative">
                   <div className={`
-                    w-8 h-8 sm:w-9 sm:h-9
+                    w-6 h-6 sm:w-8 sm:h-8
                     rounded-full bg-gradient-to-br ${player.avatarColor}
                     flex items-center justify-center
-                    text-[9px] sm:text-[10px] font-bold text-white
+                    text-[7px] sm:text-[9px] font-bold text-white
                     shadow-md
-                    border-2 border-white/20
+                    border border-white/20 sm:border-2
                   `}>
                     {player.initials}
                   </div>
                   {/* Flag badge */}
                   <div
-                    className="absolute -bottom-0.5 -right-1 text-[11px] sm:text-xs drop-shadow-md"
+                    className="absolute -bottom-0.5 -right-0.5 sm:-right-1 text-[9px] sm:text-[11px] drop-shadow-md"
                     style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }}
                   >
                     {player.flag}
@@ -219,13 +219,13 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
               </div>
 
               {/* Name */}
-              <div className="text-[9px] sm:text-[10px] text-gray-200 truncate text-center font-medium max-w-[54px] sm:max-w-[60px]">
+              <div className="text-[7px] sm:text-[9px] text-gray-200 truncate text-center font-medium max-w-[40px] sm:max-w-[54px]">
                 {player.name}
               </div>
 
               {/* Balance */}
               <div
-                className="text-[9px] sm:text-[10px] font-mono text-center font-semibold"
+                className="text-[7px] sm:text-[9px] font-mono text-center font-semibold"
                 style={{ color: '#e8d48b' }}
               >
                 ${formatBalance(player.balance)}
