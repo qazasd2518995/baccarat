@@ -122,6 +122,7 @@ model User {
   isReadonly      Boolean     @default(false) @map("is_readonly")        // 禁止投注/操作
   lastLoginIp     String?     @map("last_login_ip")            // 最後登入IP
   lastLoginAt     DateTime?   @map("last_login_at")            // 最後登入時間
+  remark          String?                                      // 備註
 
   transactionsAsUser     Transaction[]    @relation("UserTransactions")
   transactionsAsOperator Transaction[]    @relation("OperatorTransactions")

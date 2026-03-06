@@ -56,6 +56,7 @@ interface Agent {
   memberCount: number;
   createdAt: string;
   lastLoginAt: string | null;
+  remark?: string;
 }
 
 interface Member {
@@ -69,6 +70,7 @@ interface Member {
   isReadonly: boolean;
   createdAt: string;
   lastLoginAt: string | null;
+  remark?: string;
   parentAgent?: {
     id: string;
     username: string;
@@ -125,7 +127,7 @@ export default function AgentManagement() {
   const [balanceModal, setBalanceModal] = useState<{ open: boolean; agent: Agent | null }>({ open: false, agent: null });
   const [subAccountModal, setSubAccountModal] = useState<{ open: boolean; subAccount: SubAccount | null }>({ open: false, subAccount: null });
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; agent: Agent | null; action: string }>({ open: false, agent: null, action: '' });
-  const [editAgentModal, setEditAgentModal] = useState<{ open: boolean; agent: Agent | null }>({ open: false, agent: null });
+  const [editAgentModal, setEditAgentModal] = useState<{ open: boolean; agent: Agent | Member | null; type: 'agent' | 'member' }>({ open: false, agent: null, type: 'agent' });
   const [shareHistoryModal, setShareHistoryModal] = useState<{ open: boolean; agent: Agent | null }>({ open: false, agent: null });
 
   // Create form state
@@ -672,6 +674,9 @@ export default function AgentManagement() {
                           </button>
                         </div>
                         <p className="text-gray-400 text-sm">({agent.nickname || '无名称'})</p>
+                        {agent.remark && (
+                          <p className="text-gray-500 text-xs mt-0.5 italic">备注: {agent.remark}</p>
+                        )}
                       </div>
 
                       <div className="text-center">
@@ -750,7 +755,7 @@ export default function AgentManagement() {
                         </button>
                         <br />
                         <button
-                          onClick={() => setEditAgentModal({ open: true, agent })}
+                          onClick={() => setEditAgentModal({ open: true, agent, type: 'agent' })}
                           className="text-amber-400 hover:text-amber-300 text-xs sm:text-sm min-h-[32px]"
                         >
                           修改账号
@@ -807,6 +812,9 @@ export default function AgentManagement() {
                           </button>
                         </div>
                         <p className="text-gray-400 text-xs sm:text-sm">({member.nickname || '无名称'})</p>
+                        {member.remark && (
+                          <p className="text-gray-500 text-xs mt-0.5 italic">备注: {member.remark}</p>
+                        )}
                       </div>
 
                       <div className="text-center min-w-[80px]">
@@ -894,7 +902,7 @@ export default function AgentManagement() {
                         </button>
                         <br />
                         <button
-                          onClick={() => setEditAgentModal({ open: true, agent: member as any })}
+                          onClick={() => setEditAgentModal({ open: true, agent: member, type: 'member' })}
                           className="text-amber-400 hover:text-amber-300 text-xs sm:text-sm min-h-[32px]"
                         >
                           修改账号
@@ -1588,9 +1596,10 @@ export default function AgentManagement() {
       {/* Edit Agent Modal */}
       <EditAgentModal
         isOpen={editAgentModal.open}
-        onClose={() => setEditAgentModal({ open: false, agent: null })}
+        onClose={() => setEditAgentModal({ open: false, agent: null, type: 'agent' })}
         agent={editAgentModal.agent}
         onSuccess={fetchData}
+        type={editAgentModal.type}
       />
 
       {/* Share History Modal */}

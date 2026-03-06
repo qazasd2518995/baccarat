@@ -241,7 +241,8 @@ router.get('/agents', requireRole('admin', 'agent'), async (req: Request, res: R
           isReadonly: true,
           lastLoginIp: true,
           lastLoginAt: true,
-          createdAt: true
+          createdAt: true,
+          remark: true
         }
       }),
       prisma.user.count({ where })
@@ -351,6 +352,7 @@ router.get('/members', requireRole('admin', 'agent'), async (req: Request, res: 
           lastLoginIp: true,
           lastLoginAt: true,
           createdAt: true,
+          remark: true,
           parentAgent: {
             select: {
               id: true,
@@ -573,13 +575,13 @@ router.post('/members', requireRole('admin', 'agent'), async (req: Request, res:
 
 /**
  * PUT /api/agent-management/agents/:id
- * 更新代理資料 (密碼、名稱)
+ * 更新代理資料 (密碼、名稱、備註)
  */
 router.put('/agents/:id', requireRole('admin', 'agent'), async (req: Request, res: Response) => {
   try {
     const currentUser = req.user!;
     const id = req.params.id as string;
-    const { password, nickname } = req.body;
+    const { password, nickname, remark } = req.body;
 
     // Verify permission (can only manage direct downline)
     const targetUser = await prisma.user.findUnique({ where: { id } });
@@ -594,6 +596,9 @@ router.put('/agents/:id', requireRole('admin', 'agent'), async (req: Request, re
     const updateData: any = {};
     if (nickname !== undefined) {
       updateData.nickname = nickname;
+    }
+    if (remark !== undefined) {
+      updateData.remark = remark;
     }
     if (password) {
       if (password.length < 8 || password.length > 16) {
@@ -618,7 +623,7 @@ router.put('/agents/:id', requireRole('admin', 'agent'), async (req: Request, re
         action: 'update_agent',
         targetType: 'user',
         targetId: id,
-        details: { nickname: nickname || undefined, passwordChanged: !!password },
+        details: { nickname: nickname || undefined, remark: remark || undefined, passwordChanged: !!password },
         ipAddress: req.ip || 'unknown'
       }
     });
@@ -626,7 +631,8 @@ router.put('/agents/:id', requireRole('admin', 'agent'), async (req: Request, re
     res.json({
       id: updated.id,
       username: updated.username,
-      nickname: updated.nickname
+      nickname: updated.nickname,
+      remark: updated.remark
     });
   } catch (error) {
     console.error('[AgentManagement] Error updating agent:', error);

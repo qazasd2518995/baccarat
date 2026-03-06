@@ -10,21 +10,25 @@ interface EditAgentModalProps {
     id: string;
     username: string;
     nickname: string;
+    remark?: string;
   } | null;
   onSuccess?: () => void;
+  type?: 'agent' | 'member';
 }
 
 export default function EditAgentModal({
   isOpen,
   onClose,
   agent,
-  onSuccess
+  onSuccess,
+  type = 'agent'
 }: EditAgentModalProps) {
   const [form, setForm] = useState({
     username: '',
     password: '',
     confirmPassword: '',
-    nickname: ''
+    nickname: '',
+    remark: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -37,7 +41,8 @@ export default function EditAgentModal({
         username: agent.username,
         password: '',
         confirmPassword: '',
-        nickname: agent.nickname || ''
+        nickname: agent.nickname || '',
+        remark: agent.remark || ''
       });
       setError('');
     }
@@ -45,7 +50,7 @@ export default function EditAgentModal({
 
   const validateForm = () => {
     if (!form.nickname) {
-      setError('请输入代理名称');
+      setError(type === 'agent' ? '请输入代理名称' : '请输入会员名称');
       return false;
     }
 
@@ -72,7 +77,10 @@ export default function EditAgentModal({
       setLoading(true);
       setError('');
 
-      const updateData: any = { nickname: form.nickname };
+      const updateData: any = {
+        nickname: form.nickname,
+        remark: form.remark || null
+      };
       if (form.password) {
         updateData.password = form.password;
       }
@@ -82,7 +90,7 @@ export default function EditAgentModal({
       onSuccess?.();
       onClose();
     } catch (err: any) {
-      console.error('Failed to update agent:', err);
+      console.error('Failed to update:', err);
       setError(err.response?.data?.error || '操作失败，请稍后再试');
     } finally {
       setLoading(false);
@@ -91,23 +99,27 @@ export default function EditAgentModal({
 
   if (!isOpen || !agent) return null;
 
+  const title = type === 'agent' ? '编辑代理' : '编辑会员';
+  const nameLabel = type === 'agent' ? '代理名称' : '会员名称';
+  const namePlaceholder = type === 'agent' ? '请输入代理名称' : '请输入会员名称';
+
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-[#1a1a1a] border border-[#333] rounded-xl w-full max-w-md overflow-hidden"
+        className="bg-[#1a1a1a] border border-[#333] rounded-xl w-full max-w-md overflow-hidden max-h-[90vh] flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[#333]">
-          <h2 className="text-white text-lg font-bold">编辑代理</h2>
+        <div className="flex items-center justify-between p-4 border-b border-[#333] shrink-0">
+          <h2 className="text-white text-lg font-bold">{title}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 overflow-y-auto">
           {/* 账号设置 */}
           <div>
             <label className="block text-gray-400 text-sm mb-2">
@@ -177,17 +189,17 @@ export default function EditAgentModal({
             </div>
           </div>
 
-          {/* 代理名称 */}
+          {/* 名称 */}
           <div>
             <label className="block text-gray-400 text-sm mb-2">
-              <span className="text-red-500">*</span> 代理名称
+              <span className="text-red-500">*</span> {nameLabel}
             </label>
             <div className="relative">
               <input
                 type="text"
                 value={form.nickname}
                 onChange={(e) => setForm({ ...form, nickname: e.target.value })}
-                placeholder="请输入代理名称"
+                placeholder={namePlaceholder}
                 className="w-full px-4 py-3 pr-10 bg-[#252525] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500"
               />
               {form.nickname && (
@@ -202,6 +214,21 @@ export default function EditAgentModal({
             </div>
           </div>
 
+          {/* 备注 */}
+          <div>
+            <label className="block text-gray-400 text-sm mb-2">
+              备注
+            </label>
+            <textarea
+              value={form.remark}
+              onChange={(e) => setForm({ ...form, remark: e.target.value })}
+              placeholder="请输入备注信息（可选）"
+              rows={3}
+              className="w-full px-4 py-3 bg-[#252525] border border-[#333] rounded-lg text-white text-sm focus:outline-none focus:border-amber-500 resize-none"
+            />
+            <p className="text-gray-500 text-xs mt-1">可记录该{type === 'agent' ? '代理' : '会员'}的特殊信息</p>
+          </div>
+
           {/* 错误信息 */}
           {error && (
             <p className="text-red-400 text-sm text-center">{error}</p>
@@ -209,7 +236,7 @@ export default function EditAgentModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-center gap-4 p-4 border-t border-[#333]">
+        <div className="flex items-center justify-center gap-4 p-4 border-t border-[#333] shrink-0">
           <button
             onClick={onClose}
             className="px-6 py-2 bg-[#333] text-white rounded-lg hover:bg-[#444] transition-colors"
