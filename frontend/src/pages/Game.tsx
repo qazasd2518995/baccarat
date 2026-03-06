@@ -120,15 +120,13 @@ function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair, blink }: { 
   const color = colors[result];
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-white" style={{ minWidth: 0, minHeight: 0 }}>
+    <div className="relative w-full h-full flex items-center justify-center bg-white" style={{ minWidth: 0, minHeight: 0, aspectRatio: '1' }}>
       {/* Main circle - responsive size, hollow */}
       <div
-        className="rounded-full"
+        className="rounded-full aspect-square"
         style={{
           width: '80%',
-          height: '80%',
           maxWidth: 20,
-          maxHeight: 20,
           border: `2px solid ${color.border}`,
           ...(blink ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {})
         }}
@@ -187,9 +185,9 @@ function DerivedRoadCell({ value, type, blink }: { value?: 'red' | 'blue'; type:
   // Big Eye Boy: hollow circles (border only)
   if (type === 'big_eye') {
     return (
-      <div className="w-full h-full flex items-center justify-center p-px bg-white">
+      <div className="w-full h-full flex items-center justify-center p-px bg-white" style={{ aspectRatio: '1' }}>
         <div
-          className="w-2.5 h-2.5 rounded-full"
+          className="w-2.5 h-2.5 rounded-full aspect-square"
           style={{ border: `1.5px solid ${color.border}`, ...blinkStyle }}
         />
       </div>
@@ -199,9 +197,9 @@ function DerivedRoadCell({ value, type, blink }: { value?: 'red' | 'blue'; type:
   // Small Road: filled circles
   if (type === 'small') {
     return (
-      <div className="w-full h-full flex items-center justify-center p-px bg-white">
+      <div className="w-full h-full flex items-center justify-center p-px bg-white" style={{ aspectRatio: '1' }}>
         <div
-          className="w-2.5 h-2.5 rounded-full"
+          className="w-2.5 h-2.5 rounded-full aspect-square"
           style={{ backgroundColor: color.fill, ...blinkStyle }}
         />
       </div>
@@ -210,8 +208,8 @@ function DerivedRoadCell({ value, type, blink }: { value?: 'red' | 'blue'; type:
 
   // Cockroach Pig: diagonal slashes
   return (
-    <div className="w-full h-full flex items-center justify-center bg-white">
-      <svg viewBox="0 0 10 10" className="w-3 h-3" style={blinkStyle}>
+    <div className="w-full h-full flex items-center justify-center bg-white" style={{ aspectRatio: '1' }}>
+      <svg viewBox="0 0 10 10" className="w-3 h-3 aspect-square" style={blinkStyle}>
         <line x1="2" y1="8" x2="8" y2="2" stroke={color.fill} strokeWidth="2" strokeLinecap="round" />
       </svg>
     </div>
@@ -2018,8 +2016,8 @@ export default function Game() {
               {/* Right: Big Road + Derived Roads - Hidden on mobile */}
               <div className="hidden lg:flex lg:w-[22%] flex-col">
                 {/* Big Road - circles with sliding window */}
-                <div className="flex-1 p-1" style={{ backgroundColor: '#FFFFFF' }}>
-                  <div className="grid grid-rows-6 gap-px h-full" style={{ backgroundColor: '#D1D5DB', gridTemplateColumns: `repeat(${BIG_ROAD_DISPLAY_COLS}, minmax(0, 1fr))` }}>
+                <div className="flex-1 p-1 overflow-x-auto" style={{ backgroundColor: '#FFFFFF' }}>
+                  <div className="grid grid-rows-6 gap-px h-full" style={{ backgroundColor: '#D1D5DB', gridTemplateColumns: `repeat(${BIG_ROAD_DISPLAY_COLS}, minmax(16px, 1fr))`, minWidth: `${BIG_ROAD_DISPLAY_COLS * 16}px` }}>
                     {Array(6).fill(null).flatMap((_, rowIndex) =>
                       Array(BIG_ROAD_DISPLAY_COLS).fill(null).map((_, colIndex) => {
                         const cell = bigRoadWindow[rowIndex]?.[colIndex];
