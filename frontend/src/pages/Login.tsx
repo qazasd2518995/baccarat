@@ -61,61 +61,77 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden bg-black">
-      {/* Background Image - Different positioning for mobile vs desktop */}
-      <div className="absolute inset-0">
+    <div className="min-h-screen w-full relative overflow-hidden">
+      {/* Luxury Casino Background */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `
+            radial-gradient(ellipse 120% 80% at 80% 50%, rgba(139,69,19,0.15) 0%, transparent 50%),
+            radial-gradient(ellipse 100% 100% at 20% 80%, rgba(212,175,55,0.08) 0%, transparent 40%),
+            linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%)
+          `
+        }}
+      />
+
+      {/* Decorative Pattern Overlay */}
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5L35 15L45 15L37 23L40 33L30 27L20 33L23 23L15 15L25 15Z' fill='%23d4af37'/%3E%3C/svg%3E")`,
+          backgroundSize: '60px 60px'
+        }}
+      />
+
+      {/* Animated Gold Lines */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <motion.div
+          initial={{ x: '-100%' }}
+          animate={{ x: '200%' }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'linear' }}
+          className="absolute top-[20%] left-0 w-[50%] h-[1px]"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.4), transparent)' }}
+        />
+        <motion.div
+          initial={{ x: '200%' }}
+          animate={{ x: '-100%' }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
+          className="absolute bottom-[30%] left-0 w-[40%] h-[1px]"
+          style={{ background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3), transparent)' }}
+        />
+      </div>
+
+      {/* Gold Border Lines */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #d4af37 50%, transparent)' }} />
+        <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #d4af37 50%, transparent)' }} />
+      </div>
+
+      {/* Model Image - Desktop: Right side, Mobile: Background */}
+      <motion.div
+        initial={{ opacity: 0, x: 50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 1, ease: 'easeOut' }}
+        className="absolute right-0 bottom-0 lg:right-[5%] pointer-events-none"
+        style={{ zIndex: 5 }}
+      >
         <img
-          src="/login-model.jpg"
+          src="/login-model.png"
           alt=""
-          className="w-full h-full object-cover"
-          style={{ objectPosition: 'center 15%' }}
-        />
-        {/* Mobile: Bottom gradient to fade into form area */}
-        <div
-          className="absolute inset-0 lg:hidden"
+          className="
+            h-[55vh] sm:h-[65vh] lg:h-[90vh]
+            w-auto object-contain object-bottom
+            opacity-30 lg:opacity-100
+          "
           style={{
-            background: `
-              linear-gradient(to bottom,
-                transparent 0%,
-                transparent 30%,
-                rgba(0,0,0,0.7) 50%,
-                rgba(0,0,0,0.95) 70%,
-                rgba(0,0,0,1) 100%
-              )
-            `
+            filter: 'drop-shadow(0 0 60px rgba(212,175,55,0.2))',
+            maskImage: 'linear-gradient(to top, black 70%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to top, black 70%, transparent 100%)'
           }}
         />
-        {/* Desktop: Left side gradient */}
-        <div
-          className="absolute inset-0 hidden lg:block"
-          style={{
-            background: `
-              linear-gradient(to right, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 35%, transparent 55%),
-              linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.2) 100%)
-            `
-          }}
-        />
-      </div>
+      </motion.div>
 
-      {/* Decorative gold lines */}
-      <div className="absolute inset-0 pointer-events-none z-20">
-        <motion.div
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: 1.5, ease: "easeOut" }}
-          className="absolute top-0 left-0 right-0 h-[2px]"
-          style={{ background: 'linear-gradient(90deg, #d4af37, transparent 30%, transparent 70%, #d4af37)' }}
-        />
-        <motion.div
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: 1.5, ease: "easeOut", delay: 0.3 }}
-          className="absolute bottom-0 left-0 right-0 h-[2px]"
-          style={{ background: 'linear-gradient(90deg, #d4af37, transparent 30%, transparent 70%, #d4af37)' }}
-        />
-      </div>
-
-      {/* Language Switcher - Fixed position */}
+      {/* Language Switcher */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -126,8 +142,8 @@ export default function Login() {
           onClick={toggleLanguage}
           className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105"
           style={{
-            background: 'rgba(0, 0, 0, 0.5)',
-            border: '1px solid rgba(212, 175, 55, 0.4)',
+            background: 'rgba(212, 175, 55, 0.1)',
+            border: '1px solid rgba(212, 175, 55, 0.3)',
             color: '#d4af37',
             backdropFilter: 'blur(10px)'
           }}
@@ -141,235 +157,218 @@ export default function Login() {
       </motion.div>
 
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen flex flex-col lg:flex-row">
-        {/* Mobile: Spacer to show image at top */}
-        <div className="h-[35vh] sm:h-[40vh] lg:hidden flex-shrink-0" />
-
-        {/* Form Container */}
-        <div className="flex-1 lg:w-[45%] xl:w-[40%] flex items-start lg:items-center justify-center px-5 py-6 sm:px-8 sm:py-8 lg:p-12">
+      <div className="relative z-10 min-h-screen flex items-center px-6 sm:px-8 lg:px-16">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="w-full max-w-sm lg:max-w-md lg:ml-[5%]"
+        >
+          {/* Logo & Brand */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-            className="w-full max-w-sm sm:max-w-md"
+            transition={{ delay: 0.2 }}
+            className="text-center lg:text-left mb-8"
           >
-            {/* Logo & Brand */}
+            {/* JW Logo */}
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-center mb-6 sm:mb-8"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+              className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-4 relative"
             >
-              {/* JW Logo */}
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-3 sm:mb-4 relative"
-              >
-                <div
-                  className="absolute inset-0 rounded-xl sm:rounded-2xl"
-                  style={{
-                    background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #aa8c2c 100%)',
-                    boxShadow: '0 8px 30px rgba(212, 175, 55, 0.5)'
-                  }}
-                />
-                <div className="absolute inset-[2px] sm:inset-[3px] rounded-lg sm:rounded-xl bg-black/90 flex items-center justify-center">
-                  <span
-                    className="text-2xl sm:text-3xl font-black"
-                    style={{
-                      background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 100%)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                    }}
-                  >
-                    JW
-                  </span>
-                </div>
-              </motion.div>
-
-              <motion.h1
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="text-2xl sm:text-3xl font-bold mb-1"
+              <div
+                className="absolute inset-0 rounded-2xl"
                 style={{
-                  background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #ffd700 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
+                  background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #aa8c2c 100%)',
+                  boxShadow: '0 10px 40px rgba(212, 175, 55, 0.5)'
                 }}
-              >
-                {i18n.language === 'zh' ? '九贏百家' : 'JIU WIN'}
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="text-xs sm:text-sm tracking-[0.2em] sm:tracking-[0.3em] text-amber-500/60 uppercase"
-              >
-                {i18n.language === 'zh' ? '尊贵游戏体验' : 'Premium Gaming'}
-              </motion.p>
-            </motion.div>
-
-            {/* Login Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="relative p-5 sm:p-6 rounded-xl sm:rounded-2xl"
-              style={{
-                background: 'linear-gradient(135deg, rgba(20,20,25,0.95) 0%, rgba(10,10,15,0.98) 100%)',
-                border: '1px solid rgba(212, 175, 55, 0.25)',
-                boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
-              }}
-            >
-              {/* Corner accents */}
-              <div className="absolute top-0 left-0 w-8 h-8 sm:w-10 sm:h-10 border-t-2 border-l-2 border-amber-500/40 rounded-tl-xl sm:rounded-tl-2xl" />
-              <div className="absolute top-0 right-0 w-8 h-8 sm:w-10 sm:h-10 border-t-2 border-r-2 border-amber-500/40 rounded-tr-xl sm:rounded-tr-2xl" />
-              <div className="absolute bottom-0 left-0 w-8 h-8 sm:w-10 sm:h-10 border-b-2 border-l-2 border-amber-500/40 rounded-bl-xl sm:rounded-bl-2xl" />
-              <div className="absolute bottom-0 right-0 w-8 h-8 sm:w-10 sm:h-10 border-b-2 border-r-2 border-amber-500/40 rounded-br-xl sm:rounded-br-2xl" />
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Error message */}
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-3 rounded-lg text-xs sm:text-sm text-center"
-                    style={{
-                      background: 'rgba(220, 38, 38, 0.15)',
-                      border: '1px solid rgba(220, 38, 38, 0.3)',
-                      color: '#fca5a5'
-                    }}
-                  >
-                    {error}
-                  </motion.div>
-                )}
-
-                {/* Username */}
-                <div>
-                  <label className="block text-[10px] sm:text-xs font-medium mb-1.5 sm:mb-2 text-amber-500/80 tracking-wider uppercase">
-                    {t('username')}
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-amber-500/50" />
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      onFocus={() => setFocusedField('username')}
-                      onBlur={() => setFocusedField(null)}
-                      className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-3.5 rounded-lg sm:rounded-xl text-white text-sm transition-all duration-300 outline-none"
-                      style={{
-                        background: 'rgba(30,30,40,0.8)',
-                        border: focusedField === 'username' ? '2px solid #d4af37' : '2px solid rgba(212, 175, 55, 0.2)',
-                        boxShadow: focusedField === 'username' ? '0 0 15px rgba(212, 175, 55, 0.2)' : 'none'
-                      }}
-                      placeholder={t('enterUsername')}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Password */}
-                <div>
-                  <label className="block text-[10px] sm:text-xs font-medium mb-1.5 sm:mb-2 text-amber-500/80 tracking-wider uppercase">
-                    {t('password')}
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-amber-500/50" />
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      onFocus={() => setFocusedField('password')}
-                      onBlur={() => setFocusedField(null)}
-                      className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-3.5 rounded-lg sm:rounded-xl text-white text-sm transition-all duration-300 outline-none"
-                      style={{
-                        background: 'rgba(30,30,40,0.8)',
-                        border: focusedField === 'password' ? '2px solid #d4af37' : '2px solid rgba(212, 175, 55, 0.2)',
-                        boxShadow: focusedField === 'password' ? '0 0 15px rgba(212, 175, 55, 0.2)' : 'none'
-                      }}
-                      placeholder={t('enterPassword')}
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <motion.button
-                  type="submit"
-                  disabled={isLoading}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full py-3 sm:py-3.5 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base tracking-wider transition-all duration-300 disabled:opacity-50 relative overflow-hidden group"
+              />
+              <div className="absolute inset-[3px] rounded-xl bg-[#0c0c14] flex items-center justify-center">
+                <span
+                  className="text-2xl sm:text-3xl font-black"
                   style={{
-                    background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #aa8c2c 100%)',
-                    color: '#0a0a0f',
-                    boxShadow: '0 8px 25px rgba(212, 175, 55, 0.4)'
+                    background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  <div
-                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                    style={{
-                      background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
-                      animation: 'shimmer 2s linear infinite'
-                    }}
-                  />
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    {isLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      i18n.language === 'zh' ? '立即登录' : 'LOGIN'
-                    )}
-                  </span>
-                </motion.button>
-              </form>
-
-              {/* Decorative suits */}
-              <div className="flex justify-center gap-3 sm:gap-4 mt-4 sm:mt-5">
-                {['♠', '♥', '♣', '♦'].map((suit, i) => (
-                  <motion.span
-                    key={suit}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 0.4, y: 0 }}
-                    transition={{ delay: 0.7 + i * 0.1 }}
-                    className="text-lg sm:text-xl"
-                    style={{ color: suit === '♥' || suit === '♦' ? '#dc2626' : '#d4af37' }}
-                  >
-                    {suit}
-                  </motion.span>
-                ))}
+                  JW
+                </span>
               </div>
+              <div className="absolute -inset-3 rounded-3xl opacity-50 blur-xl" style={{ background: 'radial-gradient(circle, rgba(212, 175, 55, 0.4) 0%, transparent 70%)' }} />
             </motion.div>
 
-            {/* Footer */}
-            <motion.div
+            <motion.h1
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-              className="text-center mt-4 sm:mt-6"
+              transition={{ delay: 0.4 }}
+              className="text-3xl sm:text-4xl font-bold mb-2"
+              style={{
+                background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #ffd700 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
             >
-              <p className="text-[10px] sm:text-xs text-amber-500/40 tracking-wider">
-                © 2025 JW {i18n.language === 'zh' ? '九贏百家' : 'JIU WIN BACCARAT'}
-              </p>
-            </motion.div>
+              {i18n.language === 'zh' ? '九贏百家' : 'JIU WIN'}
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="text-sm tracking-[0.3em] text-amber-500/60 uppercase"
+            >
+              {i18n.language === 'zh' ? '尊贵游戏体验' : 'Premium Gaming'}
+            </motion.p>
           </motion.div>
-        </div>
 
-        {/* Desktop: Right side spacer */}
-        <div className="hidden lg:block lg:w-[55%] xl:w-[60%]" />
+          {/* Login Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="relative p-6 sm:p-8 rounded-2xl"
+            style={{
+              background: 'linear-gradient(135deg, rgba(18,18,26,0.95) 0%, rgba(10,10,15,0.98) 100%)',
+              border: '1px solid rgba(212, 175, 55, 0.2)',
+              boxShadow: '0 25px 50px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+              backdropFilter: 'blur(20px)'
+            }}
+          >
+            {/* Decorative corners */}
+            <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-amber-500/40 rounded-tl-2xl" />
+            <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-amber-500/40 rounded-tr-2xl" />
+            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-amber-500/40 rounded-bl-2xl" />
+            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-amber-500/40 rounded-br-2xl" />
+
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 rounded-xl text-sm text-center"
+                  style={{
+                    background: 'rgba(220, 38, 38, 0.1)',
+                    border: '1px solid rgba(220, 38, 38, 0.3)',
+                    color: '#fca5a5'
+                  }}
+                >
+                  {error}
+                </motion.div>
+              )}
+
+              {/* Username */}
+              <div>
+                <label className="block text-xs font-medium mb-2 text-amber-500/80 tracking-wider uppercase">
+                  {t('username')}
+                </label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500/40" />
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    onFocus={() => setFocusedField('username')}
+                    onBlur={() => setFocusedField(null)}
+                    className="w-full pl-12 pr-4 py-3.5 rounded-xl text-white text-sm transition-all duration-300 outline-none"
+                    style={{
+                      background: 'rgba(25,25,35,0.8)',
+                      border: focusedField === 'username' ? '2px solid #d4af37' : '2px solid rgba(212, 175, 55, 0.15)',
+                      boxShadow: focusedField === 'username' ? '0 0 20px rgba(212, 175, 55, 0.15)' : 'none'
+                    }}
+                    placeholder={t('enterUsername')}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label className="block text-xs font-medium mb-2 text-amber-500/80 tracking-wider uppercase">
+                  {t('password')}
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500/40" />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setFocusedField('password')}
+                    onBlur={() => setFocusedField(null)}
+                    className="w-full pl-12 pr-4 py-3.5 rounded-xl text-white text-sm transition-all duration-300 outline-none"
+                    style={{
+                      background: 'rgba(25,25,35,0.8)',
+                      border: focusedField === 'password' ? '2px solid #d4af37' : '2px solid rgba(212, 175, 55, 0.15)',
+                      boxShadow: focusedField === 'password' ? '0 0 20px rgba(212, 175, 55, 0.15)' : 'none'
+                    }}
+                    placeholder={t('enterPassword')}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Submit */}
+              <motion.button
+                type="submit"
+                disabled={isLoading}
+                whileHover={{ scale: 1.02, boxShadow: '0 15px 40px rgba(212, 175, 55, 0.4)' }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-4 rounded-xl font-bold text-base tracking-wider transition-all duration-300 disabled:opacity-50 relative overflow-hidden group"
+                style={{
+                  background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #aa8c2c 100%)',
+                  color: '#0a0a0f',
+                  boxShadow: '0 10px 30px rgba(212, 175, 55, 0.3)'
+                }}
+              >
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
+                    animation: 'shimmer 2s linear infinite'
+                  }}
+                />
+                <span className="relative z-10">
+                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : (i18n.language === 'zh' ? '立即登录' : 'LOGIN')}
+                </span>
+              </motion.button>
+            </form>
+
+            {/* Card Suits */}
+            <div className="flex justify-center gap-4 mt-6">
+              {['♠', '♥', '♣', '♦'].map((suit, i) => (
+                <motion.span
+                  key={suit}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 0.5, y: 0 }}
+                  transition={{ delay: 0.7 + i * 0.1 }}
+                  className="text-xl"
+                  style={{ color: suit === '♥' || suit === '♦' ? '#dc2626' : '#d4af37' }}
+                >
+                  {suit}
+                </motion.span>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Footer */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9 }}
+            className="text-center lg:text-left mt-6 text-xs text-amber-500/40 tracking-wider"
+          >
+            © 2025 JW {i18n.language === 'zh' ? '九贏百家' : 'JIU WIN BACCARAT'}
+          </motion.p>
+        </motion.div>
       </div>
 
-      {/* Global styles */}
       <style>{`
         @keyframes shimmer {
           0% { transform: translateX(-100%); }
           100% { transform: translateX(100%); }
         }
-        input::placeholder {
-          color: rgba(212, 175, 55, 0.3);
-        }
+        input::placeholder { color: rgba(212, 175, 55, 0.25); }
       `}</style>
     </div>
   );
