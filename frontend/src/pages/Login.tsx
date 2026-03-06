@@ -107,22 +107,18 @@ export default function Login() {
         <div className="absolute bottom-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #d4af37 50%, transparent)' }} />
       </div>
 
-      {/* Model Image - Desktop: Right side, Mobile: Background */}
+      {/* Model Image - Desktop only */}
       <motion.div
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 1, ease: 'easeOut' }}
-        className="absolute right-0 bottom-0 lg:right-[5%] pointer-events-none"
+        className="hidden lg:block absolute right-[5%] bottom-0 pointer-events-none"
         style={{ zIndex: 5 }}
       >
         <img
           src="/login-model.png"
           alt=""
-          className="
-            h-[55vh] sm:h-[65vh] lg:h-[90vh]
-            w-auto object-contain object-bottom
-            opacity-30 lg:opacity-100
-          "
+          className="h-[90vh] w-auto object-contain object-bottom"
           style={{
             filter: 'drop-shadow(0 0 60px rgba(212,175,55,0.2))',
             maskImage: 'linear-gradient(to top, black 70%, transparent 100%)',
