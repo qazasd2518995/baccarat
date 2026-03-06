@@ -81,23 +81,37 @@ export default function Login() {
           src="/login-model.jpg"
           alt=""
           className="w-full h-full object-cover"
-          style={{ objectPosition: '50% 20%' }}
+          style={{ objectPosition: 'center 20%' }}
         />
-        {/* Gradient overlays for readability */}
+        {/* Mobile: Bottom gradient */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 lg:hidden"
           style={{
             background: `
-              linear-gradient(to left, rgba(10,10,15,0.9) 0%, rgba(10,10,15,0.6) 35%, transparent 55%),
-              linear-gradient(to top, rgba(10,10,15,0.8) 0%, transparent 50%)
+              linear-gradient(to bottom,
+                transparent 0%,
+                transparent 25%,
+                rgba(10,10,15,0.6) 45%,
+                rgba(10,10,15,0.95) 65%,
+                rgba(10,10,15,1) 100%
+              )
+            `
+          }}
+        />
+        {/* Desktop: Right side gradient */}
+        <div
+          className="absolute inset-0 hidden lg:block"
+          style={{
+            background: `
+              linear-gradient(to left, rgba(10,10,15,0.95) 0%, rgba(10,10,15,0.7) 30%, transparent 50%),
+              linear-gradient(to top, rgba(10,10,15,0.6) 0%, transparent 40%)
             `
           }}
         />
       </div>
 
-      {/* Decorative Elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Top gold line */}
+      {/* Decorative gold lines */}
+      <div className="absolute inset-0 pointer-events-none z-20">
         <motion.div
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
@@ -105,7 +119,6 @@ export default function Login() {
           className="absolute top-0 left-0 right-0 h-[2px]"
           style={{ background: 'linear-gradient(90deg, transparent, #d4af37 50%, transparent)' }}
         />
-        {/* Bottom gold line */}
         <motion.div
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
@@ -113,91 +126,83 @@ export default function Login() {
           className="absolute bottom-0 left-0 right-0 h-[2px]"
           style={{ background: 'linear-gradient(90deg, transparent, #d4af37 50%, transparent)' }}
         />
-        {/* Vertical accent line */}
-        <motion.div
-          initial={{ scaleY: 0 }}
-          animate={{ scaleY: 1 }}
-          transition={{ duration: 1, delay: 0.5 }}
-          className="absolute right-[45%] top-0 bottom-0 w-[1px] hidden lg:block"
-          style={{ background: 'linear-gradient(to bottom, transparent, rgba(212,175,55,0.3) 30%, rgba(212,175,55,0.3) 70%, transparent)' }}
-        />
       </div>
 
+      {/* Language Switcher - Fixed position */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="absolute top-4 right-4 z-30"
+      >
+        <button
+          onClick={toggleLanguage}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105"
+          style={{
+            background: 'rgba(0, 0, 0, 0.5)',
+            border: '1px solid rgba(212, 175, 55, 0.4)',
+            color: '#d4af37',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+          {i18n.language === 'zh' ? 'EN' : '中文'}
+        </button>
+      </motion.div>
+
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen flex">
-        {/* Left side - Image area (desktop) */}
-        <div className="hidden lg:flex lg:w-[55%] xl:w-[55%] items-center justify-center">
-          {/* Optional: Add decorative text or logo here */}
-        </div>
+      <div className="relative z-10 min-h-screen flex flex-col lg:flex-row">
+        {/* Mobile: Spacer to show image at top */}
+        <div className="h-[30vh] sm:h-[35vh] lg:hidden flex-shrink-0" />
 
-        {/* Right side - Login Form */}
-        <div className="w-full lg:w-[45%] xl:w-[45%] flex items-center justify-center p-6 sm:p-8 lg:p-12">
+        {/* Desktop: Left side spacer (image area) */}
+        <div className="hidden lg:block lg:w-[55%]" />
+
+        {/* Form Container */}
+        <div className="flex-1 lg:w-[45%] flex items-start lg:items-center justify-center px-5 py-5 sm:px-8 sm:py-6 lg:p-12">
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="w-full max-w-md"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="w-full max-w-sm sm:max-w-md"
           >
-            {/* Language Switcher */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="absolute top-4 right-4 lg:top-6 lg:right-6"
-            >
-              <button
-                onClick={toggleLanguage}
-                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:scale-105"
-                style={{
-                  background: 'rgba(212, 175, 55, 0.15)',
-                  border: '1px solid rgba(212, 175, 55, 0.4)',
-                  color: '#d4af37',
-                  backdropFilter: 'blur(10px)'
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                </svg>
-                {i18n.language === 'zh' ? 'EN' : '中文'}
-              </button>
-            </motion.div>
-
             {/* Logo & Brand */}
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-center mb-8"
+              className="text-center mb-5 sm:mb-6"
             >
               {/* Shield Icon for Admin */}
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                className="inline-flex items-center justify-center w-20 h-20 lg:w-24 lg:h-24 mb-4 relative"
+                className="inline-flex items-center justify-center w-14 h-14 sm:w-18 sm:h-18 mb-3 relative"
               >
                 <div
-                  className="absolute inset-0 rounded-2xl"
+                  className="absolute inset-0 rounded-xl"
                   style={{
                     background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #aa8c2c 100%)',
-                    boxShadow: '0 10px 40px rgba(212, 175, 55, 0.5)'
+                    boxShadow: '0 8px 30px rgba(212, 175, 55, 0.5)'
                   }}
                 />
-                <div className="absolute inset-[3px] rounded-xl bg-[#0a0a12] flex items-center justify-center">
-                  <Shield className="w-10 h-10 lg:w-12 lg:h-12 text-amber-400" strokeWidth={1.5} />
+                <div className="absolute inset-[2px] rounded-lg bg-[#0a0a12] flex items-center justify-center">
+                  <Shield className="w-7 h-7 sm:w-9 sm:h-9 text-amber-400" strokeWidth={1.5} />
                 </div>
-                <div className="absolute -inset-4 rounded-3xl opacity-40 blur-xl" style={{ background: 'radial-gradient(circle, rgba(212, 175, 55, 0.6) 0%, transparent 70%)' }} />
               </motion.div>
 
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.35 }}
-                className="mb-1"
+                className="mb-0.5"
               >
                 <span
-                  className="text-4xl lg:text-5xl font-black tracking-tight"
+                  className="text-3xl sm:text-4xl font-black tracking-tight"
                   style={{
                     background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 100%)',
                     WebkitBackgroundClip: 'text',
@@ -211,7 +216,7 @@ export default function Login() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="text-2xl lg:text-3xl font-bold mb-2"
+                className="text-xl sm:text-2xl font-bold mb-1"
                 style={{
                   background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #ffd700 100%)',
                   WebkitBackgroundClip: 'text',
@@ -224,7 +229,7 @@ export default function Login() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="text-sm tracking-[0.2em] text-amber-500/60 uppercase"
+                className="text-[10px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] text-amber-500/60 uppercase"
               >
                 {i18n.language === 'zh' ? '代理后台管理' : 'Agent Console'}
               </motion.p>
@@ -232,30 +237,30 @@ export default function Login() {
 
             {/* Login Card */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="relative p-6 sm:p-8 rounded-2xl"
+              transition={{ delay: 0.3 }}
+              className="relative p-4 sm:p-6 rounded-xl sm:rounded-2xl"
               style={{
                 background: 'linear-gradient(135deg, rgba(15,15,20,0.95) 0%, rgba(8,8,12,0.98) 100%)',
                 border: '1px solid rgba(212, 175, 55, 0.2)',
-                boxShadow: '0 25px 50px rgba(0,0,0,0.6), 0 0 0 1px rgba(212, 175, 55, 0.1) inset',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
                 backdropFilter: 'blur(20px)'
               }}
             >
               {/* Corner accents */}
-              <div className="absolute top-0 left-0 w-10 h-10 border-t-2 border-l-2 border-amber-500/50 rounded-tl-2xl" />
-              <div className="absolute top-0 right-0 w-10 h-10 border-t-2 border-r-2 border-amber-500/50 rounded-tr-2xl" />
-              <div className="absolute bottom-0 left-0 w-10 h-10 border-b-2 border-l-2 border-amber-500/50 rounded-bl-2xl" />
-              <div className="absolute bottom-0 right-0 w-10 h-10 border-b-2 border-r-2 border-amber-500/50 rounded-br-2xl" />
+              <div className="absolute top-0 left-0 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-l-2 border-amber-500/50 rounded-tl-xl sm:rounded-tl-2xl" />
+              <div className="absolute top-0 right-0 w-6 h-6 sm:w-8 sm:h-8 border-t-2 border-r-2 border-amber-500/50 rounded-tr-xl sm:rounded-tr-2xl" />
+              <div className="absolute bottom-0 left-0 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-l-2 border-amber-500/50 rounded-bl-xl sm:rounded-bl-2xl" />
+              <div className="absolute bottom-0 right-0 w-6 h-6 sm:w-8 sm:h-8 border-b-2 border-r-2 border-amber-500/50 rounded-br-xl sm:rounded-br-2xl" />
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                 {/* Error message */}
                 {error && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-3 rounded-xl text-sm text-center"
+                    className="p-2.5 sm:p-3 rounded-lg text-xs sm:text-sm text-center"
                     style={{
                       background: 'rgba(220, 38, 38, 0.15)',
                       border: '1px solid rgba(220, 38, 38, 0.3)',
@@ -268,22 +273,22 @@ export default function Login() {
 
                 {/* Username */}
                 <div>
-                  <label className="block text-xs font-medium mb-2 text-amber-500/80 tracking-wider uppercase">
+                  <label className="block text-[10px] sm:text-xs font-medium mb-1.5 text-amber-500/80 tracking-wider uppercase">
                     {t('username')}
                   </label>
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500/50" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-amber-500/50" />
                     <input
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       onFocus={() => setFocusedField('username')}
                       onBlur={() => setFocusedField(null)}
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl text-white text-sm transition-all duration-300 outline-none"
+                      className="w-full pl-9 sm:pl-11 pr-3 py-2.5 sm:py-3 rounded-lg text-white text-sm transition-all duration-300 outline-none"
                       style={{
                         background: 'rgba(25,25,35,0.9)',
                         border: focusedField === 'username' ? '2px solid #d4af37' : '2px solid rgba(212, 175, 55, 0.2)',
-                        boxShadow: focusedField === 'username' ? '0 0 20px rgba(212, 175, 55, 0.15)' : 'none'
+                        boxShadow: focusedField === 'username' ? '0 0 15px rgba(212, 175, 55, 0.15)' : 'none'
                       }}
                       placeholder={i18n.language === 'zh' ? '请输入用户名' : 'Enter username'}
                       required
@@ -293,22 +298,22 @@ export default function Login() {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-xs font-medium mb-2 text-amber-500/80 tracking-wider uppercase">
+                  <label className="block text-[10px] sm:text-xs font-medium mb-1.5 text-amber-500/80 tracking-wider uppercase">
                     {t('password')}
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500/50" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-amber-500/50" />
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       onFocus={() => setFocusedField('password')}
                       onBlur={() => setFocusedField(null)}
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl text-white text-sm transition-all duration-300 outline-none"
+                      className="w-full pl-9 sm:pl-11 pr-3 py-2.5 sm:py-3 rounded-lg text-white text-sm transition-all duration-300 outline-none"
                       style={{
                         background: 'rgba(25,25,35,0.9)',
                         border: focusedField === 'password' ? '2px solid #d4af37' : '2px solid rgba(212, 175, 55, 0.2)',
-                        boxShadow: focusedField === 'password' ? '0 0 20px rgba(212, 175, 55, 0.15)' : 'none'
+                        boxShadow: focusedField === 'password' ? '0 0 15px rgba(212, 175, 55, 0.15)' : 'none'
                       }}
                       placeholder={i18n.language === 'zh' ? '请输入密码' : 'Enter password'}
                       required
@@ -318,10 +323,10 @@ export default function Login() {
 
                 {/* Captcha */}
                 <div>
-                  <label className="block text-xs font-medium mb-2 text-amber-500/80 tracking-wider uppercase">
+                  <label className="block text-[10px] sm:text-xs font-medium mb-1.5 text-amber-500/80 tracking-wider uppercase">
                     {i18n.language === 'zh' ? '验证码' : 'Captcha'}
                   </label>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2 sm:gap-3">
                     <div className="relative flex-1">
                       <input
                         type="text"
@@ -330,42 +335,41 @@ export default function Login() {
                         onFocus={() => setFocusedField('captcha')}
                         onBlur={() => setFocusedField(null)}
                         maxLength={4}
-                        className="w-full px-4 py-3.5 rounded-xl text-white text-sm text-center tracking-[0.5em] transition-all duration-300 outline-none"
+                        className="w-full px-3 py-2.5 sm:py-3 rounded-lg text-white text-sm text-center tracking-[0.4em] sm:tracking-[0.5em] transition-all duration-300 outline-none"
                         style={{
                           background: 'rgba(25,25,35,0.9)',
                           border: focusedField === 'captcha' ? '2px solid #d4af37' : '2px solid rgba(212, 175, 55, 0.2)',
-                          boxShadow: focusedField === 'captcha' ? '0 0 20px rgba(212, 175, 55, 0.15)' : 'none'
+                          boxShadow: focusedField === 'captcha' ? '0 0 15px rgba(212, 175, 55, 0.15)' : 'none'
                         }}
                         placeholder="• • • •"
                         required
                       />
                     </div>
                     <motion.div
-                      whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={refreshCaptcha}
-                      className="flex items-center justify-center gap-2 px-4 rounded-xl cursor-pointer select-none"
+                      className="flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 rounded-lg cursor-pointer select-none"
                       style={{
                         background: 'rgba(25,25,35,0.9)',
                         border: '2px solid rgba(212, 175, 55, 0.2)',
-                        minWidth: '100px'
+                        minWidth: '85px'
                       }}
                     >
                       <div className="flex">
                         {captchaCode.split('').map((digit, i) => (
                           <span
                             key={i}
-                            className="text-xl font-bold text-amber-400"
+                            className="text-base sm:text-xl font-bold text-amber-400"
                             style={{
-                              transform: `rotate(${(i - 1.5) * 8}deg)`,
-                              textShadow: '0 0 10px rgba(212,175,55,0.5)'
+                              transform: `rotate(${(i - 1.5) * 6}deg)`,
+                              textShadow: '0 0 8px rgba(212,175,55,0.5)'
                             }}
                           >
                             {digit}
                           </span>
                         ))}
                       </div>
-                      <RefreshCw className="w-4 h-4 text-amber-500/50" />
+                      <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500/50" />
                     </motion.div>
                   </div>
                 </div>
@@ -376,11 +380,11 @@ export default function Login() {
                   disabled={isLoading}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full py-4 rounded-xl font-bold text-base tracking-wider transition-all duration-300 disabled:opacity-50 relative overflow-hidden group mt-2"
+                  className="w-full py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base tracking-wider transition-all duration-300 disabled:opacity-50 relative overflow-hidden group mt-1"
                   style={{
                     background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #aa8c2c 100%)',
                     color: '#0a0a0f',
-                    boxShadow: '0 10px 30px rgba(212, 175, 55, 0.4)'
+                    boxShadow: '0 8px 25px rgba(212, 175, 55, 0.4)'
                   }}
                 >
                   <div
@@ -401,14 +405,14 @@ export default function Login() {
               </form>
 
               {/* Decorative suits */}
-              <div className="flex justify-center gap-3 mt-5">
+              <div className="flex justify-center gap-2.5 sm:gap-3 mt-3 sm:mt-4">
                 {['♠', '♥', '♣', '♦'].map((suit, i) => (
                   <motion.span
                     key={suit}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 0.4, y: 0 }}
-                    transition={{ delay: 0.8 + i * 0.1 }}
-                    className="text-lg"
+                    transition={{ delay: 0.7 + i * 0.1 }}
+                    className="text-base sm:text-lg"
                     style={{ color: suit === '♥' || suit === '♦' ? '#dc2626' : '#d4af37' }}
                   >
                     {suit}
@@ -421,10 +425,10 @@ export default function Login() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-              className="text-center mt-6"
+              transition={{ delay: 0.8 }}
+              className="text-center mt-4 sm:mt-5"
             >
-              <p className="text-xs text-amber-500/40 tracking-wider">
+              <p className="text-[10px] sm:text-xs text-amber-500/40 tracking-wider">
                 © 2025 JW {i18n.language === 'zh' ? '九贏百家 · 代理系统' : 'JIU WIN · Agent System'}
               </p>
             </motion.div>

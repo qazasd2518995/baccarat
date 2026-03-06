@@ -33,7 +33,6 @@ export default function Login() {
       const { data } = await authApi.login(username, password);
 
       if (data.token && data.user) {
-        // Only allow member role to login to game
         if (data.user.role === 'admin' || data.user.role === 'agent') {
           setError(i18n.language === 'zh' ? '管理员和代理请使用管理后台登录' : 'Admins and agents please use admin panel to login');
           setIsLoading(false);
@@ -63,29 +62,43 @@ export default function Login() {
 
   return (
     <div className="min-h-screen w-full relative overflow-hidden bg-black">
-      {/* Background Image - Model */}
+      {/* Background Image - Different positioning for mobile vs desktop */}
       <div className="absolute inset-0">
         <img
           src="/login-model.jpg"
           alt=""
-          className="w-full h-full object-cover object-top"
-          style={{ objectPosition: '50% 15%' }}
+          className="w-full h-full object-cover"
+          style={{ objectPosition: 'center 15%' }}
         />
-        {/* Dark gradient overlay */}
+        {/* Mobile: Bottom gradient to fade into form area */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 lg:hidden"
           style={{
             background: `
-              linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 40%, transparent 60%),
-              linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.3) 100%)
+              linear-gradient(to bottom,
+                transparent 0%,
+                transparent 30%,
+                rgba(0,0,0,0.7) 50%,
+                rgba(0,0,0,0.95) 70%,
+                rgba(0,0,0,1) 100%
+              )
+            `
+          }}
+        />
+        {/* Desktop: Left side gradient */}
+        <div
+          className="absolute inset-0 hidden lg:block"
+          style={{
+            background: `
+              linear-gradient(to right, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 35%, transparent 55%),
+              linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.2) 100%)
             `
           }}
         />
       </div>
 
-      {/* Decorative Elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        {/* Gold accent line top */}
+      {/* Decorative gold lines */}
+      <div className="absolute inset-0 pointer-events-none z-20">
         <motion.div
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
@@ -93,7 +106,6 @@ export default function Login() {
           className="absolute top-0 left-0 right-0 h-[2px]"
           style={{ background: 'linear-gradient(90deg, #d4af37, transparent 30%, transparent 70%, #d4af37)' }}
         />
-        {/* Gold accent line bottom */}
         <motion.div
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
@@ -101,87 +113,70 @@ export default function Login() {
           className="absolute bottom-0 left-0 right-0 h-[2px]"
           style={{ background: 'linear-gradient(90deg, #d4af37, transparent 30%, transparent 70%, #d4af37)' }}
         />
-        {/* Floating particles effect */}
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 rounded-full bg-amber-400/30"
-            style={{
-              left: `${10 + Math.random() * 30}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [-20, 20, -20],
-              opacity: [0.2, 0.5, 0.2],
-            }}
-            transition={{
-              duration: 3 + Math.random() * 2,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-            }}
-          />
-        ))}
       </div>
 
-      {/* Main Content */}
-      <div className="relative z-10 min-h-screen flex">
-        {/* Left side - Login Form */}
-        <div className="w-full lg:w-[45%] xl:w-[40%] flex items-center justify-center p-6 sm:p-8 lg:p-12">
-          <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="w-full max-w-md"
-          >
-            {/* Language Switcher */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="absolute top-4 right-4 lg:top-6 lg:right-6"
-            >
-              <button
-                onClick={toggleLanguage}
-                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 hover:scale-105"
-                style={{
-                  background: 'rgba(212, 175, 55, 0.15)',
-                  border: '1px solid rgba(212, 175, 55, 0.4)',
-                  color: '#d4af37',
-                  backdropFilter: 'blur(10px)'
-                }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                </svg>
-                {i18n.language === 'zh' ? 'EN' : '中文'}
-              </button>
-            </motion.div>
+      {/* Language Switcher - Fixed position */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        className="absolute top-4 right-4 z-30"
+      >
+        <button
+          onClick={toggleLanguage}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 hover:scale-105"
+          style={{
+            background: 'rgba(0, 0, 0, 0.5)',
+            border: '1px solid rgba(212, 175, 55, 0.4)',
+            color: '#d4af37',
+            backdropFilter: 'blur(10px)'
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+          </svg>
+          {i18n.language === 'zh' ? 'EN' : '中文'}
+        </button>
+      </motion.div>
 
+      {/* Main Content */}
+      <div className="relative z-10 min-h-screen flex flex-col lg:flex-row">
+        {/* Mobile: Spacer to show image at top */}
+        <div className="h-[35vh] sm:h-[40vh] lg:hidden flex-shrink-0" />
+
+        {/* Form Container */}
+        <div className="flex-1 lg:w-[45%] xl:w-[40%] flex items-start lg:items-center justify-center px-5 py-6 sm:px-8 sm:py-8 lg:p-12">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="w-full max-w-sm sm:max-w-md"
+          >
             {/* Logo & Brand */}
             <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-center mb-8 lg:mb-12"
+              className="text-center mb-6 sm:mb-8"
             >
               {/* JW Logo */}
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                className="inline-flex items-center justify-center w-20 h-20 lg:w-24 lg:h-24 mb-4 lg:mb-6 relative"
+                className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-3 sm:mb-4 relative"
               >
                 <div
-                  className="absolute inset-0 rounded-2xl"
+                  className="absolute inset-0 rounded-xl sm:rounded-2xl"
                   style={{
                     background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #aa8c2c 100%)',
-                    boxShadow: '0 10px 40px rgba(212, 175, 55, 0.5)'
+                    boxShadow: '0 8px 30px rgba(212, 175, 55, 0.5)'
                   }}
                 />
-                <div className="absolute inset-[3px] rounded-xl bg-black/90 flex items-center justify-center">
+                <div className="absolute inset-[2px] sm:inset-[3px] rounded-lg sm:rounded-xl bg-black/90 flex items-center justify-center">
                   <span
-                    className="text-3xl lg:text-4xl font-black"
+                    className="text-2xl sm:text-3xl font-black"
                     style={{
                       background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 100%)',
                       WebkitBackgroundClip: 'text',
@@ -191,15 +186,13 @@ export default function Login() {
                     JW
                   </span>
                 </div>
-                {/* Glow effect */}
-                <div className="absolute -inset-4 rounded-3xl opacity-40 blur-xl" style={{ background: 'radial-gradient(circle, rgba(212, 175, 55, 0.6) 0%, transparent 70%)' }} />
               </motion.div>
 
               <motion.h1
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="text-3xl lg:text-4xl font-bold mb-2"
+                className="text-2xl sm:text-3xl font-bold mb-1"
                 style={{
                   background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #ffd700 100%)',
                   WebkitBackgroundClip: 'text',
@@ -212,7 +205,7 @@ export default function Login() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="text-sm lg:text-base tracking-[0.3em] text-amber-500/60 uppercase"
+                className="text-xs sm:text-sm tracking-[0.2em] sm:tracking-[0.3em] text-amber-500/60 uppercase"
               >
                 {i18n.language === 'zh' ? '尊贵游戏体验' : 'Premium Gaming'}
               </motion.p>
@@ -220,29 +213,29 @@ export default function Login() {
 
             {/* Login Card */}
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="relative p-6 sm:p-8 rounded-2xl"
+              transition={{ delay: 0.3 }}
+              className="relative p-5 sm:p-6 rounded-xl sm:rounded-2xl"
               style={{
                 background: 'linear-gradient(135deg, rgba(20,20,25,0.95) 0%, rgba(10,10,15,0.98) 100%)',
                 border: '1px solid rgba(212, 175, 55, 0.25)',
-                boxShadow: '0 25px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(212, 175, 55, 0.1) inset'
+                boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
               }}
             >
               {/* Corner accents */}
-              <div className="absolute top-0 left-0 w-12 h-12 border-t-2 border-l-2 border-amber-500/40 rounded-tl-2xl" />
-              <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-amber-500/40 rounded-tr-2xl" />
-              <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-amber-500/40 rounded-bl-2xl" />
-              <div className="absolute bottom-0 right-0 w-12 h-12 border-b-2 border-r-2 border-amber-500/40 rounded-br-2xl" />
+              <div className="absolute top-0 left-0 w-8 h-8 sm:w-10 sm:h-10 border-t-2 border-l-2 border-amber-500/40 rounded-tl-xl sm:rounded-tl-2xl" />
+              <div className="absolute top-0 right-0 w-8 h-8 sm:w-10 sm:h-10 border-t-2 border-r-2 border-amber-500/40 rounded-tr-xl sm:rounded-tr-2xl" />
+              <div className="absolute bottom-0 left-0 w-8 h-8 sm:w-10 sm:h-10 border-b-2 border-l-2 border-amber-500/40 rounded-bl-xl sm:rounded-bl-2xl" />
+              <div className="absolute bottom-0 right-0 w-8 h-8 sm:w-10 sm:h-10 border-b-2 border-r-2 border-amber-500/40 rounded-br-xl sm:rounded-br-2xl" />
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Error message */}
                 {error && (
                   <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="p-4 rounded-xl text-sm text-center"
+                    className="p-3 rounded-lg text-xs sm:text-sm text-center"
                     style={{
                       background: 'rgba(220, 38, 38, 0.15)',
                       border: '1px solid rgba(220, 38, 38, 0.3)',
@@ -255,22 +248,22 @@ export default function Login() {
 
                 {/* Username */}
                 <div>
-                  <label className="block text-xs font-medium mb-2 text-amber-500/80 tracking-wider uppercase">
+                  <label className="block text-[10px] sm:text-xs font-medium mb-1.5 sm:mb-2 text-amber-500/80 tracking-wider uppercase">
                     {t('username')}
                   </label>
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500/50" />
+                    <User className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-amber-500/50" />
                     <input
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
                       onFocus={() => setFocusedField('username')}
                       onBlur={() => setFocusedField(null)}
-                      className="w-full pl-12 pr-4 py-4 rounded-xl text-white text-sm transition-all duration-300 outline-none"
+                      className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-3.5 rounded-lg sm:rounded-xl text-white text-sm transition-all duration-300 outline-none"
                       style={{
                         background: 'rgba(30,30,40,0.8)',
                         border: focusedField === 'username' ? '2px solid #d4af37' : '2px solid rgba(212, 175, 55, 0.2)',
-                        boxShadow: focusedField === 'username' ? '0 0 20px rgba(212, 175, 55, 0.2)' : 'none'
+                        boxShadow: focusedField === 'username' ? '0 0 15px rgba(212, 175, 55, 0.2)' : 'none'
                       }}
                       placeholder={t('enterUsername')}
                       required
@@ -280,22 +273,22 @@ export default function Login() {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-xs font-medium mb-2 text-amber-500/80 tracking-wider uppercase">
+                  <label className="block text-[10px] sm:text-xs font-medium mb-1.5 sm:mb-2 text-amber-500/80 tracking-wider uppercase">
                     {t('password')}
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500/50" />
+                    <Lock className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-amber-500/50" />
                     <input
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       onFocus={() => setFocusedField('password')}
                       onBlur={() => setFocusedField(null)}
-                      className="w-full pl-12 pr-4 py-4 rounded-xl text-white text-sm transition-all duration-300 outline-none"
+                      className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-3.5 rounded-lg sm:rounded-xl text-white text-sm transition-all duration-300 outline-none"
                       style={{
                         background: 'rgba(30,30,40,0.8)',
                         border: focusedField === 'password' ? '2px solid #d4af37' : '2px solid rgba(212, 175, 55, 0.2)',
-                        boxShadow: focusedField === 'password' ? '0 0 20px rgba(212, 175, 55, 0.2)' : 'none'
+                        boxShadow: focusedField === 'password' ? '0 0 15px rgba(212, 175, 55, 0.2)' : 'none'
                       }}
                       placeholder={t('enterPassword')}
                       required
@@ -309,11 +302,11 @@ export default function Login() {
                   disabled={isLoading}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full py-4 rounded-xl font-bold text-base tracking-wider transition-all duration-300 disabled:opacity-50 relative overflow-hidden group"
+                  className="w-full py-3 sm:py-3.5 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base tracking-wider transition-all duration-300 disabled:opacity-50 relative overflow-hidden group"
                   style={{
                     background: 'linear-gradient(135deg, #ffd700 0%, #d4af37 50%, #aa8c2c 100%)',
                     color: '#0a0a0f',
-                    boxShadow: '0 10px 30px rgba(212, 175, 55, 0.4)'
+                    boxShadow: '0 8px 25px rgba(212, 175, 55, 0.4)'
                   }}
                 >
                   <div
@@ -334,14 +327,14 @@ export default function Login() {
               </form>
 
               {/* Decorative suits */}
-              <div className="flex justify-center gap-4 mt-6">
+              <div className="flex justify-center gap-3 sm:gap-4 mt-4 sm:mt-5">
                 {['♠', '♥', '♣', '♦'].map((suit, i) => (
                   <motion.span
                     key={suit}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 0.4, y: 0 }}
-                    transition={{ delay: 0.8 + i * 0.1 }}
-                    className="text-xl"
+                    transition={{ delay: 0.7 + i * 0.1 }}
+                    className="text-lg sm:text-xl"
                     style={{ color: suit === '♥' || suit === '♦' ? '#dc2626' : '#d4af37' }}
                   >
                     {suit}
@@ -354,17 +347,17 @@ export default function Login() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-              className="text-center mt-6"
+              transition={{ delay: 0.8 }}
+              className="text-center mt-4 sm:mt-6"
             >
-              <p className="text-xs text-amber-500/40 tracking-wider">
+              <p className="text-[10px] sm:text-xs text-amber-500/40 tracking-wider">
                 © 2025 JW {i18n.language === 'zh' ? '九贏百家' : 'JIU WIN BACCARAT'}
               </p>
             </motion.div>
           </motion.div>
         </div>
 
-        {/* Right side - Image area (visible on desktop) */}
+        {/* Desktop: Right side spacer */}
         <div className="hidden lg:block lg:w-[55%] xl:w-[60%]" />
       </div>
 
