@@ -25,6 +25,7 @@ import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
 import CasinoChip, { formatChipValue } from '../components/game/CasinoChip';
 import CountdownTimer from '../components/game/CountdownTimer';
 import DealerTable3D from '../components/game/DealerTable3D';
+import { VirtualPlayersBar } from '../components/game/VirtualPlayersBar';
 import { formatAmount } from '../utils/format';
 
 // Chip component - uses CasinoChip SVG
@@ -378,7 +379,7 @@ export default function BullBullGame() {
   const phaseDisplay = getPhaseDisplay();
 
   return (
-    <div className="h-full flex flex-col bg-[#0a0e14] text-white overflow-hidden">
+    <div className="h-full flex flex-col bg-[#0a0e14] text-white overflow-auto">
       {/* Header */}
       <div className="flex items-center justify-between px-2 sm:px-4 py-2 sm:py-3 bg-[#0d1117]/80 border-b border-gray-800 shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
@@ -556,6 +557,9 @@ export default function BullBullGame() {
           </div>
         </div>
       </DealerTable3D>
+
+      {/* Virtual Players Bar - row of fake players at table bottom */}
+      <VirtualPlayersBar tableId={tableId || 'bb-default'} playerCount={7} />
 
       {/* Betting panel - Desktop */}
       <div className="hidden sm:block fixed bottom-0 left-0 right-0 bg-[#0d1117]/95 border-t border-gray-800 p-4 pb-safe">

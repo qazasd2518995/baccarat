@@ -64,6 +64,7 @@ import LobbyRoadmap from '../components/lobby/LobbyRoadmap';
 import MarqueeChat, { useMarqueeChat, MarqueeQuickButtons } from '../components/game/MarqueeChat';
 import { FlyingChipOverlay, useFlyingChips, ChipStack } from '../components/game/BetAreaChips';
 import NoticeMarquee from '../components/game/NoticeMarquee';
+import { VirtualPlayersBar } from '../components/game/VirtualPlayersBar';
 
 // Chip component - uses CasinoChip SVG
 function Chip({ value, selected, onClick, disabled, small, extraSmall }: { value: number | string; selected: boolean; onClick: () => void; disabled?: boolean; small?: boolean; extraSmall?: boolean }) {
@@ -1237,7 +1238,7 @@ export default function Game() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
+      <div className="flex-1 flex overflow-auto min-h-0">
         {/* Left Sidebar - User Info (hidden on mobile/tablet) */}
         <div className="hidden xl:flex w-60 bg-[#141922] border-r border-gray-800/50 flex-col shrink-0">
           {/* JW 九贏百家 Header */}
@@ -1545,6 +1546,9 @@ export default function Game() {
               </div>
 
           </DealerTable3D>
+
+          {/* Virtual Players Bar - row of fake players at table bottom */}
+          <VirtualPlayersBar tableId={tableId || 'default'} playerCount={7} />
 
           {/* Marquee chat - flying messages (outside DealerTable3D for proper positioning) */}
           <MarqueeChat

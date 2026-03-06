@@ -4,83 +4,145 @@ import CasinoChip from './CasinoChip';
 import { formatAmount } from '../../utils/format';
 
 // ============================================================
-// Hook: Progressive fake chip amounts during betting phase
+// Hook: Realistic progressive fake chip amounts during betting
+// Each bet area has independent timing, speed, and activity level
 // ============================================================
+
+interface BetAreaState {
+  currentAmount: number;
+  targetAmount: number;
+  isActive: boolean;        // Whether this area is receiving bets this round
+  activityLevel: number;    // 0-1, how active this bet area is (affects speed)
+  nextUpdateTime: number;   // When to update next (ms since betting started)
+  incrementSize: number;    // How much to add each update
+}
 
 export function useFakeChipAmounts(
   targetBets: Record<string, number>,
   phase: string,
 ): Record<string, number> {
   const [amounts, setAmounts] = useState<Record<string, number>>({});
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const tickRef = useRef(0);
+  const stateRef = useRef<Map<string, BetAreaState>>(new Map());
+  const rafRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number>(0);
   const prevPhaseRef = useRef(phase);
 
-  // Single combined effect handles both phase transitions and targetBets changes
+  // Initialize or reset bet area states when phase changes to betting
   useEffect(() => {
     const keys = Object.keys(targetBets).filter(k => targetBets[k] > 0);
 
-    // Phase just changed to betting → reset tick counter
+    // Phase just changed to betting → reset everything with varied settings
     if (phase === 'betting' && prevPhaseRef.current !== 'betting') {
-      tickRef.current = 0;
+      stateRef.current.clear();
       setAmounts({});
+      startTimeRef.current = performance.now();
+
+      // Create varied states for each bet area
+      for (const key of keys) {
+        const target = targetBets[key];
+
+        // Random activity level - some areas are very active, some quiet
+        const activityLevel = Math.random();
+
+        // Some areas don't start betting immediately (0-4 second delay)
+        const startDelay = Math.random() * 4000;
+
+        // Very low chance (10%) this area has NO activity this round
+        const isActive = Math.random() > 0.1;
+
+        // How many updates to reach target (more for active areas)
+        const numUpdates = isActive ? Math.floor(3 + activityLevel * 8) : 0;
+
+        stateRef.current.set(key, {
+          currentAmount: 0,
+          targetAmount: isActive ? target : 0,
+          isActive,
+          activityLevel,
+          nextUpdateTime: startDelay,
+          incrementSize: isActive && numUpdates > 0 ? Math.ceil(target / numUpdates) : 0,
+        });
+      }
     }
     prevPhaseRef.current = phase;
 
-    // Not in betting phase or no bets → show final amounts directly
+    // Not in betting phase → show final amounts directly
     if (phase !== 'betting') {
-      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
-      // Outside betting, show target amounts directly (so stats panel stays visible)
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      // Show actual target amounts outside betting phase
       if (keys.length > 0) {
         setAmounts({ ...targetBets });
       }
       return;
     }
 
-    // In betting phase but no bet data yet → wait for data
+    // No bet data → nothing to animate
     if (keys.length === 0) {
-      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
       return;
     }
 
-    // Already fully ramped → just update with new targets
-    const totalTicks = 8 + Math.floor(Math.random() * 4); // 8-11 ticks
-    if (tickRef.current >= totalTicks) {
-      setAmounts({ ...targetBets });
-      return;
-    }
+    // Animation loop
+    const animate = () => {
+      const now = performance.now();
+      const elapsed = now - startTimeRef.current;
+      let hasChanges = false;
+      const newAmounts: Record<string, number> = {};
 
-    // Clear any existing timer before starting new schedule
-    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+      for (const [key, state] of stateRef.current.entries()) {
+        if (!state.isActive) {
+          newAmounts[key] = 0;
+          continue;
+        }
 
-    const scheduleNext = () => {
-      const delay = tickRef.current === 0
-        ? 1500 + Math.random() * 1000  // first update after 1.5-2.5s
-        : 600 + Math.random() * 800;   // then 600-1400ms apart
+        // Check if it's time to update this area
+        if (elapsed >= state.nextUpdateTime && state.currentAmount < state.targetAmount) {
+          // Add increment with some randomness (80%-120%)
+          const noise = 0.8 + Math.random() * 0.4;
+          const increment = Math.round(state.incrementSize * noise);
+          state.currentAmount = Math.min(state.currentAmount + increment, state.targetAmount);
 
-      timerRef.current = setTimeout(() => {
-        tickRef.current++;
-        const t = tickRef.current;
-        const progress = Math.min(t / totalTicks, 1);
+          // Schedule next update with varied timing
+          const baseInterval = 300 + (1 - state.activityLevel) * 1700;
+          const intervalNoise = 0.5 + Math.random(); // 0.5x to 1.5x
+          state.nextUpdateTime = elapsed + baseInterval * intervalNoise;
 
-        setAmounts(() => {
-          const next: Record<string, number> = {};
-          for (const key of keys) {
-            const target = targetBets[key];
-            const p = Math.min(progress * (0.8 + Math.random() * 0.4), 1);
-            next[key] = Math.round(target * p);
-          }
-          return next;
-        });
+          hasChanges = true;
+        }
 
-        if (t < totalTicks) scheduleNext();
-      }, delay);
+        newAmounts[key] = state.currentAmount;
+      }
+
+      if (hasChanges) {
+        setAmounts(newAmounts);
+      }
+
+      // Continue animation if any area hasn't reached target
+      let anyPending = false;
+      for (const state of stateRef.current.values()) {
+        if (state.isActive && state.currentAmount < state.targetAmount) {
+          anyPending = true;
+          break;
+        }
+      }
+
+      if (anyPending) {
+        rafRef.current = requestAnimationFrame(animate);
+      }
     };
 
-    scheduleNext();
+    rafRef.current = requestAnimationFrame(animate);
 
     return () => {
-      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
     };
   }, [phase, targetBets]);
 
@@ -88,8 +150,8 @@ export function useFakeChipAmounts(
 }
 
 // ============================================================
-// Component: Small chip stack shown inside each bet button
-// Now with progressive stacking animation
+// Component: Realistic multi-denomination chip stacks
+// Shows varied chip colors/values like real multi-player betting
 // ============================================================
 
 interface FakeChipStackProps {
@@ -97,98 +159,157 @@ interface FakeChipStackProps {
   compact?: boolean;
 }
 
-function pickDenomination(amount: number): number {
-  if (amount >= 100000) return 100000;
-  if (amount >= 50000) return 50000;
-  if (amount >= 10000) return 10000;
-  if (amount >= 5000) return 5000;
-  if (amount >= 1000) return 1000;
-  if (amount >= 500) return 500;
-  return 100;
+// Available chip denominations (must match CasinoChip values)
+const CHIP_DENOMS = [100, 500, 1000, 5000, 10000, 50000, 100000];
+
+// Generate a realistic mix of chip denominations for a given amount
+// Returns array of chip values, simulating multiple players betting different amounts
+function generateChipMix(amount: number, seed: number): number[] {
+  if (amount <= 0) return [];
+
+  const chips: number[] = [];
+  let remaining = amount;
+
+  // Seeded random for consistent results per bet area
+  const seededRandom = (i: number) => {
+    const x = Math.sin(seed * (i + 1) * 9999) * 10000;
+    return x - Math.floor(x);
+  };
+
+  let iteration = 0;
+  const maxChips = 8; // Limit stack height
+
+  while (remaining > 0 && chips.length < maxChips) {
+    // Find valid denominations for remaining amount
+    const validDenoms = CHIP_DENOMS.filter(d => d <= remaining);
+    if (validDenoms.length === 0) break;
+
+    // Weighted random selection - prefer variety over efficiency
+    // Sometimes pick smaller chips even when larger ones fit
+    const randomFactor = seededRandom(iteration * 7);
+
+    let selectedDenom: number;
+    if (randomFactor < 0.3 && validDenoms.length > 1) {
+      // 30% chance: pick a smaller denomination for variety
+      const smallerIndex = Math.floor(seededRandom(iteration * 13) * Math.min(3, validDenoms.length));
+      selectedDenom = validDenoms[smallerIndex];
+    } else if (randomFactor < 0.6 && validDenoms.length > 2) {
+      // 30% chance: pick middle denomination
+      const midIndex = Math.floor(validDenoms.length / 2);
+      selectedDenom = validDenoms[midIndex];
+    } else {
+      // 40% chance: pick largest valid denomination
+      selectedDenom = validDenoms[validDenoms.length - 1];
+    }
+
+    chips.push(selectedDenom);
+    remaining -= selectedDenom;
+    iteration++;
+  }
+
+  // Shuffle chips slightly for more natural look (not perfectly sorted)
+  for (let i = chips.length - 1; i > 0; i--) {
+    if (seededRandom(i * 17) < 0.3) {
+      const j = Math.max(0, i - 1 - Math.floor(seededRandom(i * 23) * 2));
+      [chips[i], chips[j]] = [chips[j], chips[i]];
+    }
+  }
+
+  return chips;
 }
 
-function getStackCount(amount: number): number {
-  if (amount >= 50000) return 6;
-  if (amount >= 20000) return 5;
-  if (amount >= 10000) return 4;
-  if (amount >= 5000) return 3;
-  if (amount >= 1000) return 2;
-  return 1;
-}
-
-// Track visible chip count for progressive stacking
-function useProgressiveStack(targetCount: number) {
+// Track visible chips with progressive reveal
+function useProgressiveChips(targetChips: number[]) {
   const [visibleCount, setVisibleCount] = useState(0);
-  const prevTargetRef = useRef(0);
+  const prevLengthRef = useRef(0);
+  const delayMultiplierRef = useRef(1);
+
+  // Initialize delay multiplier once (varies per instance)
+  useEffect(() => {
+    delayMultiplierRef.current = 0.6 + Math.random() * 0.8; // 0.6x to 1.4x
+  }, []);
 
   useEffect(() => {
-    // If target decreased (new round), reset to 0
-    if (targetCount < prevTargetRef.current) {
+    const targetCount = targetChips.length;
+
+    // If target decreased (new round), reset
+    if (targetCount < prevLengthRef.current) {
       setVisibleCount(0);
-      prevTargetRef.current = targetCount;
+      prevLengthRef.current = targetCount;
       return;
     }
-    prevTargetRef.current = targetCount;
+    prevLengthRef.current = targetCount;
 
     if (visibleCount >= targetCount) return;
 
-    // Add chips one by one with random delay
-    const addNextChip = () => {
-      setVisibleCount(prev => {
-        if (prev >= targetCount) return prev;
-        return prev + 1;
-      });
-    };
+    // Add chips one by one with varied delay
+    const baseDelay = 80 + Math.random() * 250;
+    const delay = baseDelay * delayMultiplierRef.current;
+    const timer = setTimeout(() => {
+      setVisibleCount(prev => Math.min(prev + 1, targetCount));
+    }, delay);
 
-    const delay = 150 + Math.random() * 200; // 150-350ms between chips
-    const timer = setTimeout(addNextChip, delay);
     return () => clearTimeout(timer);
-  }, [targetCount, visibleCount]);
+  }, [targetChips.length, visibleCount]);
 
   return visibleCount;
 }
 
 export const FakeChipStack = memo(function FakeChipStack({ amount, compact = false }: FakeChipStackProps) {
-  if (amount <= 0) return null;
+  // Generate stable seed from amount (changes each round but stable during animation)
+  const seedRef = useRef(Math.random() * 10000);
+  const prevAmountRef = useRef(0);
 
-  const denomination = pickDenomination(amount);
-  const targetCount = getStackCount(amount);
-  const visibleCount = useProgressiveStack(targetCount);
+  // Reset seed when amount drops significantly (new round)
+  if (amount < prevAmountRef.current * 0.3) {
+    seedRef.current = Math.random() * 10000;
+  }
+  prevAmountRef.current = amount;
+
+  // Generate chip mix
+  const targetChips = useMemo(
+    () => generateChipMix(amount, seedRef.current),
+    [amount]
+  );
+
+  const visibleCount = useProgressiveChips(targetChips);
 
   // Chip sizes per breakpoint
-  const mobileSize = compact ? 10 : 12;
-  const desktopSize = compact ? 20 : 26;
+  const mobileSize = compact ? 10 : 14;
+  const desktopSize = compact ? 18 : 24;
 
   // Vertical offset between chips in the stack
   const mobileGap = 2;
   const desktopGap = 3;
 
-  // Use targetCount for container height to prevent layout shift
-  const mobileStackH = mobileSize + (targetCount - 1) * mobileGap;
-  const desktopStackH = desktopSize + (targetCount - 1) * desktopGap;
+  // Use target length for container height to prevent layout shift
+  const maxChips = targetChips.length;
+  const mobileStackH = mobileSize + (maxChips - 1) * mobileGap;
+  const desktopStackH = desktopSize + (maxChips - 1) * desktopGap;
 
-  if (visibleCount === 0) return null;
+  if (amount <= 0 || visibleCount === 0) return null;
+
+  const visibleChips = targetChips.slice(0, visibleCount);
 
   return (
     <div className="pointer-events-none">
       {/* Mobile chip stack */}
       <div className="relative sm:hidden" style={{ width: mobileSize, height: mobileStackH }}>
         <AnimatePresence>
-          {Array.from({ length: visibleCount }, (_, i) => (
+          {visibleChips.map((chipValue, i) => (
             <motion.div
-              key={i}
-              initial={{ opacity: 0, y: -20, scale: 0.5 }}
-              animate={{ opacity: 0.85, y: 0, scale: 1 }}
+              key={`${i}-${chipValue}`}
+              initial={{ opacity: 0, y: -15, scale: 0.5 }}
+              animate={{ opacity: 0.9, y: 0, scale: 1 }}
               transition={{
                 type: 'spring',
-                stiffness: 400,
-                damping: 20,
-                delay: i * 0.05,
+                stiffness: 450,
+                damping: 22,
               }}
               className="absolute left-0"
-              style={{ bottom: i * mobileGap }}
+              style={{ bottom: i * mobileGap, zIndex: i }}
             >
-              <CasinoChip size={mobileSize} value={denomination} />
+              <CasinoChip size={mobileSize} value={chipValue} />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -196,21 +317,20 @@ export const FakeChipStack = memo(function FakeChipStack({ amount, compact = fal
       {/* Desktop chip stack */}
       <div className="relative hidden sm:block" style={{ width: desktopSize, height: desktopStackH }}>
         <AnimatePresence>
-          {Array.from({ length: visibleCount }, (_, i) => (
+          {visibleChips.map((chipValue, i) => (
             <motion.div
-              key={i}
-              initial={{ opacity: 0, y: -30, scale: 0.5 }}
-              animate={{ opacity: 0.85, y: 0, scale: 1 }}
+              key={`${i}-${chipValue}`}
+              initial={{ opacity: 0, y: -25, scale: 0.5 }}
+              animate={{ opacity: 0.9, y: 0, scale: 1 }}
               transition={{
                 type: 'spring',
-                stiffness: 400,
-                damping: 20,
-                delay: i * 0.05,
+                stiffness: 450,
+                damping: 22,
               }}
               className="absolute left-0"
-              style={{ bottom: i * desktopGap }}
+              style={{ bottom: i * desktopGap, zIndex: i }}
             >
-              <CasinoChip size={desktopSize} value={denomination} />
+              <CasinoChip size={desktopSize} value={chipValue} />
             </motion.div>
           ))}
         </AnimatePresence>

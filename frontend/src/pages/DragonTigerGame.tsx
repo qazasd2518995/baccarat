@@ -53,6 +53,7 @@ import { useFakeChipAmounts, FakeChipStack, FakeBetStats } from '../components/g
 import DragonTigerRoadmap from '../components/game/DragonTigerRoadmap';
 import { FlyingChipOverlay, useFlyingChips, ChipStack } from '../components/game/BetAreaChips';
 import NoticeMarquee from '../components/game/NoticeMarquee';
+import { VirtualPlayersBar } from '../components/game/VirtualPlayersBar';
 import {
   GameSettingsModal,
   GameRulesModal,
@@ -995,7 +996,7 @@ export default function DragonTigerGame() {
       </AnimatePresence>
 
       {/* Main Content - Three Column Layout */}
-      <div className="flex-1 flex overflow-hidden min-h-0">
+      <div className="flex-1 flex overflow-auto min-h-0">
         {/* Left Sidebar - User Info & Leaderboard (hidden on mobile/tablet) */}
         <div className="hidden xl:flex w-60 bg-[#141922] border-r border-gray-800/50 flex-col shrink-0">
           {/* JW 九贏百家 Header */}
@@ -1242,6 +1243,9 @@ export default function DragonTigerGame() {
               )}
             </AnimatePresence>
           </DealerTable3D>
+
+          {/* Virtual Players Bar - row of fake players at table bottom */}
+          <VirtualPlayersBar tableId={tableId || 'dt-default'} playerCount={7} />
 
           {/* Marquee chat - flying messages (outside DealerTable3D for proper positioning) */}
           <MarqueeChat
