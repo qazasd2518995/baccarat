@@ -1365,7 +1365,7 @@ export default function Game() {
         </div>
 
         {/* Center - Game Area */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-0 relative">
+        <div className="flex-1 flex flex-col min-w-0 relative overflow-y-auto">
           {/* Countdown timer — positioned over entire game area (above dealer + table) */}
           <CountdownTimer timeRemaining={timeRemaining} phase={phase} hidden={lastResult !== null || frozenResult !== null || showResult} />
 

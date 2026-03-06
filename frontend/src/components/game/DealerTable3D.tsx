@@ -223,7 +223,7 @@ export default function DealerTable3D({
   const tableTop = bp === 'mobile' ? '35%' : '38%';
 
   return (
-    <div className="flex-1 min-h-[300px] sm:min-h-[400px] relative flex flex-col overflow-hidden bg-[#050a0d]">
+    <div className="flex-1 min-h-[280px] sm:min-h-[350px] relative flex flex-col overflow-visible bg-[#050a0d]">
 
       {/* === Opulent Art Deco Noir Casino Background === */}
       <div className="absolute inset-0 z-0 overflow-hidden">
