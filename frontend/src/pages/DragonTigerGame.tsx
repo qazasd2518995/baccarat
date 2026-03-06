@@ -1245,7 +1245,7 @@ export default function DragonTigerGame() {
           </DealerTable3D>
 
           {/* Virtual Players Bar - row of fake players at table bottom */}
-          <VirtualPlayersBar tableId={tableId || 'dt-default'} playerCount={7} />
+          <VirtualPlayersBar tableId={tableId || 'dt-default'}  />
 
           {/* Marquee chat - flying messages (outside DealerTable3D for proper positioning) */}
           <MarqueeChat

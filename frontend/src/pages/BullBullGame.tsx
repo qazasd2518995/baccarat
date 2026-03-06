@@ -559,7 +559,7 @@ export default function BullBullGame() {
       </DealerTable3D>
 
       {/* Virtual Players Bar - row of fake players at table bottom */}
-      <VirtualPlayersBar tableId={tableId || 'bb-default'} playerCount={7} />
+      <VirtualPlayersBar tableId={tableId || 'bb-default'}  />
 
       {/* Betting panel - Desktop */}
       <div className="hidden sm:block fixed bottom-0 left-0 right-0 bg-[#0d1117]/95 border-t border-gray-800 p-4 pb-safe">

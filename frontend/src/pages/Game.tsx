@@ -1546,7 +1546,7 @@ export default function Game() {
           </DealerTable3D>
 
           {/* Virtual Players Bar - row of fake players at table bottom */}
-          <VirtualPlayersBar tableId={tableId || 'default'} playerCount={7} />
+          <VirtualPlayersBar tableId={tableId || 'default'} />
 
           {/* Marquee chat - flying messages (outside DealerTable3D for proper positioning) */}
           <MarqueeChat

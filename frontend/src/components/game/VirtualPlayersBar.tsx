@@ -33,22 +33,29 @@ const COUNTRIES = [
   { flag: '🇦🇺', names: ['aussie_luck', 'sydney_win', 'g_day_mate', 'oz_gambler', 'roo_luck', 'straya_bet', 'melb_boss', 'perth_punt', 'brisbane88', 'crikey_win', 'fair_dinkum', 'no_worries', 'oz_whale', 'down_under', 'matey_bet'] },
 ];
 
-// Avatar colors (gradients)
+// Avatar colors (gradients) - casino-style
 const AVATAR_COLORS = [
-  'from-rose-400 to-red-500',
-  'from-orange-400 to-amber-500',
-  'from-yellow-400 to-orange-500',
-  'from-emerald-400 to-green-500',
-  'from-teal-400 to-cyan-500',
-  'from-sky-400 to-blue-500',
-  'from-indigo-400 to-purple-500',
-  'from-purple-400 to-pink-500',
-  'from-pink-400 to-rose-500',
-  'from-slate-400 to-zinc-500',
+  'from-rose-500 to-red-600',
+  'from-orange-500 to-amber-600',
+  'from-yellow-500 to-orange-600',
+  'from-emerald-500 to-green-600',
+  'from-teal-500 to-cyan-600',
+  'from-sky-500 to-blue-600',
+  'from-indigo-500 to-purple-600',
+  'from-purple-500 to-pink-600',
+  'from-pink-500 to-rose-600',
+  'from-amber-500 to-yellow-600',
 ];
 
+// Generate deterministic player count based on tableId (5-12 players)
+function getPlayerCountForTable(tableId: string): number {
+  const seed = tableId.split('').reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
+  // Returns 5-12 players
+  return 5 + Math.floor((Math.sin(seed * 7777) * 10000 % 1) * 8);
+}
+
 // Generate deterministic but varied players based on tableId
-function generatePlayersForTable(tableId: string, count: number = 7) {
+function generatePlayersForTable(tableId: string, count: number) {
   // Use tableId to seed randomness
   const seed = tableId.split('').reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
 
@@ -118,7 +125,7 @@ function generatePlayersForTable(tableId: string, count: number = 7) {
 
     players.push({
       id: `${tableId}-player-${i}`,
-      name: name.length > 10 ? name.slice(0, 9) + '…' : name,
+      name: name.length > 8 ? name.slice(0, 7) + '…' : name,
       flag: country.flag,
       balance,
       avatarColor: AVATAR_COLORS[colorIndex],
@@ -146,51 +153,95 @@ interface VirtualPlayersBarProps {
 
 export const VirtualPlayersBar = memo(function VirtualPlayersBar({
   tableId,
-  playerCount = 7
+  playerCount
 }: VirtualPlayersBarProps) {
-  const players = useMemo(() => generatePlayersForTable(tableId, playerCount), [tableId, playerCount]);
+  // Auto-calculate player count based on tableId if not provided
+  const actualCount = playerCount ?? getPlayerCountForTable(tableId);
+  const players = useMemo(() => generatePlayersForTable(tableId, actualCount), [tableId, actualCount]);
 
   return (
-    <div className="w-full bg-gradient-to-r from-black/80 via-black/60 to-black/80 border-t border-[#d4af37]/20">
-      <div className="flex items-center justify-center gap-1 sm:gap-2 lg:gap-3 px-1 sm:px-2 py-1.5 sm:py-2 overflow-x-auto scrollbar-hide">
+    <div
+      className="w-full relative overflow-hidden"
+      style={{
+        background: 'linear-gradient(180deg, rgba(30,35,40,0.95) 0%, rgba(20,25,30,0.98) 100%)',
+        borderTop: '1px solid rgba(212,175,55,0.3)',
+      }}
+    >
+      {/* Decorative top line */}
+      <div
+        className="absolute top-0 left-0 right-0 h-px"
+        style={{
+          background: 'linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.5) 20%, rgba(212,175,55,0.8) 50%, rgba(212,175,55,0.5) 80%, transparent 100%)',
+        }}
+      />
+
+      {/* Players container */}
+      <div className="flex items-center justify-center gap-1 px-2 py-2 sm:py-2.5 overflow-x-auto scrollbar-hide">
         {players.map((player, index) => (
           <motion.div
             key={player.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="flex flex-col items-center shrink-0 min-w-[48px] sm:min-w-[60px] lg:min-w-[72px]"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: index * 0.03, type: 'spring', stiffness: 300 }}
+            className="flex flex-col items-center shrink-0"
           >
-            {/* Avatar with flag overlay */}
-            <div className="relative">
-              <div className={`
-                w-7 h-7 sm:w-9 sm:h-9 lg:w-10 lg:h-10
-                rounded-full bg-gradient-to-br ${player.avatarColor}
-                flex items-center justify-center
-                text-[8px] sm:text-[10px] lg:text-xs font-bold text-white
-                shadow-lg shadow-black/30
-                border border-white/20
-              `}>
-                {player.initials}
+            {/* Player card */}
+            <div
+              className="relative px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg"
+              style={{
+                background: 'linear-gradient(145deg, rgba(40,45,55,0.9) 0%, rgba(25,30,40,0.95) 100%)',
+                border: '1px solid rgba(100,110,130,0.3)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+                minWidth: '58px',
+              }}
+            >
+              {/* Avatar with flag */}
+              <div className="flex justify-center mb-1">
+                <div className="relative">
+                  <div className={`
+                    w-8 h-8 sm:w-9 sm:h-9
+                    rounded-full bg-gradient-to-br ${player.avatarColor}
+                    flex items-center justify-center
+                    text-[9px] sm:text-[10px] font-bold text-white
+                    shadow-md
+                    border-2 border-white/20
+                  `}>
+                    {player.initials}
+                  </div>
+                  {/* Flag badge */}
+                  <div
+                    className="absolute -bottom-0.5 -right-1 text-[11px] sm:text-xs drop-shadow-md"
+                    style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }}
+                  >
+                    {player.flag}
+                  </div>
+                </div>
               </div>
-              {/* Flag badge */}
-              <div className="absolute -bottom-0.5 -right-0.5 text-[10px] sm:text-xs lg:text-sm drop-shadow-lg">
-                {player.flag}
+
+              {/* Name */}
+              <div className="text-[9px] sm:text-[10px] text-gray-200 truncate text-center font-medium max-w-[54px] sm:max-w-[60px]">
+                {player.name}
               </div>
-            </div>
 
-            {/* Name */}
-            <div className="mt-0.5 text-[8px] sm:text-[9px] lg:text-[10px] text-gray-300 truncate max-w-[48px] sm:max-w-[60px] lg:max-w-[72px] text-center">
-              {player.name}
-            </div>
-
-            {/* Balance */}
-            <div className="text-[8px] sm:text-[9px] lg:text-[10px] text-[#d4af37]/80 font-mono">
-              ${formatBalance(player.balance)}
+              {/* Balance */}
+              <div
+                className="text-[9px] sm:text-[10px] font-mono text-center font-semibold"
+                style={{ color: '#e8d48b' }}
+              >
+                ${formatBalance(player.balance)}
+              </div>
             </div>
           </motion.div>
         ))}
       </div>
+
+      {/* Subtle bottom shadow */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-px"
+        style={{
+          background: 'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.5) 50%, transparent 100%)',
+        }}
+      />
     </div>
   );
 });
