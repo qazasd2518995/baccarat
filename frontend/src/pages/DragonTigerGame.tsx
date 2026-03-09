@@ -516,6 +516,7 @@ export default function DragonTigerGame() {
     setDragonFlipped,
     setTigerFlipped,
     lastResult,
+    isSuitedTie,
     lastSettlement,
     roadmapData,
     shoeNumber,
@@ -768,7 +769,18 @@ export default function DragonTigerGame() {
 
   // Delayed result display — wait for both cards flipped + 2s delay
   const [showResult, setShowResult] = useState(false);
+  const [winningBets, setWinningBets] = useState<Set<string>>(new Set());
   const resultTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Helper function to get winning flash class for bet buttons
+  const getWinningFlashClass = (betType: string): string => {
+    if (!showResult || !winningBets.has(betType)) return '';
+    // Dragon-related bets use red, Tiger-related use blue, tie uses green/gold
+    if (betType.startsWith('dragon')) return 'winning-flash winning-flash-banker';
+    if (betType.startsWith('tiger')) return 'winning-flash winning-flash-player';
+    if (betType === 'dt_tie' || betType === 'dt_suited_tie') return 'winning-flash winning-flash-gold';
+    return 'winning-flash winning-flash-gold';
+  };
 
   useEffect(() => {
     // Both cards flipped AND we have a result → start 2s delay
@@ -778,23 +790,65 @@ export default function DragonTigerGame() {
       else if (lastResult === 'tiger') playSound('tigerWins');
       else playSound('dtTie');
 
+      // Calculate winning bet types
+      const winning = new Set<string>();
+      const dVal = dragonValue ?? 0;
+      const tVal = tigerValue ?? 0;
+
+      // Main result
+      if (lastResult === 'dragon') winning.add('dragon');
+      if (lastResult === 'tiger') winning.add('tiger');
+      if (lastResult === 'tie') {
+        winning.add('dt_tie');
+        if (isSuitedTie) winning.add('dt_suited_tie');
+      }
+
+      // Dragon side bets (based on dragon card value)
+      if (dVal >= 8) winning.add('dragon_big');
+      if (dVal >= 1 && dVal <= 6) winning.add('dragon_small');
+      if (dVal % 2 === 1) winning.add('dragon_odd');
+      if (dVal % 2 === 0 && dVal > 0) winning.add('dragon_even');
+
+      // Tiger side bets (based on tiger card value)
+      if (tVal >= 8) winning.add('tiger_big');
+      if (tVal >= 1 && tVal <= 6) winning.add('tiger_small');
+      if (tVal % 2 === 1) winning.add('tiger_odd');
+      if (tVal % 2 === 0 && tVal > 0) winning.add('tiger_even');
+
+      // Color bets (based on card suit)
+      if (dragonCard) {
+        const dSuit = dragonCard.suit;
+        if (dSuit === 'hearts' || dSuit === 'diamonds') winning.add('dragon_red');
+        if (dSuit === 'spades' || dSuit === 'clubs') winning.add('dragon_black');
+      }
+      if (tigerCard) {
+        const tSuit = tigerCard.suit;
+        if (tSuit === 'hearts' || tSuit === 'diamonds') winning.add('tiger_red');
+        if (tSuit === 'spades' || tSuit === 'clubs') winning.add('tiger_black');
+      }
+
+      setWinningBets(winning);
+      console.log(`[DragonTiger] Winning bets: ${Array.from(winning).join(',')}`);
+
       resultTimerRef.current = setTimeout(() => {
         setShowResult(true);
         // Auto-hide after 2.5s
         resultTimerRef.current = setTimeout(() => {
           setShowResult(false);
+          setWinningBets(new Set());
         }, 2500);
       }, 2000);
     }
     // Reset when new round starts
     if (phase === 'betting') {
       setShowResult(false);
+      setWinningBets(new Set());
       if (resultTimerRef.current) {
         clearTimeout(resultTimerRef.current);
         resultTimerRef.current = null;
       }
     }
-  }, [dragonFlipped, tigerFlipped, lastResult, phase, showResult, playSound]);
+  }, [dragonFlipped, tigerFlipped, lastResult, phase, showResult, playSound, dragonValue, tigerValue, isSuitedTie, dragonCard, tigerCard]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -1407,7 +1461,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('dragon_big', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_big') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_big') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dragon_big')}`}
                   >
                     <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonBig')}</span>
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
@@ -1426,7 +1480,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('dragon_small', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_small') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_small') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dragon_small')}`}
                   >
                     <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonSmall')}</span>
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
@@ -1445,7 +1499,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('dt_suited_tie', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-[1.5] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dt_suited_tie') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-[1.5] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dt_suited_tie') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dt_suited_tie')}`}
                   >
                     <span className="text-green-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dtSuitedTie')}</span>
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:50</span>
@@ -1464,7 +1518,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('tiger_small', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tiger_small') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tiger_small') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tiger_small')}`}
                   >
                     <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerSmall')}</span>
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
@@ -1483,7 +1537,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('tiger_big', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger_big') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger_big') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tiger_big')}`}
                   >
                     <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerBig')}</span>
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
@@ -1506,7 +1560,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('dragon_even', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_even') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_even') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dragon_even')}`}
                   >
                     <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonEven')}</span>
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1.05</span>
@@ -1525,7 +1579,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('dragon_odd', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_odd') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_odd') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dragon_odd')}`}
                   >
                     <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonOdd')}</span>
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.75</span>
@@ -1544,7 +1598,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('tiger_odd', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tiger_odd') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tiger_odd') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tiger_odd')}`}
                   >
                     <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerOdd')}</span>
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.75</span>
@@ -1563,7 +1617,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('tiger_even', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger_even') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger_even') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tiger_even')}`}
                   >
                     <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerEven')}</span>
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1.05</span>
@@ -1586,7 +1640,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('dragon_black', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_black') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_black') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dragon_black')}`}
                   >
                     <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonBlack')}</span>
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
@@ -1605,7 +1659,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('dragon_red', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_red') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_red') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dragon_red')}`}
                   >
                     <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonRed')}</span>
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
@@ -1624,7 +1678,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('tiger_red', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tiger_red') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tiger_red') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tiger_red')}`}
                   >
                     <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerRed')}</span>
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
@@ -1643,7 +1697,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('tiger_black', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger_black') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger_black') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tiger_black')}`}
                   >
                     <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerBlack')}</span>
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
@@ -1667,7 +1721,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('dragon', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot casino-bet-player relative flex-[2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot casino-bet-player relative flex-[2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dragon')}`}
                   >
                     <div className="casino-corner-ornament top-left hidden sm:block" />
                     <div className="casino-corner-ornament bottom-right hidden sm:block" />
@@ -1690,7 +1744,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('dt_tie', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot relative flex-[1.2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dt_tie') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot relative flex-[1.2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dt_tie') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dt_tie')}`}
                   >
                     <span className="casino-display text-green-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('dtTie')}</span>
                     <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:8</span>
@@ -1711,7 +1765,7 @@ export default function DragonTigerGame() {
                   <button
                     onClick={(e) => handleBet('tiger', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot casino-bet-banker relative flex-[2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot casino-bet-banker relative flex-[2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tiger')}`}
                   >
                     <div className="casino-corner-ornament top-right hidden sm:block" />
                     <div className="casino-corner-ornament bottom-left hidden sm:block" />
