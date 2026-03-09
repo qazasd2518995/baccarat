@@ -250,12 +250,13 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
 
   const renderCockroach = (val: 'red' | 'blue') => {
     const color = val === 'red' ? '#ef4444' : '#3b82f6';
+    // Red: / (left-bottom to right-top), Blue: \ (left-top to right-bottom)
     return (
       <div style={{
         width: 5,
         height: 1.5,
         backgroundColor: color,
-        transform: val === 'red' ? 'rotate(45deg)' : 'rotate(-45deg)',
+        transform: val === 'red' ? 'rotate(-45deg)' : 'rotate(45deg)',
       }} />
     );
   };

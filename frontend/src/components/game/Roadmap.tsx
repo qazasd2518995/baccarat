@@ -150,19 +150,57 @@ export default function Roadmap({ data }: RoadmapProps) {
       }
     }
 
+    // Different rendering for each road type
+    // Big Eye Boy (offset=1): hollow circles
+    // Small Road (offset=2): solid circles
+    // Cockroach Pig (offset=3): slashes
+    const renderCell = (cell: 'red' | 'blue' | null) => {
+      if (!cell) return <div className="w-3 h-3 shrink-0 aspect-square bg-slate-700/20" />;
+
+      if (offset === 1) {
+        // Big Eye Boy: hollow circles
+        return (
+          <div
+            className="w-3 h-3 shrink-0 aspect-square rounded-full"
+            style={{
+              border: `2px solid ${cell === 'red' ? '#ef4444' : '#3b82f6'}`,
+              backgroundColor: 'transparent'
+            }}
+          />
+        );
+      } else if (offset === 2) {
+        // Small Road: solid circles
+        return (
+          <div
+            className={`w-3 h-3 shrink-0 aspect-square rounded-full ${cell === 'red' ? 'bg-red-500' : 'bg-blue-500'}`}
+          />
+        );
+      } else {
+        // Cockroach Pig: slashes - Red: / , Blue: \
+        return (
+          <div className="w-3 h-3 shrink-0 aspect-square flex items-center justify-center bg-slate-700/20">
+            <div
+              style={{
+                width: 8,
+                height: 2,
+                backgroundColor: cell === 'red' ? '#ef4444' : '#3b82f6',
+                transform: cell === 'red' ? 'rotate(-45deg)' : 'rotate(45deg)',
+              }}
+            />
+          </div>
+        );
+      }
+    };
+
     return (
       <div className="overflow-x-auto">
         <div className="inline-grid gap-0.5" style={{ gridTemplateRows: `repeat(${ROWS}, 1fr)` }}>
           {grid.map((rowData, rowIndex) => (
             <div key={rowIndex} className="flex gap-0.5">
               {rowData.slice(0, Math.max(usedCols, 10)).map((cell, colIndex) => (
-                <div
-                  key={`${rowIndex}-${colIndex}`}
-                  className={`
-                    w-3 h-3 shrink-0 aspect-square rounded-full
-                    ${cell === 'red' ? 'bg-red-500' : cell === 'blue' ? 'bg-blue-500' : 'bg-slate-700/20'}
-                  `}
-                />
+                <div key={`${rowIndex}-${colIndex}`}>
+                  {renderCell(cell)}
+                </div>
               ))}
             </div>
           ))}
