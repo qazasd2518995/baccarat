@@ -244,7 +244,7 @@ function DTStatsPanel({ data, nextDragon, nextTiger }: {
           width: 6,
           height: 1.5,
           backgroundColor: cockroach === 'red' ? '#ef4444' : cockroach === 'blue' ? '#3b82f6' : '#666',
-          transform: 'rotate(45deg)',
+          transform: 'rotate(-45deg)',
         }}
       />
     </div>
@@ -517,7 +517,7 @@ function DragonTigerRoadmap({ roadHistory }: DragonTigerRoadmapProps) {
         width: 5,
         height: 1.5,
         backgroundColor: color,
-        transform: 'rotate(45deg)',
+        transform: 'rotate(-45deg)',
       }} />
     );
   };

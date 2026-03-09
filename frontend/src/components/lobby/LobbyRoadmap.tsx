@@ -65,7 +65,7 @@ function StatsPanel({ data, nextBanker, nextPlayer }: {
           width: 6,
           height: 1.5,
           backgroundColor: cockroach === 'red' ? '#ef4444' : cockroach === 'blue' ? '#3b82f6' : '#666',
-          transform: 'rotate(45deg)',
+          transform: 'rotate(-45deg)',
         }}
       />
     </div>
@@ -410,7 +410,7 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
         width: 5,
         height: 1.5,
         backgroundColor: color,
-        transform: 'rotate(45deg)',
+        transform: 'rotate(-45deg)',
       }} />
     );
   };
