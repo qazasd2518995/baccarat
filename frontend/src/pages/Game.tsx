@@ -50,7 +50,6 @@ import {
   FollowingListModal,
   TableSwitchModal,
   GiftModal,
-  ResultsProportionModal,
   RoadmapModal,
 } from '../components/game/modals';
 import AnimatedPlayingCard from '../components/game/AnimatedPlayingCard';
@@ -391,7 +390,6 @@ export default function Game() {
   const [isFollowingOpen, setIsFollowingOpen] = useState(false);
   const [isTableSwitchOpen, setIsTableSwitchOpen] = useState(false);
   const [isGiftOpen, setIsGiftOpen] = useState(false);
-  const [isProportionOpen, setIsProportionOpen] = useState(false);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
 
   // Mobile hamburger menu state
@@ -2161,71 +2159,103 @@ export default function Game() {
             </div>
           </div>
 
-          {/* Stats Panel */}
+          {/* Stats Panel with Progress Bars */}
           <div className="p-3 border-b border-gray-800/50">
-            {/* Header - 閒 vs 莊 */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/30">閒</div>
-                <div className="text-left">
-                  <div className="text-blue-400 font-bold text-lg leading-none">{playerWins}</div>
-                  <div className="text-gray-500 text-[10px]">/ {total}</div>
+            {/* Total Rounds */}
+            <div className="text-center mb-3">
+              <span className="text-gray-500 text-[10px]">總局數</span>
+              <div className="text-xl font-bold text-white">{total}</div>
+            </div>
+
+            {/* Main Results with Progress Bars */}
+            <div className="space-y-2 mb-3">
+              {/* Banker */}
+              <div>
+                <div className="flex justify-between text-xs mb-0.5">
+                  <span className="text-red-400 font-medium">莊</span>
+                  <span className="text-white">{bankerWins} ({total > 0 ? Math.round((bankerWins / total) * 100) : 0}%)</span>
+                </div>
+                <div className="h-2 bg-gray-700/50 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-red-600 to-red-400 rounded-full transition-all duration-500"
+                    style={{ width: `${total > 0 ? (bankerWins / total) * 100 : 0}%` }}
+                  />
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="text-right">
-                  <div className="text-red-400 font-bold text-lg leading-none">{bankerWins}</div>
-                  <div className="text-gray-500 text-[10px]">/ {total}</div>
+
+              {/* Player */}
+              <div>
+                <div className="flex justify-between text-xs mb-0.5">
+                  <span className="text-blue-400 font-medium">閒</span>
+                  <span className="text-white">{playerWins} ({total > 0 ? Math.round((playerWins / total) * 100) : 0}%)</span>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-red-500/30">莊</div>
+                <div className="h-2 bg-gray-700/50 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full transition-all duration-500"
+                    style={{ width: `${total > 0 ? (playerWins / total) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Tie */}
+              <div>
+                <div className="flex justify-between text-xs mb-0.5">
+                  <span className="text-green-400 font-medium">和</span>
+                  <span className="text-white">{ties} ({total > 0 ? Math.round((ties / total) * 100) : 0}%)</span>
+                </div>
+                <div className="h-2 bg-gray-700/50 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-green-600 to-green-400 rounded-full transition-all duration-500"
+                    style={{ width: `${total > 0 ? (ties / total) * 100 : 0}%` }}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
-              {/* Row 1 */}
-              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
-                <span className="text-green-400">和</span>
-                <span className="text-white font-medium">{ties}</span>
-              </div>
-              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
-                <span className="text-amber-400">超級6</span>
-                <span className="text-white font-medium">{super6Count}</span>
-              </div>
-              {/* Row 2 */}
-              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+            {/* Secondary Stats Grid */}
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] pt-2 border-t border-gray-700/50">
+              <div className="flex justify-between">
                 <span className="text-blue-300">閒對</span>
-                <span className="text-white font-medium">{playerPairCount}</span>
+                <span className="text-white">{playerPairCount} ({total > 0 ? Math.round((playerPairCount / total) * 100) : 0}%)</span>
               </div>
-              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+              <div className="flex justify-between">
                 <span className="text-red-300">莊對</span>
-                <span className="text-white font-medium">{bankerPairCount}</span>
+                <span className="text-white">{bankerPairCount} ({total > 0 ? Math.round((bankerPairCount / total) * 100) : 0}%)</span>
               </div>
-              {/* Row 3 */}
-              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+              <div className="flex justify-between">
                 <span className="text-cyan-400">小</span>
-                <span className="text-white font-medium">{smallCount}</span>
+                <span className="text-white">{smallCount} ({total > 0 ? Math.round((smallCount / total) * 100) : 0}%)</span>
               </div>
-              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+              <div className="flex justify-between">
                 <span className="text-orange-400">大</span>
-                <span className="text-white font-medium">{bigCount}</span>
+                <span className="text-white">{bigCount} ({total > 0 ? Math.round((bigCount / total) * 100) : 0}%)</span>
               </div>
-              {/* Row 4 */}
-              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+              <div className="flex justify-between">
                 <span className="text-blue-300">閒龍寶</span>
-                <span className="text-white font-medium">{pBonusCount}</span>
+                <span className="text-white">{pBonusCount}</span>
               </div>
-              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+              <div className="flex justify-between">
                 <span className="text-red-300">莊龍寶</span>
-                <span className="text-white font-medium">{bBonusCount}</span>
+                <span className="text-white">{bBonusCount}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-amber-400">超級6</span>
+                <span className="text-white">{super6Count}</span>
               </div>
             </div>
 
             {/* Total Bet */}
-            <div className="mt-3 pt-2 border-t border-gray-700/50 flex items-center justify-between">
-              <span className="text-gray-400 text-xs">本局投注</span>
+            <div className="mt-2 pt-2 border-t border-gray-700/50 flex items-center justify-between text-xs">
+              <span className="text-gray-400">本局投注</span>
               <span className="text-amber-400 font-bold">{totalBet.toLocaleString()}</span>
             </div>
+
+            {/* No Data Message */}
+            {total === 0 && (
+              <div className="text-center text-gray-500 text-[10px] mt-2">
+                暫無數據
+              </div>
+            )}
           </div>
 
           {/* Chat Area */}
@@ -2284,12 +2314,6 @@ export default function Game() {
               <Heart className="w-3 h-3" /> {t('followingList')}
             </button>
             <button
-              onClick={() => setIsProportionOpen(true)}
-              className="w-full text-left text-xs text-gray-400 flex items-center gap-2 py-1 hover:bg-gray-800/50 rounded px-2 -mx-2"
-            >
-              <BarChart2 className="w-3 h-3" /> {t('resultsProportion')}
-            </button>
-            <button
               onClick={() => setIsReportOpen(true)}
               className="w-full text-left text-xs text-gray-400 flex items-center gap-2 py-1 hover:bg-gray-800/50 rounded px-2 -mx-2"
             >
@@ -2327,7 +2351,6 @@ export default function Game() {
         dealerName={currentDealerName}
         balance={balance}
       />
-      <ResultsProportionModal isOpen={isProportionOpen} onClose={() => setIsProportionOpen(false)} />
       <RoadmapModal isOpen={isRoadmapOpen} onClose={() => setIsRoadmapOpen(false)} data={roadmapData} />
       <ChipSettingsModal isOpen={isChipSettingsOpen} onClose={() => setIsChipSettingsOpen(false)} />
 
@@ -2401,7 +2424,6 @@ export default function Game() {
           menuActions={[
             { icon: <MapPin className="w-5 h-5" />, label: t('roadmap') || '路單', onClick: () => setIsRoadmapOpen(true), color: 'text-amber-400' },
             { icon: <Heart className="w-5 h-5" />, label: t('followingList'), onClick: () => setIsFollowingOpen(true), color: 'text-pink-400' },
-            { icon: <BarChart2 className="w-5 h-5" />, label: t('resultsProportion'), onClick: () => setIsProportionOpen(true) },
             { icon: <FileText className="w-5 h-5" />, label: t('gameReport'), onClick: () => setIsReportOpen(true) },
             { icon: <Settings className="w-5 h-5" />, label: t('gameSettings'), onClick: () => setIsSettingsOpen(true) },
             { icon: <HelpCircle className="w-5 h-5" />, label: t('gameRules'), onClick: () => setIsRulesOpen(true) },
