@@ -15,7 +15,6 @@ import {
   HelpCircle,
   Heart,
   HeartOff,
-  BarChart2,
   FileText,
   Info,
   X,

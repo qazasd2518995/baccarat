@@ -16,7 +16,6 @@ import {
   Video,
   Heart,
   HeartOff,
-  BarChart2,
   FileText,
   X,
   RotateCcw,
@@ -61,7 +60,6 @@ import {
   FollowingListModal,
   TableSwitchModal,
   GiftModal,
-  ResultsProportionModal,
 } from '../components/game/modals';
 
 // Chip component - uses CasinoChip SVG
@@ -365,7 +363,6 @@ export default function DragonTigerGame() {
   const [isFollowingOpen, setIsFollowingOpen] = useState(false);
   const [isTableSwitchOpen, setIsTableSwitchOpen] = useState(false);
   const [isGiftOpen, setIsGiftOpen] = useState(false);
-  const [isProportionOpen, setIsProportionOpen] = useState(false);
   const [isChipSettingsOpen, setIsChipSettingsOpen] = useState(false);
 
   // Mobile hamburger menu state
@@ -974,14 +971,6 @@ export default function DragonTigerGame() {
                 <span>報表</span>
               </button>
               {/* Results Proportion */}
-              <button
-                onClick={() => { setIsProportionOpen(true); setIsMobileMenuOpen(false); }}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
-              >
-                <BarChart2 className="w-4 h-4" />
-                <span>結果比例</span>
-              </button>
-              <div className="border-t border-gray-700 my-1" />
               {/* Back to Lobby */}
               <button
                 onClick={() => navigate('/lobby')}
@@ -2065,12 +2054,6 @@ export default function DragonTigerGame() {
               <Heart className="w-3 h-3" /> {t('followingList')}
             </button>
             <button
-              onClick={() => setIsProportionOpen(true)}
-              className="w-full text-left text-xs text-gray-400 flex items-center gap-2 py-1 hover:bg-gray-800/50 rounded px-2 -mx-2"
-            >
-              <BarChart2 className="w-3 h-3" /> {t('resultsProportion')}
-            </button>
-            <button
               onClick={() => setIsReportOpen(true)}
               className="w-full text-left text-xs text-gray-400 flex items-center gap-2 py-1 hover:bg-gray-800/50 rounded px-2 -mx-2"
             >
@@ -2111,7 +2094,6 @@ export default function DragonTigerGame() {
         dealerName={currentDealerName}
         balance={balance}
       />
-      <ResultsProportionModal isOpen={isProportionOpen} onClose={() => setIsProportionOpen(false)} />
       <ChipSettingsModal isOpen={isChipSettingsOpen} onClose={() => setIsChipSettingsOpen(false)} />
 
       {/* Bet Success Notification Toast */}
