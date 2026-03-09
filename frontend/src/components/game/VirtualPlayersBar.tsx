@@ -125,7 +125,7 @@ function generatePlayersForTable(tableId: string, count: number) {
 
     players.push({
       id: `${tableId}-player-${i}`,
-      name: name.length > 8 ? name.slice(0, 7) + '…' : name,
+      name,
       flag: country.flag,
       balance,
       avatarColor: AVATAR_COLORS[colorIndex],
@@ -187,12 +187,12 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
           >
             {/* Player card */}
             <div
-              className="relative px-1 py-1 sm:px-2 sm:py-1.5 rounded-md sm:rounded-lg"
+              className="relative px-1.5 py-1 sm:px-2.5 sm:py-1.5 rounded-md sm:rounded-lg"
               style={{
                 background: 'linear-gradient(145deg, rgba(40,45,55,0.9) 0%, rgba(25,30,40,0.95) 100%)',
                 border: '1px solid rgba(100,110,130,0.3)',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
-                minWidth: '44px',
+                minWidth: '60px',
               }}
             >
               {/* Avatar with flag */}
@@ -219,7 +219,7 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
               </div>
 
               {/* Name */}
-              <div className="text-[7px] sm:text-[9px] text-gray-200 truncate text-center font-medium max-w-[40px] sm:max-w-[54px]">
+              <div className="text-[8px] sm:text-[10px] text-gray-200 text-center font-medium whitespace-nowrap">
                 {player.name}
               </div>
 
