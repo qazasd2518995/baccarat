@@ -658,13 +658,12 @@ export default function AgentReport() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="請輸入代理帳號"
+              placeholder={activeTab === 'agent' ? '可選，留空查全部' : '可選，留空查全部'}
               className="flex-1 sm:flex-none px-3 py-2 bg-[#2a2a2a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500 sm:w-40 min-h-[40px]"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-red-400 text-sm">*</span>
             <span className="text-gray-400 text-xs sm:text-sm whitespace-nowrap">查詢時間</span>
             <input
               type="date"
