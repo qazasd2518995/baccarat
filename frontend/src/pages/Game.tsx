@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { leaderboardApi, dealerApi } from '../services/api';
+import { dealerApi } from '../services/api';
 import { useChatSocket } from '../hooks/useChatSocket';
 import {
   Settings,
@@ -368,7 +368,7 @@ function getPhaseDisplay(phase: string, timeRemaining: number, t: (key: string) 
 }
 
 export default function Game() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
 
@@ -452,31 +452,6 @@ export default function Game() {
     };
     checkFollowStatus();
   }, [currentDealerName]);
-
-  // Leaderboard state
-  const [leaderboardPeriod, setLeaderboardPeriod] = useState<'daily' | 'weekly'>('daily');
-  const [leaderboard, setLeaderboard] = useState<Array<{ rank: number; id: string; name: string; score: number }>>([]);
-  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
-
-  // Fetch leaderboard data
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      setLeaderboardLoading(true);
-      try {
-        const res = await leaderboardApi.getLeaderboard({ period: leaderboardPeriod, limit: 10 });
-        setLeaderboard(res.data.leaderboard);
-      } catch (err) {
-        console.error('[Game] Failed to fetch leaderboard:', err);
-      } finally {
-        setLeaderboardLoading(false);
-      }
-    };
-
-    fetchLeaderboard();
-    // Refresh every 60 seconds
-    const interval = setInterval(fetchLeaderboard, 60000);
-    return () => clearInterval(interval);
-  }, [leaderboardPeriod]);
 
   // Socket hook for WebSocket connection
   const { submitBets } = useGameSocket(tableId);
@@ -1284,127 +1259,166 @@ export default function Game() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-auto min-h-0">
-        {/* Left Sidebar - User Info (hidden on mobile/tablet) */}
+        {/* Left Sidebar - Game Stats & Session Info (hidden on mobile/tablet) */}
         <div className="hidden xl:flex w-60 bg-[#141922] border-r border-gray-800/50 flex-col shrink-0">
-          {/* JW 九贏百家 Header */}
+          {/* User Card */}
           <div className="p-4 border-b border-gray-800/50">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 rounded-lg flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-400/30">
-                  <span className="text-black font-black text-xs tracking-tighter" style={{ fontFamily: 'system-ui' }}>JW</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 font-black text-xs tracking-wide" style={{ fontFamily: 'system-ui' }}>九贏百家</span>
-                  <span className="text-gray-500 text-[8px] tracking-widest">JIU WIN</span>
-                </div>
-              </div>
-              {/* Language Toggle */}
-              <button
-                onClick={() => i18n.changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
-                className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-700/50"
-              >
-                {i18n.language === 'zh' ? 'EN' : '中文'}
-              </button>
-            </div>
-
-            {/* User Card */}
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-lg">
-                me
+              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                {(user?.username || 'P')[0].toUpperCase()}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <User className="w-3 h-3 text-gray-500" />
-                  <span className="text-sm text-gray-300">{user?.username || 'Player'}</span>
+                  <span className="text-sm text-white font-medium">{user?.username || 'Player'}</span>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-500">$</span>
-                  <span className="text-sm text-gray-300">USD</span>
-                  <span className="text-yellow-400 font-bold">{balance.toLocaleString()}</span>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className="text-yellow-400 font-bold text-lg">${balance.toLocaleString()}</span>
                 </div>
               </div>
             </div>
 
+            {/* Session Stats */}
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <div className="bg-black/30 rounded-lg p-2 text-center">
+                <div className={`text-lg font-bold ${sessionWinLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {sessionWinLoss >= 0 ? '+' : ''}{sessionWinLoss.toLocaleString()}
+                </div>
+                <div className="text-[10px] text-gray-500">{t('sessionProfit') || '本場盈虧'}</div>
+              </div>
+              <div className="bg-black/30 rounded-lg p-2 text-center">
+                <div className="text-lg font-bold text-white">{roadmapData.length}</div>
+                <div className="text-[10px] text-gray-500">{t('roundsPlayed') || '已完成局數'}</div>
+              </div>
+            </div>
+
             {/* Bet Range */}
-            <div className="flex items-center gap-2 text-xs text-gray-500">
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mt-3 bg-black/20 rounded py-1.5">
               <ArrowUpDown className="w-3 h-3" />
               <span>
-                {bettingLimits
+                {t('betRange') || '限紅'}: {bettingLimits
                   ? `${bettingLimits.player.min.toLocaleString()}-${(bettingLimits.player.max / 1000).toFixed(0)}K`
                   : '10-100K'}
               </span>
             </div>
           </div>
 
-          {/* Billboard Section */}
-          <div className="flex-1 p-4">
-            <div className="bg-gradient-to-b from-orange-500/20 to-transparent rounded-t-lg p-2 mb-2">
-              <span className="text-orange-400 font-bold text-sm">{t('billboard')}</span>
+          {/* Current Shoe Statistics */}
+          <div className="p-4 border-b border-gray-800/50">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 rounded-full bg-amber-400"></div>
+              <span className="text-amber-400 font-bold text-sm">{t('shoeStats') || '本靴統計'}</span>
+              <span className="text-gray-500 text-xs ml-auto">#{shoeNumber}</span>
             </div>
 
-            {/* Tabs */}
-            <div className="flex gap-1 mb-3">
-              <button className="flex-1 text-xs py-1.5 bg-[#1e2a3a] text-white rounded">{t('playerTab')}</button>
-              <button className="flex-1 text-xs py-1.5 bg-gray-700/50 text-gray-500 rounded border-b-2 border-orange-400">{t('dealerTab')}</button>
-              <button className="flex-1 text-xs py-1.5 bg-gray-700/50 text-gray-500 rounded">{t('giftsTab')}</button>
-            </div>
-
-            <div className="flex gap-2 mb-3">
-              <button
-                onClick={() => setLeaderboardPeriod('daily')}
-                className={`text-xs px-3 py-1 rounded ${leaderboardPeriod === 'daily' ? 'bg-[#1e2a3a] text-white' : 'bg-gray-700/50 text-gray-500'}`}
-              >
-                {t('daily')}
-              </button>
-              <button
-                onClick={() => setLeaderboardPeriod('weekly')}
-                className={`text-xs px-3 py-1 rounded ${leaderboardPeriod === 'weekly' ? 'bg-[#1e2a3a] text-white' : 'bg-gray-700/50 text-gray-500'}`}
-              >
-                {t('weekly')}
-              </button>
-            </div>
-
-            {/* Leaderboard */}
-            {leaderboardLoading ? (
-              <div className="text-center py-4 text-gray-500 text-sm">{t('loading')}...</div>
-            ) : leaderboard.length === 0 ? (
-              <div className="text-center py-4 text-gray-500 text-sm">{t('noData')}</div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  {leaderboard.slice(0, 3).map((player) => (
-                    <div key={player.id} className="flex items-center gap-2 py-2">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center">
-                        <User className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm text-white">{player.name}</div>
-                        <div className="text-xs text-yellow-400">{player.score.toLocaleString()}</div>
-                      </div>
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        player.rank === 1 ? 'bg-yellow-500 text-black' :
-                        player.rank === 2 ? 'bg-gray-400 text-black' :
-                        'bg-amber-700 text-white'
-                      }`}>
-                        {player.rank}
-                      </div>
-                    </div>
-                  ))}
+            {/* Win Rates */}
+            <div className="space-y-2">
+              {/* Banker */}
+              <div className="flex items-center gap-2">
+                <span className="text-red-400 text-xs w-8">莊</span>
+                <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-red-500 transition-all duration-300"
+                    style={{ width: `${roadmapData.length > 0 ? (bankerWins / roadmapData.length) * 100 : 0}%` }}
+                  />
                 </div>
-
-                {/* Rankings list */}
-                <div className="mt-4 space-y-1 text-xs">
-                  {leaderboard.slice(3).map((player) => (
-                    <div key={player.id} className="flex items-center justify-between py-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-gray-700 flex items-center justify-center text-gray-400">{player.rank}</span>
-                        <span className="text-gray-400">{player.name}</span>
-                      </div>
-                      <span className="text-yellow-400">{player.score.toLocaleString()}</span>
-                    </div>
-                  ))}
+                <span className="text-white text-xs w-8 text-right">{bankerWins}</span>
+                <span className="text-gray-500 text-xs w-10 text-right">
+                  {roadmapData.length > 0 ? Math.round((bankerWins / roadmapData.length) * 100) : 0}%
+                </span>
+              </div>
+              {/* Player */}
+              <div className="flex items-center gap-2">
+                <span className="text-blue-400 text-xs w-8">閒</span>
+                <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 transition-all duration-300"
+                    style={{ width: `${roadmapData.length > 0 ? (playerWins / roadmapData.length) * 100 : 0}%` }}
+                  />
                 </div>
-              </>
+                <span className="text-white text-xs w-8 text-right">{playerWins}</span>
+                <span className="text-gray-500 text-xs w-10 text-right">
+                  {roadmapData.length > 0 ? Math.round((playerWins / roadmapData.length) * 100) : 0}%
+                </span>
+              </div>
+              {/* Tie */}
+              <div className="flex items-center gap-2">
+                <span className="text-green-400 text-xs w-8">和</span>
+                <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-green-500 transition-all duration-300"
+                    style={{ width: `${roadmapData.length > 0 ? (ties / roadmapData.length) * 100 : 0}%` }}
+                  />
+                </div>
+                <span className="text-white text-xs w-8 text-right">{ties}</span>
+                <span className="text-gray-500 text-xs w-10 text-right">
+                  {roadmapData.length > 0 ? Math.round((ties / roadmapData.length) * 100) : 0}%
+                </span>
+              </div>
+            </div>
+
+            {/* Pairs & Special */}
+            <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+              <div className="flex justify-between bg-black/20 rounded px-2 py-1">
+                <span className="text-blue-300">閒對</span>
+                <span className="text-white">{playerPairCount}</span>
+              </div>
+              <div className="flex justify-between bg-black/20 rounded px-2 py-1">
+                <span className="text-red-300">莊對</span>
+                <span className="text-white">{bankerPairCount}</span>
+              </div>
+              <div className="flex justify-between bg-black/20 rounded px-2 py-1">
+                <span className="text-purple-300">Super6</span>
+                <span className="text-white">{super6Count}</span>
+              </div>
+              <div className="flex justify-between bg-black/20 rounded px-2 py-1">
+                <span className="text-gray-400">總局</span>
+                <span className="text-white">{roadmapData.length}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Results Quick View */}
+          <div className="p-4 flex-1 overflow-hidden">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
+              <span className="text-cyan-400 font-bold text-sm">{t('recentResults') || '最近開獎'}</span>
+            </div>
+
+            {/* Last 20 results in grid */}
+            <div className="flex flex-wrap gap-1">
+              {roadmapData.slice(-20).map((round, i) => (
+                <div
+                  key={i}
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${
+                    round.result === 'banker' ? 'bg-red-600' :
+                    round.result === 'player' ? 'bg-blue-600' : 'bg-green-600'
+                  }`}
+                >
+                  {round.result === 'banker' ? '莊' : round.result === 'player' ? '閒' : '和'}
+                </div>
+              ))}
+              {roadmapData.length === 0 && (
+                <div className="text-gray-500 text-xs">{t('noData') || '暫無數據'}</div>
+              )}
+            </div>
+
+            {/* Pattern Analysis */}
+            {roadmapData.length >= 5 && (
+              <div className="mt-4 p-3 bg-gradient-to-br from-amber-500/10 to-transparent rounded-lg border border-amber-500/20">
+                <div className="text-amber-400 text-xs font-bold mb-2">{t('trendAnalysis') || '趨勢分析'}</div>
+                <div className="text-xs text-gray-400">
+                  {(() => {
+                    const last5 = roadmapData.slice(-5);
+                    const bankerCount = last5.filter(r => r.result === 'banker').length;
+                    const playerCount = last5.filter(r => r.result === 'player').length;
+                    if (bankerCount >= 4) return '🔴 莊家連勝中';
+                    if (playerCount >= 4) return '🔵 閒家連勝中';
+                    if (bankerCount === playerCount) return '⚖️ 莊閒交替';
+                    return bankerCount > playerCount ? '📈 莊家略優' : '📈 閒家略優';
+                  })()}
+                </div>
+              </div>
             )}
           </div>
         </div>
