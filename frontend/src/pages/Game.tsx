@@ -2242,19 +2242,6 @@ export default function Game() {
                 <span className="text-white">{super6Count}</span>
               </div>
             </div>
-
-            {/* Total Bet */}
-            <div className="mt-2 pt-2 border-t border-gray-700/50 flex items-center justify-between text-xs">
-              <span className="text-gray-400">本局投注</span>
-              <span className="text-amber-400 font-bold">{totalBet.toLocaleString()}</span>
-            </div>
-
-            {/* No Data Message */}
-            {total === 0 && (
-              <div className="text-center text-gray-500 text-[10px] mt-2">
-                暫無數據
-              </div>
-            )}
           </div>
 
           {/* Chat Area */}
