@@ -1072,10 +1072,8 @@ export default function DragonTigerGame() {
                   <User className="w-3 h-3 text-gray-500" />
                   <span className="text-sm text-gray-300">{user?.username || 'Player'}</span>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-500">$</span>
-                  <span className="text-sm text-gray-300">USD</span>
-                  <span className="text-yellow-400 font-bold">{balance.toLocaleString()}</span>
+                <div className="flex items-center gap-1 mt-1">
+                  <span className="text-yellow-400 font-bold text-lg">${balance.toLocaleString()}</span>
                 </div>
               </div>
             </div>

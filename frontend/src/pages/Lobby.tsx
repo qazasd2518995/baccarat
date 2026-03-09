@@ -383,10 +383,8 @@ export default function Lobby() {
                   <User className="w-3 h-3 text-gray-500" />
                   <span className="text-sm text-gray-300">{user?.username || 'meta111698'}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">$</span>
-                  <span className="text-xs text-gray-400">USD</span>
-                  <span className="text-yellow-400 font-bold">{Number(user?.balance || 0).toLocaleString()}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-yellow-400 font-bold text-lg">${Number(user?.balance || 0).toLocaleString()}</span>
                 </div>
               </div>
             </div>

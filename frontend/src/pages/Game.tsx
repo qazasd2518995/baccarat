@@ -1259,167 +1259,111 @@ export default function Game() {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-auto min-h-0">
-        {/* Left Sidebar - Game Stats & Session Info (hidden on mobile/tablet) */}
+        {/* Left Sidebar - User & Session Info (hidden on mobile/tablet) */}
         <div className="hidden xl:flex w-60 bg-[#141922] border-r border-gray-800/50 flex-col shrink-0">
           {/* User Card */}
           <div className="p-4 border-b border-gray-800/50">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-lg shadow-lg">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
                 {(user?.username || 'P')[0].toUpperCase()}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <User className="w-3 h-3 text-gray-500" />
-                  <span className="text-sm text-white font-medium">{user?.username || 'Player'}</span>
+                  <span className="text-base text-white font-bold">{user?.username || 'Player'}</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1">
-                  <span className="text-yellow-400 font-bold text-lg">${balance.toLocaleString()}</span>
+                  <span className="text-yellow-400 font-bold text-xl">${balance.toLocaleString()}</span>
                 </div>
-              </div>
-            </div>
-
-            {/* Session Stats */}
-            <div className="grid grid-cols-2 gap-2 mt-3">
-              <div className="bg-black/30 rounded-lg p-2 text-center">
-                <div className={`text-lg font-bold ${sessionWinLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {sessionWinLoss >= 0 ? '+' : ''}{sessionWinLoss.toLocaleString()}
-                </div>
-                <div className="text-[10px] text-gray-500">{t('sessionProfit') || '本場盈虧'}</div>
-              </div>
-              <div className="bg-black/30 rounded-lg p-2 text-center">
-                <div className="text-lg font-bold text-white">{roadmapData.length}</div>
-                <div className="text-[10px] text-gray-500">{t('roundsPlayed') || '已完成局數'}</div>
               </div>
             </div>
 
             {/* Bet Range */}
-            <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mt-3 bg-black/20 rounded py-1.5">
-              <ArrowUpDown className="w-3 h-3" />
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-300 bg-black/30 rounded-lg py-2">
+              <ArrowUpDown className="w-4 h-4 text-amber-400" />
               <span>
-                {t('betRange') || '限紅'}: {bettingLimits
+                {t('betRange') || '限紅'}: <span className="text-amber-400 font-bold">{bettingLimits
                   ? `${bettingLimits.player.min.toLocaleString()}-${(bettingLimits.player.max / 1000).toFixed(0)}K`
-                  : '10-100K'}
+                  : '10-100K'}</span>
               </span>
             </div>
           </div>
 
-          {/* Current Shoe Statistics */}
+          {/* Session Performance */}
           <div className="p-4 border-b border-gray-800/50">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 rounded-full bg-amber-400"></div>
-              <span className="text-amber-400 font-bold text-sm">{t('shoeStats') || '本靴統計'}</span>
-              <span className="text-gray-500 text-xs ml-auto">#{shoeNumber}</span>
+              <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
+              <span className="text-cyan-400 font-bold text-sm">{t('sessionStats') || '本場戰績'}</span>
             </div>
 
-            {/* Win Rates */}
-            <div className="space-y-2">
-              {/* Banker */}
-              <div className="flex items-center gap-2">
-                <span className="text-red-400 text-xs w-8">莊</span>
-                <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-red-500 transition-all duration-300"
-                    style={{ width: `${roadmapData.length > 0 ? (bankerWins / roadmapData.length) * 100 : 0}%` }}
-                  />
-                </div>
-                <span className="text-white text-xs w-8 text-right">{bankerWins}</span>
-                <span className="text-gray-500 text-xs w-10 text-right">
-                  {roadmapData.length > 0 ? Math.round((bankerWins / roadmapData.length) * 100) : 0}%
-                </span>
-              </div>
-              {/* Player */}
-              <div className="flex items-center gap-2">
-                <span className="text-blue-400 text-xs w-8">閒</span>
-                <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 transition-all duration-300"
-                    style={{ width: `${roadmapData.length > 0 ? (playerWins / roadmapData.length) * 100 : 0}%` }}
-                  />
-                </div>
-                <span className="text-white text-xs w-8 text-right">{playerWins}</span>
-                <span className="text-gray-500 text-xs w-10 text-right">
-                  {roadmapData.length > 0 ? Math.round((playerWins / roadmapData.length) * 100) : 0}%
-                </span>
-              </div>
-              {/* Tie */}
-              <div className="flex items-center gap-2">
-                <span className="text-green-400 text-xs w-8">和</span>
-                <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-green-500 transition-all duration-300"
-                    style={{ width: `${roadmapData.length > 0 ? (ties / roadmapData.length) * 100 : 0}%` }}
-                  />
-                </div>
-                <span className="text-white text-xs w-8 text-right">{ties}</span>
-                <span className="text-gray-500 text-xs w-10 text-right">
-                  {roadmapData.length > 0 ? Math.round((ties / roadmapData.length) * 100) : 0}%
-                </span>
+            {/* Big Win/Loss Display */}
+            <div className="bg-gradient-to-br from-black/40 to-black/20 rounded-xl p-4 text-center mb-3">
+              <div className="text-gray-400 text-xs mb-1">{t('sessionProfit') || '本場盈虧'}</div>
+              <div className={`text-3xl font-black ${sessionWinLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {sessionWinLoss >= 0 ? '+' : ''}{sessionWinLoss.toLocaleString()}
               </div>
             </div>
 
-            {/* Pairs & Special */}
-            <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-              <div className="flex justify-between bg-black/20 rounded px-2 py-1">
-                <span className="text-blue-300">閒對</span>
-                <span className="text-white">{playerPairCount}</span>
+            {/* Session Stats Grid */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-black/20 rounded-lg p-2 text-center">
+                <div className="text-white font-bold text-lg">{confirmedBets.reduce((s, b) => s + b.amount, 0).toLocaleString()}</div>
+                <div className="text-[10px] text-gray-500">{t('currentBet') || '本局下注'}</div>
               </div>
-              <div className="flex justify-between bg-black/20 rounded px-2 py-1">
-                <span className="text-red-300">莊對</span>
-                <span className="text-white">{bankerPairCount}</span>
-              </div>
-              <div className="flex justify-between bg-black/20 rounded px-2 py-1">
-                <span className="text-purple-300">Super6</span>
-                <span className="text-white">{super6Count}</span>
-              </div>
-              <div className="flex justify-between bg-black/20 rounded px-2 py-1">
-                <span className="text-gray-400">總局</span>
-                <span className="text-white">{roadmapData.length}</span>
+              <div className="bg-black/20 rounded-lg p-2 text-center">
+                <div className="text-white font-bold text-lg">{roadmapData.length}</div>
+                <div className="text-[10px] text-gray-500">{t('totalRounds') || '本靴局數'}</div>
               </div>
             </div>
           </div>
 
-          {/* Recent Results Quick View */}
-          <div className="p-4 flex-1 overflow-hidden">
+          {/* Betting History */}
+          <div className="p-4 flex-1 overflow-hidden flex flex-col">
             <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
-              <span className="text-cyan-400 font-bold text-sm">{t('recentResults') || '最近開獎'}</span>
+              <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+              <span className="text-purple-400 font-bold text-sm">{t('recentBets') || '最近下注'}</span>
             </div>
 
-            {/* Last 20 results in grid */}
-            <div className="flex flex-wrap gap-1">
-              {roadmapData.slice(-20).map((round, i) => (
-                <div
-                  key={i}
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white ${
-                    round.result === 'banker' ? 'bg-red-600' :
-                    round.result === 'player' ? 'bg-blue-600' : 'bg-green-600'
-                  }`}
-                >
-                  {round.result === 'banker' ? '莊' : round.result === 'player' ? '閒' : '和'}
+            {/* Recent bet results - show last 5 settlements */}
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {lastSettlement && (
+                <div className={`p-3 rounded-lg ${lastSettlement.netResult >= 0 ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-400">{t('lastRound') || '上一局'}</span>
+                    <span className={`font-bold ${lastSettlement.netResult >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {lastSettlement.netResult >= 0 ? '+' : ''}{lastSettlement.netResult.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {lastSettlement.bets.map((bet, i) => (
+                      <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${bet.won ? 'bg-green-500/30 text-green-300' : 'bg-gray-500/30 text-gray-400'}`}>
+                        {bet.type === 'player' ? '閒' : bet.type === 'banker' ? '莊' : bet.type === 'tie' ? '和' : bet.type}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              ))}
-              {roadmapData.length === 0 && (
-                <div className="text-gray-500 text-xs">{t('noData') || '暫無數據'}</div>
+              )}
+              {!lastSettlement && (
+                <div className="text-center py-8 text-gray-500 text-sm">
+                  {t('noBetsYet') || '尚無下注記錄'}
+                </div>
               )}
             </div>
 
-            {/* Pattern Analysis */}
-            {roadmapData.length >= 5 && (
-              <div className="mt-4 p-3 bg-gradient-to-br from-amber-500/10 to-transparent rounded-lg border border-amber-500/20">
-                <div className="text-amber-400 text-xs font-bold mb-2">{t('trendAnalysis') || '趨勢分析'}</div>
-                <div className="text-xs text-gray-400">
-                  {(() => {
-                    const last5 = roadmapData.slice(-5);
-                    const bankerCount = last5.filter(r => r.result === 'banker').length;
-                    const playerCount = last5.filter(r => r.result === 'player').length;
-                    if (bankerCount >= 4) return '🔴 莊家連勝中';
-                    if (playerCount >= 4) return '🔵 閒家連勝中';
-                    if (bankerCount === playerCount) return '⚖️ 莊閒交替';
-                    return bankerCount > playerCount ? '📈 莊家略優' : '📈 閒家略優';
-                  })()}
-                </div>
+            {/* Quick Tips */}
+            <div className="mt-3 p-3 bg-gradient-to-br from-amber-500/10 to-transparent rounded-lg border border-amber-500/20">
+              <div className="text-amber-400 text-xs font-bold mb-1">💡 {t('tip') || '提示'}</div>
+              <div className="text-[11px] text-gray-400 leading-relaxed">
+                {(() => {
+                  const tips = [
+                    '莊家優勢約 1.06%，閒家約 1.24%',
+                    '和牌賠率雖高，但莊閒優勢更穩',
+                    '設定止損點，理性投注',
+                    '觀察路單趨勢，把握節奏',
+                  ];
+                  return tips[Math.floor(roadmapData.length / 3) % tips.length];
+                })()}
               </div>
-            )}
+            </div>
           </div>
         </div>
 
