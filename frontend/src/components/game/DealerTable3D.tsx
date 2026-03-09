@@ -218,12 +218,12 @@ export default function DealerTable3D({
     : bp === 'tablet'
       ? (isDT ? '1%' : '3%')
       : '0%';
-  const dealerZoneHeight = bp === 'mobile' ? '42%' : '50%';
+  const dealerZoneHeight = bp === 'mobile' ? '40%' : '48%';
   // Table top overlaps with dealer zone bottom by a fixed % amount
-  const tableTop = bp === 'mobile' ? '35%' : '38%';
+  const tableTop = bp === 'mobile' ? '32%' : '35%';
 
   return (
-    <div className="flex-1 min-h-[280px] sm:min-h-[350px] relative flex flex-col overflow-visible bg-[#050a0d]">
+    <div className="flex-1 min-h-[320px] sm:min-h-[380px] lg:min-h-[420px] relative flex flex-col overflow-visible bg-[#050a0d]">
 
       {/* === Opulent Art Deco Noir Casino Background === */}
       <div className="absolute inset-0 z-0 overflow-hidden">
