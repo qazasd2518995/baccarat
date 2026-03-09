@@ -21,6 +21,105 @@ const GLOW_COLORS: Record<string, string> = {
   tie: 'rgba(34,197,94,0.4)',
 };
 
+// Statistics Panel - Right side summary
+function StatsPanel({ data, nextBanker, nextPlayer }: {
+  data: RoadHistoryEntry[];
+  nextBanker: { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null };
+  nextPlayer: { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null };
+}) {
+  const stats = useMemo(() => {
+    let banker = 0, player = 0, tie = 0, bankerPair = 0, playerPair = 0;
+    for (const entry of data) {
+      if (entry.result === 'banker') banker++;
+      else if (entry.result === 'player') player++;
+      else if (entry.result === 'tie') tie++;
+      if (entry.bankerPair) bankerPair++;
+      if (entry.playerPair) playerPair++;
+    }
+    return { banker, player, tie, bankerPair, playerPair, total: data.length };
+  }, [data]);
+
+  const renderPrediction = (bigEye: 'red' | 'blue' | null, small: 'red' | 'blue' | null, cockroach: 'red' | 'blue' | null) => (
+    <div className="flex items-center gap-0.5">
+      {/* Big Eye - hollow circle */}
+      <div
+        className="rounded-full"
+        style={{
+          width: 6,
+          height: 6,
+          border: `1.5px solid ${bigEye === 'red' ? '#ef4444' : bigEye === 'blue' ? '#3b82f6' : '#666'}`,
+        }}
+      />
+      {/* Small - solid circle */}
+      <div
+        className="rounded-full"
+        style={{
+          width: 6,
+          height: 6,
+          backgroundColor: small === 'red' ? '#ef4444' : small === 'blue' ? '#3b82f6' : '#666',
+        }}
+      />
+      {/* Cockroach - slash */}
+      <div
+        style={{
+          width: 6,
+          height: 1.5,
+          backgroundColor: cockroach === 'red' ? '#ef4444' : cockroach === 'blue' ? '#3b82f6' : '#666',
+          transform: cockroach === 'red' ? 'rotate(-45deg)' : 'rotate(45deg)',
+        }}
+      />
+    </div>
+  );
+
+  return (
+    <div
+      className="h-full flex flex-col justify-center px-1.5 py-1 text-[8px]"
+      style={{ backgroundColor: CELL_BG, minWidth: 50 }}
+    >
+      {/* Banker */}
+      <div className="flex items-center justify-between gap-1">
+        <span style={{ color: '#ef4444' }}>莊</span>
+        <span className="text-white font-medium">{stats.banker}</span>
+      </div>
+      {/* Player */}
+      <div className="flex items-center justify-between gap-1">
+        <span style={{ color: '#3b82f6' }}>閒</span>
+        <span className="text-white font-medium">{stats.player}</span>
+      </div>
+      {/* Tie */}
+      <div className="flex items-center justify-between gap-1">
+        <span style={{ color: '#22c55e' }}>和</span>
+        <span className="text-white font-medium">{stats.tie}</span>
+      </div>
+      {/* Banker Pair */}
+      <div className="flex items-center justify-between gap-1">
+        <span style={{ color: '#ef4444' }}>莊對</span>
+        <span className="text-white font-medium">{stats.bankerPair}</span>
+      </div>
+      {/* Player Pair */}
+      <div className="flex items-center justify-between gap-1">
+        <span style={{ color: '#3b82f6' }}>閒對</span>
+        <span className="text-white font-medium">{stats.playerPair}</span>
+      </div>
+      {/* Total */}
+      <div className="flex items-center justify-between gap-1 border-t border-gray-600 pt-0.5 mt-0.5">
+        <span className="text-gray-400">總數</span>
+        <span className="text-white font-medium">{stats.total}</span>
+      </div>
+      {/* Prediction - Next Banker */}
+      <div className="flex items-center justify-between gap-1 border-t border-gray-600 pt-0.5 mt-0.5">
+        <span style={{ color: '#ef4444' }}>莊問路</span>
+        {renderPrediction(nextBanker.bigEye, nextBanker.small, nextBanker.cockroach)}
+      </div>
+      {/* Prediction - Next Player */}
+      <div className="flex items-center justify-between gap-1">
+        <span style={{ color: '#3b82f6' }}>閒問路</span>
+        {renderPrediction(nextPlayer.bigEye, nextPlayer.small, nextPlayer.cockroach)}
+      </div>
+    </div>
+  );
+}
+
 // Bead Road — solid glowing circles on dark background
 function BeadRoad({ data, width }: { data: RoadHistoryEntry[]; width: number }) {
   const ROWS = 6;
@@ -52,8 +151,6 @@ function BeadRoad({ data, width }: { data: RoadHistoryEntry[]; width: number }) 
       }}
     >
       {Array.from({ length: ROWS * cols }, (_, i) => {
-        // With gridAutoFlow: column, items fill top-to-bottom, then next column
-        // i goes: col0-row0, col0-row1, ..., col0-row5, col1-row0, ...
         const col = Math.floor(i / ROWS);
         const row = i % ROWS;
         const dataIdx = col * ROWS + row;
@@ -133,7 +230,7 @@ function BigRoad({ grid, usedCols, width }: { grid: (BigRoadCell | null)[][]; us
 
   return (
     <div
-      className="grid"
+      className="grid h-full"
       style={{
         gridTemplateRows: `repeat(${ROWS}, 1fr)`,
         gridTemplateColumns: `repeat(${visibleCols}, 1fr)`,
@@ -191,7 +288,7 @@ function DerivedRoad({
 
   return (
     <div
-      className="grid"
+      className="grid h-full"
       style={{
         gridTemplateRows: `repeat(${ROWS}, 1fr)`,
         gridTemplateColumns: `repeat(${visibleCols}, 1fr)`,
@@ -202,6 +299,57 @@ function DerivedRoad({
       {cells}
     </div>
   );
+}
+
+// Calculate prediction for next result
+function calculateNextPrediction(
+  columns: BigRoadCell[][],
+  nextResult: 'banker' | 'player'
+): { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null } {
+  if (columns.length === 0) {
+    return { bigEye: null, small: null, cockroach: null };
+  }
+
+  // Simulate adding the next result
+  const lastCol = columns[columns.length - 1];
+  const lastResult = lastCol[0].result;
+
+  let newColumns: BigRoadCell[][];
+  if (nextResult === lastResult) {
+    // Continue in same column
+    newColumns = [...columns.slice(0, -1), [...lastCol, { result: nextResult, tieCount: 0 }]];
+  } else {
+    // Start new column
+    newColumns = [...columns, [{ result: nextResult, tieCount: 0 }]];
+  }
+
+  // Calculate derived road colors for the new entry
+  const calcDerived = (offset: number): 'red' | 'blue' | null => {
+    const startCol = offset + 1;
+    if (newColumns.length < startCol) return null;
+
+    const colIdx = newColumns.length - 1;
+    const entryIdx = newColumns[colIdx].length - 1;
+
+    if (colIdx === startCol - 1 && entryIdx === 0) return null;
+
+    if (entryIdx === 0) {
+      const prevColLen = newColumns[colIdx - 1].length;
+      const refColIdx = colIdx - 1 - offset;
+      const refColLen = refColIdx >= 0 ? newColumns[refColIdx].length : 0;
+      return prevColLen === refColLen ? 'red' : 'blue';
+    } else {
+      const compareColIdx = colIdx - offset;
+      const compareColLen = compareColIdx >= 0 ? newColumns[compareColIdx].length : 0;
+      return compareColLen > entryIdx ? 'red' : (compareColLen === entryIdx ? 'blue' : 'red');
+    }
+  };
+
+  return {
+    bigEye: calcDerived(1),
+    small: calcDerived(2),
+    cockroach: calcDerived(3),
+  };
 }
 
 // ── Main Component ──
@@ -226,6 +374,10 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
   const smallGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 2, 6, 40), [bigRoadColumns]);
   const cockroachGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 3, 6, 40), [bigRoadColumns]);
 
+  // Calculate predictions
+  const nextBanker = useMemo(() => calculateNextPrediction(bigRoadColumns, 'banker'), [bigRoadColumns]);
+  const nextPlayer = useMemo(() => calculateNextPrediction(bigRoadColumns, 'player'), [bigRoadColumns]);
+
   let bigRoadUsedCols = 0;
   for (let c = 0; c < 60; c++) {
     for (let r = 0; r < 6; r++) {
@@ -233,9 +385,11 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
     }
   }
 
-  // Bead road ~34%, right roads ~66%
-  const beadWidth = Math.floor(containerWidth * 0.34);
-  const roadWidth = containerWidth - beadWidth - 1;
+  // Stats panel width
+  const statsWidth = 55;
+  // Bead road ~30%, roads ~remaining
+  const beadWidth = Math.floor((containerWidth - statsWidth - 2) * 0.30);
+  const roadWidth = containerWidth - beadWidth - statsWidth - 2;
   const halfRoadWidth = Math.floor((roadWidth - 1) / 2);
 
   const renderBigEye = (val: 'red' | 'blue') => {
@@ -250,7 +404,6 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
 
   const renderCockroach = (val: 'red' | 'blue') => {
     const color = val === 'red' ? '#ef4444' : '#3b82f6';
-    // Red: / (left-bottom to right-top), Blue: \ (left-top to right-bottom)
     return (
       <div style={{
         width: 5,
@@ -273,7 +426,7 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
           {/* 1px vertical divider */}
           <div style={{ width: 1, backgroundColor: LINE }} />
 
-          {/* Right: Stacked roads */}
+          {/* Middle: Stacked roads */}
           <div className="flex-1 flex flex-col overflow-hidden" style={{ gap: 1, backgroundColor: LINE }}>
             {/* Big Road */}
             <div className="flex-[3] overflow-hidden">
@@ -294,6 +447,14 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
                 <DerivedRoad grid={cockroachGrid} cellSize={7} renderCell={renderCockroach} keyPrefix="cr" width={halfRoadWidth} />
               </div>
             </div>
+          </div>
+
+          {/* 1px vertical divider */}
+          <div style={{ width: 1, backgroundColor: LINE }} />
+
+          {/* Right: Stats Panel */}
+          <div className="shrink-0 overflow-hidden" style={{ width: statsWidth }}>
+            <StatsPanel data={roadHistory} nextBanker={nextBanker} nextPlayer={nextPlayer} />
           </div>
         </>
       )}

@@ -38,7 +38,6 @@ function buildDTBigRoadColumns(data: Array<{ result: string }>): DTBigRoadCell[]
     const result = normalizeResult(round.result);
 
     if (result === 'tie') {
-      // Tie adds to the last cell's tie count
       if (currentCol.length > 0) {
         currentCol[currentCol.length - 1].tieCount++;
       } else if (columns.length > 0) {
@@ -51,14 +50,12 @@ function buildDTBigRoadColumns(data: Array<{ result: string }>): DTBigRoadCell[]
     if (!result) continue;
 
     if (lastResult === null || result !== lastResult) {
-      // New column
       if (currentCol.length > 0) {
         columns.push(currentCol);
       }
       currentCol = [{ result, tieCount: 0 }];
       lastResult = result;
     } else {
-      // Continue in same column
       currentCol.push({ result, tieCount: 0 });
     }
   }
@@ -129,13 +126,11 @@ function buildDTDerivedRoad(
       let color: 'red' | 'blue';
 
       if (entryIdx === 0) {
-        // New column - compare lengths
         const prevColLen = columns[colIdx - 1].length;
         const refColIdx = colIdx - 1 - offset;
         const refColLen = refColIdx >= 0 ? columns[refColIdx].length : 0;
         color = prevColLen === refColLen ? 'red' : 'blue';
       } else {
-        // Continuing column - check "齊整" vs "不齊"
         const compareColIdx = colIdx - offset;
         const compareColLen = compareColIdx >= 0 ? columns[compareColIdx].length : 0;
         color = compareColLen > entryIdx ? 'red' : (compareColLen === entryIdx ? 'blue' : 'red');
@@ -160,6 +155,138 @@ function buildDTDerivedRoad(
   }
 
   return grid;
+}
+
+// Calculate prediction for next result
+function calculateDTNextPrediction(
+  columns: DTBigRoadCell[][],
+  nextResult: 'dragon' | 'tiger'
+): { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null } {
+  if (columns.length === 0) {
+    return { bigEye: null, small: null, cockroach: null };
+  }
+
+  const lastCol = columns[columns.length - 1];
+  const lastResult = lastCol[0].result;
+
+  let newColumns: DTBigRoadCell[][];
+  if (nextResult === lastResult) {
+    newColumns = [...columns.slice(0, -1), [...lastCol, { result: nextResult, tieCount: 0 }]];
+  } else {
+    newColumns = [...columns, [{ result: nextResult, tieCount: 0 }]];
+  }
+
+  const calcDerived = (offset: number): 'red' | 'blue' | null => {
+    const startCol = offset + 1;
+    if (newColumns.length < startCol) return null;
+
+    const colIdx = newColumns.length - 1;
+    const entryIdx = newColumns[colIdx].length - 1;
+
+    if (colIdx === startCol - 1 && entryIdx === 0) return null;
+
+    if (entryIdx === 0) {
+      const prevColLen = newColumns[colIdx - 1].length;
+      const refColIdx = colIdx - 1 - offset;
+      const refColLen = refColIdx >= 0 ? newColumns[refColIdx].length : 0;
+      return prevColLen === refColLen ? 'red' : 'blue';
+    } else {
+      const compareColIdx = colIdx - offset;
+      const compareColLen = compareColIdx >= 0 ? newColumns[compareColIdx].length : 0;
+      return compareColLen > entryIdx ? 'red' : (compareColLen === entryIdx ? 'blue' : 'red');
+    }
+  };
+
+  return {
+    bigEye: calcDerived(1),
+    small: calcDerived(2),
+    cockroach: calcDerived(3),
+  };
+}
+
+// Statistics Panel for Dragon Tiger
+function DTStatsPanel({ data, nextDragon, nextTiger }: {
+  data: Array<{ result: string }>;
+  nextDragon: { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null };
+  nextTiger: { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null };
+}) {
+  const stats = useMemo(() => {
+    let dragon = 0, tiger = 0, tie = 0;
+    for (const entry of data) {
+      const result = normalizeResult(entry.result);
+      if (result === 'dragon') dragon++;
+      else if (result === 'tiger') tiger++;
+      else if (result === 'tie') tie++;
+    }
+    return { dragon, tiger, tie, total: data.length };
+  }, [data]);
+
+  const renderPrediction = (bigEye: 'red' | 'blue' | null, small: 'red' | 'blue' | null, cockroach: 'red' | 'blue' | null) => (
+    <div className="flex items-center gap-0.5">
+      <div
+        className="rounded-full"
+        style={{
+          width: 6,
+          height: 6,
+          border: `1.5px solid ${bigEye === 'red' ? '#ef4444' : bigEye === 'blue' ? '#3b82f6' : '#666'}`,
+        }}
+      />
+      <div
+        className="rounded-full"
+        style={{
+          width: 6,
+          height: 6,
+          backgroundColor: small === 'red' ? '#ef4444' : small === 'blue' ? '#3b82f6' : '#666',
+        }}
+      />
+      <div
+        style={{
+          width: 6,
+          height: 1.5,
+          backgroundColor: cockroach === 'red' ? '#ef4444' : cockroach === 'blue' ? '#3b82f6' : '#666',
+          transform: cockroach === 'red' ? 'rotate(-45deg)' : 'rotate(45deg)',
+        }}
+      />
+    </div>
+  );
+
+  return (
+    <div
+      className="h-full flex flex-col justify-center px-1.5 py-1 text-[8px]"
+      style={{ backgroundColor: CELL_BG, minWidth: 50 }}
+    >
+      {/* Dragon */}
+      <div className="flex items-center justify-between gap-1">
+        <span style={{ color: '#ef4444' }}>龍</span>
+        <span className="text-white font-medium">{stats.dragon}</span>
+      </div>
+      {/* Tiger */}
+      <div className="flex items-center justify-between gap-1">
+        <span style={{ color: '#3b82f6' }}>虎</span>
+        <span className="text-white font-medium">{stats.tiger}</span>
+      </div>
+      {/* Tie */}
+      <div className="flex items-center justify-between gap-1">
+        <span style={{ color: '#22c55e' }}>和</span>
+        <span className="text-white font-medium">{stats.tie}</span>
+      </div>
+      {/* Total */}
+      <div className="flex items-center justify-between gap-1 border-t border-gray-600 pt-0.5 mt-0.5">
+        <span className="text-gray-400">總數</span>
+        <span className="text-white font-medium">{stats.total}</span>
+      </div>
+      {/* Prediction - Next Dragon */}
+      <div className="flex items-center justify-between gap-1 border-t border-gray-600 pt-0.5 mt-0.5">
+        <span style={{ color: '#ef4444' }}>龍問路</span>
+        {renderPrediction(nextDragon.bigEye, nextDragon.small, nextDragon.cockroach)}
+      </div>
+      {/* Prediction - Next Tiger */}
+      <div className="flex items-center justify-between gap-1">
+        <span style={{ color: '#3b82f6' }}>虎問路</span>
+        {renderPrediction(nextTiger.bigEye, nextTiger.small, nextTiger.cockroach)}
+      </div>
+    </div>
+  );
 }
 
 // Bead Road — solid glowing circles with 龍/虎/和 labels
@@ -347,14 +474,16 @@ function DragonTigerRoadmap({ roadHistory }: DragonTigerRoadmapProps) {
     return () => ro.disconnect();
   }, []);
 
-  // Build columns first (same approach as Baccarat)
   const bigRoadColumns = useMemo(() => buildDTBigRoadColumns(roadHistory), [roadHistory]);
   const bigRoadGrid = useMemo(() => buildDTBigRoadGrid(bigRoadColumns, 6, 60), [bigRoadColumns]);
 
-  // Build derived roads using column structure
   const bigEyeGrid = useMemo(() => buildDTDerivedRoad(bigRoadColumns, 1, 6, 60), [bigRoadColumns]);
   const smallGrid = useMemo(() => buildDTDerivedRoad(bigRoadColumns, 2, 6, 40), [bigRoadColumns]);
   const cockroachGrid = useMemo(() => buildDTDerivedRoad(bigRoadColumns, 3, 6, 40), [bigRoadColumns]);
+
+  // Calculate predictions
+  const nextDragon = useMemo(() => calculateDTNextPrediction(bigRoadColumns, 'dragon'), [bigRoadColumns]);
+  const nextTiger = useMemo(() => calculateDTNextPrediction(bigRoadColumns, 'tiger'), [bigRoadColumns]);
 
   let bigRoadUsedCols = 0;
   for (let c = 0; c < 60; c++) {
@@ -363,9 +492,11 @@ function DragonTigerRoadmap({ roadHistory }: DragonTigerRoadmapProps) {
     }
   }
 
-  // Bead road ~34%, right roads ~66%
-  const beadWidth = Math.floor(containerWidth * 0.34);
-  const roadWidth = containerWidth - beadWidth - 1;
+  // Stats panel width
+  const statsWidth = 55;
+  // Bead road ~30%, roads ~remaining
+  const beadWidth = Math.floor((containerWidth - statsWidth - 2) * 0.30);
+  const roadWidth = containerWidth - beadWidth - statsWidth - 2;
   const halfRoadWidth = Math.floor((roadWidth - 1) / 2);
 
   const renderBigEye = (val: 'red' | 'blue') => {
@@ -380,7 +511,6 @@ function DragonTigerRoadmap({ roadHistory }: DragonTigerRoadmapProps) {
 
   const renderCockroach = (val: 'red' | 'blue') => {
     const color = val === 'red' ? '#ef4444' : '#3b82f6';
-    // Red: / (left-bottom to right-top), Blue: \ (left-top to right-bottom)
     return (
       <div style={{
         width: 5,
@@ -403,7 +533,7 @@ function DragonTigerRoadmap({ roadHistory }: DragonTigerRoadmapProps) {
           {/* 1px vertical divider */}
           <div style={{ width: 1, backgroundColor: LINE }} />
 
-          {/* Right: Stacked roads */}
+          {/* Middle: Stacked roads */}
           <div className="flex-1 flex flex-col overflow-hidden" style={{ gap: 1, backgroundColor: LINE }}>
             {/* Big Road */}
             <div className="flex-[3] overflow-hidden">
@@ -424,6 +554,14 @@ function DragonTigerRoadmap({ roadHistory }: DragonTigerRoadmapProps) {
                 <DerivedRoad grid={cockroachGrid} cellSize={7} renderCell={renderCockroach} keyPrefix="cr" width={halfRoadWidth} />
               </div>
             </div>
+          </div>
+
+          {/* 1px vertical divider */}
+          <div style={{ width: 1, backgroundColor: LINE }} />
+
+          {/* Right: Stats Panel */}
+          <div className="shrink-0 overflow-hidden" style={{ width: statsWidth }}>
+            <DTStatsPanel data={roadHistory} nextDragon={nextDragon} nextTiger={nextTiger} />
           </div>
         </>
       )}
