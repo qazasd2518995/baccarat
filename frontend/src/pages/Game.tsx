@@ -2163,43 +2163,68 @@ export default function Game() {
 
           {/* Stats Panel */}
           <div className="p-3 border-b border-gray-800/50">
-            <div className="flex justify-between mb-3">
-              <span className="text-blue-400 font-bold">PLAYER</span>
-              <span className="text-red-400 font-bold">BANKER</span>
-            </div>
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between">
-                <span className="text-gray-400">{playerWins} / {total}</span>
-                <span className="text-gray-400">{bankerWins} / {total}</span>
+            {/* Header - 閒 vs 莊 */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-blue-500/30">閒</div>
+                <div className="text-left">
+                  <div className="text-blue-400 font-bold text-lg leading-none">{playerWins}</div>
+                  <div className="text-gray-500 text-[10px]">/ {total}</div>
+                </div>
               </div>
-              <div className="flex justify-between text-gray-500">
-                <span>TIE</span>
-                <span>{ties} / {total}</span>
-                <span>SUPER 6</span>
-                <span>{super6Count} / {total}</span>
-              </div>
-              <div className="flex justify-between text-gray-500">
-                <span>P. PAIR</span>
-                <span>{playerPairCount} / {total}</span>
-                <span>B. PAIR</span>
-                <span>{bankerPairCount} / {total}</span>
-              </div>
-              <div className="flex justify-between text-gray-500">
-                <span>Small</span>
-                <span>{smallCount} / {total}</span>
-                <span>Big</span>
-                <span>{bigCount} / {total}</span>
-              </div>
-              <div className="flex justify-between text-gray-500">
-                <span>P. BONUS</span>
-                <span>{pBonusCount} / {total}</span>
-                <span>B. BONUS</span>
-                <span>{bBonusCount} / {total}</span>
+              <div className="flex items-center gap-2">
+                <div className="text-right">
+                  <div className="text-red-400 font-bold text-lg leading-none">{bankerWins}</div>
+                  <div className="text-gray-500 text-[10px]">/ {total}</div>
+                </div>
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-red-500/30">莊</div>
               </div>
             </div>
-            <div className="mt-2 pt-2 border-t border-gray-700/50 flex justify-between text-xs">
-              <span className="text-gray-400">{t('wager')}</span>
-              <span className="text-white">{totalBet.toLocaleString()}</span>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+              {/* Row 1 */}
+              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+                <span className="text-green-400">和</span>
+                <span className="text-white font-medium">{ties}</span>
+              </div>
+              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+                <span className="text-amber-400">超級6</span>
+                <span className="text-white font-medium">{super6Count}</span>
+              </div>
+              {/* Row 2 */}
+              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+                <span className="text-blue-300">閒對</span>
+                <span className="text-white font-medium">{playerPairCount}</span>
+              </div>
+              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+                <span className="text-red-300">莊對</span>
+                <span className="text-white font-medium">{bankerPairCount}</span>
+              </div>
+              {/* Row 3 */}
+              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+                <span className="text-cyan-400">小</span>
+                <span className="text-white font-medium">{smallCount}</span>
+              </div>
+              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+                <span className="text-orange-400">大</span>
+                <span className="text-white font-medium">{bigCount}</span>
+              </div>
+              {/* Row 4 */}
+              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+                <span className="text-blue-300">閒龍寶</span>
+                <span className="text-white font-medium">{pBonusCount}</span>
+              </div>
+              <div className="flex items-center justify-between bg-slate-800/50 rounded px-2 py-1">
+                <span className="text-red-300">莊龍寶</span>
+                <span className="text-white font-medium">{bBonusCount}</span>
+              </div>
+            </div>
+
+            {/* Total Bet */}
+            <div className="mt-3 pt-2 border-t border-gray-700/50 flex items-center justify-between">
+              <span className="text-gray-400 text-xs">本局投注</span>
+              <span className="text-amber-400 font-bold">{totalBet.toLocaleString()}</span>
             </div>
           </div>
 
