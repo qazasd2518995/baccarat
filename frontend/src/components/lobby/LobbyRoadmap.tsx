@@ -9,23 +9,73 @@ import {
 
 interface LobbyRoadmapProps {
   roadHistory: RoadHistoryEntry[];
+  onAskRoadChange?: (mode: 'none' | 'banker' | 'player') => void;
 }
 
 /* Dark theme colors */
 const CELL_BG = '#1e2433';
 const LINE = '#2a3040';
 
-const GLOW_COLORS: Record<string, string> = {
-  banker: 'rgba(239,68,68,0.4)',
-  player: 'rgba(59,130,246,0.4)',
-  tie: 'rgba(34,197,94,0.4)',
-};
+// Calculate prediction for next result
+function calculateNextPrediction(
+  columns: BigRoadCell[][],
+  nextResult: 'banker' | 'player'
+): { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null } {
+  if (columns.length === 0) {
+    return { bigEye: null, small: null, cockroach: null };
+  }
 
-// Statistics Panel - Right side summary
-function StatsPanel({ data, nextBanker, nextPlayer }: {
+  const lastCol = columns[columns.length - 1];
+  const lastResult = lastCol[0].result;
+
+  let newColumns: BigRoadCell[][];
+  if (nextResult === lastResult) {
+    newColumns = [...columns.slice(0, -1), [...lastCol, { result: nextResult, tieCount: 0 }]];
+  } else {
+    newColumns = [...columns, [{ result: nextResult, tieCount: 0 }]];
+  }
+
+  const calcDerived = (offset: number): 'red' | 'blue' | null => {
+    const startCol = offset + 1;
+    if (newColumns.length < startCol) return null;
+
+    const colIdx = newColumns.length - 1;
+    const entryIdx = newColumns[colIdx].length - 1;
+
+    if (colIdx === startCol - 1 && entryIdx === 0) return null;
+
+    if (entryIdx === 0) {
+      const prevColLen = newColumns[colIdx - 1].length;
+      const refColIdx = colIdx - 1 - offset;
+      const refColLen = refColIdx >= 0 ? newColumns[refColIdx].length : 0;
+      return prevColLen === refColLen ? 'red' : 'blue';
+    } else {
+      const compareColIdx = colIdx - offset;
+      const compareColLen = compareColIdx >= 0 ? newColumns[compareColIdx].length : 0;
+      return compareColLen > entryIdx ? 'red' : (compareColLen === entryIdx ? 'blue' : 'red');
+    }
+  };
+
+  return {
+    bigEye: calcDerived(1),
+    small: calcDerived(2),
+    cockroach: calcDerived(3),
+  };
+}
+
+// Statistics Panel with Ask Road buttons
+function StatsPanel({
+  data,
+  nextBanker,
+  nextPlayer,
+  askRoadMode,
+  onAskRoadToggle,
+}: {
   data: RoadHistoryEntry[];
   nextBanker: { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null };
   nextPlayer: { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null };
+  askRoadMode: 'none' | 'banker' | 'player';
+  onAskRoadToggle: (mode: 'banker' | 'player') => void;
 }) {
   const stats = useMemo(() => {
     let banker = 0, player = 0, tie = 0, bankerPair = 0, playerPair = 0;
@@ -39,7 +89,7 @@ function StatsPanel({ data, nextBanker, nextPlayer }: {
     return { banker, player, tie, bankerPair, playerPair, total: data.length };
   }, [data]);
 
-  const renderPrediction = (bigEye: 'red' | 'blue' | null, small: 'red' | 'blue' | null, cockroach: 'red' | 'blue' | null) => (
+  const renderPredictionDots = (pred: { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null }) => (
     <div className="flex items-center gap-0.5">
       {/* Big Eye - hollow circle */}
       <div
@@ -47,7 +97,7 @@ function StatsPanel({ data, nextBanker, nextPlayer }: {
         style={{
           width: 6,
           height: 6,
-          border: `1.5px solid ${bigEye === 'red' ? '#ef4444' : bigEye === 'blue' ? '#3b82f6' : '#666'}`,
+          border: `1.5px solid ${pred.bigEye === 'red' ? '#ef4444' : pred.bigEye === 'blue' ? '#3b82f6' : '#666'}`,
         }}
       />
       {/* Small - solid circle */}
@@ -56,7 +106,7 @@ function StatsPanel({ data, nextBanker, nextPlayer }: {
         style={{
           width: 6,
           height: 6,
-          backgroundColor: small === 'red' ? '#ef4444' : small === 'blue' ? '#3b82f6' : '#666',
+          backgroundColor: pred.small === 'red' ? '#ef4444' : pred.small === 'blue' ? '#3b82f6' : '#666',
         }}
       />
       {/* Cockroach - slash */}
@@ -64,7 +114,7 @@ function StatsPanel({ data, nextBanker, nextPlayer }: {
         style={{
           width: 6,
           height: 1.5,
-          backgroundColor: cockroach === 'red' ? '#ef4444' : cockroach === 'blue' ? '#3b82f6' : '#666',
+          backgroundColor: pred.cockroach === 'red' ? '#ef4444' : pred.cockroach === 'blue' ? '#3b82f6' : '#666',
           transform: 'rotate(-45deg)',
         }}
       />
@@ -73,59 +123,81 @@ function StatsPanel({ data, nextBanker, nextPlayer }: {
 
   return (
     <div
-      className="h-full flex flex-col justify-center px-1.5 py-1 text-[8px]"
-      style={{ backgroundColor: CELL_BG, minWidth: 50 }}
+      className="h-full flex flex-col px-1 py-0.5 text-[8px]"
+      style={{ backgroundColor: CELL_BG, minWidth: 48 }}
     >
-      {/* Banker */}
-      <div className="flex items-center justify-between gap-1">
-        <span style={{ color: '#ef4444' }}>莊</span>
-        <span className="text-white font-medium">{stats.banker}</span>
+      {/* Stats */}
+      <div className="flex-1 flex flex-col justify-center gap-0.5">
+        <div className="flex items-center justify-between">
+          <span style={{ color: '#ef4444' }}>莊</span>
+          <span className="text-white font-medium">{stats.banker}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span style={{ color: '#3b82f6' }}>閒</span>
+          <span className="text-white font-medium">{stats.player}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span style={{ color: '#22c55e' }}>和</span>
+          <span className="text-white font-medium">{stats.tie}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span style={{ color: '#ef4444' }}>莊對</span>
+          <span className="text-white font-medium">{stats.bankerPair}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span style={{ color: '#3b82f6' }}>閒對</span>
+          <span className="text-white font-medium">{stats.playerPair}</span>
+        </div>
+        <div className="flex items-center justify-between border-t border-gray-600 pt-0.5 mt-0.5">
+          <span className="text-gray-400">總數</span>
+          <span className="text-white font-medium">{stats.total}</span>
+        </div>
       </div>
-      {/* Player */}
-      <div className="flex items-center justify-between gap-1">
-        <span style={{ color: '#3b82f6' }}>閒</span>
-        <span className="text-white font-medium">{stats.player}</span>
-      </div>
-      {/* Tie */}
-      <div className="flex items-center justify-between gap-1">
-        <span style={{ color: '#22c55e' }}>和</span>
-        <span className="text-white font-medium">{stats.tie}</span>
-      </div>
-      {/* Banker Pair */}
-      <div className="flex items-center justify-between gap-1">
-        <span style={{ color: '#ef4444' }}>莊對</span>
-        <span className="text-white font-medium">{stats.bankerPair}</span>
-      </div>
-      {/* Player Pair */}
-      <div className="flex items-center justify-between gap-1">
-        <span style={{ color: '#3b82f6' }}>閒對</span>
-        <span className="text-white font-medium">{stats.playerPair}</span>
-      </div>
-      {/* Total */}
-      <div className="flex items-center justify-between gap-1 border-t border-gray-600 pt-0.5 mt-0.5">
-        <span className="text-gray-400">總數</span>
-        <span className="text-white font-medium">{stats.total}</span>
-      </div>
-      {/* Prediction - Next Banker */}
-      <div className="flex items-center justify-between gap-1 border-t border-gray-600 pt-0.5 mt-0.5">
-        <span style={{ color: '#ef4444' }}>莊問路</span>
-        {renderPrediction(nextBanker.bigEye, nextBanker.small, nextBanker.cockroach)}
-      </div>
-      {/* Prediction - Next Player */}
-      <div className="flex items-center justify-between gap-1">
-        <span style={{ color: '#3b82f6' }}>閒問路</span>
-        {renderPrediction(nextPlayer.bigEye, nextPlayer.small, nextPlayer.cockroach)}
+
+      {/* Ask Road Buttons */}
+      <div className="border-t border-gray-600 pt-1 mt-1 space-y-1">
+        {/* Banker Ask Road */}
+        <button
+          onClick={() => onAskRoadToggle('banker')}
+          className={`w-full flex items-center justify-between px-1 py-0.5 rounded transition ${
+            askRoadMode === 'banker' ? 'bg-red-500/30 ring-1 ring-red-400' : 'hover:bg-gray-700/50'
+          }`}
+        >
+          <span style={{ color: '#ef4444' }}>莊問路</span>
+          {renderPredictionDots(nextBanker)}
+        </button>
+        {/* Player Ask Road */}
+        <button
+          onClick={() => onAskRoadToggle('player')}
+          className={`w-full flex items-center justify-between px-1 py-0.5 rounded transition ${
+            askRoadMode === 'player' ? 'bg-blue-500/30 ring-1 ring-blue-400' : 'hover:bg-gray-700/50'
+          }`}
+        >
+          <span style={{ color: '#3b82f6' }}>閒問路</span>
+          {renderPredictionDots(nextPlayer)}
+        </button>
       </div>
     </div>
   );
 }
 
-// Bead Road — solid glowing circles on dark background
-function BeadRoad({ data, width }: { data: RoadHistoryEntry[]; width: number }) {
+// Bead Road with prediction support
+function BeadRoad({
+  data,
+  width,
+  askRoadMode,
+}: {
+  data: RoadHistoryEntry[];
+  width: number;
+  askRoadMode: 'none' | 'banker' | 'player';
+}) {
   const ROWS = 6;
-  const CELL = 15;
+  const CELL = 16;
   const cols = Math.max(Math.floor(width / (CELL + 1)), 1);
-  const startIdx = Math.max(0, data.length - ROWS * cols);
+
+  // Reserve 1 slot for prediction when ask road is active
+  const maxShow = askRoadMode !== 'none' ? ROWS * cols - 1 : ROWS * cols;
+  const startIdx = Math.max(0, data.length - maxShow);
   const visibleData = data.slice(startIdx);
 
   const bgColors: Record<string, string> = {
@@ -154,29 +226,54 @@ function BeadRoad({ data, width }: { data: RoadHistoryEntry[]; width: number }) 
         const col = Math.floor(i / ROWS);
         const row = i % ROWS;
         const dataIdx = col * ROWS + row;
-        const entry = visibleData[dataIdx];
         const key = `b-${row}-${col}`;
+
+        // Check if this is the prediction slot
+        const isPredictionSlot = askRoadMode !== 'none' && dataIdx === visibleData.length;
+
+        if (isPredictionSlot) {
+          const predResult = askRoadMode;
+          return (
+            <div key={key} className="relative flex items-center justify-center" style={{ background: CELL_BG }}>
+              <div
+                className="rounded-full flex items-center justify-center text-white font-bold animate-pulse"
+                style={{
+                  width: 14,
+                  height: 14,
+                  backgroundColor: bgColors[predResult],
+                  fontSize: '8px',
+                  lineHeight: 1,
+                  opacity: 0.7,
+                }}
+              >
+                {labels[predResult]}
+              </div>
+            </div>
+          );
+        }
+
+        const entry = visibleData[dataIdx];
         if (!entry) return <div key={key} style={{ background: CELL_BG }} />;
+
         return (
           <div key={key} className="relative flex items-center justify-center" style={{ background: CELL_BG }}>
             <div
               className="rounded-full flex items-center justify-center text-white font-bold"
               style={{
-                width: 13,
-                height: 13,
+                width: 14,
+                height: 14,
                 backgroundColor: bgColors[entry.result],
-                fontSize: '7px',
+                fontSize: '8px',
                 lineHeight: 1,
-                boxShadow: `0 0 4px ${GLOW_COLORS[entry.result]}`,
               }}
             >
               {labels[entry.result]}
             </div>
             {entry.bankerPair && (
-              <div className="absolute" style={{ top: 0, left: 0, width: 3, height: 3, borderRadius: '50%', backgroundColor: '#ef4444' }} />
+              <div className="absolute" style={{ top: 1, left: 1, width: 3, height: 3, borderRadius: '50%', backgroundColor: '#ef4444' }} />
             )}
             {entry.playerPair && (
-              <div className="absolute" style={{ bottom: 0, right: 0, width: 3, height: 3, borderRadius: '50%', backgroundColor: '#3b82f6' }} />
+              <div className="absolute" style={{ bottom: 1, right: 1, width: 3, height: 3, borderRadius: '50%', backgroundColor: '#3b82f6' }} />
             )}
           </div>
         );
@@ -185,10 +282,10 @@ function BeadRoad({ data, width }: { data: RoadHistoryEntry[]; width: number }) 
   );
 }
 
-// Big Road — outlined glowing circles on dark background
+// Big Road
 function BigRoad({ grid, usedCols, width }: { grid: (BigRoadCell | null)[][]; usedCols: number; width: number }) {
   const ROWS = 6;
-  const CELL = 13;
+  const CELL = 12;
   const maxCols = Math.max(Math.floor(width / (CELL + 1)), 1);
   const displayCols = Math.max(usedCols, maxCols);
   const colOffset = Math.max(0, displayCols - maxCols);
@@ -204,15 +301,14 @@ function BigRoad({ grid, usedCols, width }: { grid: (BigRoadCell | null)[][]; us
         continue;
       }
       const color = cell.result === 'banker' ? '#ef4444' : '#3b82f6';
-      const glow = cell.result === 'banker' ? GLOW_COLORS.banker : GLOW_COLORS.player;
       cells.push(
         <div key={key} className="relative flex items-center justify-center" style={{ background: CELL_BG }}>
           <div
             className="rounded-full flex items-center justify-center"
-            style={{ width: 10, height: 10, border: `2px solid ${color}`, boxShadow: `0 0 3px ${glow}` }}
+            style={{ width: 10, height: 10, border: `2px solid ${color}` }}
           >
             {cell.tieCount > 0 && (
-              <span style={{ fontSize: '5px', color: '#22c55e', fontWeight: 'bold', lineHeight: 1 }}>
+              <span style={{ fontSize: '6px', color: '#22c55e', fontWeight: 'bold', lineHeight: 1 }}>
                 {cell.tieCount}
               </span>
             )}
@@ -243,7 +339,7 @@ function BigRoad({ grid, usedCols, width }: { grid: (BigRoadCell | null)[][]; us
   );
 }
 
-// Generic derived road component (Big Eye Boy, Small Road, Cockroach Pig)
+// Derived Road (Big Eye Boy, Small Road, Cockroach Pig)
 function DerivedRoad({
   grid,
   cellSize,
@@ -301,62 +397,11 @@ function DerivedRoad({
   );
 }
 
-// Calculate prediction for next result
-function calculateNextPrediction(
-  columns: BigRoadCell[][],
-  nextResult: 'banker' | 'player'
-): { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null } {
-  if (columns.length === 0) {
-    return { bigEye: null, small: null, cockroach: null };
-  }
-
-  // Simulate adding the next result
-  const lastCol = columns[columns.length - 1];
-  const lastResult = lastCol[0].result;
-
-  let newColumns: BigRoadCell[][];
-  if (nextResult === lastResult) {
-    // Continue in same column
-    newColumns = [...columns.slice(0, -1), [...lastCol, { result: nextResult, tieCount: 0 }]];
-  } else {
-    // Start new column
-    newColumns = [...columns, [{ result: nextResult, tieCount: 0 }]];
-  }
-
-  // Calculate derived road colors for the new entry
-  const calcDerived = (offset: number): 'red' | 'blue' | null => {
-    const startCol = offset + 1;
-    if (newColumns.length < startCol) return null;
-
-    const colIdx = newColumns.length - 1;
-    const entryIdx = newColumns[colIdx].length - 1;
-
-    if (colIdx === startCol - 1 && entryIdx === 0) return null;
-
-    if (entryIdx === 0) {
-      const prevColLen = newColumns[colIdx - 1].length;
-      const refColIdx = colIdx - 1 - offset;
-      const refColLen = refColIdx >= 0 ? newColumns[refColIdx].length : 0;
-      return prevColLen === refColLen ? 'red' : 'blue';
-    } else {
-      const compareColIdx = colIdx - offset;
-      const compareColLen = compareColIdx >= 0 ? newColumns[compareColIdx].length : 0;
-      return compareColLen > entryIdx ? 'red' : (compareColLen === entryIdx ? 'blue' : 'red');
-    }
-  };
-
-  return {
-    bigEye: calcDerived(1),
-    small: calcDerived(2),
-    cockroach: calcDerived(3),
-  };
-}
-
 // ── Main Component ──
-
-function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
+function LobbyRoadmap({ roadHistory, onAskRoadChange }: LobbyRoadmapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  const [askRoadMode, setAskRoadMode] = useState<'none' | 'banker' | 'player'>('none');
 
   useLayoutEffect(() => {
     if (!containerRef.current) return;
@@ -368,13 +413,18 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
     return () => ro.disconnect();
   }, []);
 
+  const handleAskRoadToggle = (mode: 'banker' | 'player') => {
+    const newMode = askRoadMode === mode ? 'none' : mode;
+    setAskRoadMode(newMode);
+    onAskRoadChange?.(newMode);
+  };
+
   const bigRoadColumns = useMemo(() => buildBigRoadColumns(roadHistory), [roadHistory]);
   const bigRoadGrid = useMemo(() => buildBigRoadGrid(bigRoadColumns, 6, 60), [bigRoadColumns]);
   const bigEyeGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 1, 6, 60), [bigRoadColumns]);
   const smallGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 2, 6, 40), [bigRoadColumns]);
   const cockroachGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 3, 6, 40), [bigRoadColumns]);
 
-  // Calculate predictions
   const nextBanker = useMemo(() => calculateNextPrediction(bigRoadColumns, 'banker'), [bigRoadColumns]);
   const nextPlayer = useMemo(() => calculateNextPrediction(bigRoadColumns, 'player'), [bigRoadColumns]);
 
@@ -385,10 +435,9 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
     }
   }
 
-  // Stats panel width
-  const statsWidth = 55;
-  // Bead road ~30%, roads ~remaining
-  const beadWidth = Math.floor((containerWidth - statsWidth - 2) * 0.30);
+  // Layout calculation
+  const statsWidth = 52;
+  const beadWidth = Math.floor((containerWidth - statsWidth - 2) * 0.22);
   const roadWidth = containerWidth - beadWidth - statsWidth - 2;
   const halfRoadWidth = Math.floor((roadWidth - 1) / 2);
 
@@ -404,10 +453,9 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
 
   const renderCockroach = (val: 'red' | 'blue') => {
     const color = val === 'red' ? '#ef4444' : '#3b82f6';
-    // All slashes same direction (top-left to bottom-right)
     return (
       <div style={{
-        width: 5,
+        width: 6,
         height: 1.5,
         backgroundColor: color,
         transform: 'rotate(-45deg)',
@@ -421,25 +469,22 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
         <>
           {/* Left: Bead Road */}
           <div className="shrink-0 overflow-hidden" style={{ width: beadWidth }}>
-            <BeadRoad data={roadHistory} width={beadWidth} />
+            <BeadRoad data={roadHistory} width={beadWidth} askRoadMode={askRoadMode} />
           </div>
 
-          {/* 1px vertical divider */}
-          <div style={{ width: 1, backgroundColor: LINE }} />
-
-          {/* Middle: Stacked roads */}
+          {/* Middle: Big Road + Derived Roads */}
           <div className="flex-1 flex flex-col overflow-hidden" style={{ gap: 1, backgroundColor: LINE }}>
-            {/* Big Road */}
+            {/* Big Road - takes ~40% height */}
             <div className="flex-[3] overflow-hidden">
               <BigRoad grid={bigRoadGrid} usedCols={bigRoadUsedCols} width={roadWidth} />
             </div>
 
-            {/* Big Eye Boy */}
+            {/* Big Eye Boy - takes ~30% height */}
             <div className="flex-[2] overflow-hidden">
               <DerivedRoad grid={bigEyeGrid} cellSize={7} renderCell={renderBigEye} keyPrefix="be" width={roadWidth} />
             </div>
 
-            {/* Small Road + Cockroach Pig */}
+            {/* Small Road + Cockroach Pig side by side - takes ~30% height */}
             <div className="flex-[2] flex overflow-hidden" style={{ gap: 1 }}>
               <div className="flex-1 overflow-hidden">
                 <DerivedRoad grid={smallGrid} cellSize={7} renderCell={renderSmall} keyPrefix="sr" width={halfRoadWidth} />
@@ -450,12 +495,15 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
             </div>
           </div>
 
-          {/* 1px vertical divider */}
-          <div style={{ width: 1, backgroundColor: LINE }} />
-
           {/* Right: Stats Panel */}
           <div className="shrink-0 overflow-hidden" style={{ width: statsWidth }}>
-            <StatsPanel data={roadHistory} nextBanker={nextBanker} nextPlayer={nextPlayer} />
+            <StatsPanel
+              data={roadHistory}
+              nextBanker={nextBanker}
+              nextPlayer={nextPlayer}
+              askRoadMode={askRoadMode}
+              onAskRoadToggle={handleAskRoadToggle}
+            />
           </div>
         </>
       )}
