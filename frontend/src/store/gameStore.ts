@@ -104,7 +104,9 @@ interface GameStore {
 
   // Result display
   lastResult: GameResult | null;
-  setLastResult: (result: GameResult | null) => void;
+  lastPlayerPair: boolean;
+  lastBankerPair: boolean;
+  setLastResult: (result: GameResult | null, playerPair?: boolean, bankerPair?: boolean) => void;
   lastSettlement: {
     bets: BetResult[];
     totalPayout: number;
@@ -322,7 +324,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   // Result
   lastResult: null,
-  setLastResult: (result) => set({ lastResult: result }),
+  lastPlayerPair: false,
+  lastBankerPair: false,
+  setLastResult: (result, playerPair, bankerPair) => set({
+    lastResult: result,
+    lastPlayerPair: playerPair ?? false,
+    lastBankerPair: bankerPair ?? false,
+  }),
   lastSettlement: null,
   setLastSettlement: (settlement) => set({ lastSettlement: settlement }),
 
@@ -357,6 +365,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       playerPoints: null,
       bankerPoints: null,
       lastResult: null,
+      lastPlayerPair: false,
+      lastBankerPair: false,
       lastSettlement: null,
     }),
 
@@ -378,6 +388,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       playerPoints: null,
       bankerPoints: null,
       lastResult: null,
+      lastPlayerPair: false,
+      lastBankerPair: false,
       lastSettlement: null,
       roadmapData: [],
       shoeNumber: 1,

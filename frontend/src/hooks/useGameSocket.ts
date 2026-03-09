@@ -153,8 +153,8 @@ export function useGameSocket(tableId?: string) {
     };
 
     const handleResult = (data: RoundResultEvent) => {
-      console.log('[useGameSocket] Round result:', data.result);
-      setLastResult(data.result);
+      console.log('[useGameSocket] Round result:', data.result, 'playerPair:', data.playerPair, 'bankerPair:', data.bankerPair);
+      setLastResult(data.result, data.playerPair, data.bankerPair);
       setRoundNumber(data.roundNumber);
     };
 

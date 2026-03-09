@@ -561,6 +561,8 @@ export default function Game() {
     playerPoints,
     bankerPoints,
     lastResult,
+    lastPlayerPair,
+    lastBankerPair,
     lastSettlement,
     roadmapData,
     shoeNumber,
@@ -987,6 +989,8 @@ export default function Game() {
   const [frozenBankerCards, setFrozenBankerCards] = useState<typeof bankerCards>([]);
   const [frozenPlayerPoints, setFrozenPlayerPoints] = useState<number | null>(null);
   const [frozenBankerPoints, setFrozenBankerPoints] = useState<number | null>(null);
+  // Frozen winning bet info for flash animation
+  const [frozenWinningBets, setFrozenWinningBets] = useState<Set<string>>(new Set());
 
   // Accumulate session win/loss when a new settlement arrives
   useEffect(() => {
@@ -1007,7 +1011,35 @@ export default function Game() {
       setFrozenBankerCards([...bankerCards]);
       setFrozenPlayerPoints(displayPlayerPoints);
       setFrozenBankerPoints(displayBankerPoints);
-      console.log(`[Game] ⏳ Starting 2s wait before showing result: ${lastResult} (froze ${playerCards.length}+${bankerCards.length} cards)`);
+
+      // Calculate winning bet types for flash animation
+      const winningBets = new Set<string>();
+      const pPts = displayPlayerPoints ?? playerPoints ?? 0;
+      const bPts = displayBankerPoints ?? bankerPoints ?? 0;
+      const totalCards = playerCards.length + bankerCards.length;
+
+      // Main result
+      if (lastResult === 'player') winningBets.add('player');
+      if (lastResult === 'banker') winningBets.add('banker');
+      if (lastResult === 'tie') winningBets.add('tie');
+
+      // Super 6: banker wins with 6 points
+      if (lastResult === 'banker' && bPts === 6) winningBets.add('super_six');
+
+      // Pair info from game:result event (stored in lastPlayerPair/lastBankerPair)
+      if (lastPlayerPair) winningBets.add('player_pair');
+      if (lastBankerPair) winningBets.add('banker_pair');
+
+      // Dragon bonus: win by 4+ points margin (natural wins also count)
+      if (lastResult === 'player' && (pPts - bPts) >= 4) winningBets.add('player_bonus');
+      if (lastResult === 'banker' && (bPts - pPts) >= 4) winningBets.add('banker_bonus');
+
+      // Big/Small: total cards
+      if (totalCards === 4) winningBets.add('small');
+      if (totalCards === 5 || totalCards === 6) winningBets.add('big');
+
+      setFrozenWinningBets(winningBets);
+      console.log(`[Game] ⏳ Starting 2s wait before showing result: ${lastResult} (froze ${playerCards.length}+${bankerCards.length} cards, winning: ${Array.from(winningBets).join(',')}, pairs: P=${lastPlayerPair} B=${lastBankerPair})`);
       showResultTimerRef.current = setTimeout(() => {
         console.log(`[Game] 🏆 Showing result overlay NOW`);
         // TTS: announce winner
@@ -1024,16 +1056,34 @@ export default function Game() {
           setFrozenBankerCards([]);
           setFrozenPlayerPoints(null);
           setFrozenBankerPoints(null);
+          setFrozenWinningBets(new Set());
         }, 2000);
       }, 2000);
     }
-  }, [lastResult, allFlipsDone, playSound]);
+  }, [lastResult, allFlipsDone, playSound, displayPlayerPoints, displayBankerPoints, playerPoints, bankerPoints, playerCards.length, bankerCards.length, lastPlayerPair, lastBankerPair]);
 
   // Use frozen data when store has been reset but we're still displaying result
   const renderPlayerCards = frozenResult !== null && playerCards.length === 0 ? frozenPlayerCards : playerCards;
   const renderBankerCards = frozenResult !== null && bankerCards.length === 0 ? frozenBankerCards : bankerCards;
   const renderPlayerPoints = frozenResult !== null && displayPlayerPoints === null ? frozenPlayerPoints : displayPlayerPoints;
   const renderBankerPoints = frozenResult !== null && displayBankerPoints === null ? frozenBankerPoints : displayBankerPoints;
+
+  // Get winning flash class for bet buttons
+  const getWinningFlashClass = (betType: string): string => {
+    if (!showResult || !frozenWinningBets.has(betType)) return '';
+    // Color based on bet type
+    if (betType === 'player' || betType === 'player_pair' || betType === 'player_bonus') {
+      return 'winning-flash winning-flash-player';
+    }
+    if (betType === 'banker' || betType === 'banker_pair' || betType === 'banker_bonus') {
+      return 'winning-flash winning-flash-banker';
+    }
+    if (betType === 'tie') {
+      return 'winning-flash winning-flash-tie';
+    }
+    // super_six, big, small use gold
+    return 'winning-flash winning-flash-gold';
+  };
 
   // When result display is fully done AND we're in betting phase, do the round reset + sound
   // This handles both cases:
@@ -1733,7 +1783,7 @@ export default function Game() {
                   <button
                     onClick={(e) => handlePlaceBet('player_bonus', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot casino-bet-player relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('player_bonus') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot casino-bet-player relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('player_bonus') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('player_bonus')}`}
                   >
                     <span className="text-blue-300 text-[8px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('playerBonus')}</span>
                     <span className="text-[#d4af37] text-[7px] sm:text-xs font-semibold">1:30</span>
@@ -1754,7 +1804,7 @@ export default function Game() {
                   <button
                     onClick={(e) => handlePlaceBet('player_pair', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot casino-bet-pair relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('player_pair') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot casino-bet-pair relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('player_pair') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('player_pair')}`}
                   >
                     <span className="text-blue-300 text-[8px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('playerPair')}</span>
                     <span className="text-[#d4af37] text-[8px] sm:text-sm font-bold">1:11</span>
@@ -1775,7 +1825,7 @@ export default function Game() {
                   <button
                     onClick={(e) => handlePlaceBet('super_six', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot casino-bet-super6 relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('super_six') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot casino-bet-super6 relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('super_six') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('super_six')}`}
                   >
                     <span className="text-purple-300 text-[6px] sm:text-[10px] font-bold tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">SUPER</span>
                     <span className="text-purple-200 text-sm sm:text-3xl font-black leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">6</span>
@@ -1797,7 +1847,7 @@ export default function Game() {
                   <button
                     onClick={(e) => handlePlaceBet('banker_pair', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot casino-bet-pair relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('banker_pair') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot casino-bet-pair relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('banker_pair') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('banker_pair')}`}
                   >
                     <span className="text-red-300 text-[8px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('bankerPair')}</span>
                     <span className="text-[#d4af37] text-[8px] sm:text-sm font-bold">1:11</span>
@@ -1818,7 +1868,7 @@ export default function Game() {
                   <button
                     onClick={(e) => handlePlaceBet('banker_bonus', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot casino-bet-banker relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('banker_bonus') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot casino-bet-banker relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('banker_bonus') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('banker_bonus')}`}
                   >
                     <span className="text-red-300 text-[8px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('bankerBonus')}</span>
                     <span className="text-[#d4af37] text-[7px] sm:text-xs font-semibold">1:30</span>
@@ -1842,7 +1892,7 @@ export default function Game() {
                   <button
                     onClick={(e) => handlePlaceBet('player', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot casino-bet-player relative flex-[2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('player') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot casino-bet-player relative flex-[2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('player') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('player')}`}
                   >
                     {/* Corner ornaments */}
                     <div className="casino-corner-ornament top-left hidden sm:block" />
@@ -1866,7 +1916,7 @@ export default function Game() {
                   <button
                     onClick={(e) => handlePlaceBet('tie', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot casino-bet-tie relative flex-[1.2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tie') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot casino-bet-tie relative flex-[1.2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tie') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tie')}`}
                   >
                     <span className="casino-display text-green-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('tie')}</span>
                     <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:8</span>
@@ -1887,7 +1937,7 @@ export default function Game() {
                   <button
                     onClick={(e) => handlePlaceBet('banker', e)}
                     disabled={!canBet}
-                    className={`casino-bet-spot casino-bet-banker relative flex-[2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('banker') > 0 ? 'has-bet' : ''}`}
+                    className={`casino-bet-spot casino-bet-banker relative flex-[2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('banker') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('banker')}`}
                   >
                     {/* Corner ornaments */}
                     <div className="casino-corner-ornament top-right hidden sm:block" />
