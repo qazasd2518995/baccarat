@@ -801,16 +801,8 @@ export default function AgentManagement() {
                     {/* Left: Member Info */}
                     <div className="flex flex-wrap items-start gap-3 sm:gap-4">
                       <div className="text-center min-w-[80px]">
-                        <p className="text-gray-400 text-xs mb-1">会员账号/复制账号</p>
-                        <div className="flex items-center gap-2">
-                          <span className="text-amber-400 font-medium text-sm sm:text-base">{member.username}</span>
-                          <button
-                            onClick={() => copyToClipboard(member.username)}
-                            className="text-gray-400 hover:text-white p-1"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <p className="text-gray-400 text-xs mb-1">会员账号</p>
+                        <span className="text-amber-400 font-medium text-sm sm:text-base">{member.username}</span>
                         <p className="text-gray-400 text-xs sm:text-sm">({member.nickname || '无名称'})</p>
                         {member.remark && (
                           <p className="text-gray-500 text-xs mt-0.5 italic">备注: {member.remark}</p>
@@ -863,49 +855,36 @@ export default function AgentManagement() {
 
                     {/* Right: Status & Actions */}
                     <div className="flex flex-wrap items-start gap-4 sm:gap-6 w-full sm:w-auto">
-                      <div className="space-y-1">
-                        <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
-                          <input
-                            type="checkbox"
-                            checked={member.isLocked}
-                            onChange={() => handleStatusChange(member.id, member.isLocked ? 'unlock' : 'lock')}
-                            className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
-                          />
-                          <span className="text-white text-xs sm:text-sm">锁定登入</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
-                          <input
-                            type="checkbox"
-                            checked={member.isFullDisabled}
-                            onChange={() => handleStatusChange(member.id, member.isFullDisabled ? 'enable' : 'disable')}
-                            className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
-                          />
-                          <span className="text-white text-xs sm:text-sm">全线禁用</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
-                          <input
-                            type="checkbox"
-                            checked={member.isReadonly}
-                            onChange={() => handleStatusChange(member.id, member.isReadonly ? 'unreadonly' : 'readonly')}
-                            className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
-                          />
-                          <span className="text-white text-xs sm:text-sm">禁止投注/操作</span>
-                        </label>
+                      <div className="text-center">
+                        <p className="text-gray-400 text-xs mb-1">状态调整</p>
+                        <select
+                          value={member.isLocked ? 'disabled' : member.isReadonly ? 'frozen' : 'normal'}
+                          onChange={(e) => {
+                            const status = e.target.value;
+                            if (status === 'disabled') {
+                              handleStatusChange(member.id, 'lock');
+                            } else if (status === 'frozen') {
+                              handleStatusChange(member.id, 'unlock');
+                              handleStatusChange(member.id, 'readonly');
+                            } else {
+                              handleStatusChange(member.id, 'unlock');
+                              handleStatusChange(member.id, 'unreadonly');
+                            }
+                          }}
+                          className="px-2 py-1 bg-[#2a2a2a] border border-[#444] rounded text-white text-xs sm:text-sm min-h-[32px]"
+                        >
+                          <option value="normal">正常</option>
+                          <option value="frozen">凍結</option>
+                          <option value="disabled">停用</option>
+                        </select>
                       </div>
 
                       <div className="text-center">
                         <button
-                          onClick={() => setConfirmModal({ open: true, agent: member as any, action: 'withdrawAll' })}
-                          className="text-amber-400 hover:text-amber-300 text-xs sm:text-sm min-h-[32px]"
-                        >
-                          抽取全线额度
-                        </button>
-                        <br />
-                        <button
                           onClick={() => setEditAgentModal({ open: true, agent: member, type: 'member' })}
                           className="text-amber-400 hover:text-amber-300 text-xs sm:text-sm min-h-[32px]"
                         >
-                          修改账号
+                          修改密码
                         </button>
                       </div>
 
