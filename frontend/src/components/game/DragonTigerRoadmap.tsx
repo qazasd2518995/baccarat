@@ -22,106 +22,143 @@ function normalizeResult(result: string | undefined): 'dragon' | 'tiger' | 'tie'
   return undefined;
 }
 
-// DT Big Road grid type
-type DTBigRoadCell = { result: 'dragon' | 'tiger'; tieCount: number } | null;
-type DTBigRoadGrid = DTBigRoadCell[][];
+// DT Big Road cell type
+interface DTBigRoadCell {
+  result: 'dragon' | 'tiger';
+  tieCount: number;
+}
 
-// Build Big Road data structure for Dragon Tiger
-function buildDTBigRoad(data: Array<{ result: string }>): DTBigRoadGrid {
-  const ROWS = 6;
-  const MAX_COLS = 60;
-  const grid: DTBigRoadGrid = Array(ROWS).fill(null).map(() => Array(MAX_COLS).fill(null));
-
-  if (data.length === 0) return grid;
-
-  let col = 0;
-  let row = 0;
+// Build Big Road columns for Dragon Tiger (same logic as Baccarat)
+function buildDTBigRoadColumns(data: Array<{ result: string }>): DTBigRoadCell[][] {
+  const columns: DTBigRoadCell[][] = [];
+  let currentCol: DTBigRoadCell[] = [];
   let lastResult: 'dragon' | 'tiger' | null = null;
-  let tieCount = 0;
 
   for (const round of data) {
     const result = normalizeResult(round.result);
 
     if (result === 'tie') {
-      tieCount++;
+      // Tie adds to the last cell's tie count
+      if (currentCol.length > 0) {
+        currentCol[currentCol.length - 1].tieCount++;
+      } else if (columns.length > 0) {
+        const prevCol = columns[columns.length - 1];
+        prevCol[prevCol.length - 1].tieCount++;
+      }
       continue;
     }
 
     if (!result) continue;
 
     if (lastResult === null || result !== lastResult) {
-      if (lastResult !== null) {
-        col++;
-        row = 0;
+      // New column
+      if (currentCol.length > 0) {
+        columns.push(currentCol);
       }
+      currentCol = [{ result, tieCount: 0 }];
       lastResult = result;
     } else {
-      row++;
-      if (row >= ROWS) {
-        row = ROWS - 1;
+      // Continue in same column
+      currentCol.push({ result, tieCount: 0 });
+    }
+  }
+
+  if (currentCol.length > 0) {
+    columns.push(currentCol);
+  }
+
+  return columns;
+}
+
+// Build Big Road grid with Dragon Tail
+function buildDTBigRoadGrid(columns: DTBigRoadCell[][], rows: number, maxCols: number): (DTBigRoadCell | null)[][] {
+  const grid: (DTBigRoadCell | null)[][] = Array(rows).fill(null).map(() => Array(maxCols).fill(null));
+
+  let gridCol = 0;
+
+  for (const column of columns) {
+    let row = 0;
+    let col = gridCol;
+
+    for (const cell of column) {
+      if (row >= rows) {
+        col++;
+        row = rows - 1;
+      }
+
+      while (col < maxCols && grid[row][col] !== null) {
         col++;
       }
+
+      if (col < maxCols) {
+        grid[row][col] = cell;
+      }
+      row++;
     }
 
-    if (col < MAX_COLS && row < ROWS) {
-      grid[row][col] = { result, tieCount };
-      tieCount = 0;
-    }
+    gridCol = col + 1;
   }
 
   return grid;
 }
 
-// Helper: get column length
-function getDTColumnLength(grid: DTBigRoadGrid, col: number): number {
-  let length = 0;
-  for (let row = 0; row < 6; row++) {
-    if (grid[row]?.[col]) length++;
-  }
-  return length;
-}
+// Build derived road for Dragon Tiger
+function buildDTDerivedRoad(
+  columns: DTBigRoadCell[][],
+  offset: number,
+  maxRows: number = 6,
+  maxCols: number = 20
+): ('red' | 'blue' | null)[][] {
+  const grid: ('red' | 'blue' | null)[][] = Array(maxRows).fill(null).map(() => Array(maxCols).fill(null));
 
-// Helper: find max column with data
-function getDTMaxCol(grid: DTBigRoadGrid): number {
-  let maxCol = 0;
-  const cols = grid[0]?.length || 0;
-  for (let col = 0; col < cols; col++) {
-    for (let row = 0; row < 6; row++) {
-      if (grid[row]?.[col]) { maxCol = col; break; }
-    }
-  }
-  return maxCol;
-}
+  const startCol = offset + 1;
+  if (columns.length < startCol) return grid;
 
-// Calculate derived road
-function calculateDTDerivedRoad(grid: DTBigRoadGrid, offset: number): ('red' | 'blue')[] {
-  const results: ('red' | 'blue')[] = [];
-  const maxCol = getDTMaxCol(grid);
+  let outputCol = 0;
+  let outputRow = 0;
+  let lastColor: 'red' | 'blue' | null = null;
 
-  for (let col = offset; col <= maxCol; col++) {
-    const currLen = getDTColumnLength(grid, col);
-    const compareLen = getDTColumnLength(grid, col - offset);
+  for (let colIdx = startCol - 1; colIdx < columns.length; colIdx++) {
+    const currColLen = columns[colIdx].length;
 
-    if (currLen > 1) {
-      for (let entry = 1; entry < currLen; entry++) {
-        const compareHasEntry = entry < compareLen;
-        results.push(compareHasEntry ? 'red' : 'blue');
+    for (let entryIdx = 0; entryIdx < currColLen; entryIdx++) {
+      if (colIdx === startCol - 1 && entryIdx === 0) {
+        continue;
+      }
+
+      let color: 'red' | 'blue';
+
+      if (entryIdx === 0) {
+        // New column - compare lengths
+        const prevColLen = columns[colIdx - 1].length;
+        const refColIdx = colIdx - 1 - offset;
+        const refColLen = refColIdx >= 0 ? columns[refColIdx].length : 0;
+        color = prevColLen === refColLen ? 'red' : 'blue';
+      } else {
+        // Continuing column - check "齊整" vs "不齊"
+        const compareColIdx = colIdx - offset;
+        const compareColLen = compareColIdx >= 0 ? columns[compareColIdx].length : 0;
+        color = compareColLen > entryIdx ? 'red' : (compareColLen === entryIdx ? 'blue' : 'red');
+      }
+
+      if (lastColor !== null && color !== lastColor) {
+        outputCol++;
+        outputRow = 0;
+      } else if (lastColor !== null) {
+        outputRow++;
+        if (outputRow >= maxRows) {
+          outputRow = maxRows - 1;
+          outputCol++;
+        }
+      }
+
+      if (outputCol < maxCols && outputRow < maxRows) {
+        grid[outputRow][outputCol] = color;
+        lastColor = color;
       }
     }
   }
 
-  return results;
-}
-
-// Build derived road grid from flat array
-function buildDerivedGrid(flatData: ('red' | 'blue')[], rows: number, cols: number): ('red' | 'blue' | null)[][] {
-  const grid: ('red' | 'blue' | null)[][] = Array(rows).fill(null).map(() => Array(cols).fill(null));
-  let dataIdx = 0;
-  for (let c = 0; c < cols && dataIdx < flatData.length; c++) {
-    for (let r = 0; r < rows && dataIdx < flatData.length; r++) {
-      grid[r][c] = flatData[dataIdx++];
-    }
-  }
   return grid;
 }
 
@@ -186,7 +223,7 @@ function BeadRoad({ data, width }: { data: Array<{ result: string }>; width: num
 }
 
 // Big Road — outlined glowing circles
-function BigRoad({ grid, usedCols, width }: { grid: DTBigRoadGrid; usedCols: number; width: number }) {
+function BigRoad({ grid, usedCols, width }: { grid: (DTBigRoadCell | null)[][]; usedCols: number; width: number }) {
   const ROWS = 6;
   const CELL = 13;
   const maxCols = Math.max(Math.floor(width / (CELL + 1)), 1);
@@ -310,15 +347,14 @@ function DragonTigerRoadmap({ roadHistory }: DragonTigerRoadmapProps) {
     return () => ro.disconnect();
   }, []);
 
-  const bigRoadGrid = useMemo(() => buildDTBigRoad(roadHistory), [roadHistory]);
+  // Build columns first (same approach as Baccarat)
+  const bigRoadColumns = useMemo(() => buildDTBigRoadColumns(roadHistory), [roadHistory]);
+  const bigRoadGrid = useMemo(() => buildDTBigRoadGrid(bigRoadColumns, 6, 60), [bigRoadColumns]);
 
-  const bigEyeData = useMemo(() => calculateDTDerivedRoad(bigRoadGrid, 1), [bigRoadGrid]);
-  const smallData = useMemo(() => calculateDTDerivedRoad(bigRoadGrid, 2), [bigRoadGrid]);
-  const cockroachData = useMemo(() => calculateDTDerivedRoad(bigRoadGrid, 3), [bigRoadGrid]);
-
-  const bigEyeGrid = useMemo(() => buildDerivedGrid(bigEyeData, 6, 60), [bigEyeData]);
-  const smallGrid = useMemo(() => buildDerivedGrid(smallData, 6, 40), [smallData]);
-  const cockroachGrid = useMemo(() => buildDerivedGrid(cockroachData, 6, 40), [cockroachData]);
+  // Build derived roads using column structure
+  const bigEyeGrid = useMemo(() => buildDTDerivedRoad(bigRoadColumns, 1, 6, 60), [bigRoadColumns]);
+  const smallGrid = useMemo(() => buildDTDerivedRoad(bigRoadColumns, 2, 6, 40), [bigRoadColumns]);
+  const cockroachGrid = useMemo(() => buildDTDerivedRoad(bigRoadColumns, 3, 6, 40), [bigRoadColumns]);
 
   let bigRoadUsedCols = 0;
   for (let c = 0; c < 60; c++) {
@@ -349,7 +385,7 @@ function DragonTigerRoadmap({ roadHistory }: DragonTigerRoadmapProps) {
         width: 5,
         height: 1.5,
         backgroundColor: color,
-        transform: val === 'red' ? 'rotate(45deg)' : 'rotate(-45deg)',
+        transform: 'rotate(45deg)',
       }} />
     );
   };
