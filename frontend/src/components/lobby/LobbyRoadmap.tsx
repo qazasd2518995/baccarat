@@ -65,7 +65,7 @@ function StatsPanel({ data, nextBanker, nextPlayer }: {
           width: 6,
           height: 1.5,
           backgroundColor: cockroach === 'red' ? '#ef4444' : cockroach === 'blue' ? '#3b82f6' : '#666',
-          transform: cockroach === 'red' ? 'rotate(-45deg)' : 'rotate(45deg)',
+          transform: 'rotate(45deg)',
         }}
       />
     </div>
@@ -404,12 +404,13 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
 
   const renderCockroach = (val: 'red' | 'blue') => {
     const color = val === 'red' ? '#ef4444' : '#3b82f6';
+    // All slashes same direction (top-left to bottom-right)
     return (
       <div style={{
         width: 5,
         height: 1.5,
         backgroundColor: color,
-        transform: val === 'red' ? 'rotate(-45deg)' : 'rotate(45deg)',
+        transform: 'rotate(45deg)',
       }} />
     );
   };

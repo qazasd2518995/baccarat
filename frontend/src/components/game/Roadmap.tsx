@@ -184,7 +184,7 @@ export default function Roadmap({ data }: RoadmapProps) {
                 width: 8,
                 height: 2,
                 backgroundColor: cell === 'red' ? '#ef4444' : '#3b82f6',
-                transform: cell === 'red' ? 'rotate(-45deg)' : 'rotate(45deg)',
+                transform: 'rotate(45deg)',
               }}
             />
           </div>
