@@ -153,12 +153,12 @@ export default function Login() {
       </motion.div>
 
       {/* Main Content */}
-      <div className="relative z-10 min-h-screen flex items-center px-6 sm:px-8 lg:px-16">
+      <div className="relative z-10 min-h-screen flex items-center justify-center lg:justify-start px-6 sm:px-8 lg:px-16">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="w-full max-w-sm lg:max-w-md lg:ml-[5%]"
+          className="w-full max-w-sm lg:max-w-md lg:ml-[15%]"
         >
           {/* Logo & Brand */}
           <motion.div
