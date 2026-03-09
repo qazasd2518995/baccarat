@@ -68,7 +68,7 @@ import { VirtualPlayersBar } from '../components/game/VirtualPlayersBar';
 function Chip({ value, selected, onClick, disabled, small, extraSmall }: { value: number | string; selected: boolean; onClick: () => void; disabled?: boolean; small?: boolean; extraSmall?: boolean }) {
   const numValue = typeof value === 'number' ? value : undefined;
   const label = typeof value === 'string' ? value : formatChipValue(value);
-  const chipSize = extraSmall ? 26 : small ? 32 : 56;
+  const chipSize = extraSmall ? 44 : small ? 32 : 56;
 
   return (
     <button

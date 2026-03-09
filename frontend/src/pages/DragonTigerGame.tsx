@@ -64,7 +64,7 @@ import {
 
 // Chip component - uses CasinoChip SVG
 function Chip({ value, selected, onClick, disabled, extraSmall }: { value: number; selected: boolean; onClick: () => void; disabled?: boolean; extraSmall?: boolean }) {
-  const size = extraSmall ? 40 : 56;
+  const size = extraSmall ? 48 : 56;
   return (
     <button
       onClick={onClick}
