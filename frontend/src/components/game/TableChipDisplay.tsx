@@ -467,9 +467,9 @@ export const FakeBetStats = memo(function FakeBetStats({ fakeBets, gameType = 'b
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: -10, scale: 0.9 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className="flex flex-col gap-0.5 bg-black/50 backdrop-blur-sm rounded px-1.5 py-1 border border-white/10 shadow-lg"
+        className="flex flex-col gap-0.5 sm:gap-1 bg-black/60 backdrop-blur-sm rounded sm:rounded-lg px-1.5 sm:px-3 py-1 sm:py-2 border border-white/10 sm:border-[#d4af37]/30 shadow-lg"
       >
-        <div className="text-[8px] sm:text-[9px] text-[#d4af37]/70 font-bold tracking-wider mb-0.5">本桌下注</div>
+        <div className="text-[8px] sm:text-xs lg:text-sm text-[#d4af37] font-bold tracking-wider mb-0.5 sm:mb-1">本桌下注</div>
         <AnimatePresence mode="popLayout">
           {animatedPlayer > 0 && (
             <motion.div
@@ -477,12 +477,18 @@ export const FakeBetStats = memo(function FakeBetStats({ fakeBets, gameType = 'b
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="flex items-center justify-between gap-2"
+              className="flex items-center justify-between gap-2 sm:gap-4"
             >
-              <span className="text-[8px] sm:text-[9px] text-blue-400 font-bold">{labels.player}</span>
-              <span className="text-[8px] sm:text-[9px] text-white/60 font-mono tabular-nums">
+              <span className="text-[8px] sm:text-sm lg:text-base text-blue-400 font-bold">{labels.player}</span>
+              <motion.span
+                key={animatedPlayer}
+                initial={{ scale: 1.15, color: '#60a5fa' }}
+                animate={{ scale: 1, color: 'rgba(255,255,255,0.8)' }}
+                transition={{ duration: 0.3 }}
+                className="text-[8px] sm:text-sm lg:text-base text-white/80 font-mono font-semibold tabular-nums"
+              >
                 {formatAmount(animatedPlayer)}
-              </span>
+              </motion.span>
             </motion.div>
           )}
           {animatedTie > 0 && (
@@ -491,12 +497,18 @@ export const FakeBetStats = memo(function FakeBetStats({ fakeBets, gameType = 'b
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="flex items-center justify-between gap-2"
+              className="flex items-center justify-between gap-2 sm:gap-4"
             >
-              <span className="text-[8px] sm:text-[9px] text-green-400 font-bold">{labels.tie}</span>
-              <span className="text-[8px] sm:text-[9px] text-white/60 font-mono tabular-nums">
+              <span className="text-[8px] sm:text-sm lg:text-base text-green-400 font-bold">{labels.tie}</span>
+              <motion.span
+                key={animatedTie}
+                initial={{ scale: 1.15, color: '#4ade80' }}
+                animate={{ scale: 1, color: 'rgba(255,255,255,0.8)' }}
+                transition={{ duration: 0.3 }}
+                className="text-[8px] sm:text-sm lg:text-base text-white/80 font-mono font-semibold tabular-nums"
+              >
                 {formatAmount(animatedTie)}
-              </span>
+              </motion.span>
             </motion.div>
           )}
           {animatedBanker > 0 && (
@@ -505,25 +517,32 @@ export const FakeBetStats = memo(function FakeBetStats({ fakeBets, gameType = 'b
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="flex items-center justify-between gap-2"
+              className="flex items-center justify-between gap-2 sm:gap-4"
             >
-              <span className="text-[8px] sm:text-[9px] text-red-400 font-bold">{labels.banker}</span>
-              <span className="text-[8px] sm:text-[9px] text-white/60 font-mono tabular-nums">
+              <span className="text-[8px] sm:text-sm lg:text-base text-red-400 font-bold">{labels.banker}</span>
+              <motion.span
+                key={animatedBanker}
+                initial={{ scale: 1.15, color: '#f87171' }}
+                animate={{ scale: 1, color: 'rgba(255,255,255,0.8)' }}
+                transition={{ duration: 0.3 }}
+                className="text-[8px] sm:text-sm lg:text-base text-white/80 font-mono font-semibold tabular-nums"
+              >
                 {formatAmount(animatedBanker)}
-              </span>
+              </motion.span>
             </motion.div>
           )}
         </AnimatePresence>
         <motion.div
           layout
-          className="flex items-center justify-between gap-2 border-t border-white/10 pt-0.5 mt-0.5"
+          className="flex items-center justify-between gap-2 sm:gap-4 border-t border-white/10 sm:border-[#d4af37]/20 pt-0.5 sm:pt-1 mt-0.5 sm:mt-1"
         >
-          <span className="text-[7px] sm:text-[8px] text-white/40">總計</span>
+          <span className="text-[7px] sm:text-xs lg:text-sm text-white/50">總計</span>
           <motion.span
             key={animatedTotal}
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
-            className="text-[8px] sm:text-[9px] text-[#d4af37]/80 font-mono font-bold tabular-nums"
+            initial={{ scale: 1.2, color: '#fbbf24' }}
+            animate={{ scale: 1, color: '#d4af37' }}
+            transition={{ duration: 0.3 }}
+            className="text-[8px] sm:text-sm lg:text-base text-[#d4af37] font-mono font-bold tabular-nums"
           >
             {formatAmount(animatedTotal)}
           </motion.span>
