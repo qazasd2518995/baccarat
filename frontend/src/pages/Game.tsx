@@ -2114,21 +2114,8 @@ export default function Game() {
 
             {/* Mobile Roadmap Section - Only visible on mobile/tablet */}
             <div className="lg:hidden bg-[#0d1117]">
-              {/* Stats Summary */}
-              <div className="flex items-center justify-between px-2 py-1.5 text-[10px] border-b border-gray-800">
-                <div className="flex items-center gap-2">
-                  <span className="text-red-500 font-bold">莊 <span className="text-white">{bankerWins}</span></span>
-                  <span className="text-blue-500 font-bold">閒 <span className="text-white">{playerWins}</span></span>
-                  <span className="text-green-500 font-bold">和 <span className="text-white">{ties}</span></span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-red-400">莊對 <span className="text-white">{bankerPairCount}</span></span>
-                  <span className="text-blue-400">閒對 <span className="text-white">{playerPairCount}</span></span>
-                  <span className="text-gray-400">總 <span className="text-white">{total}</span></span>
-                </div>
-              </div>
-              {/* Mobile Roadmap - use LobbyRoadmap component */}
-              <div className="h-[100px] sm:h-[120px] sm:pb-14">
+              {/* Mobile Roadmap with built-in stats panel */}
+              <div className="h-[140px] sm:h-[148px] sm:pb-14">
                 <LobbyRoadmap roadHistory={roadmapData.map(r => ({
                   result: r.result,
                   playerPair: r.playerPair || false,

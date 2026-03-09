@@ -1924,17 +1924,8 @@ export default function DragonTigerGame() {
 
             {/* Roadmap Section - Bottom area (dark theme like Baccarat) - Mobile/Tablet only */}
             <div className="bg-[#0d1117] lg:hidden">
-              {/* Stats Summary */}
-              <div className="flex items-center justify-between px-2 py-1 text-[10px] border-b border-gray-800">
-                <div className="flex items-center gap-3">
-                  <span className="text-red-500 font-bold">龍 <span className="text-white">{dragonWins}</span></span>
-                  <span className="text-blue-500 font-bold">虎 <span className="text-white">{tigerWins}</span></span>
-                  <span className="text-green-500 font-bold">和 <span className="text-white">{ties}</span></span>
-                </div>
-                <span className="text-gray-400">總 <span className="text-white">{total}</span></span>
-              </div>
-              {/* Roadmap using same layout as Baccarat LobbyRoadmap */}
-              <div className="h-[120px]">
+              {/* Roadmap with built-in stats panel */}
+              <div className="h-[140px] sm:h-[148px]">
                 <DragonTigerRoadmap roadHistory={roadmapData} />
               </div>
             </div>
