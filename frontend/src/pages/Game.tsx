@@ -1281,7 +1281,7 @@ export default function Game() {
             <div className="flex items-center justify-center gap-2 text-sm text-gray-300 bg-black/30 rounded-lg py-2">
               <ArrowUpDown className="w-4 h-4 text-amber-400" />
               <span>
-                {t('betRange') || '限紅'}: <span className="text-amber-400 font-bold">{bettingLimits
+                {t('betRange')}: <span className="text-amber-400 font-bold">{bettingLimits
                   ? `${bettingLimits.player.min.toLocaleString()}-${(bettingLimits.player.max / 1000).toFixed(0)}K`
                   : '10-100K'}</span>
               </span>
@@ -1292,12 +1292,12 @@ export default function Game() {
           <div className="p-4 border-b border-gray-800/50">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
-              <span className="text-cyan-400 font-bold text-sm">{t('sessionStats') || '本場戰績'}</span>
+              <span className="text-cyan-400 font-bold text-sm">{t('sessionStats')}</span>
             </div>
 
             {/* Big Win/Loss Display */}
             <div className="bg-gradient-to-br from-black/40 to-black/20 rounded-xl p-4 text-center mb-3">
-              <div className="text-gray-400 text-xs mb-1">{t('sessionProfit') || '本場盈虧'}</div>
+              <div className="text-gray-400 text-xs mb-1">{t('sessionProfit')}</div>
               <div className={`text-3xl font-black ${sessionWinLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {sessionWinLoss >= 0 ? '+' : ''}{sessionWinLoss.toLocaleString()}
               </div>
@@ -1307,11 +1307,11 @@ export default function Game() {
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-black/20 rounded-lg p-2 text-center">
                 <div className="text-white font-bold text-lg">{confirmedBets.reduce((s, b) => s + b.amount, 0).toLocaleString()}</div>
-                <div className="text-[10px] text-gray-500">{t('currentBet') || '本局下注'}</div>
+                <div className="text-[10px] text-gray-500">{t('currentBet')}</div>
               </div>
               <div className="bg-black/20 rounded-lg p-2 text-center">
                 <div className="text-white font-bold text-lg">{roadmapData.length}</div>
-                <div className="text-[10px] text-gray-500">{t('totalRounds') || '本靴局數'}</div>
+                <div className="text-[10px] text-gray-500">{t('shoeRounds')}</div>
               </div>
             </div>
           </div>
@@ -1320,7 +1320,7 @@ export default function Game() {
           <div className="p-4 flex-1 overflow-hidden flex flex-col">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-2 h-2 rounded-full bg-purple-400"></div>
-              <span className="text-purple-400 font-bold text-sm">{t('recentBets') || '最近下注'}</span>
+              <span className="text-purple-400 font-bold text-sm">{t('recentBets')}</span>
             </div>
 
             {/* Recent bet results - show last 5 settlements */}
@@ -1328,7 +1328,7 @@ export default function Game() {
               {lastSettlement && (
                 <div className={`p-3 rounded-lg ${lastSettlement.netResult >= 0 ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-400">{t('lastRound') || '上一局'}</span>
+                    <span className="text-xs text-gray-400">{t('lastRound')}</span>
                     <span className={`font-bold ${lastSettlement.netResult >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                       {lastSettlement.netResult >= 0 ? '+' : ''}{lastSettlement.netResult.toLocaleString()}
                     </span>
@@ -1344,14 +1344,14 @@ export default function Game() {
               )}
               {!lastSettlement && (
                 <div className="text-center py-8 text-gray-500 text-sm">
-                  {t('noBetsYet') || '尚無下注記錄'}
+                  {t('noBetsYet')}
                 </div>
               )}
             </div>
 
             {/* Quick Tips */}
             <div className="mt-3 p-3 bg-gradient-to-br from-amber-500/10 to-transparent rounded-lg border border-amber-500/20">
-              <div className="text-amber-400 text-xs font-bold mb-1">💡 {t('tip') || '提示'}</div>
+              <div className="text-amber-400 text-xs font-bold mb-1">💡 {t('tip')}</div>
               <div className="text-[11px] text-gray-400 leading-relaxed">
                 {(() => {
                   const tips = [

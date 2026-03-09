@@ -317,6 +317,17 @@ const resources = {
       daily: '日榜',
       weekly: '周榜',
 
+      // Left Sidebar - Session Info
+      betRange: '限红',
+      sessionStats: '本场战绩',
+      sessionProfit: '本场盈亏',
+      currentBet: '本局下注',
+      shoeRounds: '本靴局数',
+      recentBets: '最近下注',
+      lastRound: '上一局',
+      noBetsYet: '尚无下注记录',
+      tip: '提示',
+
       // Chat
       liveChat: '聊天室',
       betOver100: '投注超过100可发言',
@@ -800,6 +811,17 @@ const resources = {
       giftsTab: 'GIFTS',
       daily: 'DAILY',
       weekly: 'WEEKLY',
+
+      // Left Sidebar - Session Info
+      betRange: 'Bet Range',
+      sessionStats: 'Session Stats',
+      sessionProfit: 'Session P/L',
+      currentBet: 'Current Bet',
+      shoeRounds: 'Shoe Rounds',
+      recentBets: 'Recent Bets',
+      lastRound: 'Last Round',
+      noBetsYet: 'No bets yet',
+      tip: 'Tip',
 
       // Chat
       liveChat: 'Live Chat',
