@@ -397,7 +397,13 @@ async function handleTableDealingPhase(io: TypedServer, tableId: string): Promis
       newShoe: true,
     });
 
+    // Notify game room of shuffle — frontend shows animation
+    io.to(roomName).emit('game:shuffle', { shoeNumber: state.shoeNumber });
+
     console.log(`[Table ${tableId}] New shoe #${state.shoeNumber} — stats reset`);
+
+    // Wait for shuffle animation
+    await delay(4000);
   }
 
   io.to(roomName).emit('game:phase', {
