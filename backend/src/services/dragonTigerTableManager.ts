@@ -7,6 +7,7 @@ import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types
 import { generateFakeBets } from './fakeBetGenerator.js';
 import { fluctuatePlayerCount } from './fakePlayerCount.js';
 import { generateRoundNumber, initializeCounter } from '../utils/roundNumberGenerator.js';
+import { startTableFakeBroadcasts, stopTableFakeBroadcasts } from './fakeBroadcastGenerator.js';
 
 
 // Type-safe Socket.io server
@@ -275,6 +276,9 @@ async function handleTableBettingPhase(
   // Broadcast fake bets for visual display
   io.to(roomName).emit('dt:fakeBets', { bets: generateFakeBets('dragonTiger') });
 
+  // Start fake broadcasts during betting phase
+  startTableFakeBroadcasts(io, tableId, roomName, 'dt:fakeBroadcast');
+
   // Get table from database for lobby updates
   const dbTable = await prisma.gameTable.findFirst({
     where: { id: tableId },
@@ -340,6 +344,9 @@ async function handleTableBettingPhase(
 async function handleTableSealedPhase(io: TypedServer, tableId: string, duration: number): Promise<void> {
   const state = getTableState(tableId);
   const roomName = getTableRoom(tableId);
+
+  // Stop fake broadcasts when betting ends
+  stopTableFakeBroadcasts(tableId);
 
   io.to(roomName).emit('dt:phase' as any, {
     phase: 'sealed',

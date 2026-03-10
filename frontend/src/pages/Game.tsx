@@ -548,6 +548,8 @@ export default function Game() {
     clearPendingBets,
     resetForNewRound,
     fakeBets,
+    fakeBroadcasts,
+    removeFakeBroadcast,
     isShuffling,
   } = useGameStore();
 
@@ -1559,8 +1561,12 @@ export default function Game() {
             showButtons={true}
             sendMessage={sendMarqueeMessage}
             cooldown={marqueeCooldown}
-            messages={marqueeMessages}
-            removeMessage={removeMarqueeMessage}
+            messages={[...marqueeMessages, ...fakeBroadcasts]}
+            removeMessage={(id) => {
+              // Try to remove from user messages first, then from fake broadcasts
+              removeMarqueeMessage(id);
+              removeFakeBroadcast(id);
+            }}
           />
 
           {/* Betting Panel */}

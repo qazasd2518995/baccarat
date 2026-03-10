@@ -161,6 +161,11 @@ interface GameStore {
   fakeBets: Record<string, number>;
   setFakeBets: (bets: Record<string, number>) => void;
 
+  // Fake broadcasts (visual only)
+  fakeBroadcasts: Array<{ id: number; username: string; text: string; color: string }>;
+  addFakeBroadcast: (broadcast: { username: string; text: string; color: string }) => void;
+  removeFakeBroadcast: (id: number) => void;
+
   // Shuffling (new shoe)
   isShuffling: boolean;
   setIsShuffling: (v: boolean) => void;
@@ -351,6 +356,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
   fakeBets: {},
   setFakeBets: (bets) => set({ fakeBets: bets }),
 
+  // Fake broadcasts (visual only)
+  fakeBroadcasts: [],
+  addFakeBroadcast: (broadcast) => set((state) => ({
+    fakeBroadcasts: [...state.fakeBroadcasts, { ...broadcast, id: Date.now() + Math.random() }]
+  })),
+  removeFakeBroadcast: (id) => set((state) => ({
+    fakeBroadcasts: state.fakeBroadcasts.filter((b) => b.id !== id)
+  })),
+
   // Shuffling (new shoe)
   isShuffling: false,
   setIsShuffling: (v) => set({ isShuffling: v }),
@@ -396,6 +410,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       cardsRemaining: 416,
       bettingLimits: null,
       fakeBets: {},
+      fakeBroadcasts: [],
       isShuffling: false,
     }),
 

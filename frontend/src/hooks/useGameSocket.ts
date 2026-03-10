@@ -44,6 +44,7 @@ export function useGameSocket(tableId?: string) {
     saveLastBets,
     setBettingLimits,
     setFakeBets,
+    addFakeBroadcast,
     setIsShuffling,
     pendingBets,
     phase,
@@ -205,6 +206,10 @@ export function useGameSocket(tableId?: string) {
       setIsShuffling(true);
     };
 
+    const handleFakeBroadcast = (data: { username: string; text: string; color: string }) => {
+      addFakeBroadcast(data);
+    };
+
     const handleError = (data: ErrorEvent) => {
       console.error('[useGameSocket] Error:', data.code, data.message);
     };
@@ -223,6 +228,7 @@ export function useGameSocket(tableId?: string) {
     socket.off('game:roadmap', handleRoadmap);
     socket.off('game:fakeBets', handleFakeBets);
     socket.off('game:shuffle', handleShuffle);
+    socket.off('game:fakeBroadcast', handleFakeBroadcast);
     socket.off('error', handleError);
 
     // Add listeners
@@ -239,6 +245,7 @@ export function useGameSocket(tableId?: string) {
     socket.on('game:roadmap', handleRoadmap);
     socket.on('game:fakeBets', handleFakeBets);
     socket.on('game:shuffle', handleShuffle);
+    socket.on('game:fakeBroadcast', handleFakeBroadcast);
     socket.on('error', handleError);
 
     // If socket is already connected, initialize immediately
@@ -262,6 +269,7 @@ export function useGameSocket(tableId?: string) {
       socket.off('game:roadmap', handleRoadmap);
       socket.off('game:fakeBets', handleFakeBets);
       socket.off('game:shuffle', handleShuffle);
+      socket.off('game:fakeBroadcast', handleFakeBroadcast);
       socket.off('error', handleError);
       disconnectSocket();
       resetAll();

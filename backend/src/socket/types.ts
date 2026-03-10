@@ -195,7 +195,15 @@ export interface ServerToClientEvents {
   'game:shuffle': (data: ShuffleEvent) => void;
   'dt:shuffle': (data: ShuffleEvent) => void;
   'bb:shuffle': (data: ShuffleEvent) => void;
+  'game:fakeBroadcast': (data: FakeBroadcastEvent) => void;
+  'dt:fakeBroadcast': (data: FakeBroadcastEvent) => void;
   error: (data: ErrorEvent) => void;
+}
+
+export interface FakeBroadcastEvent {
+  username: string;
+  text: string;
+  color: string;
 }
 
 // All client-to-server events

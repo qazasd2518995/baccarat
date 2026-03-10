@@ -1,5 +1,5 @@
-import { memo, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { memo, useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // Country flags with realistic online nicknames/gamertags
 const COUNTRIES = [
@@ -47,32 +47,92 @@ const AVATAR_COLORS = [
   'from-amber-500 to-yellow-600',
 ];
 
-// Generate deterministic player count based on tableId (5-12 players)
-function getPlayerCountForTable(tableId: string): number {
-  const seed = tableId.split('').reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
-  // Returns 5-12 players
-  return 5 + Math.floor((Math.sin(seed * 7777) * 10000 % 1) * 8);
+interface VirtualPlayer {
+  id: string;
+  name: string;
+  flag: string;
+  balance: number;
+  avatarColor: string;
+  initials: string;
+  balanceChange?: number; // For showing win/loss animation
+  isNew?: boolean; // For entrance animation
 }
 
-// Generate deterministic but varied players based on tableId
-function generatePlayersForTable(tableId: string, count: number) {
-  // Use tableId to seed randomness
-  const seed = tableId.split('').reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
+function randInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// Generate a single random player
+function generateRandomPlayer(usedNames: Set<string>): VirtualPlayer {
+  const country = pickRandom(COUNTRIES);
+
+  // Find unused name
+  let name = '';
+  const shuffledNames = [...country.names].sort(() => Math.random() - 0.5);
+  for (const n of shuffledNames) {
+    if (!usedNames.has(n)) {
+      name = n;
+      break;
+    }
+  }
+  if (!name) {
+    name = pickRandom(country.names) + randInt(1, 999);
+  }
+
+  // Generate balance
+  const balanceTier = Math.random();
+  let balance: number;
+  if (balanceTier < 0.3) {
+    balance = randInt(500, 10000);
+  } else if (balanceTier < 0.7) {
+    balance = randInt(10000, 200000);
+  } else if (balanceTier < 0.9) {
+    balance = randInt(200000, 1000000);
+  } else {
+    balance = randInt(1000000, 5000000);
+  }
+
+  // Generate initials
+  let initials = '';
+  const cleanName = name.replace(/[0-9_\-\.@]/g, '');
+  if (/[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/.test(cleanName)) {
+    initials = cleanName.slice(0, 2);
+  } else if (cleanName.length > 0) {
+    initials = cleanName.slice(0, 2).toUpperCase();
+  } else {
+    initials = name.slice(0, 2);
+  }
+
+  return {
+    id: `player-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    name,
+    flag: country.flag,
+    balance,
+    avatarColor: pickRandom(AVATAR_COLORS),
+    initials,
+    isNew: true,
+  };
+}
+
+// Generate initial players for a table
+function generateInitialPlayers(tableId: string, count: number): VirtualPlayer[] {
+  const seed = tableId.split('').reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
   const seededRandom = (index: number) => {
     const x = Math.sin(seed * (index + 1) * 9999) * 10000;
     return x - Math.floor(x);
   };
 
-  const players = [];
+  const players: VirtualPlayer[] = [];
   const usedNames = new Set<string>();
 
   for (let i = 0; i < count; i++) {
-    // Pick country
     const countryIndex = Math.floor(seededRandom(i * 7) * COUNTRIES.length);
     const country = COUNTRIES[countryIndex];
 
-    // Pick name (avoid duplicates)
     let name = '';
     let attempts = 0;
     while (attempts < 10) {
@@ -87,39 +147,26 @@ function generatePlayersForTable(tableId: string, count: number) {
     }
     if (!name) name = country.names[0] + i;
 
-    // Pick avatar color
     const colorIndex = Math.floor(seededRandom(i * 17) * AVATAR_COLORS.length);
-
-    // Generate balance (ranging from $500 to $5,000,000)
     const balanceTier = seededRandom(i * 23);
     let balance: number;
     if (balanceTier < 0.3) {
-      // Low roller: $500 - $10,000
       balance = Math.floor(500 + seededRandom(i * 29) * 9500);
     } else if (balanceTier < 0.7) {
-      // Mid roller: $10,000 - $200,000
       balance = Math.floor(10000 + seededRandom(i * 31) * 190000);
     } else if (balanceTier < 0.9) {
-      // High roller: $200,000 - $1,000,000
       balance = Math.floor(200000 + seededRandom(i * 37) * 800000);
     } else {
-      // VIP: $1,000,000 - $5,000,000
       balance = Math.floor(1000000 + seededRandom(i * 41) * 4000000);
     }
 
-    // Generate initials for avatar - extract meaningful characters
-    // For CJK: use first 1-2 characters
-    // For alphanumeric: use first letter or first 2 consonants
     let initials = '';
     const cleanName = name.replace(/[0-9_\-\.@]/g, '');
     if (/[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/.test(cleanName)) {
-      // CJK characters - use first 1-2
       initials = cleanName.slice(0, 2);
     } else if (cleanName.length > 0) {
-      // Latin - use first letter uppercase
       initials = cleanName.slice(0, 2).toUpperCase();
     } else {
-      // Fallback for pure numbers/symbols
       initials = name.slice(0, 2);
     }
 
@@ -146,6 +193,11 @@ function formatBalance(balance: number): string {
   return balance.toLocaleString();
 }
 
+function getPlayerCountForTable(tableId: string): number {
+  const seed = tableId.split('').reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
+  return 5 + Math.floor((Math.sin(seed * 7777) * 10000 % 1) * 8);
+}
+
 interface VirtualPlayersBarProps {
   tableId: string;
   playerCount?: number;
@@ -155,9 +207,110 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
   tableId,
   playerCount
 }: VirtualPlayersBarProps) {
-  // Auto-calculate player count based on tableId if not provided
-  const actualCount = playerCount ?? getPlayerCountForTable(tableId);
-  const players = useMemo(() => generatePlayersForTable(tableId, actualCount), [tableId, actualCount]);
+  const initialCount = playerCount ?? getPlayerCountForTable(tableId);
+  const [players, setPlayers] = useState<VirtualPlayer[]>(() =>
+    generateInitialPlayers(tableId, initialCount)
+  );
+  const usedNamesRef = useRef<Set<string>>(new Set(players.map(p => p.name)));
+
+  // Simulate balance changes (wins/losses)
+  const updateBalances = useCallback(() => {
+    setPlayers(prev => prev.map(player => {
+      // 60% chance of balance change per player
+      if (Math.random() > 0.6) return player;
+
+      // Determine win or loss (slightly biased towards loss for realism)
+      const isWin = Math.random() < 0.45;
+
+      // Change amount based on current balance tier
+      let changePercent: number;
+      if (player.balance < 10000) {
+        changePercent = randInt(5, 30) / 100; // 5-30%
+      } else if (player.balance < 200000) {
+        changePercent = randInt(2, 15) / 100; // 2-15%
+      } else {
+        changePercent = randInt(1, 8) / 100; // 1-8%
+      }
+
+      const changeAmount = Math.floor(player.balance * changePercent);
+      const actualChange = isWin ? changeAmount : -changeAmount;
+      const newBalance = Math.max(0, player.balance + actualChange);
+
+      // If player goes broke, they might leave (handled in player rotation)
+      return {
+        ...player,
+        balance: newBalance,
+        balanceChange: actualChange,
+      };
+    }));
+
+    // Clear balance change indicators after animation
+    setTimeout(() => {
+      setPlayers(prev => prev.map(p => ({ ...p, balanceChange: undefined })));
+    }, 1500);
+  }, []);
+
+  // Simulate player entering/leaving
+  const rotatePlayer = useCallback(() => {
+    setPlayers(prev => {
+      // 15% chance of player leaving
+      const shouldRemove = Math.random() < 0.15 && prev.length > 4;
+      // 20% chance of new player joining
+      const shouldAdd = Math.random() < 0.2 && prev.length < 15;
+
+      let newPlayers = [...prev];
+
+      if (shouldRemove) {
+        // Remove a random player (prefer players with low/zero balance)
+        const sortedByBalance = [...newPlayers].sort((a, b) => a.balance - b.balance);
+        const toRemove = sortedByBalance[0]; // Remove lowest balance player
+        newPlayers = newPlayers.filter(p => p.id !== toRemove.id);
+        usedNamesRef.current.delete(toRemove.name);
+      }
+
+      if (shouldAdd) {
+        const newPlayer = generateRandomPlayer(usedNamesRef.current);
+        usedNamesRef.current.add(newPlayer.name);
+        // Insert at random position
+        const insertIndex = randInt(0, newPlayers.length);
+        newPlayers.splice(insertIndex, 0, newPlayer);
+
+        // Clear isNew flag after animation
+        setTimeout(() => {
+          setPlayers(p => p.map(pl =>
+            pl.id === newPlayer.id ? { ...pl, isNew: false } : pl
+          ));
+        }, 500);
+      }
+
+      return newPlayers;
+    });
+  }, []);
+
+  // Set up intervals for dynamic updates
+  useEffect(() => {
+    // Balance updates every 3-8 seconds
+    const balanceInterval = setInterval(() => {
+      updateBalances();
+    }, randInt(3000, 8000));
+
+    // Player rotation every 10-20 seconds
+    const rotationInterval = setInterval(() => {
+      rotatePlayer();
+    }, randInt(10000, 20000));
+
+    return () => {
+      clearInterval(balanceInterval);
+      clearInterval(rotationInterval);
+    };
+  }, [updateBalances, rotatePlayer]);
+
+  // Reset when tableId changes
+  useEffect(() => {
+    const newPlayers = generateInitialPlayers(tableId, initialCount);
+    setPlayers(newPlayers);
+    usedNamesRef.current = new Set(newPlayers.map(p => p.name));
+  }, [tableId, initialCount]);
 
   return (
     <div
@@ -177,62 +330,91 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
 
       {/* Players container */}
       <div className="flex items-center justify-center gap-0.5 sm:gap-1 px-1 sm:px-2 py-1 sm:py-2 overflow-x-auto scrollbar-hide">
-        {players.map((player, index) => (
-          <motion.div
-            key={player.id}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.03, type: 'spring', stiffness: 300 }}
-            className="flex flex-col items-center shrink-0"
-          >
-            {/* Player card */}
-            <div
-              className="relative px-1.5 py-1 sm:px-2.5 sm:py-1.5 rounded-md sm:rounded-lg"
-              style={{
-                background: 'linear-gradient(145deg, rgba(40,45,55,0.9) 0%, rgba(25,30,40,0.95) 100%)',
-                border: '1px solid rgba(100,110,130,0.3)',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
-                minWidth: '60px',
-              }}
+        <AnimatePresence mode="popLayout">
+          {players.map((player) => (
+            <motion.div
+              key={player.id}
+              layout
+              initial={{ opacity: 0, scale: 0.5, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.5, y: -20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="flex flex-col items-center shrink-0"
             >
-              {/* Avatar with flag */}
-              <div className="flex justify-center mb-0.5 sm:mb-1">
-                <div className="relative">
-                  <div className={`
-                    w-6 h-6 sm:w-8 sm:h-8
-                    rounded-full bg-gradient-to-br ${player.avatarColor}
-                    flex items-center justify-center
-                    text-[7px] sm:text-[9px] font-bold text-white
-                    shadow-md
-                    border border-white/20 sm:border-2
-                  `}>
-                    {player.initials}
-                  </div>
-                  {/* Flag badge */}
-                  <div
-                    className="absolute -bottom-0.5 -right-0.5 sm:-right-1 text-[9px] sm:text-[11px] drop-shadow-md"
-                    style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }}
-                  >
-                    {player.flag}
+              {/* Player card */}
+              <div
+                className="relative px-1.5 py-1 sm:px-2.5 sm:py-1.5 rounded-md sm:rounded-lg"
+                style={{
+                  background: 'linear-gradient(145deg, rgba(40,45,55,0.9) 0%, rgba(25,30,40,0.95) 100%)',
+                  border: '1px solid rgba(100,110,130,0.3)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+                  minWidth: '60px',
+                }}
+              >
+                {/* Balance change indicator */}
+                <AnimatePresence>
+                  {player.balanceChange !== undefined && player.balanceChange !== 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: -15 }}
+                      exit={{ opacity: 0, y: -25 }}
+                      className={`absolute -top-1 left-1/2 -translate-x-1/2 text-[9px] sm:text-[11px] font-bold whitespace-nowrap z-10 ${
+                        player.balanceChange > 0 ? 'text-green-400' : 'text-red-400'
+                      }`}
+                    >
+                      {player.balanceChange > 0 ? '+' : ''}{formatBalance(player.balanceChange)}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Avatar with flag */}
+                <div className="flex justify-center mb-0.5 sm:mb-1">
+                  <div className="relative">
+                    <div className={`
+                      w-6 h-6 sm:w-8 sm:h-8
+                      rounded-full bg-gradient-to-br ${player.avatarColor}
+                      flex items-center justify-center
+                      text-[7px] sm:text-[9px] font-bold text-white
+                      shadow-md
+                      border border-white/20 sm:border-2
+                    `}>
+                      {player.initials}
+                    </div>
+                    {/* Flag badge */}
+                    <div
+                      className="absolute -bottom-0.5 -right-0.5 sm:-right-1 text-[9px] sm:text-[11px] drop-shadow-md"
+                      style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }}
+                    >
+                      {player.flag}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Name */}
-              <div className="text-[8px] sm:text-[10px] text-gray-200 text-center font-medium whitespace-nowrap">
-                {player.name}
-              </div>
+                {/* Name */}
+                <div className="text-[8px] sm:text-[10px] text-gray-200 text-center font-medium whitespace-nowrap">
+                  {player.name}
+                </div>
 
-              {/* Balance */}
-              <div
-                className="text-[7px] sm:text-[9px] font-mono text-center font-semibold"
-                style={{ color: '#e8d48b' }}
-              >
-                ${formatBalance(player.balance)}
+                {/* Balance with animation */}
+                <motion.div
+                  key={player.balance}
+                  initial={{ scale: 1 }}
+                  animate={{
+                    scale: player.balanceChange !== undefined ? [1, 1.2, 1] : 1,
+                    color: player.balanceChange !== undefined
+                      ? player.balanceChange > 0 ? '#4ade80' : '#f87171'
+                      : '#e8d48b'
+                  }}
+                  transition={{ duration: 0.3 }}
+                  className="text-[7px] sm:text-[9px] font-mono text-center font-semibold"
+                  style={{ color: '#e8d48b' }}
+                >
+                  ${formatBalance(player.balance)}
+                </motion.div>
               </div>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
 
       {/* Subtle bottom shadow */}

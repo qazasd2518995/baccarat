@@ -522,6 +522,8 @@ export default function DragonTigerGame() {
     shoeNumber,
     lastBets,
     fakeBets,
+    fakeBroadcasts,
+    removeFakeBroadcast,
     isShuffling,
   } = useDragonTigerStore();
 
@@ -1294,8 +1296,11 @@ export default function DragonTigerGame() {
             showButtons={true}
             sendMessage={sendMarqueeMessage}
             cooldown={marqueeCooldown}
-            messages={marqueeMessages}
-            removeMessage={removeMarqueeMessage}
+            messages={[...marqueeMessages, ...fakeBroadcasts]}
+            removeMessage={(id) => {
+              removeMarqueeMessage(id);
+              removeFakeBroadcast(id);
+            }}
           />
 
           {/* Betting Panel */}

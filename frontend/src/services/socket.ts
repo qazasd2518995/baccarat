@@ -154,12 +154,20 @@ interface ServerToClientEvents {
   'game:roadmap': (data: RoadmapUpdateEvent) => void;
   'game:fakeBets': (data: FakeBetsEvent) => void;
   'game:shuffle': (data: ShuffleEvent) => void;
+  'game:fakeBroadcast': (data: FakeBroadcastEvent) => void;
+  'dt:fakeBroadcast': (data: FakeBroadcastEvent) => void;
   'bet:confirmed': (data: BetConfirmedEvent) => void;
   'bet:settlement': (data: BetSettlementEvent) => void;
   'user:balance': (data: BalanceUpdateEvent) => void;
   'chat:message': (data: ChatMessageEvent) => void;
   'lobby:tableUpdate': (data: TableUpdateEvent) => void;
   error: (data: ErrorEvent) => void;
+}
+
+interface FakeBroadcastEvent {
+  username: string;
+  text: string;
+  color: string;
 }
 
 // Client to Server Events Interface
