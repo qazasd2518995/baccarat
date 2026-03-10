@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei';
-import { LoopOnce } from 'three';
+import { LoopRepeat, LoopOnce } from 'three';
 import type { Group } from 'three';
 
 export type DealerModel = 'v1' | 'v2' | 'v3' | 'v4' | 'v5' | 'v6';
@@ -45,8 +45,9 @@ function DealerModelInner({ isDealing, url }: { isDealing: boolean; url: string 
     if (!action) return;
 
     if (isDealing) {
-      action.setLoop(LoopOnce, 1);
-      action.clampWhenFinished = true;
+      // Loop the dealing animation until isDealing becomes false
+      action.setLoop(LoopRepeat, Infinity);
+      action.clampWhenFinished = false;
       action.reset().play();
       action.paused = false;
     } else {
