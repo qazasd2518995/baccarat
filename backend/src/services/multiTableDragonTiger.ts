@@ -23,10 +23,12 @@ export async function startMultiTableDragonTiger(io: TypedServer): Promise<void>
     console.log('[MultiTable-DT] No Dragon Tiger tables found in database, creating default tables...');
 
     // Create default tables if none exist
+    // 一般龍虎（30秒）+ 極速龍虎（15秒）
     const defaultTables = [
-      { name: 'DT1', dealerName: 'DT Dealer 1', sortOrder: 1 },
-      { name: 'DT2', dealerName: 'DT Dealer 2', sortOrder: 2 },
-      { name: 'DT3', dealerName: 'DT Dealer 3', sortOrder: 3 },
+      { name: '龍虎 DT1', dealerName: 'DT Dealer 1', sortOrder: 1, bettingDuration: 30 },
+      { name: '龍虎 DT2', dealerName: 'DT Dealer 2', sortOrder: 2, bettingDuration: 30 },
+      { name: '極速龍虎 DT1', dealerName: 'DT Dealer 3', sortOrder: 3, bettingDuration: 15 },
+      { name: '極速龍虎 DT2', dealerName: 'DT Dealer 4', sortOrder: 4, bettingDuration: 15 },
     ];
 
     for (const table of defaultTables) {
@@ -39,6 +41,7 @@ export async function startMultiTableDragonTiger(io: TypedServer): Promise<void>
           maxBet: 10000,
           isActive: true,
           sortOrder: table.sortOrder,
+          bettingDuration: table.bettingDuration,
         },
       });
     }

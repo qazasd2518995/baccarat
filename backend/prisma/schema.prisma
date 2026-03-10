@@ -405,6 +405,7 @@ model GameTable {
   bankerWins     Int         @default(0) @map("banker_wins")
   playerWins     Int         @default(0) @map("player_wins")
   tieCount       Int         @default(0) @map("tie_count")
+  bettingDuration Int        @default(30) @map("betting_duration") // 投注時間（秒）：一般30秒，極速15秒
   sortOrder      Int         @default(0) @map("sort_order")
   createdAt      DateTime    @default(now()) @map("created_at")
   updatedAt      DateTime    @updatedAt @map("updated_at")

@@ -23,12 +23,13 @@ export async function startMultiTableGameLoop(io: TypedServer): Promise<void> {
     console.log('[MultiTable] No baccarat tables found in database, creating default tables...');
 
     // Create default tables if none exist
+    // 一般百家樂（30秒）+ 極速百家樂（15秒）
     const defaultTables = [
-      { name: 'B1', dealerName: 'Dealer 1', sortOrder: 1 },
-      { name: 'B2', dealerName: 'Dealer 2', sortOrder: 2 },
-      { name: 'B3', dealerName: 'Dealer 3', sortOrder: 3 },
-      { name: 'B4', dealerName: 'Dealer 4', sortOrder: 4 },
-      { name: 'B5', dealerName: 'Dealer 5', sortOrder: 5 },
+      { name: '百家樂 B1', dealerName: 'Dealer 1', sortOrder: 1, bettingDuration: 30 },
+      { name: '百家樂 B2', dealerName: 'Dealer 2', sortOrder: 2, bettingDuration: 30 },
+      { name: '百家樂 B3', dealerName: 'Dealer 3', sortOrder: 3, bettingDuration: 30 },
+      { name: '極速百家樂 B1', dealerName: 'Dealer 4', sortOrder: 4, bettingDuration: 15 },
+      { name: '極速百家樂 B2', dealerName: 'Dealer 5', sortOrder: 5, bettingDuration: 15 },
     ];
 
     for (const table of defaultTables) {
@@ -41,6 +42,7 @@ export async function startMultiTableGameLoop(io: TypedServer): Promise<void> {
           maxBet: 10000,
           isActive: true,
           sortOrder: table.sortOrder,
+          bettingDuration: table.bettingDuration,
         },
       });
     }

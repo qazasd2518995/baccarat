@@ -13,13 +13,21 @@ import { generateRoundNumber, initializeCounter } from '../utils/roundNumberGene
 // Type-safe Socket.io server
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 
-// Phase durations in milliseconds
-const PHASE_DURATIONS: Record<GamePhase, number> = {
-  betting: 15000,    // 15 seconds
+// Default phase durations in milliseconds (can be overridden per table)
+const DEFAULT_PHASE_DURATIONS: Record<GamePhase, number> = {
+  betting: 30000,    // 30 seconds (default, can be 15 for speed tables)
   sealed: 3000,      // 3 seconds
   dealing: 10000,    // 10 seconds
   result: 8000,      // 8 seconds (enough for frontend: flip ~1s + 2s wait + 2s display + buffer)
 };
+
+// Get phase durations for a specific table
+function getPhaseDurations(bettingDuration: number): Record<GamePhase, number> {
+  return {
+    ...DEFAULT_PHASE_DURATIONS,
+    betting: bettingDuration * 1000,
+  };
+}
 
 // Table state interface
 interface TableState {
@@ -49,6 +57,7 @@ interface TableState {
   noCommissionMode: Map<string, boolean>;
   timerInterval: NodeJS.Timeout | null;
   cachedRoadmap: any[];
+  bettingDuration: number; // 投注時間（秒）
 }
 
 // Store all table states
@@ -74,6 +83,7 @@ function getTableState(tableId: string): TableState {
       noCommissionMode: new Map(),
       timerInterval: null,
       cachedRoadmap: [],
+      bettingDuration: 30, // default 30 seconds
     };
     tables.set(tableId, state);
   }
@@ -157,8 +167,19 @@ export async function startTableLoop(io: TypedServer, tableId: string, startDela
     await delay(startDelay);
   }
 
+  // Load betting duration from DB
+  const dbTable = await prisma.gameTable.findUnique({
+    where: { id: tableId },
+    select: { bettingDuration: true, name: true },
+  });
+
   await loadTableState(tableId);
   const state = getTableState(tableId);
+
+  // Set betting duration from DB (default 30 seconds)
+  state.bettingDuration = dbTable?.bettingDuration ?? 30;
+  console.log(`[Table ${tableId}] ${dbTable?.name} - Betting duration: ${state.bettingDuration}s`);
+
   if (!state.currentShoe || state.currentShoe.length < 20) {
     state.currentShoe = createShoe();
     burnCards(state.currentShoe);
@@ -197,11 +218,12 @@ export async function startTableLoop(io: TypedServer, tableId: string, startDela
 async function runTablePhase(io: TypedServer, tableId: string, phase: GamePhase): Promise<void> {
   const state = getTableState(tableId);
   const roomName = getTableRoom(tableId);
+  const phaseDurations = getPhaseDurations(state.bettingDuration);
 
   console.log(`[Table ${tableId}] Entering phase: ${phase}`);
   state.phase = phase;
 
-  const duration = PHASE_DURATIONS[phase];
+  const duration = phaseDurations[phase];
   state.timeRemaining = Math.floor(duration / 1000);
 
   switch (phase) {
@@ -380,7 +402,7 @@ async function handleTableDealingPhase(io: TypedServer, tableId: string): Promis
 
   io.to(roomName).emit('game:phase', {
     phase: 'dealing',
-    timeRemaining: Math.floor(PHASE_DURATIONS.dealing / 1000),
+    timeRemaining: Math.floor(DEFAULT_PHASE_DURATIONS.dealing / 1000),
     roundId: state.roundId,
   });
 
