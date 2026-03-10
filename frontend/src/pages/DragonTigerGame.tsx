@@ -1162,7 +1162,7 @@ export default function DragonTigerGame() {
           <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
 
           {/* Fake bet stats — positioned on table area for desktop, uses animated amounts for sync */}
-          <div className="absolute top-[72px] sm:top-[94px] lg:top-[25%] left-2 sm:left-3 lg:left-6 z-50 pointer-events-none">
+          <div className="absolute top-[72px] sm:top-[94px] lg:top-[10%] left-2 sm:left-3 lg:left-4 z-50 pointer-events-none">
             <FakeBetStats fakeBets={fakeAmounts} gameType="dragonTiger" size="large" />
           </div>
 
