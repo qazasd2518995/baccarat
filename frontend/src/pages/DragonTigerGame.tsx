@@ -373,7 +373,7 @@ export default function DragonTigerGame() {
 
   // Responsive
   const bp = useBreakpoint();
-  const dtCardSize = bp === 'mobile' ? 'sm' : 'md';
+  const dtCardSize = bp === 'mobile' ? 'sm' : bp === 'tablet' ? 'md' : 'xl';
 
   // Flying chips animation
   const { flyingChips, addFlyingChip } = useFlyingChips();
@@ -1151,10 +1151,10 @@ export default function DragonTigerGame() {
 
             {/* Cards Display - Dragon vs Tiger */}
             <div className="flex-1 relative flex items-center justify-center mt-[5%] sm:mt-[10%]">
-              <div className="flex items-center gap-4 sm:gap-12 lg:gap-20">
+              <div className="flex items-center gap-4 sm:gap-12 lg:gap-28 xl:gap-36">
                 {/* Dragon Side */}
                 <div className="text-center">
-                  <div className="text-base sm:text-2xl font-bold text-red-400 mb-2 sm:mb-4">{t('dtDragon')}</div>
+                  <div className="text-base sm:text-2xl lg:text-4xl font-bold text-red-400 mb-2 sm:mb-4 lg:mb-6">{t('dtDragon')}</div>
                   <div className="relative">
                     {dragonCard && (
                       <AnimatedPlayingCard
@@ -1176,7 +1176,7 @@ export default function DragonTigerGame() {
                         <motion.div
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
-                          className="absolute -bottom-5 sm:-bottom-6 left-1/2 -translate-x-1/2 bg-red-600 text-white px-2 sm:px-4 py-0.5 sm:py-1 rounded-full font-bold text-sm sm:text-lg"
+                          className="absolute -bottom-5 sm:-bottom-6 lg:-bottom-8 left-1/2 -translate-x-1/2 bg-red-600 text-white px-2 sm:px-4 lg:px-6 py-0.5 sm:py-1 lg:py-2 rounded-full font-bold text-sm sm:text-lg lg:text-2xl"
                         >
                           {dragonValue}
                         </motion.div>
@@ -1186,11 +1186,11 @@ export default function DragonTigerGame() {
                 </div>
 
                 {/* VS */}
-                <div className={`text-xl sm:text-4xl font-bold text-gray-500 ${vsPulse ? 'vs-flash' : ''}`}>VS</div>
+                <div className={`text-xl sm:text-4xl lg:text-6xl font-bold text-gray-500 ${vsPulse ? 'vs-flash' : ''}`}>VS</div>
 
                 {/* Tiger Side */}
                 <div className="text-center">
-                  <div className="text-base sm:text-2xl font-bold text-blue-400 mb-2 sm:mb-4">{t('dtTiger')}</div>
+                  <div className="text-base sm:text-2xl lg:text-4xl font-bold text-blue-400 mb-2 sm:mb-4 lg:mb-6">{t('dtTiger')}</div>
                   <div className="relative">
                     {tigerCard && (
                       <AnimatedPlayingCard
@@ -1212,7 +1212,7 @@ export default function DragonTigerGame() {
                         <motion.div
                           initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
-                          className="absolute -bottom-5 sm:-bottom-6 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-2 sm:px-4 py-0.5 sm:py-1 rounded-full font-bold text-sm sm:text-lg"
+                          className="absolute -bottom-5 sm:-bottom-6 lg:-bottom-8 left-1/2 -translate-x-1/2 bg-blue-600 text-white px-2 sm:px-4 lg:px-6 py-0.5 sm:py-1 lg:py-2 rounded-full font-bold text-sm sm:text-lg lg:text-2xl"
                         >
                           {tigerValue}
                         </motion.div>
