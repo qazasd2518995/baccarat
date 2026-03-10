@@ -696,12 +696,6 @@ export default function AgentManagement() {
                             onClick={() => setShareSettingModal({ open: true, agent })}
                             className="text-amber-400 hover:text-amber-300 text-sm"
                           >
-                            厂商
-                          </button>
-                          <button
-                            onClick={() => setShareSettingModal({ open: true, agent })}
-                            className="text-amber-400 hover:text-amber-300 text-sm"
-                          >
                             占成/退水
                           </button>
                           <button
@@ -716,44 +710,37 @@ export default function AgentManagement() {
 
                     {/* Right: Status & Actions */}
                     <div className="flex flex-wrap items-start gap-4 sm:gap-6 w-full sm:w-auto">
-                      <div className="space-y-1">
-                        <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
-                          <input
-                            type="checkbox"
-                            checked={agent.isLocked}
-                            onChange={() => handleStatusChange(agent.id, agent.isLocked ? 'unlock' : 'lock')}
-                            className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
-                          />
-                          <span className="text-white text-xs sm:text-sm">锁定登入</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
-                          <input
-                            type="checkbox"
-                            checked={agent.isFullDisabled}
-                            onChange={() => handleStatusChange(agent.id, agent.isFullDisabled ? 'enable' : 'disable')}
-                            className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
-                          />
-                          <span className="text-white text-xs sm:text-sm">全线禁用</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer min-h-[32px]">
-                          <input
-                            type="checkbox"
-                            checked={agent.isReadonly}
-                            onChange={() => handleStatusChange(agent.id, agent.isReadonly ? 'unreadonly' : 'readonly')}
-                            className="w-4 h-4 text-amber-500 bg-[#333] border-[#444] rounded"
-                          />
-                          <span className="text-white text-xs sm:text-sm">禁止投注/操作</span>
-                        </label>
+                      <div className="text-center">
+                        <p className="text-gray-400 text-xs mb-1">状态调整</p>
+                        <select
+                          value={agent.isFullDisabled ? 'disabled' : agent.isLocked ? 'locked' : agent.isReadonly ? 'readonly' : 'normal'}
+                          onChange={(e) => {
+                            const status = e.target.value;
+                            if (status === 'disabled') {
+                              handleStatusChange(agent.id, 'disable');
+                            } else if (status === 'locked') {
+                              handleStatusChange(agent.id, 'enable');
+                              handleStatusChange(agent.id, 'lock');
+                            } else if (status === 'readonly') {
+                              handleStatusChange(agent.id, 'enable');
+                              handleStatusChange(agent.id, 'unlock');
+                              handleStatusChange(agent.id, 'readonly');
+                            } else {
+                              handleStatusChange(agent.id, 'enable');
+                              handleStatusChange(agent.id, 'unlock');
+                              handleStatusChange(agent.id, 'unreadonly');
+                            }
+                          }}
+                          className="px-2 py-1 bg-[#2a2a2a] border border-[#444] rounded text-white text-xs sm:text-sm min-h-[32px]"
+                        >
+                          <option value="normal">正常</option>
+                          <option value="locked">鎖定登入</option>
+                          <option value="readonly">禁止投注</option>
+                          <option value="disabled">全線禁用</option>
+                        </select>
                       </div>
 
                       <div className="text-center">
-                        <button
-                          onClick={() => setConfirmModal({ open: true, agent, action: 'withdrawAll' })}
-                          className="text-amber-400 hover:text-amber-300 text-xs sm:text-sm min-h-[32px]"
-                        >
-                          抽取全线额度
-                        </button>
-                        <br />
                         <button
                           onClick={() => setEditAgentModal({ open: true, agent, type: 'agent' })}
                           className="text-amber-400 hover:text-amber-300 text-xs sm:text-sm min-h-[32px]"
@@ -832,12 +819,6 @@ export default function AgentManagement() {
                       <div className="text-center">
                         <p className="text-gray-400 text-xs mb-1">&nbsp;</p>
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setShareSettingModal({ open: true, agent: member as any })}
-                            className="text-amber-400 hover:text-amber-300 text-sm"
-                          >
-                            厂商
-                          </button>
                           <button
                             className="text-amber-400 hover:text-amber-300 text-sm"
                           >
