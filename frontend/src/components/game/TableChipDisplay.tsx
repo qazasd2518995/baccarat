@@ -32,7 +32,11 @@ export function useFakeChipAmounts(
     const keys = Object.keys(targetBets).filter(k => targetBets[k] > 0);
 
     // Phase just changed to betting → reset everything with varied settings
-    if (phase === 'betting' && prevPhaseRef.current !== 'betting') {
+    // OR: phase is betting and we have new bets but haven't initialized yet
+    const phaseJustChangedToBetting = phase === 'betting' && prevPhaseRef.current !== 'betting';
+    const needsInitInBetting = phase === 'betting' && keys.length > 0 && stateRef.current.size === 0;
+
+    if (phaseJustChangedToBetting || needsInitInBetting) {
       stateRef.current.clear();
       setAmounts({});
       startTimeRef.current = performance.now();
