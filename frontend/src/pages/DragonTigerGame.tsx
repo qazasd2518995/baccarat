@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { leaderboardApi, dealerApi } from '../services/api';
+import { dealerApi } from '../services/api';
 import { useChatSocket } from '../hooks/useChatSocket';
 import {
   Settings,
@@ -340,7 +340,7 @@ function getPhaseDisplay(phase: string, timeRemaining: number, t: (key: string) 
 }
 
 export default function DragonTigerGame() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
 
@@ -412,30 +412,6 @@ export default function DragonTigerGame() {
     };
     checkFollowStatus();
   }, [currentDealerName]);
-
-  // Leaderboard state
-  const [leaderboardPeriod, setLeaderboardPeriod] = useState<'daily' | 'weekly'>('daily');
-  const [leaderboard, setLeaderboard] = useState<Array<{ rank: number; id: string; name: string; score: number }>>([]);
-  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
-
-  // Fetch leaderboard data
-  useEffect(() => {
-    const fetchLeaderboard = async () => {
-      setLeaderboardLoading(true);
-      try {
-        const res = await leaderboardApi.getLeaderboard({ period: leaderboardPeriod, limit: 10 });
-        setLeaderboard(res.data.leaderboard);
-      } catch (err) {
-        console.error('[DragonTiger] Failed to fetch leaderboard:', err);
-      } finally {
-        setLeaderboardLoading(false);
-      }
-    };
-
-    fetchLeaderboard();
-    const interval = setInterval(fetchLeaderboard, 60000);
-    return () => clearInterval(interval);
-  }, [leaderboardPeriod]);
 
   // Chat state
   const { messages: chatMessages, sendMessage: sendChatMessage, loading: chatLoading } = useChatSocket();
@@ -1042,119 +1018,109 @@ export default function DragonTigerGame() {
 
       {/* Main Content - Three Column Layout */}
       <div className="flex-1 flex overflow-auto min-h-0">
-        {/* Left Sidebar - User Info & Leaderboard (hidden on mobile/tablet) */}
+        {/* Left Sidebar - User & Session Info (hidden on mobile/tablet) */}
         <div className="hidden xl:flex w-60 bg-[#141922] border-r border-gray-800/50 flex-col shrink-0">
-          {/* JW 九贏百家 Header */}
+          {/* User Card */}
           <div className="p-4 border-b border-gray-800/50">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 rounded-lg flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-400/30">
-                  <span className="text-black font-black text-xs tracking-tighter" style={{ fontFamily: 'system-ui' }}>JW</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 font-black text-xs tracking-wide" style={{ fontFamily: 'system-ui' }}>九贏百家</span>
-                  <span className="text-gray-500 text-[8px] tracking-widest">JIU WIN</span>
-                </div>
-              </div>
-              <button
-                onClick={() => i18n.changeLanguage(i18n.language === 'zh' ? 'en' : 'zh')}
-                className="text-xs text-gray-400 hover:text-white px-2 py-1 rounded bg-gray-700/50"
-              >
-                {i18n.language === 'zh' ? 'EN' : '中文'}
-              </button>
-            </div>
-
-            {/* User Card */}
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-lg">
-                me
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                {(user?.username || 'P')[0].toUpperCase()}
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <User className="w-3 h-3 text-gray-500" />
-                  <span className="text-sm text-gray-300">{user?.username || 'Player'}</span>
+                  <span className="text-base text-white font-bold">{user?.username || 'Player'}</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1">
-                  <span className="text-yellow-400 font-bold text-lg">${balance.toLocaleString()}</span>
+                  <span className="text-yellow-400 font-bold text-xl">${balance.toLocaleString()}</span>
                 </div>
               </div>
             </div>
 
             {/* Bet Range */}
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <ArrowUpDown className="w-3 h-3" />
-              <span>5-10K</span>
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-300 bg-black/30 rounded-lg py-2">
+              <ArrowUpDown className="w-4 h-4 text-amber-400" />
+              <span>
+                {t('betRange')}: <span className="text-amber-400 font-bold">5-10K</span>
+              </span>
             </div>
           </div>
 
-          {/* Billboard Section */}
-          <div className="flex-1 p-4">
-            <div className="bg-gradient-to-b from-orange-500/20 to-transparent rounded-t-lg p-2 mb-2">
-              <span className="text-orange-400 font-bold text-sm">{t('billboard')}</span>
+          {/* Session Performance */}
+          <div className="p-4 border-b border-gray-800/50">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
+              <span className="text-cyan-400 font-bold text-sm">{t('sessionStats')}</span>
             </div>
 
-            <div className="flex gap-1 mb-3">
-              <button className="flex-1 text-xs py-1.5 bg-[#1e2a3a] text-white rounded">{t('playerTab')}</button>
-              <button className="flex-1 text-xs py-1.5 bg-gray-700/50 text-gray-500 rounded border-b-2 border-orange-400">{t('dealerTab')}</button>
-              <button className="flex-1 text-xs py-1.5 bg-gray-700/50 text-gray-500 rounded">{t('giftsTab')}</button>
+            {/* Big Win/Loss Display */}
+            <div className="bg-gradient-to-br from-black/40 to-black/20 rounded-xl p-4 text-center mb-3">
+              <div className="text-gray-400 text-xs mb-1">{t('sessionProfit')}</div>
+              <div className={`text-3xl font-black ${sessionWinLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {sessionWinLoss >= 0 ? '+' : ''}{sessionWinLoss.toLocaleString()}
+              </div>
             </div>
 
-            <div className="flex gap-2 mb-3">
-              <button
-                onClick={() => setLeaderboardPeriod('daily')}
-                className={`text-xs px-3 py-1 rounded ${leaderboardPeriod === 'daily' ? 'bg-[#1e2a3a] text-white' : 'bg-gray-700/50 text-gray-500'}`}
-              >
-                {t('daily')}
-              </button>
-              <button
-                onClick={() => setLeaderboardPeriod('weekly')}
-                className={`text-xs px-3 py-1 rounded ${leaderboardPeriod === 'weekly' ? 'bg-[#1e2a3a] text-white' : 'bg-gray-700/50 text-gray-500'}`}
-              >
-                {t('weekly')}
-              </button>
+            {/* Session Stats Grid */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-black/20 rounded-lg p-2 text-center">
+                <div className="text-white font-bold text-lg">{confirmedBets.reduce((s, b) => s + b.amount, 0).toLocaleString()}</div>
+                <div className="text-[10px] text-gray-500">{t('currentBet')}</div>
+              </div>
+              <div className="bg-black/20 rounded-lg p-2 text-center">
+                <div className="text-white font-bold text-lg">{roadmapData.length}</div>
+                <div className="text-[10px] text-gray-500">{t('shoeRounds')}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Betting History */}
+          <div className="p-4 flex-1 overflow-hidden flex flex-col">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+              <span className="text-purple-400 font-bold text-sm">{t('recentBets')}</span>
             </div>
 
-            {/* Leaderboard */}
-            {leaderboardLoading ? (
-              <div className="text-center py-4 text-gray-500 text-sm">{t('loading')}...</div>
-            ) : leaderboard.length === 0 ? (
-              <div className="text-center py-4 text-gray-500 text-sm">{t('noData')}</div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  {leaderboard.slice(0, 3).map((player) => (
-                    <div key={player.id} className="flex items-center gap-2 py-2">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-purple-500 flex items-center justify-center">
-                        <User className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-sm text-white">{player.name}</div>
-                        <div className="text-xs text-yellow-400">{player.score.toLocaleString()}</div>
-                      </div>
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        player.rank === 1 ? 'bg-yellow-500 text-black' :
-                        player.rank === 2 ? 'bg-gray-400 text-black' :
-                        'bg-amber-700 text-white'
-                      }`}>
-                        {player.rank}
-                      </div>
-                    </div>
-                  ))}
+            {/* Recent bet results - show last settlement */}
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {lastSettlement && (
+                <div className={`p-3 rounded-lg ${lastSettlement.netResult >= 0 ? 'bg-green-500/10 border border-green-500/30' : 'bg-red-500/10 border border-red-500/30'}`}>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-400">{t('lastRound')}</span>
+                    <span className={`font-bold ${lastSettlement.netResult >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      {lastSettlement.netResult >= 0 ? '+' : ''}{lastSettlement.netResult.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {lastSettlement.bets.map((bet, i) => (
+                      <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded ${bet.won ? 'bg-green-500/30 text-green-300' : 'bg-gray-500/30 text-gray-400'}`}>
+                        {bet.type === 'dragon' ? '龍' : bet.type === 'tiger' ? '虎' : bet.type === 'dt_tie' ? '和' : bet.type}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-
-                <div className="mt-4 space-y-1 text-xs">
-                  {leaderboard.slice(3).map((player) => (
-                    <div key={player.id} className="flex items-center justify-between py-1">
-                      <div className="flex items-center gap-2">
-                        <span className="w-5 h-5 rounded-full bg-gray-700 flex items-center justify-center text-gray-400">{player.rank}</span>
-                        <span className="text-gray-400">{player.name}</span>
-                      </div>
-                      <span className="text-yellow-400">{player.score.toLocaleString()}</span>
-                    </div>
-                  ))}
+              )}
+              {!lastSettlement && (
+                <div className="text-center py-8 text-gray-500 text-sm">
+                  {t('noBetsYet')}
                 </div>
-              </>
-            )}
+              )}
+            </div>
+
+            {/* Quick Tips */}
+            <div className="mt-3 p-3 bg-gradient-to-br from-amber-500/10 to-transparent rounded-lg border border-amber-500/20">
+              <div className="text-amber-400 text-xs font-bold mb-1">💡 {t('tip')}</div>
+              <div className="text-[11px] text-gray-400 leading-relaxed">
+                {(() => {
+                  const tips = [
+                    '龍虎是最簡單的遊戲，只比一張牌大小',
+                    '和局賠率 8:1，但莊優勢較穩',
+                    '大小單雙是額外的投注選項',
+                    '觀察路單趨勢，把握節奏',
+                  ];
+                  return tips[Math.floor(roadmapData.length / 3) % tips.length];
+                })()}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2020,41 +1986,63 @@ export default function DragonTigerGame() {
             </div>
           </div>
 
-          {/* Stats Panel */}
+          {/* Stats Panel with Progress Bars */}
           <div className="p-3 border-b border-gray-800/50">
-            <div className="flex justify-between mb-3">
-              <span className="text-red-400 font-bold">{t('dtDragon').toUpperCase()}</span>
-              <span className="text-blue-400 font-bold">{t('dtTiger').toUpperCase()}</span>
+            {/* Total Rounds */}
+            <div className="text-center mb-3">
+              <span className="text-gray-500 text-[10px]">總局數</span>
+              <div className="text-xl font-bold text-white">{total}</div>
             </div>
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between">
-                <span className="text-gray-400">{dragonWins} / {total}</span>
-                <span className="text-gray-400">{tigerWins} / {total}</span>
+
+            {/* Main Results with Progress Bars */}
+            <div className="space-y-2 mb-3">
+              {/* Dragon */}
+              <div>
+                <div className="flex justify-between text-xs mb-0.5">
+                  <span className="text-red-400 font-medium">龍</span>
+                  <span className="text-white">{dragonWins} ({total > 0 ? Math.round((dragonWins / total) * 100) : 0}%)</span>
+                </div>
+                <div className="h-2 bg-gray-700/50 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-red-600 to-red-400 rounded-full transition-all duration-500"
+                    style={{ width: `${total > 0 ? (dragonWins / total) * 100 : 0}%` }}
+                  />
+                </div>
               </div>
-              <div className="flex justify-between text-gray-500">
-                <span>{t('dtTie')}</span>
-                <span>{ties} / {total}</span>
+
+              {/* Tiger */}
+              <div>
+                <div className="flex justify-between text-xs mb-0.5">
+                  <span className="text-blue-400 font-medium">虎</span>
+                  <span className="text-white">{tigerWins} ({total > 0 ? Math.round((tigerWins / total) * 100) : 0}%)</span>
+                </div>
+                <div className="h-2 bg-gray-700/50 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-600 to-blue-400 rounded-full transition-all duration-500"
+                    style={{ width: `${total > 0 ? (tigerWins / total) * 100 : 0}%` }}
+                  />
+                </div>
               </div>
-              <div className="flex justify-between text-gray-500">
-                <span>{t('dragonOdd')}/{t('dragonEven')}</span>
-                <span>- / {total}</span>
-              </div>
-              <div className="flex justify-between text-gray-500">
-                <span>{t('tigerOdd')}/{t('tigerEven')}</span>
-                <span>- / {total}</span>
-              </div>
-              <div className="flex justify-between text-gray-500">
-                <span>{t('dragonRed')}/{t('dragonBlack')}</span>
-                <span>- / {total}</span>
-              </div>
-              <div className="flex justify-between text-gray-500">
-                <span>{t('tigerRed')}/{t('tigerBlack')}</span>
-                <span>- / {total}</span>
+
+              {/* Tie */}
+              <div>
+                <div className="flex justify-between text-xs mb-0.5">
+                  <span className="text-green-400 font-medium">和</span>
+                  <span className="text-white">{ties} ({total > 0 ? Math.round((ties / total) * 100) : 0}%)</span>
+                </div>
+                <div className="h-2 bg-gray-700/50 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-green-600 to-green-400 rounded-full transition-all duration-500"
+                    style={{ width: `${total > 0 ? (ties / total) * 100 : 0}%` }}
+                  />
+                </div>
               </div>
             </div>
+
+            {/* Current Bet */}
             <div className="mt-2 pt-2 border-t border-gray-700/50 flex justify-between text-xs">
               <span className="text-gray-400">{t('wager')}</span>
-              <span className="text-white">{totalBet.toLocaleString()}</span>
+              <span className="text-white font-bold">{totalBet.toLocaleString()}</span>
             </div>
           </div>
 
