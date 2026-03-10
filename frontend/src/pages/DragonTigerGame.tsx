@@ -1150,7 +1150,7 @@ export default function DragonTigerGame() {
             </div>
 
             {/* Cards Display - Dragon vs Tiger */}
-            <div className="flex-1 relative flex items-center justify-center mt-[5%] sm:mt-[10%] lg:-mt-[5%]">
+            <div className="flex-1 relative flex items-center justify-center mt-[5%] sm:mt-[10%] lg:mt-0">
               <div className="flex items-center gap-4 sm:gap-12 lg:gap-28 xl:gap-36">
                 {/* Dragon Side */}
                 <div className="text-center">
