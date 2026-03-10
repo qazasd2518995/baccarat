@@ -1372,9 +1372,9 @@ export default function Game() {
           {/* Countdown timer — positioned over entire game area (above dealer + table) */}
           <CountdownTimer timeRemaining={timeRemaining} phase={phase} hidden={lastResult !== null || frozenResult !== null || showResult} />
 
-          {/* Fake bet stats — below countdown timer, uses animated amounts for sync */}
-          <div className="absolute top-[72px] sm:top-[94px] lg:top-[120px] left-2 sm:left-3 z-30 pointer-events-none">
-            <FakeBetStats fakeBets={fakeAmounts} gameType="baccarat" />
+          {/* Fake bet stats — positioned on table area for desktop, below countdown for mobile */}
+          <div className="absolute top-[72px] sm:top-[94px] lg:top-[55%] left-2 sm:left-3 lg:left-4 z-30 pointer-events-none lg:-translate-y-1/2">
+            <FakeBetStats fakeBets={fakeAmounts} gameType="baccarat" size="large" />
           </div>
 
           {/* Video Area - 3D Dealer Table */}

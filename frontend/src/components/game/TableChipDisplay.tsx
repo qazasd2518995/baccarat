@@ -413,9 +413,10 @@ function useAnimatedNumber(targetValue: number, duration: number = 800): number 
 interface FakeBetStatsProps {
   fakeBets: Record<string, number>;
   gameType?: 'baccarat' | 'dragonTiger';
+  size?: 'normal' | 'large';
 }
 
-export const FakeBetStats = memo(function FakeBetStats({ fakeBets, gameType = 'baccarat' }: FakeBetStatsProps) {
+export const FakeBetStats = memo(function FakeBetStats({ fakeBets, gameType = 'baccarat', size = 'normal' }: FakeBetStatsProps) {
   const { playerTotal, bankerTotal, tieTotal, total } = useMemo(() => {
     let p: number, b: number, t: number;
 
@@ -462,6 +463,33 @@ export const FakeBetStats = memo(function FakeBetStats({ fakeBets, gameType = 'b
     ? { player: '龍', tie: '和', banker: '虎' }
     : { player: '閒', tie: '和', banker: '莊' };
 
+  // Size-based styles
+  const isLarge = size === 'large';
+  const containerClass = isLarge
+    ? "flex flex-col gap-0.5 sm:gap-1 lg:gap-2 bg-black/70 backdrop-blur-sm rounded sm:rounded-lg lg:rounded-xl px-1.5 sm:px-3 lg:px-5 py-1 sm:py-2 lg:py-3 border border-white/10 sm:border-[#d4af37]/30 lg:border-[#d4af37]/40 shadow-lg lg:shadow-xl"
+    : "flex flex-col gap-0.5 sm:gap-1 bg-black/60 backdrop-blur-sm rounded sm:rounded-lg px-1.5 sm:px-3 py-1 sm:py-2 border border-white/10 sm:border-[#d4af37]/30 shadow-lg";
+  const titleClass = isLarge
+    ? "text-[8px] sm:text-xs lg:text-lg text-[#d4af37] font-bold tracking-wider mb-0.5 sm:mb-1 lg:mb-2"
+    : "text-[8px] sm:text-xs lg:text-sm text-[#d4af37] font-bold tracking-wider mb-0.5 sm:mb-1";
+  const labelClass = isLarge
+    ? "text-[8px] sm:text-sm lg:text-xl font-bold"
+    : "text-[8px] sm:text-sm lg:text-base font-bold";
+  const valueClass = isLarge
+    ? "text-[8px] sm:text-sm lg:text-xl text-white/80 font-mono font-semibold tabular-nums"
+    : "text-[8px] sm:text-sm lg:text-base text-white/80 font-mono font-semibold tabular-nums";
+  const gapClass = isLarge
+    ? "flex items-center justify-between gap-2 sm:gap-4 lg:gap-8"
+    : "flex items-center justify-between gap-2 sm:gap-4";
+  const totalLabelClass = isLarge
+    ? "text-[7px] sm:text-xs lg:text-base text-white/50"
+    : "text-[7px] sm:text-xs lg:text-sm text-white/50";
+  const totalValueClass = isLarge
+    ? "text-[8px] sm:text-sm lg:text-xl text-[#d4af37] font-mono font-bold tabular-nums"
+    : "text-[8px] sm:text-sm lg:text-base text-[#d4af37] font-mono font-bold tabular-nums";
+  const dividerClass = isLarge
+    ? "flex items-center justify-between gap-2 sm:gap-4 lg:gap-8 border-t border-white/10 sm:border-[#d4af37]/20 lg:border-[#d4af37]/30 pt-0.5 sm:pt-1 lg:pt-2 mt-0.5 sm:mt-1 lg:mt-2"
+    : "flex items-center justify-between gap-2 sm:gap-4 border-t border-white/10 sm:border-[#d4af37]/20 pt-0.5 sm:pt-1 mt-0.5 sm:mt-1";
+
   return (
     <AnimatePresence>
       <motion.div
@@ -469,9 +497,9 @@ export const FakeBetStats = memo(function FakeBetStats({ fakeBets, gameType = 'b
         animate={{ opacity: 1, x: 0, scale: 1 }}
         exit={{ opacity: 0, x: -10, scale: 0.9 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className="flex flex-col gap-0.5 sm:gap-1 bg-black/60 backdrop-blur-sm rounded sm:rounded-lg px-1.5 sm:px-3 py-1 sm:py-2 border border-white/10 sm:border-[#d4af37]/30 shadow-lg"
+        className={containerClass}
       >
-        <div className="text-[8px] sm:text-xs lg:text-sm text-[#d4af37] font-bold tracking-wider mb-0.5 sm:mb-1">本桌下注</div>
+        <div className={titleClass}>本桌下注</div>
         <AnimatePresence mode="popLayout">
           {animatedPlayer > 0 && (
             <motion.div
@@ -479,15 +507,15 @@ export const FakeBetStats = memo(function FakeBetStats({ fakeBets, gameType = 'b
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="flex items-center justify-between gap-2 sm:gap-4"
+              className={gapClass}
             >
-              <span className="text-[8px] sm:text-sm lg:text-base text-blue-400 font-bold">{labels.player}</span>
+              <span className={`${labelClass} text-blue-400`}>{labels.player}</span>
               <motion.span
                 key={animatedPlayer}
                 initial={{ scale: 1.15, color: '#60a5fa' }}
                 animate={{ scale: 1, color: 'rgba(255,255,255,0.8)' }}
                 transition={{ duration: 0.3 }}
-                className="text-[8px] sm:text-sm lg:text-base text-white/80 font-mono font-semibold tabular-nums"
+                className={valueClass}
               >
                 {formatAmount(animatedPlayer)}
               </motion.span>
@@ -499,15 +527,15 @@ export const FakeBetStats = memo(function FakeBetStats({ fakeBets, gameType = 'b
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="flex items-center justify-between gap-2 sm:gap-4"
+              className={gapClass}
             >
-              <span className="text-[8px] sm:text-sm lg:text-base text-green-400 font-bold">{labels.tie}</span>
+              <span className={`${labelClass} text-green-400`}>{labels.tie}</span>
               <motion.span
                 key={animatedTie}
                 initial={{ scale: 1.15, color: '#4ade80' }}
                 animate={{ scale: 1, color: 'rgba(255,255,255,0.8)' }}
                 transition={{ duration: 0.3 }}
-                className="text-[8px] sm:text-sm lg:text-base text-white/80 font-mono font-semibold tabular-nums"
+                className={valueClass}
               >
                 {formatAmount(animatedTie)}
               </motion.span>
@@ -519,32 +547,29 @@ export const FakeBetStats = memo(function FakeBetStats({ fakeBets, gameType = 'b
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="flex items-center justify-between gap-2 sm:gap-4"
+              className={gapClass}
             >
-              <span className="text-[8px] sm:text-sm lg:text-base text-red-400 font-bold">{labels.banker}</span>
+              <span className={`${labelClass} text-red-400`}>{labels.banker}</span>
               <motion.span
                 key={animatedBanker}
                 initial={{ scale: 1.15, color: '#f87171' }}
                 animate={{ scale: 1, color: 'rgba(255,255,255,0.8)' }}
                 transition={{ duration: 0.3 }}
-                className="text-[8px] sm:text-sm lg:text-base text-white/80 font-mono font-semibold tabular-nums"
+                className={valueClass}
               >
                 {formatAmount(animatedBanker)}
               </motion.span>
             </motion.div>
           )}
         </AnimatePresence>
-        <motion.div
-          layout
-          className="flex items-center justify-between gap-2 sm:gap-4 border-t border-white/10 sm:border-[#d4af37]/20 pt-0.5 sm:pt-1 mt-0.5 sm:mt-1"
-        >
-          <span className="text-[7px] sm:text-xs lg:text-sm text-white/50">總計</span>
+        <motion.div layout className={dividerClass}>
+          <span className={totalLabelClass}>總計</span>
           <motion.span
             key={animatedTotal}
             initial={{ scale: 1.2, color: '#fbbf24' }}
             animate={{ scale: 1, color: '#d4af37' }}
             transition={{ duration: 0.3 }}
-            className="text-[8px] sm:text-sm lg:text-base text-[#d4af37] font-mono font-bold tabular-nums"
+            className={totalValueClass}
           >
             {formatAmount(animatedTotal)}
           </motion.span>
