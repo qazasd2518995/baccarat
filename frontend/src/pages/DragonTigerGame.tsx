@@ -1161,9 +1161,9 @@ export default function DragonTigerGame() {
           {/* Countdown timer — over entire game area */}
           <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
 
-          {/* Fake bet stats — below countdown timer */}
+          {/* Fake bet stats — below countdown timer, uses animated amounts for sync */}
           <div className="absolute top-[72px] sm:top-[94px] lg:top-[120px] left-2 sm:left-3 z-30 pointer-events-none">
-            <FakeBetStats fakeBets={fakeBets} gameType="dragonTiger" />
+            <FakeBetStats fakeBets={fakeAmounts} gameType="dragonTiger" />
           </div>
 
           {/* Video Area - 3D Dealer Table */}

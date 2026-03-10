@@ -37,21 +37,22 @@ export function useFakeChipAmounts(
       setAmounts({});
       startTimeRef.current = performance.now();
 
-      // Create varied states for each bet area
+      // Create varied states for each bet area - bets should span most of the betting period
       for (const key of keys) {
         const target = targetBets[key];
 
         // Random activity level - some areas are very active, some quiet
-        const activityLevel = Math.random();
+        const activityLevel = 0.3 + Math.random() * 0.7; // 0.3 to 1.0
 
-        // Some areas don't start betting immediately (0-4 second delay)
-        const startDelay = Math.random() * 4000;
+        // Some areas don't start betting immediately (0-8 second delay for more variety)
+        const startDelay = Math.random() * 8000;
 
-        // Very low chance (10%) this area has NO activity this round
-        const isActive = Math.random() > 0.1;
+        // Very low chance (5%) this area has NO activity this round
+        const isActive = Math.random() > 0.05;
 
-        // How many updates to reach target (more for active areas)
-        const numUpdates = isActive ? Math.floor(3 + activityLevel * 8) : 0;
+        // More updates spread across betting duration for realistic feel
+        // Active areas: 8-20 updates, quiet areas: 4-8 updates
+        const numUpdates = isActive ? Math.floor(4 + activityLevel * 16) : 0;
 
         stateRef.current.set(key, {
           currentAmount: 0,
@@ -102,14 +103,15 @@ export function useFakeChipAmounts(
 
         // Check if it's time to update this area
         if (elapsed >= state.nextUpdateTime && state.currentAmount < state.targetAmount) {
-          // Add increment with some randomness (80%-120%)
-          const noise = 0.8 + Math.random() * 0.4;
+          // Add increment with more randomness (50%-180%) for realistic betting variation
+          const noise = 0.5 + Math.random() * 1.3;
           const increment = Math.round(state.incrementSize * noise);
           state.currentAmount = Math.min(state.currentAmount + increment, state.targetAmount);
 
-          // Schedule next update with varied timing
-          const baseInterval = 300 + (1 - state.activityLevel) * 1700;
-          const intervalNoise = 0.5 + Math.random(); // 0.5x to 1.5x
+          // Schedule next update with much more varied timing
+          // Slow bettors: 1.5-4 seconds, fast bettors: 0.5-1.5 seconds
+          const baseInterval = 500 + (1 - state.activityLevel) * 3500; // 500ms to 4000ms
+          const intervalNoise = 0.3 + Math.random() * 1.4; // 0.3x to 1.7x variation
           state.nextUpdateTime = elapsed + baseInterval * intervalNoise;
 
           hasChanges = true;
