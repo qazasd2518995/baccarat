@@ -255,21 +255,15 @@ input::placeholder {
 /* Winning bet area flash animation */
 @keyframes winningFlash {
   0%, 100% {
-    box-shadow: inset 0 0 0 0 transparent, 0 0 0 0 transparent;
-  }
-  25% {
-    box-shadow: inset 0 0 30px 5px var(--flash-color, rgba(255, 215, 0, 0.6)), 0 0 20px 5px var(--flash-color, rgba(255, 215, 0, 0.4));
+    box-shadow: inset 0 0 5px 1px var(--flash-color, rgba(255, 215, 0, 0.2)), 0 0 5px 1px var(--flash-color, rgba(255, 215, 0, 0.15));
   }
   50% {
-    box-shadow: inset 0 0 15px 2px var(--flash-color, rgba(255, 215, 0, 0.3)), 0 0 10px 2px var(--flash-color, rgba(255, 215, 0, 0.2));
-  }
-  75% {
-    box-shadow: inset 0 0 30px 5px var(--flash-color, rgba(255, 215, 0, 0.6)), 0 0 20px 5px var(--flash-color, rgba(255, 215, 0, 0.4));
+    box-shadow: inset 0 0 25px 5px var(--flash-color, rgba(255, 215, 0, 0.5)), 0 0 15px 4px var(--flash-color, rgba(255, 215, 0, 0.35));
   }
 }
 
 .winning-flash {
-  animation: winningFlash 0.5s ease-in-out infinite;
+  animation: winningFlash 1.8s ease-in-out infinite;
   position: relative;
 }
 
@@ -277,26 +271,18 @@ input::placeholder {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, transparent 0%, var(--flash-color, rgba(255, 215, 0, 0.15)) 50%, transparent 100%);
-  animation: winningFlash 0.5s ease-in-out infinite;
+  background: linear-gradient(135deg, transparent 0%, var(--flash-color, rgba(255, 215, 0, 0.1)) 50%, transparent 100%);
+  animation: winningFlash 1.8s ease-in-out infinite;
   pointer-events: none;
 }
 
 /* Color variants for different bet types */
-.winning-flash-player {
-  --flash-color: rgba(59, 130, 246, 0.7);
-}
-
-.winning-flash-banker {
-  --flash-color: rgba(239, 68, 68, 0.7);
-}
-
-.winning-flash-tie {
-  --flash-color: rgba(34, 197, 94, 0.7);
-}
-
+/* All winning areas use green flash (unified win color) */
+.winning-flash-player,
+.winning-flash-banker,
+.winning-flash-tie,
 .winning-flash-gold {
-  --flash-color: rgba(255, 215, 0, 0.7);
+  --flash-color: rgba(34, 197, 94, 0.7);
 }
 
 /* VS flash animation */

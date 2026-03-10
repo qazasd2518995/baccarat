@@ -416,7 +416,7 @@ interface FakeBetStatsProps {
   size?: 'normal' | 'large';
 }
 
-// Bet type configurations for display
+// Bet type configurations for display (only bet types that exist in betting area)
 const BACCARAT_BET_TYPES: Array<{ key: string; label: string; color: string }> = [
   { key: 'player', label: '閒', color: 'text-blue-400' },
   { key: 'banker', label: '莊', color: 'text-red-400' },
@@ -426,8 +426,6 @@ const BACCARAT_BET_TYPES: Array<{ key: string; label: string; color: string }> =
   { key: 'super_six', label: '超六', color: 'text-yellow-400' },
   { key: 'player_bonus', label: '閒龍寶', color: 'text-blue-200' },
   { key: 'banker_bonus', label: '莊龍寶', color: 'text-red-200' },
-  { key: 'big', label: '大', color: 'text-purple-400' },
-  { key: 'small', label: '小', color: 'text-pink-400' },
 ];
 
 const DRAGON_TIGER_BET_TYPES: Array<{ key: string; label: string; color: string }> = [
@@ -491,19 +489,19 @@ export const FakeBetStats = memo(function FakeBetStats({ fakeBets, gameType = 'b
   // Size-based styles
   const isLarge = size === 'large';
   const containerClass = isLarge
-    ? "flex flex-col gap-0.5 sm:gap-0.5 lg:gap-1 bg-black/70 backdrop-blur-sm rounded sm:rounded-lg lg:rounded-xl px-1.5 sm:px-3 lg:px-4 py-1 sm:py-2 lg:py-2.5 border border-white/10 sm:border-[#d4af37]/30 lg:border-[#d4af37]/40 shadow-lg lg:shadow-xl"
+    ? "flex flex-col gap-0.5 sm:gap-0.5 lg:gap-1.5 bg-black/70 backdrop-blur-sm rounded sm:rounded-lg lg:rounded-xl px-1.5 sm:px-3 lg:px-5 py-1 sm:py-2 lg:py-3 border border-white/10 sm:border-[#d4af37]/30 lg:border-[#d4af37]/40 shadow-lg lg:shadow-xl lg:min-w-[140px]"
     : "flex flex-col gap-0.5 sm:gap-1 bg-black/60 backdrop-blur-sm rounded sm:rounded-lg px-1.5 sm:px-3 py-1 sm:py-2 border border-white/10 sm:border-[#d4af37]/30 shadow-lg";
   const titleClass = isLarge
-    ? "text-[8px] sm:text-xs lg:text-base text-[#d4af37] font-bold tracking-wider mb-0.5 sm:mb-1 lg:mb-1.5"
+    ? "text-[8px] sm:text-xs lg:text-base text-[#d4af37] font-bold tracking-wider mb-0.5 sm:mb-1 lg:mb-2"
     : "text-[8px] sm:text-xs lg:text-sm text-[#d4af37] font-bold tracking-wider mb-0.5 sm:mb-1";
   const labelClass = isLarge
-    ? "text-[8px] sm:text-xs lg:text-sm font-bold"
+    ? "text-[8px] sm:text-xs lg:text-base font-bold"
     : "text-[8px] sm:text-sm lg:text-base font-bold";
   const valueClass = isLarge
-    ? "text-[8px] sm:text-xs lg:text-sm text-white/80 font-mono font-semibold tabular-nums"
+    ? "text-[8px] sm:text-xs lg:text-base text-white/80 font-mono font-semibold tabular-nums"
     : "text-[8px] sm:text-sm lg:text-base text-white/80 font-mono font-semibold tabular-nums";
   const gapClass = isLarge
-    ? "flex items-center justify-between gap-2 sm:gap-3 lg:gap-6"
+    ? "flex items-center justify-between gap-2 sm:gap-3 lg:gap-8"
     : "flex items-center justify-between gap-2 sm:gap-4";
   const totalLabelClass = isLarge
     ? "text-[7px] sm:text-xs lg:text-sm text-white/50"
