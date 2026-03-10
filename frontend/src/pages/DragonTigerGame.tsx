@@ -379,8 +379,8 @@ export default function DragonTigerGame() {
   const { flyingChips, addFlyingChip } = useFlyingChips();
   const chipSelectorRef = useRef<HTMLDivElement>(null);
 
-  // Marquee chat
-  const { cooldown: marqueeCooldown, sendMessage: sendMarqueeMessage } = useMarqueeChat(user?.username || '玩家');
+  // Marquee chat - single shared state for both QuickButtons and MarqueeChat
+  const { cooldown: marqueeCooldown, sendMessage: sendMarqueeMessage, messages: marqueeMessages, removeMessage: removeMarqueeMessage } = useMarqueeChat(user?.username || '玩家');
 
   // Get displayed chips from gameStore (shared with Baccarat)
   const { displayedChips } = useGameStore();
@@ -1292,6 +1292,10 @@ export default function DragonTigerGame() {
           <MarqueeChat
             username={user?.username || '玩家'}
             showButtons={true}
+            sendMessage={sendMarqueeMessage}
+            cooldown={marqueeCooldown}
+            messages={marqueeMessages}
+            removeMessage={removeMarqueeMessage}
           />
 
           {/* Betting Panel */}

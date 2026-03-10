@@ -32,6 +32,14 @@ interface MarqueeChatProps {
   onSendMessage?: (text: string) => void;
   /** Show quick message buttons */
   showButtons?: boolean;
+  /** External sendMessage function (from useMarqueeChat hook) */
+  sendMessage?: (text: string, color: string) => void;
+  /** External cooldown state (from useMarqueeChat hook) */
+  cooldown?: boolean;
+  /** External messages array (from useMarqueeChat hook) */
+  messages?: MarqueeMessage[];
+  /** External removeMessage function (from useMarqueeChat hook) */
+  removeMessage?: (id: number) => void;
 }
 
 // Single marquee message that flies across the TOP of screen
@@ -187,17 +195,20 @@ export default function MarqueeChat({
   externalMessages = [],
   username = '玩家',
   onSendMessage,
-  showButtons = true
+  showButtons = true,
+  sendMessage: externalSendMessage,
+  cooldown: externalCooldown,
+  messages: externalMsgs,
+  removeMessage: externalRemoveMessage,
 }: MarqueeChatProps) {
-  const {
-    messages,
-    cooldown,
-    isPanelOpen,
-    setIsPanelOpen,
-    sendMessage,
-    removeMessage,
-    addExternalMessages,
-  } = useMarqueeChat(username, onSendMessage);
+  // Use internal hook only if external state not provided
+  const internalHook = useMarqueeChat(username, onSendMessage);
+
+  const messages = externalMsgs ?? internalHook.messages;
+  const cooldown = externalCooldown ?? internalHook.cooldown;
+  const sendMessage = externalSendMessage ?? internalHook.sendMessage;
+  const removeMessage = externalRemoveMessage ?? internalHook.removeMessage;
+  const { isPanelOpen, setIsPanelOpen, addExternalMessages } = internalHook;
 
   // Add external messages to display
   useEffect(() => {

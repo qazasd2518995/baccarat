@@ -418,8 +418,8 @@ export default function Game() {
   const { flyingChips, addFlyingChip } = useFlyingChips();
   const chipSelectorRef = useRef<HTMLDivElement>(null);
 
-  // Marquee chat
-  const { cooldown: marqueeCooldown, sendMessage: sendMarqueeMessage } = useMarqueeChat(user?.username || '玩家');
+  // Marquee chat - single shared state for both QuickButtons and MarqueeChat
+  const { cooldown: marqueeCooldown, sendMessage: sendMarqueeMessage, messages: marqueeMessages, removeMessage: removeMarqueeMessage } = useMarqueeChat(user?.username || '玩家');
 
   // Bet success notification
   const [betNotification, setBetNotification] = useState<{
@@ -1557,6 +1557,10 @@ export default function Game() {
           <MarqueeChat
             username={user?.username || '玩家'}
             showButtons={true}
+            sendMessage={sendMarqueeMessage}
+            cooldown={marqueeCooldown}
+            messages={marqueeMessages}
+            removeMessage={removeMarqueeMessage}
           />
 
           {/* Betting Panel */}
