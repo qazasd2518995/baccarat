@@ -416,166 +416,132 @@ interface FakeBetStatsProps {
   size?: 'normal' | 'large';
 }
 
+// Bet type configurations for display
+const BACCARAT_BET_TYPES: Array<{ key: string; label: string; color: string }> = [
+  { key: 'player', label: '閒', color: 'text-blue-400' },
+  { key: 'banker', label: '莊', color: 'text-red-400' },
+  { key: 'tie', label: '和', color: 'text-green-400' },
+  { key: 'player_pair', label: '閒對', color: 'text-blue-300' },
+  { key: 'banker_pair', label: '莊對', color: 'text-red-300' },
+  { key: 'super_six', label: '超六', color: 'text-yellow-400' },
+  { key: 'player_bonus', label: '閒龍寶', color: 'text-blue-200' },
+  { key: 'banker_bonus', label: '莊龍寶', color: 'text-red-200' },
+  { key: 'big', label: '大', color: 'text-purple-400' },
+  { key: 'small', label: '小', color: 'text-pink-400' },
+];
+
+const DRAGON_TIGER_BET_TYPES: Array<{ key: string; label: string; color: string }> = [
+  { key: 'dragon', label: '龍', color: 'text-blue-400' },
+  { key: 'tiger', label: '虎', color: 'text-red-400' },
+  { key: 'dt_tie', label: '和', color: 'text-green-400' },
+  { key: 'dt_suited_tie', label: '同花和', color: 'text-green-300' },
+  { key: 'dragon_big', label: '龍大', color: 'text-blue-300' },
+  { key: 'dragon_small', label: '龍小', color: 'text-blue-200' },
+  { key: 'dragon_odd', label: '龍單', color: 'text-cyan-400' },
+  { key: 'dragon_even', label: '龍雙', color: 'text-cyan-300' },
+  { key: 'tiger_big', label: '虎大', color: 'text-red-300' },
+  { key: 'tiger_small', label: '虎小', color: 'text-red-200' },
+  { key: 'tiger_odd', label: '虎單', color: 'text-orange-400' },
+  { key: 'tiger_even', label: '虎雙', color: 'text-orange-300' },
+];
+
+// Helper component for animated bet row - always visible, shows 0 when no bets
+function AnimatedBetRow({
+  label,
+  color,
+  amount,
+  labelClass,
+  valueClass,
+  gapClass,
+}: {
+  label: string;
+  color: string;
+  amount: number;
+  labelClass: string;
+  valueClass: string;
+  gapClass: string;
+}) {
+  const animatedAmount = useAnimatedNumber(amount, 700);
+
+  return (
+    <div className={gapClass}>
+      <span className={`${labelClass} ${color}`}>{label}</span>
+      <motion.span
+        key={animatedAmount}
+        initial={{ scale: animatedAmount > 0 ? 1.15 : 1 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className={valueClass}
+      >
+        {formatAmount(animatedAmount)}
+      </motion.span>
+    </div>
+  );
+}
+
 export const FakeBetStats = memo(function FakeBetStats({ fakeBets, gameType = 'baccarat', size = 'normal' }: FakeBetStatsProps) {
-  const { playerTotal, bankerTotal, tieTotal, total } = useMemo(() => {
-    let p: number, b: number, t: number;
+  const betTypes = gameType === 'dragonTiger' ? DRAGON_TIGER_BET_TYPES : BACCARAT_BET_TYPES;
 
-    if (gameType === 'dragonTiger') {
-      p = (fakeBets.dragon || 0) + (fakeBets.dragon_big || 0) + (fakeBets.dragon_small || 0) +
-        (fakeBets.dragon_odd || 0) + (fakeBets.dragon_even || 0) + (fakeBets.dragon_red || 0) + (fakeBets.dragon_black || 0);
-      b = (fakeBets.tiger || 0) + (fakeBets.tiger_big || 0) + (fakeBets.tiger_small || 0) +
-        (fakeBets.tiger_odd || 0) + (fakeBets.tiger_even || 0) + (fakeBets.tiger_red || 0) + (fakeBets.tiger_black || 0);
-      t = (fakeBets.dt_tie || 0) + (fakeBets.dt_suited_tie || 0);
-    } else {
-      p = (fakeBets.player || 0) + (fakeBets.player_pair || 0) + (fakeBets.player_bonus || 0);
-      b = (fakeBets.banker || 0) + (fakeBets.banker_pair || 0) + (fakeBets.banker_bonus || 0) + (fakeBets.super_six || 0);
-      t = (fakeBets.tie || 0);
-    }
+  const total = useMemo(() => {
+    return Object.values(fakeBets).reduce((sum, val) => sum + (val || 0), 0);
+  }, [fakeBets]);
 
-    return { playerTotal: p, bankerTotal: b, tieTotal: t, total: p + b + t };
-  }, [fakeBets, gameType]);
-
-  // Animated values
-  const animatedPlayer = useAnimatedNumber(playerTotal, 700);
-  const animatedBanker = useAnimatedNumber(bankerTotal, 700);
-  const animatedTie = useAnimatedNumber(tieTotal, 700);
   const animatedTotal = useAnimatedNumber(total, 800);
-
-  // Track if panel should be visible
-  const [isVisible, setIsVisible] = useState(false);
-  const prevTotalRef = useRef(0);
-
-  useEffect(() => {
-    // Show panel when total > 0
-    if (total > 0 && !isVisible) {
-      setIsVisible(true);
-    }
-    // Hide when total drops to 0 (new round)
-    if (total === 0 && prevTotalRef.current > 0) {
-      setIsVisible(false);
-    }
-    prevTotalRef.current = total;
-  }, [total, isVisible]);
-
-  if (!isVisible) return null;
-
-  const labels = gameType === 'dragonTiger'
-    ? { player: '龍', tie: '和', banker: '虎' }
-    : { player: '閒', tie: '和', banker: '莊' };
 
   // Size-based styles
   const isLarge = size === 'large';
   const containerClass = isLarge
-    ? "flex flex-col gap-0.5 sm:gap-1 lg:gap-2 bg-black/70 backdrop-blur-sm rounded sm:rounded-lg lg:rounded-xl px-1.5 sm:px-3 lg:px-5 py-1 sm:py-2 lg:py-3 border border-white/10 sm:border-[#d4af37]/30 lg:border-[#d4af37]/40 shadow-lg lg:shadow-xl"
+    ? "flex flex-col gap-0.5 sm:gap-0.5 lg:gap-1 bg-black/70 backdrop-blur-sm rounded sm:rounded-lg lg:rounded-xl px-1.5 sm:px-3 lg:px-4 py-1 sm:py-2 lg:py-2.5 border border-white/10 sm:border-[#d4af37]/30 lg:border-[#d4af37]/40 shadow-lg lg:shadow-xl"
     : "flex flex-col gap-0.5 sm:gap-1 bg-black/60 backdrop-blur-sm rounded sm:rounded-lg px-1.5 sm:px-3 py-1 sm:py-2 border border-white/10 sm:border-[#d4af37]/30 shadow-lg";
   const titleClass = isLarge
-    ? "text-[8px] sm:text-xs lg:text-lg text-[#d4af37] font-bold tracking-wider mb-0.5 sm:mb-1 lg:mb-2"
+    ? "text-[8px] sm:text-xs lg:text-base text-[#d4af37] font-bold tracking-wider mb-0.5 sm:mb-1 lg:mb-1.5"
     : "text-[8px] sm:text-xs lg:text-sm text-[#d4af37] font-bold tracking-wider mb-0.5 sm:mb-1";
   const labelClass = isLarge
-    ? "text-[8px] sm:text-sm lg:text-xl font-bold"
+    ? "text-[8px] sm:text-xs lg:text-sm font-bold"
     : "text-[8px] sm:text-sm lg:text-base font-bold";
   const valueClass = isLarge
-    ? "text-[8px] sm:text-sm lg:text-xl text-white/80 font-mono font-semibold tabular-nums"
+    ? "text-[8px] sm:text-xs lg:text-sm text-white/80 font-mono font-semibold tabular-nums"
     : "text-[8px] sm:text-sm lg:text-base text-white/80 font-mono font-semibold tabular-nums";
   const gapClass = isLarge
-    ? "flex items-center justify-between gap-2 sm:gap-4 lg:gap-8"
+    ? "flex items-center justify-between gap-2 sm:gap-3 lg:gap-6"
     : "flex items-center justify-between gap-2 sm:gap-4";
   const totalLabelClass = isLarge
-    ? "text-[7px] sm:text-xs lg:text-base text-white/50"
+    ? "text-[7px] sm:text-xs lg:text-sm text-white/50"
     : "text-[7px] sm:text-xs lg:text-sm text-white/50";
   const totalValueClass = isLarge
-    ? "text-[8px] sm:text-sm lg:text-xl text-[#d4af37] font-mono font-bold tabular-nums"
+    ? "text-[8px] sm:text-xs lg:text-base text-[#d4af37] font-mono font-bold tabular-nums"
     : "text-[8px] sm:text-sm lg:text-base text-[#d4af37] font-mono font-bold tabular-nums";
   const dividerClass = isLarge
-    ? "flex items-center justify-between gap-2 sm:gap-4 lg:gap-8 border-t border-white/10 sm:border-[#d4af37]/20 lg:border-[#d4af37]/30 pt-0.5 sm:pt-1 lg:pt-2 mt-0.5 sm:mt-1 lg:mt-2"
+    ? "flex items-center justify-between gap-2 sm:gap-3 lg:gap-6 border-t border-white/10 sm:border-[#d4af37]/20 lg:border-[#d4af37]/30 pt-0.5 sm:pt-1 lg:pt-1.5 mt-0.5 sm:mt-1 lg:mt-1"
     : "flex items-center justify-between gap-2 sm:gap-4 border-t border-white/10 sm:border-[#d4af37]/20 pt-0.5 sm:pt-1 mt-0.5 sm:mt-1";
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0, x: -10, scale: 0.9 }}
-        animate={{ opacity: 1, x: 0, scale: 1 }}
-        exit={{ opacity: 0, x: -10, scale: 0.9 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className={containerClass}
-      >
-        <div className={titleClass}>本桌下注</div>
-        <AnimatePresence mode="popLayout">
-          {animatedPlayer > 0 && (
-            <motion.div
-              key="player"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className={gapClass}
-            >
-              <span className={`${labelClass} text-blue-400`}>{labels.player}</span>
-              <motion.span
-                key={animatedPlayer}
-                initial={{ scale: 1.15, color: '#60a5fa' }}
-                animate={{ scale: 1, color: 'rgba(255,255,255,0.8)' }}
-                transition={{ duration: 0.3 }}
-                className={valueClass}
-              >
-                {formatAmount(animatedPlayer)}
-              </motion.span>
-            </motion.div>
-          )}
-          {animatedTie > 0 && (
-            <motion.div
-              key="tie"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className={gapClass}
-            >
-              <span className={`${labelClass} text-green-400`}>{labels.tie}</span>
-              <motion.span
-                key={animatedTie}
-                initial={{ scale: 1.15, color: '#4ade80' }}
-                animate={{ scale: 1, color: 'rgba(255,255,255,0.8)' }}
-                transition={{ duration: 0.3 }}
-                className={valueClass}
-              >
-                {formatAmount(animatedTie)}
-              </motion.span>
-            </motion.div>
-          )}
-          {animatedBanker > 0 && (
-            <motion.div
-              key="banker"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className={gapClass}
-            >
-              <span className={`${labelClass} text-red-400`}>{labels.banker}</span>
-              <motion.span
-                key={animatedBanker}
-                initial={{ scale: 1.15, color: '#f87171' }}
-                animate={{ scale: 1, color: 'rgba(255,255,255,0.8)' }}
-                transition={{ duration: 0.3 }}
-                className={valueClass}
-              >
-                {formatAmount(animatedBanker)}
-              </motion.span>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        <motion.div layout className={dividerClass}>
-          <span className={totalLabelClass}>總計</span>
-          <motion.span
-            key={animatedTotal}
-            initial={{ scale: 1.2, color: '#fbbf24' }}
-            animate={{ scale: 1, color: '#d4af37' }}
-            transition={{ duration: 0.3 }}
-            className={totalValueClass}
-          >
-            {formatAmount(animatedTotal)}
-          </motion.span>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
+    <div className={containerClass}>
+      <div className={titleClass}>本桌下注</div>
+      {betTypes.map(({ key, label, color }) => (
+        <AnimatedBetRow
+          key={key}
+          label={label}
+          color={color}
+          amount={fakeBets[key] || 0}
+          labelClass={labelClass}
+          valueClass={valueClass}
+          gapClass={gapClass}
+        />
+      ))}
+      <div className={dividerClass}>
+        <span className={totalLabelClass}>總計</span>
+        <motion.span
+          key={animatedTotal}
+          initial={{ scale: animatedTotal > 0 ? 1.2 : 1, color: '#fbbf24' }}
+          animate={{ scale: 1, color: '#d4af37' }}
+          transition={{ duration: 0.3 }}
+          className={totalValueClass}
+        >
+          {formatAmount(animatedTotal)}
+        </motion.span>
+      </div>
+    </div>
   );
 });
 
