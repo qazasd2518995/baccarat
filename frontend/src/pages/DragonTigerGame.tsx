@@ -105,6 +105,7 @@ function buildDTBigRoad(data: Array<{ result: string }>): DTBigRoadGrid {
   let row = 0;
   let lastResult: 'dragon' | 'tiger' | null = null;
   let tieCount = 0;
+  let isTailing = false; // Dragon tail mode
 
   for (const round of data) {
     const result = normalizeResult(round.result);
@@ -116,17 +117,28 @@ function buildDTBigRoad(data: Array<{ result: string }>): DTBigRoadGrid {
 
     if (!result) continue;
 
-    if (lastResult === null || result !== lastResult) {
-      if (lastResult !== null) {
-        col++;
-        row = 0;
-      }
+    if (lastResult === null) {
+      // First non-tie result
       lastResult = result;
+    } else if (result !== lastResult) {
+      // Result changed - start new column
+      col++;
+      row = 0;
+      lastResult = result;
+      isTailing = false;
     } else {
-      row++;
-      if (row >= ROWS) {
-        row = ROWS - 1;
+      // Same result - continue down or tail right
+      if (isTailing) {
+        // Already tailing - continue right
         col++;
+      } else {
+        row++;
+        if (row >= ROWS) {
+          // Hit bottom - start dragon tail
+          row = ROWS - 1;
+          col++;
+          isTailing = true;
+        }
       }
     }
 
