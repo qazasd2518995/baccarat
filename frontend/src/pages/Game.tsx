@@ -297,6 +297,7 @@ function buildBigRoad(data: Array<{ result: GameResult; playerPair?: boolean; ba
   let row = 0;
   let lastResult: 'player' | 'banker' | null = null;
   let tieCount = 0;
+  let isTailing = false; // Dragon tail mode
 
   for (const round of data) {
     // Tie doesn't create new cell, just increment counter
@@ -305,20 +306,28 @@ function buildBigRoad(data: Array<{ result: GameResult; playerPair?: boolean; ba
       continue;
     }
 
-    // New column if result changes
-    if (lastResult === null || round.result !== lastResult) {
-      if (lastResult !== null) {
-        col++;
-        row = 0;
-      }
+    if (lastResult === null) {
+      // First non-tie result
       lastResult = round.result;
+    } else if (round.result !== lastResult) {
+      // Result changed - start new column
+      col++;
+      row = 0;
+      lastResult = round.result;
+      isTailing = false;
     } else {
-      // Same result - go down in same column
-      row++;
-      // Dragon tail - if past row 6, continue horizontally
-      if (row >= ROWS) {
-        row = ROWS - 1;
+      // Same result - continue down or tail right
+      if (isTailing) {
+        // Already tailing - continue right
         col++;
+      } else {
+        row++;
+        if (row >= ROWS) {
+          // Hit bottom - start dragon tail
+          row = ROWS - 1;
+          col++;
+          isTailing = true;
+        }
       }
     }
 
