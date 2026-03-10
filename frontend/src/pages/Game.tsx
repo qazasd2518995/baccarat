@@ -1372,11 +1372,6 @@ export default function Game() {
           {/* Countdown timer — positioned over entire game area (above dealer + table) */}
           <CountdownTimer timeRemaining={timeRemaining} phase={phase} hidden={lastResult !== null || frozenResult !== null || showResult} />
 
-          {/* Fake bet stats — positioned on table area for desktop, below countdown for mobile */}
-          <div className="absolute top-[72px] sm:top-[94px] lg:top-[55%] left-2 sm:left-3 lg:left-4 z-30 pointer-events-none lg:-translate-y-1/2">
-            <FakeBetStats fakeBets={fakeAmounts} gameType="baccarat" size="large" />
-          </div>
-
           {/* Video Area - 3D Dealer Table */}
           <DealerTable3D
             isDealing={dealerAnimating}
@@ -1549,6 +1544,11 @@ export default function Game() {
               </div>
 
           </DealerTable3D>
+
+          {/* Fake bet stats — positioned on table area for desktop, below countdown for mobile */}
+          <div className="absolute top-[72px] sm:top-[94px] lg:top-[45%] left-2 sm:left-3 lg:left-6 z-50 pointer-events-none">
+            <FakeBetStats fakeBets={fakeAmounts} gameType="baccarat" size="large" />
+          </div>
 
           {/* Virtual Players Bar - row of fake players at table bottom */}
           <VirtualPlayersBar tableId={tableId || 'default'} />
