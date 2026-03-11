@@ -1826,17 +1826,20 @@ export default function Game() {
                   </div>
 
                   {/* Bead Plate Grid (珠盤路) — shows history as colored circles with 莊/閒/和 text */}
-                  {/* Uses sliding window: always show TOTAL cells, prediction replaces last slot when ask road is active */}
+                  {/* Uses sliding window: always show TOTAL cells */}
+                  {/* When ask road is active, slides to show prediction in new column if needed */}
                   <div className="flex-1 grid grid-cols-5 grid-rows-6 gap-px" style={{ backgroundColor: '#D1D5DB' }}>
                     {(() => {
                       const ROWS = 6;
                       const COLS = 5;
                       const TOTAL = ROWS * COLS; // 30 cells
-                      // Always show TOTAL cells with sliding window
-                      // When ask road is active, show TOTAL-1 data + 1 prediction
                       const hasAskRoad = askRoadMode !== 'none';
-                      const maxShow = hasAskRoad ? TOTAL - 1 : TOTAL;
+
+                      // When ask road is active, show TOTAL-1 data entries + 1 prediction slot
+                      // This automatically slides the window to make room for prediction
+                      const maxShow = TOTAL - (hasAskRoad ? 1 : 0);
                       const latest = roadmapData.slice(-maxShow);
+
                       const cells: ({ data: typeof roadmapData[0] | null; predicted?: boolean })[] = Array(TOTAL).fill(null).map(() => ({ data: null }));
                       // Fill column by column
                       for (let i = 0; i < latest.length; i++) {
@@ -1846,7 +1849,6 @@ export default function Game() {
                       }
                       // Add ask road prediction at the next available position
                       if (hasAskRoad) {
-                        // Calculate position after the last data entry
                         const predIdx = latest.length;
                         const predCol = Math.floor(predIdx / ROWS);
                         const predRow = predIdx % ROWS;
