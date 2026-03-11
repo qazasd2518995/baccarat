@@ -169,20 +169,71 @@ function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair, blink }: { 
 // Derived Road Grid - displays data in 2x2 mini-cells per grid cell
 // Each visual grid cell contains 4 small circles arranged in a 2x2 pattern
 function DerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_eye' | 'small' | 'cockroach' }) {
-  // Display: 6 rows x 12 cols of small circles (3 rows x 6 cols of 2x2 grid cells)
+  // Display: 6 rows x 12 cols of small circles
   const SMALL_ROWS = 6;
   const SMALL_COLS = 12;
   const TOTAL_CELLS = SMALL_ROWS * SMALL_COLS;
 
-  // Fill array column by column (top to bottom, then next column)
+  // Build grid using Big Road layout logic:
+  // Same color goes down, different color starts new column
+  // Dragon tail when hitting bottom or occupied cell
+  const grid2D: (('red' | 'blue') | null)[][] = Array(SMALL_ROWS).fill(null).map(() => Array(SMALL_COLS).fill(null));
+
+  // Group consecutive same colors into columns
+  const columns: ('red' | 'blue')[][] = [];
+  let currentCol: ('red' | 'blue')[] = [];
+  let lastColor: 'red' | 'blue' | null = null;
+
+  for (const color of data) {
+    if (lastColor !== null && color !== lastColor) {
+      // Color changed - start new column
+      if (currentCol.length > 0) {
+        columns.push(currentCol);
+      }
+      currentCol = [color];
+    } else {
+      // Same color or first entry - continue in current column
+      currentCol.push(color);
+    }
+    lastColor = color;
+  }
+  if (currentCol.length > 0) {
+    columns.push(currentCol);
+  }
+
+  // Place columns in grid with dragon tail handling
+  let gridCol = 0;
+  for (const column of columns) {
+    let row = 0;
+    let col = gridCol;
+
+    for (const color of column) {
+      // Check if we need dragon tail (row overflow)
+      if (row >= SMALL_ROWS) {
+        col++;
+        row = SMALL_ROWS - 1;
+      }
+
+      // Check if position is occupied (from previous dragon tail)
+      while (col < SMALL_COLS && grid2D[row][col] !== null) {
+        col++;
+      }
+
+      if (col < SMALL_COLS) {
+        grid2D[row][col] = color;
+      }
+      row++;
+    }
+
+    // Move to next column for next sequence
+    gridCol = col + 1;
+  }
+
+  // Flatten to 1D array for rendering (row-major order)
   const grid: (('red' | 'blue') | null)[] = Array(TOTAL_CELLS).fill(null);
-  for (let i = 0; i < Math.min(data.length, TOTAL_CELLS); i++) {
-    // Column-first fill: col 0 rows 0-5, col 1 rows 0-5, etc.
-    const col = Math.floor(i / SMALL_ROWS);
-    const row = i % SMALL_ROWS;
-    const idx = row * SMALL_COLS + col;
-    if (idx < TOTAL_CELLS) {
-      grid[idx] = data[i];
+  for (let r = 0; r < SMALL_ROWS; r++) {
+    for (let c = 0; c < SMALL_COLS; c++) {
+      grid[r * SMALL_COLS + c] = grid2D[r][c];
     }
   }
 
