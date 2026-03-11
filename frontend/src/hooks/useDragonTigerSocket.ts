@@ -207,7 +207,10 @@ export function useDragonTigerSocket(tableId?: string) {
 
     const handleRoadmap = (data: any) => {
       console.log('[useDragonTigerSocket] Roadmap updated:', data.recentRounds.length, 'rounds');
-      setRoadmapData(data.recentRounds);
+      // Delay roadmap update to let card animations complete
+      setTimeout(() => {
+        setRoadmapData(data.recentRounds);
+      }, 2000);
     };
 
     const handleFakeBets = (data: { bets: Record<string, number> }) => {

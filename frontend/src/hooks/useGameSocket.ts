@@ -194,7 +194,10 @@ export function useGameSocket(tableId?: string) {
 
     const handleRoadmap = (data: RoadmapUpdateEvent) => {
       console.log('[useGameSocket] Roadmap updated:', data.recentRounds.length, 'rounds');
-      setRoadmapData(data.recentRounds);
+      // Delay roadmap update to let card animations complete
+      setTimeout(() => {
+        setRoadmapData(data.recentRounds);
+      }, 2000);
     };
 
     const handleFakeBets = (data: { bets: Record<string, number> }) => {
