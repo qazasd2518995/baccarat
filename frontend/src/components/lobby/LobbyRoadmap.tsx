@@ -10,18 +10,16 @@ import {
 
 interface LobbyRoadmapProps {
   roadHistory: RoadHistoryEntry[];
-  showBeadRoad?: boolean;
 }
 
-/* Light theme colors for lobby cards */
+/* Colors */
 const CELL_BG = '#FFFFFF';
-const LINE = '#D1D5DB'; // gray-300 for visible grid lines
+const LINE = '#D1D5DB';
 
-// Bead Road (珠盤路) - Shows 庄/闲/和 text in colored cells
+// Bead Road (珠盤路) - 6 rows x 12 cols, colored circles with 庄/闲/和 text
 function BeadRoad({ grid, rows, cols }: { grid: (RoadHistoryEntry | null)[][]; rows: number; cols: number }) {
   const cells: React.ReactNode[] = [];
 
-  // Render column by column (grid auto flow is column)
   for (let c = 0; c < cols; c++) {
     for (let r = 0; r < rows; r++) {
       const entry = grid[r]?.[c] ?? null;
@@ -32,31 +30,32 @@ function BeadRoad({ grid, rows, cols }: { grid: (RoadHistoryEntry | null)[][]; r
         continue;
       }
 
-      let bgColor = CELL_BG;
-      let textColor = '#000';
+      let bgColor = '#FFFFFF';
       let text = '';
 
       if (entry.result === 'banker') {
-        bgColor = '#DC2626'; // red
-        textColor = '#FFFFFF';
+        bgColor = '#DC2626';
         text = '庄';
       } else if (entry.result === 'player') {
-        bgColor = '#2563EB'; // blue
-        textColor = '#FFFFFF';
+        bgColor = '#2563EB';
         text = '闲';
       } else if (entry.result === 'tie') {
-        bgColor = '#16A34A'; // green
-        textColor = '#FFFFFF';
+        bgColor = '#16A34A';
         text = '和';
       }
 
       cells.push(
-        <div
-          key={key}
-          className="flex items-center justify-center"
-          style={{ background: bgColor }}
-        >
-          <span style={{ color: textColor, fontSize: '9px', fontWeight: 'bold' }}>{text}</span>
+        <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
+          <div
+            className="rounded-full flex items-center justify-center"
+            style={{
+              width: 12,
+              height: 12,
+              backgroundColor: bgColor,
+            }}
+          >
+            <span style={{ color: '#FFFFFF', fontSize: '7px', fontWeight: 'bold' }}>{text}</span>
+          </div>
         </div>
       );
     }
@@ -78,7 +77,7 @@ function BeadRoad({ grid, rows, cols }: { grid: (RoadHistoryEntry | null)[][]; r
   );
 }
 
-// Big Road Component - hollow circles
+// Big Road (大路) - hollow circles with grid lines
 function BigRoad({ grid, rows, cols }: { grid: (BigRoadCell | null)[][]; rows: number; cols: number }) {
   const cells: React.ReactNode[] = [];
 
@@ -99,8 +98,8 @@ function BigRoad({ grid, rows, cols }: { grid: (BigRoadCell | null)[][]; rows: n
           <div
             className="rounded-full"
             style={{
-              width: 8,
-              height: 8,
+              width: 9,
+              height: 9,
               border: `1.5px solid ${borderColor}`,
             }}
           />
@@ -108,11 +107,12 @@ function BigRoad({ grid, rows, cols }: { grid: (BigRoadCell | null)[][]; rows: n
             <div
               className="absolute"
               style={{
-                width: '100%',
+                width: 8,
                 height: '1px',
                 backgroundColor: '#16A34A',
                 top: '50%',
-                transform: 'rotate(-45deg)',
+                left: '50%',
+                transform: 'translate(-50%, -50%) rotate(-45deg)',
               }}
             />
           )}
@@ -137,7 +137,7 @@ function BigRoad({ grid, rows, cols }: { grid: (BigRoadCell | null)[][]; rows: n
   );
 }
 
-// Derived Road Grid - with 2x2 grid lines (each grid cell contains 2x2 mini circles)
+// Derived Road Grid - 2x2 mini circles per grid cell, with grid lines between 2x2 units
 function DerivedRoadGrid({
   grid,
   type,
@@ -149,18 +149,16 @@ function DerivedRoadGrid({
   rows: number;
   cols: number;
 }) {
-  // Grid cells are 2x2, so we have (rows/2) x (cols/2) grid cells
+  // Each grid cell contains 2x2 mini circles
   const gridRows = Math.ceil(rows / 2);
   const gridCols = Math.ceil(cols / 2);
 
   const gridCells: React.ReactNode[] = [];
 
-  // Render grid cells (each containing 2x2 mini circles)
   for (let gc = 0; gc < gridCols; gc++) {
     for (let gr = 0; gr < gridRows; gr++) {
       const key = `grid-${gr}-${gc}`;
 
-      // Each grid cell contains 4 mini circles (2x2)
       const miniCells: React.ReactNode[] = [];
       for (let mr = 0; mr < 2; mr++) {
         for (let mc = 0; mc < 2; mc++) {
@@ -239,7 +237,7 @@ function DerivedRoadGrid({
 }
 
 // ── Main Component ──
-function LobbyRoadmap({ roadHistory, showBeadRoad = true }: LobbyRoadmapProps) {
+function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -253,19 +251,19 @@ function LobbyRoadmap({ roadHistory, showBeadRoad = true }: LobbyRoadmapProps) {
     return () => ro.disconnect();
   }, []);
 
-  // Grid dimensions
+  // Grid dimensions matching reference image
   const BEAD_ROWS = 6;
-  const BEAD_COLS = 10;
+  const BEAD_COLS = 12;
   const BIG_ROAD_ROWS = 6;
-  const BIG_ROAD_COLS = 28;
+  const BIG_ROAD_COLS = 18;
+  // Derived roads: 6 rows x 12 cols of mini circles = 3x6 grid cells (each 2x2)
   const DERIVED_ROWS = 6;
-  const DERIVED_COLS = 14;
+  const DERIVED_COLS = 12;
 
   const bigRoadColumns = useMemo(() => buildBigRoadColumns(roadHistory), [roadHistory]);
   const bigRoadGrid = useMemo(() => buildBigRoadGrid(bigRoadColumns, BIG_ROAD_ROWS, BIG_ROAD_COLS), [bigRoadColumns]);
   const beadRoadGrid = useMemo(() => buildBeadRoadGrid(roadHistory, BEAD_ROWS), [roadHistory]);
 
-  // Build derived roads
   const bigEyeGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 1, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns]);
   const smallGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 2, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns]);
   const cockroachGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 3, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns]);
@@ -274,31 +272,26 @@ function LobbyRoadmap({ roadHistory, showBeadRoad = true }: LobbyRoadmapProps) {
     <div ref={containerRef} className="flex h-full overflow-hidden" style={{ backgroundColor: LINE }}>
       {containerWidth > 0 && (
         <>
-          {/* Left: Bead Road (珠盤路) */}
-          {showBeadRoad && (
-            <div className="h-full" style={{ width: '22%', borderRight: `1px solid ${LINE}` }}>
-              <BeadRoad grid={beadRoadGrid} rows={BEAD_ROWS} cols={BEAD_COLS} />
-            </div>
-          )}
+          {/* Left: Bead Road (珠盤路) - 6x12 */}
+          <div className="h-full" style={{ width: '28%', borderRight: `1px solid ${LINE}` }}>
+            <BeadRoad grid={beadRoadGrid} rows={BEAD_ROWS} cols={BEAD_COLS} />
+          </div>
 
           {/* Right: Big Road + Derived Roads */}
           <div className="flex-1 flex flex-col h-full">
-            {/* Top: Big Road (大路) - 60% height */}
+            {/* Top: Big Road (大路) - 6x18, takes 60% height */}
             <div style={{ height: '60%', borderBottom: `1px solid ${LINE}` }}>
               <BigRoad grid={bigRoadGrid} rows={BIG_ROAD_ROWS} cols={BIG_ROAD_COLS} />
             </div>
 
-            {/* Bottom: Three Derived Roads - 40% height */}
+            {/* Bottom: Three Derived Roads - each 3x6 grid cells (6x12 mini circles) */}
             <div className="flex-1 flex">
-              {/* Big Eye Boy */}
               <div className="flex-1" style={{ borderRight: `1px solid ${LINE}` }}>
                 <DerivedRoadGrid grid={bigEyeGrid} type="big_eye" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
               </div>
-              {/* Small Road */}
               <div className="flex-1" style={{ borderRight: `1px solid ${LINE}` }}>
                 <DerivedRoadGrid grid={smallGrid} type="small" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
               </div>
-              {/* Cockroach Pig */}
               <div className="flex-1">
                 <DerivedRoadGrid grid={cockroachGrid} type="cockroach" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
               </div>
