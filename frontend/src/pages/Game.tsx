@@ -166,13 +166,12 @@ function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair, blink }: { 
   );
 }
 
-// Derived Road Grid - displays data in 2x2 mini-cells per grid cell
+// Derived Road Grid - displays data in 2x2 mini-cells per grid cell with grid lines
 // Each visual grid cell contains 4 small circles arranged in a 2x2 pattern
 function DerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_eye' | 'small' | 'cockroach' }) {
   // Display: 6 rows x 12 cols of small circles
   const SMALL_ROWS = 6;
   const SMALL_COLS = 12;
-  const TOTAL_CELLS = SMALL_ROWS * SMALL_COLS;
 
   // Build grid using Big Road layout logic:
   // Same color goes down, different color starts new column
@@ -186,13 +185,11 @@ function DerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_
 
   for (const color of data) {
     if (lastColor !== null && color !== lastColor) {
-      // Color changed - start new column
       if (currentCol.length > 0) {
         columns.push(currentCol);
       }
       currentCol = [color];
     } else {
-      // Same color or first entry - continue in current column
       currentCol.push(color);
     }
     lastColor = color;
@@ -208,13 +205,11 @@ function DerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_
     let col = gridCol;
 
     for (const color of column) {
-      // Check if we need dragon tail (row overflow)
       if (row >= SMALL_ROWS) {
         col++;
         row = SMALL_ROWS - 1;
       }
 
-      // Check if position is occupied (from previous dragon tail)
       while (col < SMALL_COLS && grid2D[row][col] !== null) {
         col++;
       }
@@ -225,16 +220,7 @@ function DerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_
       row++;
     }
 
-    // Move to next column for next sequence
     gridCol = col + 1;
-  }
-
-  // Flatten to 1D array for rendering (row-major order)
-  const grid: (('red' | 'blue') | null)[] = Array(TOTAL_CELLS).fill(null);
-  for (let r = 0; r < SMALL_ROWS; r++) {
-    for (let c = 0; c < SMALL_COLS; c++) {
-      grid[r * SMALL_COLS + c] = grid2D[r][c];
-    }
   }
 
   const colors = {
@@ -242,56 +228,88 @@ function DerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_
     blue: { border: '#2563EB', fill: '#2563EB' },
   };
 
-  const renderMiniCell = (value: ('red' | 'blue') | null, key: string) => {
-    if (!value) {
-      return <div key={key} className="w-full h-full" />;
-    }
-    const color = colors[value];
+  // Grid cells are 2x2, so we have 3 rows x 6 cols of grid cells
+  const GRID_ROWS = Math.ceil(SMALL_ROWS / 2);
+  const GRID_COLS = Math.ceil(SMALL_COLS / 2);
 
-    if (type === 'big_eye') {
-      // Hollow circle
-      return (
-        <div key={key} className="w-full h-full flex items-center justify-center">
-          <div
-            className="w-[7px] h-[7px] rounded-full"
-            style={{ border: `1.5px solid ${color.border}` }}
-          />
+  const gridCells: React.ReactNode[] = [];
+
+  for (let gc = 0; gc < GRID_COLS; gc++) {
+    for (let gr = 0; gr < GRID_ROWS; gr++) {
+      const key = `grid-${gr}-${gc}`;
+
+      const miniCells: React.ReactNode[] = [];
+      for (let mr = 0; mr < 2; mr++) {
+        for (let mc = 0; mc < 2; mc++) {
+          const dataRow = gr * 2 + mr;
+          const dataCol = gc * 2 + mc;
+          const value = grid2D[dataRow]?.[dataCol] ?? null;
+          const miniKey = `mini-${mr}-${mc}`;
+
+          if (!value) {
+            miniCells.push(<div key={miniKey} />);
+            continue;
+          }
+
+          const color = colors[value];
+
+          if (type === 'big_eye') {
+            miniCells.push(
+              <div key={miniKey} className="flex items-center justify-center">
+                <div
+                  className="w-[7px] h-[7px] rounded-full"
+                  style={{ border: `1.5px solid ${color.border}` }}
+                />
+              </div>
+            );
+          } else if (type === 'small') {
+            miniCells.push(
+              <div key={miniKey} className="flex items-center justify-center">
+                <div
+                  className="w-[7px] h-[7px] rounded-full"
+                  style={{ backgroundColor: color.fill }}
+                />
+              </div>
+            );
+          } else {
+            miniCells.push(
+              <div key={miniKey} className="flex items-center justify-center">
+                <svg viewBox="0 0 10 10" className="w-[9px] h-[9px]">
+                  <line x1="1" y1="9" x2="9" y2="1" stroke={color.fill} strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+            );
+          }
+        }
+      }
+
+      gridCells.push(
+        <div
+          key={key}
+          className="grid bg-white"
+          style={{
+            gridTemplateRows: 'repeat(2, 1fr)',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+          }}
+        >
+          {miniCells}
         </div>
       );
     }
-
-    if (type === 'small') {
-      // Filled circle
-      return (
-        <div key={key} className="w-full h-full flex items-center justify-center">
-          <div
-            className="w-[7px] h-[7px] rounded-full"
-            style={{ backgroundColor: color.fill }}
-          />
-        </div>
-      );
-    }
-
-    // Cockroach: diagonal slash
-    return (
-      <div key={key} className="w-full h-full flex items-center justify-center">
-        <svg viewBox="0 0 10 10" className="w-[9px] h-[9px]">
-          <line x1="1" y1="9" x2="9" y2="1" stroke={color.fill} strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      </div>
-    );
-  };
+  }
 
   return (
     <div
       className="grid h-full w-full"
       style={{
-        gridTemplateColumns: `repeat(${SMALL_COLS}, 1fr)`,
-        gridTemplateRows: `repeat(${SMALL_ROWS}, 1fr)`,
-        backgroundColor: '#FFFFFF',
+        gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
+        gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
+        gridAutoFlow: 'column',
+        gap: '1px',
+        backgroundColor: '#D1D5DB',
       }}
     >
-      {grid.map((value, idx) => renderMiniCell(value, `cell-${idx}`))}
+      {gridCells}
     </div>
   );
 }
