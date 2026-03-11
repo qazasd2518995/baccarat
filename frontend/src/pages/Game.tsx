@@ -246,19 +246,54 @@ function getMaxCol(bigRoadGrid: BigRoadGrid): number {
   return maxCol;
 }
 
-// Calculate derived road (generic): compare each column with column - offset
+// Calculate derived road (Big Eye Boy, Small Road, Cockroach Pig)
+// offset: 1 for Big Eye Boy, 2 for Small Road, 3 for Cockroach Pig
+// Rules:
+// - New column: Compare depths of (col-1) and (col-1-offset). Same depth = red, different = blue
+// - Same column: Check if cell at (row-1, col-offset) exists. Exists = red, doesn't = blue
 function calculateDerivedRoad(bigRoadGrid: BigRoadGrid, offset: number): ('red' | 'blue')[] {
   const results: ('red' | 'blue')[] = [];
   const maxCol = getMaxCol(bigRoadGrid);
 
-  for (let col = offset; col <= maxCol; col++) {
-    const currLen = getColumnLength(bigRoadGrid, col);
-    const compareLen = getColumnLength(bigRoadGrid, col - offset);
+  // Track position in Big Road as we iterate
+  let prevCol = -1;
 
-    if (currLen > 1) {
-      for (let entry = 1; entry < currLen; entry++) {
-        const compareHasEntry = entry < compareLen;
-        results.push(compareHasEntry ? 'red' : 'blue');
+  // Start from column (offset + 1) because we need at least (offset + 1) columns to compare
+  // Big Eye Boy starts after first entry in column 2 (col index 1)
+  // Small Road starts after first entry in column 3 (col index 2)
+  // Cockroach starts after first entry in column 4 (col index 3)
+  const startCol = offset;
+
+  for (let col = startCol; col <= maxCol; col++) {
+    for (let row = 0; row < 6; row++) {
+      const cell = bigRoadGrid[row]?.[col];
+      if (!cell) continue;
+
+      // Check if this is first entry in a new column
+      const isNewColumn = col !== prevCol;
+
+      if (isNewColumn) {
+        // New column rule: compare depths of previous two relevant columns
+        // For Big Eye Boy (offset=1): compare col-1 and col-2
+        // For Small Road (offset=2): compare col-1 and col-3
+        // For Cockroach (offset=3): compare col-1 and col-4
+        const prevColDepth = getColumnLength(bigRoadGrid, col - 1);
+        const compareColDepth = getColumnLength(bigRoadGrid, col - 1 - offset);
+
+        // Same depth = red (pattern), different depth = blue (choppy)
+        results.push(prevColDepth === compareColDepth ? 'red' : 'blue');
+        prevCol = col;
+      } else {
+        // Same column rule: check if there's a cell at (current row - 1) in the compare column
+        // Look at column (col - offset), row (row - 1)
+        const compareCol = col - offset;
+        const compareRow = row - 1;
+
+        if (compareRow >= 0 && compareCol >= 0) {
+          const hasCell = bigRoadGrid[compareRow]?.[compareCol] !== null;
+          // Has cell = red (pattern continues), no cell = blue (pattern breaks)
+          results.push(hasCell ? 'red' : 'blue');
+        }
       }
     }
   }
@@ -2088,7 +2123,7 @@ export default function Game() {
                 <div className="flex h-[72px] border-t border-gray-400">
                   {/* Big Eye Boy - hollow circles */}
                   <div className="flex-1 border-r border-gray-400" style={{ backgroundColor: '#FFFFFF' }}>
-                    <div className="grid grid-cols-8 grid-rows-4 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
+                    <div className="grid grid-rows-4 grid-flow-col gap-px h-full" style={{ backgroundColor: '#D1D5DB', gridTemplateColumns: 'repeat(8, 1fr)' }}>
                       {Array(DERIVED_DISPLAY_CELLS).fill(null).map((_, i) => {
                         // Show predicted entry right after existing data
                         const isPredicted = activeAskRoad && i === bigEyeBoyData.length && i < DERIVED_DISPLAY_CELLS && activeAskRoad.bigEye.length > 0;
@@ -2107,7 +2142,7 @@ export default function Game() {
 
                   {/* Small Road - filled circles */}
                   <div className="flex-1 border-r border-gray-400" style={{ backgroundColor: '#FFFFFF' }}>
-                    <div className="grid grid-cols-8 grid-rows-4 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
+                    <div className="grid grid-rows-4 grid-flow-col gap-px h-full" style={{ backgroundColor: '#D1D5DB', gridTemplateColumns: 'repeat(8, 1fr)' }}>
                       {Array(DERIVED_DISPLAY_CELLS).fill(null).map((_, i) => {
                         const isPredicted = activeAskRoad && i === smallRoadData.length && i < DERIVED_DISPLAY_CELLS && activeAskRoad.smallRoad.length > 0;
                         const predValue = isPredicted ? activeAskRoad.smallRoad[0] : undefined;
@@ -2125,7 +2160,7 @@ export default function Game() {
 
                   {/* Cockroach Pig - slashes */}
                   <div className="flex-1" style={{ backgroundColor: '#FFFFFF' }}>
-                    <div className="grid grid-cols-8 grid-rows-4 gap-px h-full" style={{ backgroundColor: '#D1D5DB' }}>
+                    <div className="grid grid-rows-4 grid-flow-col gap-px h-full" style={{ backgroundColor: '#D1D5DB', gridTemplateColumns: 'repeat(8, 1fr)' }}>
                       {Array(DERIVED_DISPLAY_CELLS).fill(null).map((_, i) => {
                         const isPredicted = activeAskRoad && i === cockroachPigData.length && i < DERIVED_DISPLAY_CELLS && activeAskRoad.cockroach.length > 0;
                         const predValue = isPredicted ? activeAskRoad.cockroach[0] : undefined;
