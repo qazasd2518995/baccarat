@@ -605,6 +605,9 @@ export default function Lobby() {
                   const gameLabel = GAME_TYPE_LABELS[table.gameType] || table.gameType;
                   // Extract table number from name (e.g., "百家樂 1" -> "1")
                   const tableNumber = table.name.replace(/[^\dA-Za-z]/g, '').trim() || (index + 1).toString();
+                  // Generate virtual player count (50-200 range, varies by table, deterministic)
+                  const tableHash = table.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+                  const virtualPlayers = 50 + (tableHash * 17) % 150;
                   return (
                     <motion.div
                       key={table.id}
@@ -616,49 +619,47 @@ export default function Lobby() {
                       style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
                     >
                       {/* Header Bar — dark gradient */}
-                      <div className="h-7 bg-gradient-to-r from-[#1a2332] to-[#0d1825] flex items-center px-2 gap-2">
-                        <span className="text-white text-xs font-bold">{gameLabel}</span>
-                        <span className="text-amber-400 text-xs font-bold">{tableNumber}</span>
-                        <div className="flex items-center gap-1 ml-1">
-                          <Users className="w-3 h-3 text-gray-400" />
-                          <span className="text-white text-xs">{table.players.toLocaleString()}</span>
-                        </div>
-                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded-sm ml-0.5 ${
-                          table.roadHistory.length > 0 ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-                        }`} style={{ fontSize: '10px', lineHeight: 1 }}>
-                          {table.roadHistory.length}
-                        </span>
-
-                        {/* Good Road indicator */}
-                        {table.hasGoodRoad && (
-                          <span className="text-yellow-400 text-xs" title={t('goodRoad')}>⚡</span>
-                        )}
+                      <div className="h-8 bg-gradient-to-r from-[#1a2332] to-[#0d1825] flex items-center px-3 gap-2">
+                        <span className="text-white text-sm font-bold">{gameLabel}</span>
+                        <span className="text-amber-400 text-sm font-bold">{tableNumber}</span>
 
                         <div className="flex-1" />
 
+                        {/* Virtual Player Count */}
+                        <div className="flex items-center gap-1 bg-black/30 rounded px-2 py-0.5">
+                          <Users className="w-3.5 h-3.5 text-green-400" />
+                          <span className="text-green-400 text-xs font-bold">{virtualPlayers}</span>
+                        </div>
+
+                        {/* Good Road indicator */}
+                        {table.hasGoodRoad && (
+                          <span className="text-yellow-400 text-sm" title={t('goodRoad')}>⚡</span>
+                        )}
+
                         {/* Banker/Player/Tie stats */}
-                        <span className="text-red-400 text-xs font-bold">{t('roadBanker') || '莊'}{table.roadmap.banker}</span>
-                        <span className="text-blue-400 text-xs font-bold ml-1">{t('roadPlayer') || '閒'}{table.roadmap.player}</span>
-                        <span className="text-green-400 text-xs font-bold ml-1">{t('roadTie') || '和'}{table.roadmap.tie}</span>
+                        <div className="flex items-center gap-2 ml-2">
+                          <span className="text-red-400 text-xs font-bold">莊{table.roadmap.banker}</span>
+                          <span className="text-blue-400 text-xs font-bold">閒{table.roadmap.player}</span>
+                          <span className="text-green-400 text-xs font-bold">和{table.roadmap.tie}</span>
+                        </div>
                       </div>
 
                       {/* Body — full-width roadmap */}
-                      <div className="relative" style={{ minHeight: 148 }}>
+                      <div className="relative" style={{ minHeight: 120 }}>
                         {/* Roadmap grids — full width */}
-                        <div className="w-full overflow-hidden" style={{ height: 148 }}>
+                        <div className="w-full overflow-hidden" style={{ height: 120 }}>
                           <LobbyRoadmap roadHistory={table.roadHistory} />
                         </div>
 
                         {/* Dealer name badge — bottom left */}
-                        <div className="absolute bottom-1 left-1 flex items-center gap-1 bg-black/60 rounded px-1.5 py-0.5">
-                          <span className="text-[9px] bg-blue-600 text-white px-1 rounded">中文</span>
+                        <div className="absolute bottom-1 left-1 flex items-center gap-1 bg-black/70 rounded px-2 py-0.5">
                           <span className="text-[10px] text-white font-bold">{table.dealer}</span>
                         </div>
 
                         {/* Status badge — bottom right with glow */}
                         {table.status === 'betting' && table.countdown && table.countdown > 0 && (
                           <div
-                            className="absolute bottom-1 right-1 px-2 py-0.5 text-white text-[10px] font-bold rounded"
+                            className="absolute bottom-1 right-1 px-2.5 py-1 text-white text-xs font-bold rounded"
                             style={{
                               backgroundColor: table.countdown <= 3 ? '#ef4444' : table.countdown <= 5 ? '#eab308' : '#22c55e',
                               boxShadow: `0 0 8px ${table.countdown <= 3 ? 'rgba(239,68,68,0.5)' : table.countdown <= 5 ? 'rgba(234,179,8,0.5)' : 'rgba(34,197,94,0.5)'}`,
