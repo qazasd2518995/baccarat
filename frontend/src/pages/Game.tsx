@@ -316,6 +316,84 @@ function calculateCockroachPig(bigRoadGrid: BigRoadGrid): ('red' | 'blue')[] {
   return calculateDerivedRoad(bigRoadGrid, 3);
 }
 
+// Convert derived road array to 2D grid (same layout logic as Big Road)
+// Same color goes down in the same column, different color starts a new column
+type DerivedRoadGrid = (('red' | 'blue') | null)[][];
+
+function buildDerivedRoadGrid(data: ('red' | 'blue')[], rows: number, displayCols: number): DerivedRoadGrid {
+  const MAX_COLS = 120;
+  const grid: DerivedRoadGrid = Array(rows).fill(null).map(() => Array(MAX_COLS).fill(null));
+
+  if (data.length === 0) return grid;
+
+  let col = 0;
+  let row = 0;
+  let prevColor: 'red' | 'blue' | null = null;
+  let isTailing = false; // Dragon tail mode (going right instead of down)
+
+  for (const color of data) {
+    if (prevColor === null) {
+      // First entry
+      grid[row][col] = color;
+      prevColor = color;
+    } else if (color === prevColor) {
+      // Same color - continue down or tail right
+      if (isTailing) {
+        // Already in tail mode, continue right
+        col++;
+        grid[row][col] = color;
+      } else if (row < rows - 1) {
+        // Can go down
+        row++;
+        grid[row][col] = color;
+      } else {
+        // At bottom, start tailing right
+        isTailing = true;
+        col++;
+        grid[row][col] = color;
+      }
+    } else {
+      // Different color - start new column
+      col++;
+      row = 0;
+      isTailing = false;
+
+      // Check collision: if this position is occupied, move right
+      while (grid[row][col] !== null) {
+        col++;
+      }
+
+      grid[row][col] = color;
+      prevColor = color;
+    }
+  }
+
+  // Apply sliding window: find max column and show last displayCols columns
+  let maxCol = 0;
+  for (let c = 0; c < MAX_COLS; c++) {
+    for (let r = 0; r < rows; r++) {
+      if (grid[r][c] !== null) {
+        maxCol = c;
+        break;
+      }
+    }
+  }
+
+  const startCol = Math.max(0, maxCol - displayCols + 2);
+  const displayGrid: DerivedRoadGrid = Array(rows).fill(null).map(() => Array(displayCols).fill(null));
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < displayCols; c++) {
+      const sourceCol = startCol + c;
+      if (sourceCol < MAX_COLS) {
+        displayGrid[r][c] = grid[r][sourceCol];
+      }
+    }
+  }
+
+  return displayGrid;
+}
+
 // Build Big Road data structure - unlimited columns, scrolling handled at display time
 // Red circles = Banker wins, Blue circles = Player wins
 // Green line/number on circle = Tie count after that result
@@ -841,7 +919,8 @@ export default function Game() {
 
   // Display constants
   const BIG_ROAD_DISPLAY_COLS = 20;
-  const DERIVED_DISPLAY_CELLS = 32; // 8 cols x 4 rows
+  const DERIVED_ROWS = 4;
+  const DERIVED_COLS = 8;
 
   // Calculate Ask Roads (問路) - predict what happens if next result is banker/player
   const bankerAskRoad = buildAskRoad(roadmapData, 'banker');
@@ -894,21 +973,10 @@ export default function Game() {
     return { row: askPredFull.row, col: displayCol, result: askPredFull.result };
   })();
 
-  // Sliding window for derived roads: show last N entries
-  const bigEyeBoyData = bigEyeBoyDataFull.slice(-DERIVED_DISPLAY_CELLS);
-  const smallRoadData = smallRoadDataFull.slice(-DERIVED_DISPLAY_CELLS);
-  const cockroachPigData = cockroachDataFull.slice(-DERIVED_DISPLAY_CELLS);
-
-  // Get active ask road derived predictions
-  const activeAskRoad = (() => {
-    if (askRoadMode === 'none') return null;
-    const askData = askRoadMode === 'banker' ? bankerAskRoad : playerAskRoad;
-    // Compute how many NEW entries the prediction adds beyond current full data
-    const newBigEye = askData.bigEye.slice(bigEyeBoyDataFull.length);
-    const newSmall = askData.smallRoad.slice(smallRoadDataFull.length);
-    const newCockroach = askData.cockroach.slice(cockroachDataFull.length);
-    return { bigEye: newBigEye, smallRoad: newSmall, cockroach: newCockroach };
-  })();
+  // Build derived road grids (4 rows x 8 cols display)
+  const bigEyeBoyGrid = buildDerivedRoadGrid(bigEyeBoyDataFull, DERIVED_ROWS, DERIVED_COLS);
+  const smallRoadGrid = buildDerivedRoadGrid(smallRoadDataFull, DERIVED_ROWS, DERIVED_COLS);
+  const cockroachPigGrid = buildDerivedRoadGrid(cockroachDataFull, DERIVED_ROWS, DERIVED_COLS);
 
   // Bet type labels (Chinese)
   const betTypeLabels: Record<string, string> = {
@@ -2124,55 +2192,45 @@ export default function Game() {
                   {/* Big Eye Boy - hollow circles */}
                   <div className="flex-1 border-r border-gray-400" style={{ backgroundColor: '#FFFFFF' }}>
                     <div className="grid grid-rows-4 grid-flow-col gap-px h-full" style={{ backgroundColor: '#D1D5DB', gridTemplateColumns: 'repeat(8, 1fr)' }}>
-                      {Array(DERIVED_DISPLAY_CELLS).fill(null).map((_, i) => {
-                        // Show predicted entry right after existing data
-                        const isPredicted = activeAskRoad && i === bigEyeBoyData.length && i < DERIVED_DISPLAY_CELLS && activeAskRoad.bigEye.length > 0;
-                        const predValue = isPredicted ? activeAskRoad.bigEye[0] : undefined;
-                        return (
+                      {Array(DERIVED_COLS).fill(null).map((_, col) =>
+                        Array(DERIVED_ROWS).fill(null).map((_, row) => (
                           <DerivedRoadCell
-                            key={`bigEye-${i}`}
-                            value={isPredicted ? predValue : bigEyeBoyData[i]}
+                            key={`bigEye-${col}-${row}`}
+                            value={bigEyeBoyGrid[row]?.[col] ?? undefined}
                             type="big_eye"
-                            blink={!!isPredicted}
                           />
-                        );
-                      })}
+                        ))
+                      )}
                     </div>
                   </div>
 
                   {/* Small Road - filled circles */}
                   <div className="flex-1 border-r border-gray-400" style={{ backgroundColor: '#FFFFFF' }}>
                     <div className="grid grid-rows-4 grid-flow-col gap-px h-full" style={{ backgroundColor: '#D1D5DB', gridTemplateColumns: 'repeat(8, 1fr)' }}>
-                      {Array(DERIVED_DISPLAY_CELLS).fill(null).map((_, i) => {
-                        const isPredicted = activeAskRoad && i === smallRoadData.length && i < DERIVED_DISPLAY_CELLS && activeAskRoad.smallRoad.length > 0;
-                        const predValue = isPredicted ? activeAskRoad.smallRoad[0] : undefined;
-                        return (
+                      {Array(DERIVED_COLS).fill(null).map((_, col) =>
+                        Array(DERIVED_ROWS).fill(null).map((_, row) => (
                           <DerivedRoadCell
-                            key={`small-${i}`}
-                            value={isPredicted ? predValue : smallRoadData[i]}
+                            key={`small-${col}-${row}`}
+                            value={smallRoadGrid[row]?.[col] ?? undefined}
                             type="small"
-                            blink={!!isPredicted}
                           />
-                        );
-                      })}
+                        ))
+                      )}
                     </div>
                   </div>
 
                   {/* Cockroach Pig - slashes */}
                   <div className="flex-1" style={{ backgroundColor: '#FFFFFF' }}>
                     <div className="grid grid-rows-4 grid-flow-col gap-px h-full" style={{ backgroundColor: '#D1D5DB', gridTemplateColumns: 'repeat(8, 1fr)' }}>
-                      {Array(DERIVED_DISPLAY_CELLS).fill(null).map((_, i) => {
-                        const isPredicted = activeAskRoad && i === cockroachPigData.length && i < DERIVED_DISPLAY_CELLS && activeAskRoad.cockroach.length > 0;
-                        const predValue = isPredicted ? activeAskRoad.cockroach[0] : undefined;
-                        return (
+                      {Array(DERIVED_COLS).fill(null).map((_, col) =>
+                        Array(DERIVED_ROWS).fill(null).map((_, row) => (
                           <DerivedRoadCell
-                            key={`cockroach-${i}`}
-                            value={isPredicted ? predValue : cockroachPigData[i]}
+                            key={`cockroach-${col}-${row}`}
+                            value={cockroachPigGrid[row]?.[col] ?? undefined}
                             type="cockroach"
-                            blink={!!isPredicted}
                           />
-                        );
-                      })}
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
