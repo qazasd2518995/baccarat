@@ -1826,14 +1826,16 @@ export default function Game() {
                   </div>
 
                   {/* Bead Plate Grid (珠盤路) — shows history as colored circles with 莊/閒/和 text */}
-                  {/* Uses sliding window: show last ROWS*COLS rounds, or ROWS*COLS-1 if ask road is active */}
+                  {/* Uses sliding window: always show TOTAL cells, prediction replaces last slot when ask road is active */}
                   <div className="flex-1 grid grid-cols-5 grid-rows-6 gap-px" style={{ backgroundColor: '#D1D5DB' }}>
                     {(() => {
                       const ROWS = 6;
                       const COLS = 5;
                       const TOTAL = ROWS * COLS; // 30 cells
-                      // Only keep 1 slot empty when ask road mode is active
-                      const maxShow = askRoadMode !== 'none' ? TOTAL - 1 : TOTAL;
+                      // Always show TOTAL cells with sliding window
+                      // When ask road is active, show TOTAL-1 data + 1 prediction
+                      const hasAskRoad = askRoadMode !== 'none';
+                      const maxShow = hasAskRoad ? TOTAL - 1 : TOTAL;
                       const latest = roadmapData.slice(-maxShow);
                       const cells: ({ data: typeof roadmapData[0] | null; predicted?: boolean })[] = Array(TOTAL).fill(null).map(() => ({ data: null }));
                       // Fill column by column
@@ -1842,19 +1844,18 @@ export default function Game() {
                         const row = i % ROWS;
                         cells[row * COLS + col] = { data: latest[i] };
                       }
-                      // Add ask road prediction at next position
-                      if (askRoadMode !== 'none') {
+                      // Add ask road prediction at the next available position
+                      if (hasAskRoad) {
+                        // Calculate position after the last data entry
                         const predIdx = latest.length;
-                        if (predIdx < TOTAL) {
-                          const predCol = Math.floor(predIdx / ROWS);
-                          const predRow = predIdx % ROWS;
-                          const cellIdx = predRow * COLS + predCol;
-                          if (cellIdx < TOTAL) {
-                            cells[cellIdx] = {
-                              data: { result: askRoadMode as GameResult, playerPair: false, bankerPair: false, roundNumber: '', playerPoints: 0, bankerPoints: 0, totalCards: 0 },
-                              predicted: true,
-                            };
-                          }
+                        const predCol = Math.floor(predIdx / ROWS);
+                        const predRow = predIdx % ROWS;
+                        const cellIdx = predRow * COLS + predCol;
+                        if (cellIdx < TOTAL) {
+                          cells[cellIdx] = {
+                            data: { result: askRoadMode as GameResult, playerPair: false, bankerPair: false, roundNumber: '', playerPoints: 0, bankerPoints: 0, totalCards: 0 },
+                            predicted: true,
+                          };
                         }
                       }
                       return cells.map((cell, i) => {
