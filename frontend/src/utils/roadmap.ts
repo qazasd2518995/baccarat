@@ -117,6 +117,9 @@ export function buildBigRoadGrid(columns: BigRoadCell[][], rows: number, maxCols
 // - When continuing column (row > 0): Check if comparison column has entry at same depth
 //   - "齊整" (both have or both don't have) = RED
 //   - "不齊" (one has, one doesn't) = BLUE
+//
+// Layout: Same as Big Road - same color goes down, different color starts new column
+// Dragon tail when exceeding maxRows or hitting occupied cell
 export function buildDerivedRoad(
   columns: BigRoadCell[][],
   offset: number,
@@ -132,9 +135,8 @@ export function buildDerivedRoad(
   const startCol = offset + 1;
   if (columns.length < startCol) return grid;
 
-  let outputCol = 0;
-  let outputRow = 0;
-  let lastColor: 'red' | 'blue' | null = null;
+  // First collect all the color results
+  const colorResults: ('red' | 'blue')[] = [];
 
   // Iterate through each Big Road column starting from startCol
   for (let colIdx = startCol - 1; colIdx < columns.length; colIdx++) {
@@ -175,26 +177,62 @@ export function buildDerivedRoad(
         color = compareColLen > entryIdx ? 'red' : (compareColLen === entryIdx ? 'blue' : 'red');
       }
 
-      // Place the color in output grid
-      if (lastColor !== null && color !== lastColor) {
-        // Color changed - new column
-        outputCol++;
-        outputRow = 0;
-      } else if (lastColor !== null) {
-        // Same color - continue down
-        outputRow++;
-        if (outputRow >= maxRows) {
-          // Dragon tail for derived road
-          outputRow = maxRows - 1;
-          outputCol++;
-        }
+      colorResults.push(color);
+    }
+  }
+
+  // Now place colors in grid using Big Road layout logic
+  // Same color goes down, different color starts new column
+  // Dragon tail when exceeding rows or hitting occupied cell
+  let gridCol = 0;
+
+  // Group consecutive same colors into columns
+  const derivedColumns: ('red' | 'blue')[][] = [];
+  let currentDerivedCol: ('red' | 'blue')[] = [];
+  let lastColor: 'red' | 'blue' | null = null;
+
+  for (const color of colorResults) {
+    if (lastColor !== null && color !== lastColor) {
+      // Color changed - start new column
+      if (currentDerivedCol.length > 0) {
+        derivedColumns.push(currentDerivedCol);
+      }
+      currentDerivedCol = [color];
+    } else {
+      // Same color or first entry - continue in current column
+      currentDerivedCol.push(color);
+    }
+    lastColor = color;
+  }
+  if (currentDerivedCol.length > 0) {
+    derivedColumns.push(currentDerivedCol);
+  }
+
+  // Place columns in grid with dragon tail handling
+  for (const column of derivedColumns) {
+    let row = 0;
+    let col = gridCol;
+
+    for (const color of column) {
+      // Check if we need dragon tail (row overflow)
+      if (row >= maxRows) {
+        col++;
+        row = maxRows - 1;
       }
 
-      if (outputCol < maxCols && outputRow < maxRows) {
-        grid[outputRow][outputCol] = color;
-        lastColor = color;
+      // Check if position is occupied (from previous dragon tail)
+      while (col < maxCols && grid[row][col] !== null) {
+        col++;
       }
+
+      if (col < maxCols) {
+        grid[row][col] = color;
+      }
+      row++;
     }
+
+    // Move to next column for next sequence
+    gridCol = col + 1;
   }
 
   return grid;
