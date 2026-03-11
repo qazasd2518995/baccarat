@@ -137,7 +137,7 @@ function BigRoad({ grid, rows, cols }: { grid: (BigRoadCell | null)[][]; rows: n
   );
 }
 
-// Derived Road Grid - with grid lines
+// Derived Road Grid - with 2x2 grid lines (each grid cell contains 2x2 mini circles)
 function DerivedRoadGrid({
   grid,
   type,
@@ -149,50 +149,76 @@ function DerivedRoadGrid({
   rows: number;
   cols: number;
 }) {
-  const cells: React.ReactNode[] = [];
+  // Grid cells are 2x2, so we have (rows/2) x (cols/2) grid cells
+  const gridRows = Math.ceil(rows / 2);
+  const gridCols = Math.ceil(cols / 2);
 
-  for (let c = 0; c < cols; c++) {
-    for (let r = 0; r < rows; r++) {
-      const value = grid[r]?.[c] ?? null;
-      const key = `dr-${r}-${c}`;
+  const gridCells: React.ReactNode[] = [];
 
-      if (!value) {
-        cells.push(<div key={key} style={{ background: CELL_BG }} />);
-        continue;
+  // Render grid cells (each containing 2x2 mini circles)
+  for (let gc = 0; gc < gridCols; gc++) {
+    for (let gr = 0; gr < gridRows; gr++) {
+      const key = `grid-${gr}-${gc}`;
+
+      // Each grid cell contains 4 mini circles (2x2)
+      const miniCells: React.ReactNode[] = [];
+      for (let mr = 0; mr < 2; mr++) {
+        for (let mc = 0; mc < 2; mc++) {
+          const dataRow = gr * 2 + mr;
+          const dataCol = gc * 2 + mc;
+          const value = grid[dataRow]?.[dataCol] ?? null;
+          const miniKey = `mini-${mr}-${mc}`;
+
+          if (!value) {
+            miniCells.push(<div key={miniKey} />);
+            continue;
+          }
+
+          const color = value === 'red' ? '#DC2626' : '#2563EB';
+
+          if (type === 'big_eye') {
+            miniCells.push(
+              <div key={miniKey} className="flex items-center justify-center">
+                <div
+                  className="rounded-full"
+                  style={{ width: 5, height: 5, border: `1px solid ${color}` }}
+                />
+              </div>
+            );
+          } else if (type === 'small') {
+            miniCells.push(
+              <div key={miniKey} className="flex items-center justify-center">
+                <div
+                  className="rounded-full"
+                  style={{ width: 5, height: 5, backgroundColor: color }}
+                />
+              </div>
+            );
+          } else {
+            miniCells.push(
+              <div key={miniKey} className="flex items-center justify-center">
+                <svg viewBox="0 0 10 10" style={{ width: 6, height: 6 }}>
+                  <line x1="1" y1="9" x2="9" y2="1" stroke={color} strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+            );
+          }
+        }
       }
 
-      const color = value === 'red' ? '#DC2626' : '#2563EB';
-
-      if (type === 'big_eye') {
-        // Hollow circle
-        cells.push(
-          <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
-            <div
-              className="rounded-full"
-              style={{ width: 5, height: 5, border: `1px solid ${color}` }}
-            />
-          </div>
-        );
-      } else if (type === 'small') {
-        // Filled circle
-        cells.push(
-          <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
-            <div
-              className="rounded-full"
-              style={{ width: 5, height: 5, backgroundColor: color }}
-            />
-          </div>
-        );
-      } else {
-        // Cockroach: diagonal slash
-        cells.push(
-          <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
-            <svg viewBox="0 0 10 10" style={{ width: 6, height: 6 }}>
-              <line x1="1" y1="9" x2="9" y2="1" stroke={color} strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </div>
-        );
-      }
+      gridCells.push(
+        <div
+          key={key}
+          className="grid"
+          style={{
+            gridTemplateRows: 'repeat(2, 1fr)',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            background: CELL_BG,
+          }}
+        >
+          {miniCells}
+        </div>
+      );
     }
   }
 
@@ -200,14 +226,14 @@ function DerivedRoadGrid({
     <div
       className="grid h-full w-full"
       style={{
-        gridTemplateRows: `repeat(${rows}, 1fr)`,
-        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gridTemplateRows: `repeat(${gridRows}, 1fr)`,
+        gridTemplateColumns: `repeat(${gridCols}, 1fr)`,
         gridAutoFlow: 'column',
         gap: '1px',
         backgroundColor: LINE,
       }}
     >
-      {cells}
+      {gridCells}
     </div>
   );
 }
