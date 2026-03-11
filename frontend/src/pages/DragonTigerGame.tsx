@@ -331,9 +331,10 @@ function DTDerivedRoadCell({ value, type, blink }: { value?: 'red' | 'blue'; typ
 }
 
 // Get sliding window for Big Road display
-function getDTBigRoadWindow(grid: DTBigRoadGrid, displayCols: number, extraRoom: number = 1): { window: DTBigRoadGrid; startCol: number } {
+function getDTBigRoadWindow(grid: DTBigRoadGrid, displayCols: number): { window: DTBigRoadGrid; startCol: number } {
   const maxCol = getDTMaxCol(grid);
-  const startCol = Math.max(0, maxCol - displayCols + 1 + extraRoom);
+  // Show the rightmost displayCols columns, sliding as new data comes in
+  const startCol = Math.max(0, maxCol - displayCols + 2);
   const window: DTBigRoadGrid = Array(6).fill(null).map(() => Array(displayCols).fill(null));
 
   for (let row = 0; row < 6; row++) {
@@ -729,7 +730,7 @@ export default function DragonTigerGame() {
       const simData = [...roadmapData, { result: askRoadMode }];
       const simGrid = buildDTBigRoad(simData);
       const win: DTBigRoadGrid = Array(6).fill(null).map(() => Array(BIG_ROAD_DISPLAY_COLS).fill(null));
-      const { startCol } = getDTBigRoadWindow(simGrid, BIG_ROAD_DISPLAY_COLS, 0);
+      const { startCol } = getDTBigRoadWindow(simGrid, BIG_ROAD_DISPLAY_COLS);
       for (let row = 0; row < 6; row++) {
         for (let col = 0; col < BIG_ROAD_DISPLAY_COLS; col++) {
           const srcCol = startCol + col;

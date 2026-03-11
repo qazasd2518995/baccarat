@@ -360,10 +360,12 @@ function buildBigRoad(data: Array<{ result: GameResult; playerPair?: boolean; ba
 
 // Get a sliding window of the rightmost DISPLAY_COLS columns from a big road grid
 // Returns { window, startCol } so caller knows the offset
-function getBigRoadWindow(grid: BigRoadGrid, displayCols: number, extraRoom: number = 1): { window: BigRoadGrid; startCol: number } {
+function getBigRoadWindow(grid: BigRoadGrid, displayCols: number): { window: BigRoadGrid; startCol: number } {
   const maxCol = getMaxCol(grid);
-  // Leave extraRoom columns on the right for prediction
-  const startCol = Math.max(0, maxCol - displayCols + 1 + extraRoom);
+  // Show the rightmost displayCols columns, sliding as new data comes in
+  // When maxCol < displayCols - 1, start from 0 (not full yet)
+  // When maxCol >= displayCols - 1, slide so the newest data is at the right edge
+  const startCol = Math.max(0, maxCol - displayCols + 2);
   const window: BigRoadGrid = Array(6).fill(null).map(() => Array(displayCols).fill(null));
   for (let row = 0; row < 6; row++) {
     for (let c = 0; c < displayCols; c++) {
