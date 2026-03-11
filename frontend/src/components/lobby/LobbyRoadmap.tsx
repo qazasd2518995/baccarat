@@ -11,9 +11,9 @@ interface LobbyRoadmapProps {
   roadHistory: RoadHistoryEntry[];
 }
 
-/* Dark theme colors */
+/* Light theme colors for lobby cards */
 const CELL_BG = '#FFFFFF';
-const LINE = '#E5E7EB';
+const LINE = '#D1D5DB'; // gray-300 for visible grid lines
 
 // Big Road Component - fills circles with color
 function BigRoad({ grid, usedCols, width }: { grid: (BigRoadCell | null)[][]; usedCols: number; width: number }) {
@@ -73,95 +73,86 @@ function BigRoad({ grid, usedCols, width }: { grid: (BigRoadCell | null)[][]; us
   );
 }
 
-// Compact Derived Road Grid - 2x2 mini-cells per grid cell (same as game page)
-function CompactDerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_eye' | 'small' | 'cockroach' }) {
-  // Display: 6 rows x 16 cols of small circles
-  const SMALL_ROWS = 6;
-  const SMALL_COLS = 16;
-  const TOTAL_CELLS = SMALL_ROWS * SMALL_COLS;
-
-  // Fill array column by column (top to bottom, then next column)
-  const grid: (('red' | 'blue') | null)[] = Array(TOTAL_CELLS).fill(null);
-  for (let i = 0; i < Math.min(data.length, TOTAL_CELLS); i++) {
-    const col = Math.floor(i / SMALL_ROWS);
-    const row = i % SMALL_ROWS;
-    const idx = row * SMALL_COLS + col;
-    if (idx < TOTAL_CELLS) {
-      grid[idx] = data[i];
-    }
-  }
-
+// Derived Road Grid - uses Big Road style layout (same color down, different color new column)
+// With grid lines visible
+function DerivedRoadGrid({
+  grid,
+  type,
+  rows,
+  cols
+}: {
+  grid: ('red' | 'blue' | null)[][];
+  type: 'big_eye' | 'small' | 'cockroach';
+  rows: number;
+  cols: number;
+}) {
   const colors = {
     red: { border: '#DC2626', fill: '#DC2626' },
     blue: { border: '#2563EB', fill: '#2563EB' },
   };
 
-  const renderMiniCell = (value: ('red' | 'blue') | null, key: string) => {
-    if (!value) {
-      return <div key={key} className="w-full h-full" />;
-    }
-    const color = colors[value];
+  const cells: React.ReactNode[] = [];
 
-    if (type === 'big_eye') {
-      return (
-        <div key={key} className="w-full h-full flex items-center justify-center">
-          <div
-            className="w-[5px] h-[5px] rounded-full"
-            style={{ border: `1px solid ${color.border}` }}
-          />
-        </div>
-      );
-    }
+  // Render column by column (grid auto flow is column)
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < rows; r++) {
+      const value = grid[r]?.[c] ?? null;
+      const key = `dr-${r}-${c}`;
 
-    if (type === 'small') {
-      return (
-        <div key={key} className="w-full h-full flex items-center justify-center">
-          <div
-            className="w-[5px] h-[5px] rounded-full"
-            style={{ backgroundColor: color.fill }}
-          />
-        </div>
-      );
-    }
+      if (!value) {
+        cells.push(<div key={key} style={{ background: CELL_BG }} />);
+        continue;
+      }
 
-    // Cockroach: diagonal slash
-    return (
-      <div key={key} className="w-full h-full flex items-center justify-center">
-        <svg viewBox="0 0 10 10" className="w-[6px] h-[6px]">
-          <line x1="1" y1="9" x2="9" y2="1" stroke={color.fill} strokeWidth="2" strokeLinecap="round" />
-        </svg>
-      </div>
-    );
-  };
+      const color = colors[value];
+
+      if (type === 'big_eye') {
+        // Hollow circle
+        cells.push(
+          <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
+            <div
+              className="w-[5px] h-[5px] rounded-full"
+              style={{ border: `1px solid ${color.border}` }}
+            />
+          </div>
+        );
+      } else if (type === 'small') {
+        // Filled circle
+        cells.push(
+          <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
+            <div
+              className="w-[5px] h-[5px] rounded-full"
+              style={{ backgroundColor: color.fill }}
+            />
+          </div>
+        );
+      } else {
+        // Cockroach: diagonal slash
+        cells.push(
+          <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
+            <svg viewBox="0 0 10 10" className="w-[6px] h-[6px]">
+              <line x1="1" y1="9" x2="9" y2="1" stroke={color.fill} strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </div>
+        );
+      }
+    }
+  }
 
   return (
     <div
       className="grid h-full w-full"
       style={{
-        gridTemplateColumns: `repeat(${SMALL_COLS}, 1fr)`,
-        gridTemplateRows: `repeat(${SMALL_ROWS}, 1fr)`,
-        backgroundColor: CELL_BG,
+        gridTemplateRows: `repeat(${rows}, 1fr)`,
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gridAutoFlow: 'column',
+        gap: '1px',
+        backgroundColor: LINE,
       }}
     >
-      {grid.map((value, idx) => renderMiniCell(value, `cell-${idx}`))}
+      {cells}
     </div>
   );
-}
-
-// Convert grid-based derived road to flat array for compact display
-function flattenDerivedRoad(grid: ('red' | 'blue' | null)[][], rows: number): ('red' | 'blue')[] {
-  const result: ('red' | 'blue')[] = [];
-  const cols = grid[0]?.length ?? 0;
-
-  // Read column by column
-  for (let c = 0; c < cols; c++) {
-    for (let r = 0; r < rows; r++) {
-      const val = grid[r]?.[c];
-      if (val) result.push(val);
-    }
-  }
-
-  return result;
 }
 
 // ── Main Component ──
@@ -179,16 +170,16 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
     return () => ro.disconnect();
   }, []);
 
+  const DERIVED_ROWS = 6;
+  const DERIVED_COLS = 16;
+
   const bigRoadColumns = useMemo(() => buildBigRoadColumns(roadHistory), [roadHistory]);
   const bigRoadGrid = useMemo(() => buildBigRoadGrid(bigRoadColumns, 6, 60), [bigRoadColumns]);
-  const bigEyeGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 1, 6, 60), [bigRoadColumns]);
-  const smallGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 2, 6, 60), [bigRoadColumns]);
-  const cockroachGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 3, 6, 60), [bigRoadColumns]);
 
-  // Convert grids to flat arrays for compact display
-  const bigEyeData = useMemo(() => flattenDerivedRoad(bigEyeGrid, 6), [bigEyeGrid]);
-  const smallData = useMemo(() => flattenDerivedRoad(smallGrid, 6), [smallGrid]);
-  const cockroachData = useMemo(() => flattenDerivedRoad(cockroachGrid, 6), [cockroachGrid]);
+  // Build derived roads using the proper Big Road style layout from roadmap utils
+  const bigEyeGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 1, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns]);
+  const smallGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 2, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns]);
+  const cockroachGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 3, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns]);
 
   let bigRoadUsedCols = 0;
   for (let c = 0; c < 60; c++) {
@@ -206,21 +197,21 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
             <BigRoad grid={bigRoadGrid} usedCols={bigRoadUsedCols} width={containerWidth} />
           </div>
 
-          {/* Derived Roads - bottom section (2x2 compact layout) */}
+          {/* Derived Roads - bottom section with grid lines */}
           <div className="flex-[3] flex" style={{ gap: 1 }}>
             {/* Big Eye Boy - hollow circles */}
             <div className="flex-1" style={{ borderRight: `1px solid ${LINE}` }}>
-              <CompactDerivedRoadGrid data={bigEyeData} type="big_eye" />
+              <DerivedRoadGrid grid={bigEyeGrid} type="big_eye" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
             </div>
 
             {/* Small Road - filled circles */}
             <div className="flex-1" style={{ borderRight: `1px solid ${LINE}` }}>
-              <CompactDerivedRoadGrid data={smallData} type="small" />
+              <DerivedRoadGrid grid={smallGrid} type="small" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
             </div>
 
             {/* Cockroach Pig - slashes */}
             <div className="flex-1">
-              <CompactDerivedRoadGrid data={cockroachData} type="cockroach" />
+              <DerivedRoadGrid grid={cockroachGrid} type="cockroach" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
             </div>
           </div>
         </>
