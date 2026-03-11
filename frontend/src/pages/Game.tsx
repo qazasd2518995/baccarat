@@ -1826,8 +1826,7 @@ export default function Game() {
                   </div>
 
                   {/* Bead Plate Grid (珠盤路) — shows history as colored circles with 莊/閒/和 text */}
-                  {/* Uses sliding window: always show TOTAL cells */}
-                  {/* When ask road is active, slides to show prediction in new column if needed */}
+                  {/* Sliding window by column: when data exceeds TOTAL, hide leftmost column */}
                   <div className="flex-1 grid grid-cols-5 grid-rows-6 gap-px" style={{ backgroundColor: '#D1D5DB' }}>
                     {(() => {
                       const ROWS = 6;
@@ -1835,25 +1834,38 @@ export default function Game() {
                       const TOTAL = ROWS * COLS; // 30 cells
                       const hasAskRoad = askRoadMode !== 'none';
 
-                      // When ask road is active, show TOTAL-1 data entries + 1 prediction slot
-                      // This automatically slides the window to make room for prediction
-                      const maxShow = TOTAL - (hasAskRoad ? 1 : 0);
-                      const latest = roadmapData.slice(-maxShow);
+                      // Calculate total items to display (data + optional prediction)
+                      const dataCount = roadmapData.length;
+                      const totalItems = dataCount + (hasAskRoad ? 1 : 0);
+
+                      // Calculate how many columns we need
+                      const neededCols = Math.ceil(totalItems / ROWS);
+
+                      // Calculate offset: how many columns to skip (slide left)
+                      const skipCols = Math.max(0, neededCols - COLS);
+                      const skipItems = skipCols * ROWS;
+
+                      // Get the visible data
+                      const visibleData = roadmapData.slice(skipItems);
 
                       const cells: ({ data: typeof roadmapData[0] | null; predicted?: boolean })[] = Array(TOTAL).fill(null).map(() => ({ data: null }));
+
                       // Fill column by column
-                      for (let i = 0; i < latest.length; i++) {
+                      for (let i = 0; i < visibleData.length; i++) {
                         const col = Math.floor(i / ROWS);
                         const row = i % ROWS;
-                        cells[row * COLS + col] = { data: latest[i] };
+                        if (col < COLS) {
+                          cells[row * COLS + col] = { data: visibleData[i] };
+                        }
                       }
+
                       // Add ask road prediction at the next available position
                       if (hasAskRoad) {
-                        const predIdx = latest.length;
+                        const predIdx = visibleData.length;
                         const predCol = Math.floor(predIdx / ROWS);
                         const predRow = predIdx % ROWS;
-                        const cellIdx = predRow * COLS + predCol;
-                        if (cellIdx < TOTAL) {
+                        if (predCol < COLS) {
+                          const cellIdx = predRow * COLS + predCol;
                           cells[cellIdx] = {
                             data: { result: askRoadMode as GameResult, playerPair: false, bankerPair: false, roundNumber: '', playerPoints: 0, bankerPoints: 0, totalCards: 0 },
                             predicted: true,
