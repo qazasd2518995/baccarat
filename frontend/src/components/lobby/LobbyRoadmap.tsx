@@ -3,55 +3,60 @@ import {
   buildBigRoadColumns,
   buildBigRoadGrid,
   buildDerivedRoad,
+  buildBeadRoadGrid,
   type RoadHistoryEntry,
   type BigRoadCell,
 } from '../../utils/roadmap';
 
 interface LobbyRoadmapProps {
   roadHistory: RoadHistoryEntry[];
+  showBeadRoad?: boolean;
 }
 
 /* Light theme colors for lobby cards */
 const CELL_BG = '#FFFFFF';
 const LINE = '#D1D5DB'; // gray-300 for visible grid lines
 
-// Big Road Component - fills circles with color
-function BigRoad({ grid, usedCols, width }: { grid: (BigRoadCell | null)[][]; usedCols: number; width: number }) {
-  const ROWS = 6;
-  const CELL = 14;
-  const maxCols = Math.max(Math.floor(width / (CELL + 1)), 1);
-  const displayCols = Math.max(usedCols, maxCols);
-  const colOffset = Math.max(0, displayCols - maxCols);
-  const visibleCols = Math.min(displayCols, maxCols);
-
+// Bead Road (珠盤路) - Shows 庄/闲/和 text in colored cells
+function BeadRoad({ grid, rows, cols }: { grid: (RoadHistoryEntry | null)[][]; rows: number; cols: number }) {
   const cells: React.ReactNode[] = [];
-  for (let c = 0; c < visibleCols; c++) {
-    for (let r = 0; r < ROWS; r++) {
-      const cell = grid[r]?.[c + colOffset];
-      const key = `br-${r}-${c}`;
-      if (!cell) {
+
+  // Render column by column (grid auto flow is column)
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < rows; r++) {
+      const entry = grid[r]?.[c] ?? null;
+      const key = `bead-${r}-${c}`;
+
+      if (!entry) {
         cells.push(<div key={key} style={{ background: CELL_BG }} />);
         continue;
       }
-      const color = cell.result === 'banker' ? '#DC2626' : '#2563EB';
+
+      let bgColor = CELL_BG;
+      let textColor = '#000';
+      let text = '';
+
+      if (entry.result === 'banker') {
+        bgColor = '#DC2626'; // red
+        textColor = '#FFFFFF';
+        text = '庄';
+      } else if (entry.result === 'player') {
+        bgColor = '#2563EB'; // blue
+        textColor = '#FFFFFF';
+        text = '闲';
+      } else if (entry.result === 'tie') {
+        bgColor = '#16A34A'; // green
+        textColor = '#FFFFFF';
+        text = '和';
+      }
+
       cells.push(
-        <div key={key} className="relative flex items-center justify-center" style={{ background: CELL_BG }}>
-          <div
-            className="rounded-full flex items-center justify-center"
-            style={{ width: 11, height: 11, backgroundColor: color }}
-          >
-            {cell.tieCount > 0 && (
-              <span style={{ fontSize: '7px', color: '#FFFFFF', fontWeight: 'bold', lineHeight: 1 }}>
-                {cell.tieCount}
-              </span>
-            )}
-          </div>
-          {cell.bankerPair && (
-            <div className="absolute" style={{ top: 1, left: 1, width: 3, height: 3, borderRadius: '50%', backgroundColor: '#DC2626' }} />
-          )}
-          {cell.playerPair && (
-            <div className="absolute" style={{ bottom: 1, right: 1, width: 3, height: 3, borderRadius: '50%', backgroundColor: '#2563EB' }} />
-          )}
+        <div
+          key={key}
+          className="flex items-center justify-center"
+          style={{ background: bgColor }}
+        >
+          <span style={{ color: textColor, fontSize: '9px', fontWeight: 'bold' }}>{text}</span>
         </div>
       );
     }
@@ -59,10 +64,10 @@ function BigRoad({ grid, usedCols, width }: { grid: (BigRoadCell | null)[][]; us
 
   return (
     <div
-      className="grid h-full"
+      className="grid h-full w-full"
       style={{
-        gridTemplateRows: `repeat(${ROWS}, 1fr)`,
-        gridTemplateColumns: `repeat(${visibleCols}, 1fr)`,
+        gridTemplateRows: `repeat(${rows}, 1fr)`,
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
         gridAutoFlow: 'column',
         gap: '1px',
         backgroundColor: LINE,
@@ -73,8 +78,66 @@ function BigRoad({ grid, usedCols, width }: { grid: (BigRoadCell | null)[][]; us
   );
 }
 
-// Derived Road Grid - uses Big Road style layout (same color down, different color new column)
-// With grid lines visible
+// Big Road Component - hollow circles
+function BigRoad({ grid, rows, cols }: { grid: (BigRoadCell | null)[][]; rows: number; cols: number }) {
+  const cells: React.ReactNode[] = [];
+
+  for (let c = 0; c < cols; c++) {
+    for (let r = 0; r < rows; r++) {
+      const cell = grid[r]?.[c] ?? null;
+      const key = `br-${r}-${c}`;
+
+      if (!cell) {
+        cells.push(<div key={key} style={{ background: CELL_BG }} />);
+        continue;
+      }
+
+      const borderColor = cell.result === 'banker' ? '#DC2626' : '#2563EB';
+
+      cells.push(
+        <div key={key} className="relative flex items-center justify-center" style={{ background: CELL_BG }}>
+          <div
+            className="rounded-full"
+            style={{
+              width: 8,
+              height: 8,
+              border: `1.5px solid ${borderColor}`,
+            }}
+          />
+          {cell.tieCount > 0 && (
+            <div
+              className="absolute"
+              style={{
+                width: '100%',
+                height: '1px',
+                backgroundColor: '#16A34A',
+                top: '50%',
+                transform: 'rotate(-45deg)',
+              }}
+            />
+          )}
+        </div>
+      );
+    }
+  }
+
+  return (
+    <div
+      className="grid h-full w-full"
+      style={{
+        gridTemplateRows: `repeat(${rows}, 1fr)`,
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gridAutoFlow: 'column',
+        gap: '1px',
+        backgroundColor: LINE,
+      }}
+    >
+      {cells}
+    </div>
+  );
+}
+
+// Derived Road Grid - with grid lines
 function DerivedRoadGrid({
   grid,
   type,
@@ -86,14 +149,8 @@ function DerivedRoadGrid({
   rows: number;
   cols: number;
 }) {
-  const colors = {
-    red: { border: '#DC2626', fill: '#DC2626' },
-    blue: { border: '#2563EB', fill: '#2563EB' },
-  };
-
   const cells: React.ReactNode[] = [];
 
-  // Render column by column (grid auto flow is column)
   for (let c = 0; c < cols; c++) {
     for (let r = 0; r < rows; r++) {
       const value = grid[r]?.[c] ?? null;
@@ -104,15 +161,15 @@ function DerivedRoadGrid({
         continue;
       }
 
-      const color = colors[value];
+      const color = value === 'red' ? '#DC2626' : '#2563EB';
 
       if (type === 'big_eye') {
         // Hollow circle
         cells.push(
           <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
             <div
-              className="w-[5px] h-[5px] rounded-full"
-              style={{ border: `1px solid ${color.border}` }}
+              className="rounded-full"
+              style={{ width: 5, height: 5, border: `1px solid ${color}` }}
             />
           </div>
         );
@@ -121,8 +178,8 @@ function DerivedRoadGrid({
         cells.push(
           <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
             <div
-              className="w-[5px] h-[5px] rounded-full"
-              style={{ backgroundColor: color.fill }}
+              className="rounded-full"
+              style={{ width: 5, height: 5, backgroundColor: color }}
             />
           </div>
         );
@@ -130,8 +187,8 @@ function DerivedRoadGrid({
         // Cockroach: diagonal slash
         cells.push(
           <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
-            <svg viewBox="0 0 10 10" className="w-[6px] h-[6px]">
-              <line x1="1" y1="9" x2="9" y2="1" stroke={color.fill} strokeWidth="2" strokeLinecap="round" />
+            <svg viewBox="0 0 10 10" style={{ width: 6, height: 6 }}>
+              <line x1="1" y1="9" x2="9" y2="1" stroke={color} strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
         );
@@ -156,7 +213,7 @@ function DerivedRoadGrid({
 }
 
 // ── Main Component ──
-function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
+function LobbyRoadmap({ roadHistory, showBeadRoad = true }: LobbyRoadmapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -170,48 +227,55 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
     return () => ro.disconnect();
   }, []);
 
+  // Grid dimensions
+  const BEAD_ROWS = 6;
+  const BEAD_COLS = 10;
+  const BIG_ROAD_ROWS = 6;
+  const BIG_ROAD_COLS = 28;
   const DERIVED_ROWS = 6;
-  const DERIVED_COLS = 16;
+  const DERIVED_COLS = 14;
 
   const bigRoadColumns = useMemo(() => buildBigRoadColumns(roadHistory), [roadHistory]);
-  const bigRoadGrid = useMemo(() => buildBigRoadGrid(bigRoadColumns, 6, 60), [bigRoadColumns]);
+  const bigRoadGrid = useMemo(() => buildBigRoadGrid(bigRoadColumns, BIG_ROAD_ROWS, BIG_ROAD_COLS), [bigRoadColumns]);
+  const beadRoadGrid = useMemo(() => buildBeadRoadGrid(roadHistory, BEAD_ROWS), [roadHistory]);
 
-  // Build derived roads using the proper Big Road style layout from roadmap utils
+  // Build derived roads
   const bigEyeGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 1, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns]);
   const smallGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 2, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns]);
   const cockroachGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 3, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns]);
 
-  let bigRoadUsedCols = 0;
-  for (let c = 0; c < 60; c++) {
-    for (let r = 0; r < 6; r++) {
-      if (bigRoadGrid[r][c]) bigRoadUsedCols = c + 1;
-    }
-  }
-
   return (
-    <div ref={containerRef} className="flex flex-col h-full overflow-hidden" style={{ backgroundColor: LINE }}>
+    <div ref={containerRef} className="flex h-full overflow-hidden" style={{ backgroundColor: LINE }}>
       {containerWidth > 0 && (
         <>
-          {/* Big Road - top section */}
-          <div className="flex-[5]" style={{ borderBottom: `1px solid ${LINE}` }}>
-            <BigRoad grid={bigRoadGrid} usedCols={bigRoadUsedCols} width={containerWidth} />
-          </div>
+          {/* Left: Bead Road (珠盤路) */}
+          {showBeadRoad && (
+            <div className="h-full" style={{ width: '22%', borderRight: `1px solid ${LINE}` }}>
+              <BeadRoad grid={beadRoadGrid} rows={BEAD_ROWS} cols={BEAD_COLS} />
+            </div>
+          )}
 
-          {/* Derived Roads - bottom section with grid lines */}
-          <div className="flex-[3] flex" style={{ gap: 1 }}>
-            {/* Big Eye Boy - hollow circles */}
-            <div className="flex-1" style={{ borderRight: `1px solid ${LINE}` }}>
-              <DerivedRoadGrid grid={bigEyeGrid} type="big_eye" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
+          {/* Right: Big Road + Derived Roads */}
+          <div className="flex-1 flex flex-col h-full">
+            {/* Top: Big Road (大路) - 60% height */}
+            <div style={{ height: '60%', borderBottom: `1px solid ${LINE}` }}>
+              <BigRoad grid={bigRoadGrid} rows={BIG_ROAD_ROWS} cols={BIG_ROAD_COLS} />
             </div>
 
-            {/* Small Road - filled circles */}
-            <div className="flex-1" style={{ borderRight: `1px solid ${LINE}` }}>
-              <DerivedRoadGrid grid={smallGrid} type="small" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
-            </div>
-
-            {/* Cockroach Pig - slashes */}
-            <div className="flex-1">
-              <DerivedRoadGrid grid={cockroachGrid} type="cockroach" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
+            {/* Bottom: Three Derived Roads - 40% height */}
+            <div className="flex-1 flex">
+              {/* Big Eye Boy */}
+              <div className="flex-1" style={{ borderRight: `1px solid ${LINE}` }}>
+                <DerivedRoadGrid grid={bigEyeGrid} type="big_eye" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
+              </div>
+              {/* Small Road */}
+              <div className="flex-1" style={{ borderRight: `1px solid ${LINE}` }}>
+                <DerivedRoadGrid grid={smallGrid} type="small" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
+              </div>
+              {/* Cockroach Pig */}
+              <div className="flex-1">
+                <DerivedRoadGrid grid={cockroachGrid} type="cockroach" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
+              </div>
             </div>
           </div>
         </>

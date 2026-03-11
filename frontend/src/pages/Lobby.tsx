@@ -605,9 +605,11 @@ export default function Lobby() {
                   const gameLabel = GAME_TYPE_LABELS[table.gameType] || table.gameType;
                   // Extract table number from name (e.g., "百家樂 1" -> "1")
                   const tableNumber = table.name.replace(/[^\dA-Za-z]/g, '').trim() || (index + 1).toString();
-                  // Generate virtual player count (50-200 range, varies by table, deterministic)
+                  // Generate virtual player count (50-2000 range, varies by table, deterministic)
                   const tableHash = table.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-                  const virtualPlayers = 50 + (tableHash * 17) % 150;
+                  const virtualPlayers = 300 + (tableHash * 37) % 1700;
+                  // Good road indicator (based on table)
+                  const goodRoadIndex = (tableHash * 13) % 20;
                   return (
                     <motion.div
                       key={table.id}
@@ -615,63 +617,66 @@ export default function Lobby() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
                       onClick={() => handleJoinTable(table.id, table.gameType)}
-                      className="bg-[#161b26] rounded-lg overflow-hidden border border-[#2a3040] hover:border-[#d4af37] cursor-pointer group transition-all duration-200 hover:shadow-[0_0_16px_rgba(212,175,55,0.25)]"
-                      style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+                      className="bg-[#0a0e14] rounded overflow-hidden border border-[#1a2030] hover:border-[#d4af37] cursor-pointer group transition-all duration-200"
                     >
-                      {/* Header Bar — dark gradient */}
-                      <div className="h-8 bg-gradient-to-r from-[#1a2332] to-[#0d1825] flex items-center px-3 gap-2">
-                        <span className="text-white text-sm font-bold">{gameLabel}</span>
-                        <span className="text-amber-400 text-sm font-bold">{tableNumber}</span>
+                      {/* Header Bar — dark with stats */}
+                      <div className="h-7 bg-[#0d1219] flex items-center px-2 gap-2">
+                        {/* Game type badge */}
+                        <span className="bg-[#1a2535] text-white text-xs font-bold px-2 py-0.5 rounded">{gameLabel}</span>
+                        <span className="text-gray-400 text-xs">{tableNumber}</span>
+
+                        {/* Player count with icon */}
+                        <div className="flex items-center gap-1 ml-2">
+                          <Users className="w-3 h-3 text-gray-400" />
+                          <span className="text-white text-xs font-bold">{virtualPlayers}</span>
+                        </div>
+
+                        {/* Good road indicator - green badge with number */}
+                        <div className="flex items-center gap-1 bg-green-600 rounded px-1.5 py-0.5 ml-1">
+                          <span className="text-white text-[10px] font-bold">{goodRoadIndex}</span>
+                        </div>
 
                         <div className="flex-1" />
 
-                        {/* Virtual Player Count */}
-                        <div className="flex items-center gap-1 bg-black/30 rounded px-2 py-0.5">
-                          <Users className="w-3.5 h-3.5 text-green-400" />
-                          <span className="text-green-400 text-xs font-bold">{virtualPlayers}</span>
-                        </div>
-
-                        {/* Good Road indicator */}
-                        {table.hasGoodRoad && (
-                          <span className="text-yellow-400 text-sm" title={t('goodRoad')}>⚡</span>
-                        )}
-
-                        {/* Banker/Player/Tie stats */}
-                        <div className="flex items-center gap-2 ml-2">
-                          <span className="text-red-400 text-xs font-bold">莊{table.roadmap.banker}</span>
-                          <span className="text-blue-400 text-xs font-bold">閒{table.roadmap.player}</span>
-                          <span className="text-green-400 text-xs font-bold">和{table.roadmap.tie}</span>
+                        {/* Banker/Player/Tie stats — right side */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-red-500 text-xs font-bold">庄{table.roadmap.banker}</span>
+                          <span className="text-blue-500 text-xs font-bold">闲{table.roadmap.player}</span>
+                          <span className="text-green-500 text-xs font-bold">和{table.roadmap.tie}</span>
                         </div>
                       </div>
 
-                      {/* Body — full-width roadmap */}
-                      <div className="relative" style={{ minHeight: 120 }}>
-                        {/* Roadmap grids — full width */}
-                        <div className="w-full overflow-hidden" style={{ height: 120 }}>
-                          <LobbyRoadmap roadHistory={table.roadHistory} />
-                        </div>
-
-                        {/* Dealer name badge — bottom left */}
-                        <div className="absolute bottom-1 left-1 flex items-center gap-1 bg-black/70 rounded px-2 py-0.5">
-                          <span className="text-[10px] text-white font-bold">{table.dealer}</span>
-                        </div>
-
-                        {/* Status badge — bottom right with glow */}
-                        {table.status === 'betting' && table.countdown && table.countdown > 0 && (
-                          <div
-                            className="absolute bottom-1 right-1 px-2.5 py-1 text-white text-xs font-bold rounded"
-                            style={{
-                              backgroundColor: table.countdown <= 3 ? '#ef4444' : table.countdown <= 5 ? '#eab308' : '#22c55e',
-                              boxShadow: `0 0 8px ${table.countdown <= 3 ? 'rgba(239,68,68,0.5)' : table.countdown <= 5 ? 'rgba(234,179,8,0.5)' : 'rgba(34,197,94,0.5)'}`,
-                            }}
-                          >
-                            {table.countdown}s
+                      {/* Body — dealer photo + roadmaps */}
+                      <div className="flex" style={{ height: 130 }}>
+                        {/* Left: Dealer photo area */}
+                        <div className="relative" style={{ width: 130, minWidth: 130 }}>
+                          {/* Placeholder for dealer photo - gray background */}
+                          <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                            <User className="w-12 h-12 text-gray-500" />
                           </div>
-                        )}
 
-                        {/* Hover overlay — subtle with enter badge */}
-                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-end p-2">
-                          <span className="bg-[#d4af37] text-black px-3 py-1 rounded text-xs font-bold">{t('joinTable')}</span>
+                          {/* Dealer name badge — bottom */}
+                          <div className="absolute bottom-0 left-0 right-0 bg-black/80 px-2 py-1 flex items-center gap-1">
+                            <span className="bg-blue-600 text-white text-[9px] px-1 rounded">中文</span>
+                            <span className="text-white text-xs font-bold truncate">{table.dealer}</span>
+                          </div>
+
+                          {/* Status badge — if betting */}
+                          {table.status === 'betting' && table.countdown && table.countdown > 0 && (
+                            <div
+                              className="absolute top-1 right-1 px-1.5 py-0.5 text-white text-[10px] font-bold rounded"
+                              style={{
+                                backgroundColor: table.countdown <= 3 ? '#ef4444' : table.countdown <= 5 ? '#eab308' : '#22c55e',
+                              }}
+                            >
+                              {table.countdown}s
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Right: Roadmaps */}
+                        <div className="flex-1 overflow-hidden">
+                          <LobbyRoadmap roadHistory={table.roadHistory} />
                         </div>
                       </div>
                     </motion.div>
