@@ -19,8 +19,37 @@ export const ALL_CHIP_OPTIONS = [
 // Default selected chips (6 chips)
 const DEFAULT_SELECTED_CHIPS = [10, 50, 100, 500, 1000, 5000];
 
-// LocalStorage key for chip preferences
+// LocalStorage keys
 const CHIP_PREFERENCES_KEY = 'baccarat_chip_preferences';
+const CUSTOM_CHIPS_KEY = 'baccarat_custom_chips';
+
+// Load custom chips from localStorage
+function loadCustomChips(): number[] {
+  try {
+    const stored = localStorage.getItem(CUSTOM_CHIPS_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed) && parsed.length <= 4) {
+        // Validate all values are positive numbers
+        if (parsed.every(v => typeof v === 'number' && v > 0)) {
+          return parsed;
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load custom chips:', e);
+  }
+  return [];
+}
+
+// Save custom chips to localStorage
+function saveCustomChips(chips: number[]): void {
+  try {
+    localStorage.setItem(CUSTOM_CHIPS_KEY, JSON.stringify(chips));
+  } catch (e) {
+    console.error('Failed to save custom chips:', e);
+  }
+}
 
 // Load chip preferences from localStorage
 function loadChipPreferences(): number[] {
@@ -29,9 +58,11 @@ function loadChipPreferences(): number[] {
     if (stored) {
       const parsed = JSON.parse(stored);
       if (Array.isArray(parsed) && parsed.length > 0 && parsed.length <= 6) {
-        // Validate all values are valid chip options
+        // Validate all values are valid chip options or custom chips
         const validValues = ALL_CHIP_OPTIONS.map(c => c.value);
-        if (parsed.every(v => validValues.includes(v))) {
+        const customChips = loadCustomChips();
+        const allValidValues = [...validValues, ...customChips];
+        if (parsed.every(v => allValidValues.includes(v) || customChips.includes(v))) {
           return parsed;
         }
       }
@@ -179,12 +210,19 @@ interface GameStore {
   // Chip preferences (customizable displayed chips)
   displayedChips: number[];
   setDisplayedChips: (chips: number[]) => void;
+
+  // Custom chips (user-defined chip values, max 4)
+  customChips: number[];
+  setCustomChips: (chips: number[]) => void;
+  addCustomChip: (value: number) => boolean;
+  removeCustomChip: (value: number) => void;
 }
 
 export const CHIP_VALUES = [10, 50, 100, 500, 1000, 5000, 10000];
 
-// Initialize displayed chips from localStorage
+// Initialize from localStorage
 const initialDisplayedChips = loadChipPreferences();
+const initialCustomChips = loadCustomChips();
 
 export const useGameStore = create<GameStore>((set, get) => ({
   // Socket connection
@@ -424,6 +462,44 @@ export const useGameStore = create<GameStore>((set, get) => ({
       set({ displayedChips: chips, selectedChip: chips[0] });
     } else {
       set({ displayedChips: chips });
+    }
+  },
+
+  // Custom chips
+  customChips: initialCustomChips,
+  setCustomChips: (chips) => {
+    saveCustomChips(chips);
+    set({ customChips: chips });
+  },
+  addCustomChip: (value) => {
+    const state = get();
+    // Max 4 custom chips
+    if (state.customChips.length >= 4) return false;
+    // Value must be positive
+    if (value <= 0) return false;
+    // Value must not already exist in custom chips
+    if (state.customChips.includes(value)) return false;
+    const newCustomChips = [...state.customChips, value];
+    saveCustomChips(newCustomChips);
+    set({ customChips: newCustomChips });
+    return true;
+  },
+  removeCustomChip: (value) => {
+    const state = get();
+    const newCustomChips = state.customChips.filter(v => v !== value);
+    saveCustomChips(newCustomChips);
+    // Also remove from displayed chips if present
+    const newDisplayedChips = state.displayedChips.filter(v => v !== value);
+    if (newDisplayedChips.length !== state.displayedChips.length) {
+      saveChipPreferences(newDisplayedChips);
+      // If current selected chip was removed, select first available
+      if (state.selectedChip === value && newDisplayedChips.length > 0) {
+        set({ customChips: newCustomChips, displayedChips: newDisplayedChips, selectedChip: newDisplayedChips[0] });
+      } else {
+        set({ customChips: newCustomChips, displayedChips: newDisplayedChips });
+      }
+    } else {
+      set({ customChips: newCustomChips });
     }
   },
 }));
