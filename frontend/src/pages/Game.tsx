@@ -894,10 +894,10 @@ export default function Game() {
     return { row: askPredFull.row, col: displayCol, result: askPredFull.result };
   })();
 
-  // Sliding window for derived roads: show last N entries, leave 1 slot for prediction
-  const bigEyeBoyData = bigEyeBoyDataFull.slice(-(DERIVED_DISPLAY_CELLS - 1));
-  const smallRoadData = smallRoadDataFull.slice(-(DERIVED_DISPLAY_CELLS - 1));
-  const cockroachPigData = cockroachDataFull.slice(-(DERIVED_DISPLAY_CELLS - 1));
+  // Sliding window for derived roads: show last N entries
+  const bigEyeBoyData = bigEyeBoyDataFull.slice(-DERIVED_DISPLAY_CELLS);
+  const smallRoadData = smallRoadDataFull.slice(-DERIVED_DISPLAY_CELLS);
+  const cockroachPigData = cockroachDataFull.slice(-DERIVED_DISPLAY_CELLS);
 
   // Get active ask road derived predictions
   const activeAskRoad = (() => {
