@@ -105,7 +105,7 @@ function buildDTBigRoad(data: Array<{ result: string }>): DTBigRoadGrid {
   let row = 0;
   let lastResult: 'dragon' | 'tiger' | null = null;
   let tieCount = 0;
-  let isTailing = false; // Dragon tail mode
+  let isTailing = false; // Dragon tail mode (horizontal movement)
 
   for (const round of data) {
     const result = normalizeResult(round.result);
@@ -118,7 +118,7 @@ function buildDTBigRoad(data: Array<{ result: string }>): DTBigRoadGrid {
     if (!result) continue;
 
     if (lastResult === null) {
-      // First non-tie result
+      // First non-tie result - start at top-left
       lastResult = result;
     } else if (result !== lastResult) {
       // Result changed - start new column
@@ -126,18 +126,31 @@ function buildDTBigRoad(data: Array<{ result: string }>): DTBigRoadGrid {
       row = 0;
       lastResult = result;
       isTailing = false;
+
+      // Check if position is occupied (collision with previous dragon tail)
+      // If so, move right until we find an empty spot
+      while (col < MAX_COLS && grid[row][col] !== null) {
+        col++;
+      }
     } else {
-      // Same result - continue down or tail right
+      // Same result - try to continue down
       if (isTailing) {
-        // Already tailing - continue right
+        // Already tailing horizontally - continue right
         col++;
       } else {
-        row++;
-        if (row >= ROWS) {
-          // Hit bottom - start dragon tail
-          row = ROWS - 1;
+        // Try to go down
+        const nextRow = row + 1;
+        if (nextRow >= ROWS) {
+          // Hit bottom of grid - start dragon tail (go right)
           col++;
           isTailing = true;
+        } else if (grid[nextRow][col] !== null) {
+          // Position below is occupied (collision) - go right instead
+          col++;
+          isTailing = true;
+        } else {
+          // Position below is free - go down
+          row = nextRow;
         }
       }
     }
