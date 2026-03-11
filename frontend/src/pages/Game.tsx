@@ -1826,14 +1826,14 @@ export default function Game() {
                   </div>
 
                   {/* Bead Plate Grid (珠盤路) — shows history as colored circles with 莊/閒/和 text */}
-                  {/* Uses sliding window: show last (ROWS*COLS - 1) rounds + 1 empty slot for prediction */}
+                  {/* Uses sliding window: show last ROWS*COLS rounds, or ROWS*COLS-1 if ask road is active */}
                   <div className="flex-1 grid grid-cols-5 grid-rows-6 gap-px" style={{ backgroundColor: '#D1D5DB' }}>
                     {(() => {
                       const ROWS = 6;
                       const COLS = 5;
                       const TOTAL = ROWS * COLS; // 30 cells
-                      // Keep 1 slot empty for ask road prediction display
-                      const maxShow = TOTAL - 1; // 29
+                      // Only keep 1 slot empty when ask road mode is active
+                      const maxShow = askRoadMode !== 'none' ? TOTAL - 1 : TOTAL;
                       const latest = roadmapData.slice(-maxShow);
                       const cells: ({ data: typeof roadmapData[0] | null; predicted?: boolean })[] = Array(TOTAL).fill(null).map(() => ({ data: null }));
                       // Fill column by column
