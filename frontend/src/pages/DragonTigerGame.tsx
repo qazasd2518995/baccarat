@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { dealerApi } from '../services/api';
+import { dealerApi, tablesApi } from '../services/api';
 import { useChatSocket } from '../hooks/useChatSocket';
 import {
   Settings,
@@ -478,14 +478,28 @@ export default function DragonTigerGame() {
   const [isFollowingDealer, setIsFollowingDealer] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
 
-  // Current dealer name — varies per table
-  const dealerNames = ['Coco', '若汐', '梓涵', '雨桐', '詩涵', '欣妍', 'Mia', 'Luna', 'Ivy', 'Yuna', 'Lena', 'Zoe'];
-  const currentDealerName = dealerNames[
-    (tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % dealerNames.length
-  ];
+  // Current dealer name — fetched from API
+  const [currentDealerName, setCurrentDealerName] = useState<string>('');
+
+  // Fetch table info to get dealer name
+  useEffect(() => {
+    const fetchTableInfo = async () => {
+      if (!tableId) return;
+      try {
+        const res = await tablesApi.getTable(tableId);
+        if (res.data?.dealer) {
+          setCurrentDealerName(res.data.dealer);
+        }
+      } catch (err) {
+        console.error('[DragonTiger] Failed to fetch table info:', err);
+      }
+    };
+    fetchTableInfo();
+  }, [tableId]);
 
   // Check initial follow status
   useEffect(() => {
+    if (!currentDealerName) return;
     const checkFollowStatus = async () => {
       try {
         const res = await dealerApi.isFollowing(currentDealerName);
