@@ -4,15 +4,9 @@ interface DragonTigerRoadmapProps {
   roadHistory: Array<{ result: string }>;
 }
 
-/* Dark theme colors - matching LobbyRoadmap */
-const CELL_BG = '#1e2433';
-const LINE = '#2a3040';
-
-const GLOW_COLORS: Record<string, string> = {
-  dragon: 'rgba(239,68,68,0.4)',
-  tiger: 'rgba(59,130,246,0.4)',
-  tie: 'rgba(34,197,94,0.4)',
-};
+/* White theme colors - matching Baccarat LobbyRoadmap */
+const CELL_BG = '#FFFFFF';
+const LINE = '#D1D5DB';
 
 // Normalize result type
 function normalizeResult(result: string | undefined): 'dragon' | 'tiger' | 'tie' | undefined {
@@ -228,7 +222,7 @@ function DTStatsPanel({ data, nextDragon, nextTiger }: {
         style={{
           width: 6,
           height: 6,
-          border: `1.5px solid ${bigEye === 'red' ? '#ef4444' : bigEye === 'blue' ? '#3b82f6' : '#666'}`,
+          border: `1.5px solid ${bigEye === 'red' ? '#ef4444' : bigEye === 'blue' ? '#3b82f6' : '#ccc'}`,
         }}
       />
       <div
@@ -236,14 +230,14 @@ function DTStatsPanel({ data, nextDragon, nextTiger }: {
         style={{
           width: 6,
           height: 6,
-          backgroundColor: small === 'red' ? '#ef4444' : small === 'blue' ? '#3b82f6' : '#666',
+          backgroundColor: small === 'red' ? '#ef4444' : small === 'blue' ? '#3b82f6' : '#ccc',
         }}
       />
       <div
         style={{
           width: 6,
           height: 1.5,
-          backgroundColor: cockroach === 'red' ? '#ef4444' : cockroach === 'blue' ? '#3b82f6' : '#666',
+          backgroundColor: cockroach === 'red' ? '#ef4444' : cockroach === 'blue' ? '#3b82f6' : '#ccc',
           transform: 'rotate(-45deg)',
         }}
       />
@@ -257,39 +251,39 @@ function DTStatsPanel({ data, nextDragon, nextTiger }: {
     >
       {/* Dragon */}
       <div className="flex items-center justify-between gap-1">
-        <span style={{ color: '#ef4444' }}>龍</span>
-        <span className="text-white font-medium">{stats.dragon}</span>
+        <span style={{ color: '#DC2626' }}>龍</span>
+        <span className="text-gray-800 font-medium">{stats.dragon}</span>
       </div>
       {/* Tiger */}
       <div className="flex items-center justify-between gap-1">
-        <span style={{ color: '#3b82f6' }}>虎</span>
-        <span className="text-white font-medium">{stats.tiger}</span>
+        <span style={{ color: '#2563EB' }}>虎</span>
+        <span className="text-gray-800 font-medium">{stats.tiger}</span>
       </div>
       {/* Tie */}
       <div className="flex items-center justify-between gap-1">
-        <span style={{ color: '#22c55e' }}>和</span>
-        <span className="text-white font-medium">{stats.tie}</span>
+        <span style={{ color: '#16A34A' }}>和</span>
+        <span className="text-gray-800 font-medium">{stats.tie}</span>
       </div>
       {/* Total */}
-      <div className="flex items-center justify-between gap-1 border-t border-gray-600 pt-0.5 mt-0.5">
-        <span className="text-gray-400">總數</span>
-        <span className="text-white font-medium">{stats.total}</span>
+      <div className="flex items-center justify-between gap-1 border-t border-gray-300 pt-0.5 mt-0.5">
+        <span className="text-gray-500">總數</span>
+        <span className="text-gray-800 font-medium">{stats.total}</span>
       </div>
       {/* Prediction - Next Dragon */}
-      <div className="flex items-center justify-between gap-1 border-t border-gray-600 pt-0.5 mt-0.5">
-        <span style={{ color: '#ef4444' }}>龍問路</span>
+      <div className="flex items-center justify-between gap-1 border-t border-gray-300 pt-0.5 mt-0.5">
+        <span style={{ color: '#DC2626' }}>龍問路</span>
         {renderPrediction(nextDragon.bigEye, nextDragon.small, nextDragon.cockroach)}
       </div>
       {/* Prediction - Next Tiger */}
       <div className="flex items-center justify-between gap-1">
-        <span style={{ color: '#3b82f6' }}>虎問路</span>
+        <span style={{ color: '#2563EB' }}>虎問路</span>
         {renderPrediction(nextTiger.bigEye, nextTiger.small, nextTiger.cockroach)}
       </div>
     </div>
   );
 }
 
-// Bead Road — solid glowing circles with 龍/虎/和 labels
+// Bead Road — solid circles with 龍/虎/和 labels
 function BeadRoad({ data, width }: { data: Array<{ result: string }>; width: number }) {
   const ROWS = 6;
   const CELL = 15;
@@ -337,7 +331,6 @@ function BeadRoad({ data, width }: { data: Array<{ result: string }>; width: num
                 backgroundColor: bgColors[result],
                 fontSize: '7px',
                 lineHeight: 1,
-                boxShadow: `0 0 4px ${GLOW_COLORS[result]}`,
               }}
             >
               {labels[result]}
@@ -349,7 +342,7 @@ function BeadRoad({ data, width }: { data: Array<{ result: string }>; width: num
   );
 }
 
-// Big Road — outlined glowing circles
+// Big Road — outlined circles
 function BigRoad({ grid, usedCols, width }: { grid: (DTBigRoadCell | null)[][]; usedCols: number; width: number }) {
   const ROWS = 6;
   const CELL = 13;
@@ -368,12 +361,11 @@ function BigRoad({ grid, usedCols, width }: { grid: (DTBigRoadCell | null)[][]; 
         continue;
       }
       const color = cell.result === 'dragon' ? '#ef4444' : '#3b82f6';
-      const glow = cell.result === 'dragon' ? GLOW_COLORS.dragon : GLOW_COLORS.tiger;
       cells.push(
         <div key={key} className="relative flex items-center justify-center" style={{ background: CELL_BG }}>
           <div
             className="rounded-full flex items-center justify-center"
-            style={{ width: 10, height: 10, border: `2px solid ${color}`, boxShadow: `0 0 3px ${glow}` }}
+            style={{ width: 10, height: 10, border: `1.5px solid ${color}` }}
           >
             {cell.tieCount > 0 && (
               <span style={{ fontSize: '5px', color: '#22c55e', fontWeight: 'bold', lineHeight: 1 }}>
