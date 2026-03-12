@@ -81,12 +81,8 @@ function getLocalDateString(date: Date): string {
 export default function GameReportModal({ isOpen, onClose }: GameReportModalProps) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<ReportTab>('betting');
-  // Default to last 7 days
-  const [startDate, setStartDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 7);
-    return getLocalDateString(d);
-  });
+  // Default to today
+  const [startDate, setStartDate] = useState(() => getLocalDateString(new Date()));
   const [endDate, setEndDate] = useState(() => getLocalDateString(new Date()));
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
