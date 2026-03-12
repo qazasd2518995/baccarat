@@ -416,6 +416,8 @@ const resources = {
       selectChips: '选择显示的筹码',
       selectedCount: '已选择',
       maxChips: '最多6个',
+      customChips: '自定义筹码',
+      chipAmount: '金额',
 
       // New Baccarat Bet Types
       big: '大',
@@ -911,6 +913,8 @@ const resources = {
       selectChips: 'Select Chips',
       selectedCount: 'Selected',
       maxChips: 'Max 6',
+      customChips: 'Custom Chips',
+      chipAmount: 'Amount',
 
       // New Baccarat Bet Types
       big: 'Big',

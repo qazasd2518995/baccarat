@@ -162,7 +162,7 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
                     className={`
                       relative rounded-full
                       shadow-lg transition-all duration-200
-                      ${isSelected ? 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900' : ''}
+                      ${isSelected ? 'ring-[3px] ring-green-400 ring-offset-2 ring-offset-[#1a1f2e]' : ''}
                       ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
                     `}
                   >
@@ -173,7 +173,7 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow"
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow"
                       >
                         <Check className="w-3 h-3 text-white" />
                       </motion.div>
@@ -186,7 +186,7 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
             {/* Custom Chips Section */}
             <div className="px-4 pb-4">
               <div className="text-gray-400 text-sm mb-3 border-t border-gray-700/50 pt-3">
-                {t('customChips') || '自定义筹码'}
+                {t('customChips', '自定义筹码')}
               </div>
 
               <div className="grid grid-cols-4 gap-3">
@@ -208,7 +208,7 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
                             disabled={isDisabled}
                             className={`
                               relative rounded-full shadow-lg transition-all duration-200
-                              ${isSelected ? 'ring-2 ring-green-400 ring-offset-1 ring-offset-slate-900' : ''}
+                              ${isSelected ? 'ring-[3px] ring-green-400 ring-offset-2 ring-offset-[#1a1f2e]' : ''}
                               ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
                             `}
                           >
@@ -218,7 +218,7 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
                               <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
-                                className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow"
+                                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow"
                               >
                                 <Check className="w-3 h-3 text-white" />
                               </motion.div>
@@ -260,7 +260,7 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
                           }
                         }}
                         disabled={hasValue}
-                        placeholder="金额"
+                        placeholder={t('chipAmount', '金额')}
                         className={`
                           w-full px-2 py-1 text-center text-sm rounded
                           bg-gray-800 border border-gray-600
