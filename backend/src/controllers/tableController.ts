@@ -214,6 +214,7 @@ export async function getTables(req: Request, res: Response) {
         dealer: table.dealerName,
         dealerAvatar: table.dealerAvatar || '',
         gameType: table.gameType,
+        bettingDuration: table.bettingDuration,
         minBet: Number(table.minBet),
         maxBet: Number(table.maxBet),
         players: getTablePlayerCount(table.id),

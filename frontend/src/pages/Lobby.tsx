@@ -60,8 +60,8 @@ interface Table {
 ALL_MODEL_URLS.forEach((url) => useGLTF.preload(url));
 
 const GAME_TYPE_LABELS: Record<string, string> = {
-  baccarat: '百家樂',
-  dragonTiger: '龍虎',
+  baccarat: '百家乐',
+  dragonTiger: '龙虎',
   bullBull: '牛牛',
 };
 
@@ -602,7 +602,10 @@ export default function Lobby() {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
                 {filteredTables.map((table, index) => {
-                  const gameLabel = GAME_TYPE_LABELS[table.gameType] || table.gameType;
+                  const isSpeed = table.bettingDuration === 15;
+                  const gameLabel = isSpeed
+                    ? (table.gameType === 'baccarat' ? '急速百家乐' : table.gameType === 'dragonTiger' ? '急速龙虎' : GAME_TYPE_LABELS[table.gameType])
+                    : (GAME_TYPE_LABELS[table.gameType] || table.gameType);
                   // Extract table number from name (e.g., "百家樂 1" -> "1")
                   const tableNumber = table.name.replace(/[^\dA-Za-z]/g, '').trim() || (index + 1).toString();
                   // Generate virtual player count (50-2000 range, varies by table, deterministic)
@@ -622,7 +625,7 @@ export default function Lobby() {
                       {/* Header Bar — dark with stats */}
                       <div className="h-7 bg-[#0d1219] flex items-center px-2 gap-2">
                         {/* Game type badge */}
-                        <span className="bg-[#1a2535] text-white text-xs font-bold px-2 py-0.5 rounded">{gameLabel}</span>
+                        <span className={`text-white text-xs font-bold px-2 py-0.5 rounded ${isSpeed ? 'bg-gradient-to-r from-orange-600 to-red-600' : 'bg-[#1a2535]'}`}>{gameLabel}</span>
                         <span className="text-gray-400 text-xs">{tableNumber}</span>
 
                         {/* Player count with icon */}
