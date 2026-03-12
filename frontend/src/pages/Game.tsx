@@ -1425,7 +1425,7 @@ export default function Game() {
       </AnimatePresence>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-auto min-h-0">
+      <div className="flex-1 flex overflow-hidden lg:overflow-auto min-h-0">
         {/* Left Sidebar - User & Session Info (hidden on mobile/tablet) */}
         <div className="hidden xl:flex w-60 bg-[#141922] border-r border-gray-800/50 flex-col shrink-0">
           {/* User Card */}
