@@ -653,9 +653,9 @@ export default function Lobby() {
                       </div>
 
                       {/* Body — dealer photo + roadmaps */}
-                      <div className="flex" style={{ height: 130 }}>
+                      <div className="flex h-[100px] sm:h-[130px]">
                         {/* Left: Dealer photo area */}
-                        <div className="relative" style={{ width: 130, minWidth: 130 }}>
+                        <div className="relative w-[90px] min-w-[90px] sm:w-[130px] sm:min-w-[130px]">
                           {/* Dealer photo - try table.name, table.id, then fallback */}
                           <img
                             src={`/images/dealers/${table.name}.jpg`}

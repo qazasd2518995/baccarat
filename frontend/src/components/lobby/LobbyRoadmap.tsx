@@ -251,14 +251,15 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
     return () => ro.disconnect();
   }, []);
 
-  // Grid dimensions matching reference image
+  // Grid dimensions — reduce columns on small screens
+  const isMobile = containerWidth > 0 && containerWidth < 300;
   const BEAD_ROWS = 6;
-  const BEAD_COLS = 12;
+  const BEAD_COLS = isMobile ? 8 : 12;
   const BIG_ROAD_ROWS = 6;
-  const BIG_ROAD_COLS = 18;
-  // Derived roads: 6 rows x 12 cols of mini circles = 3x6 grid cells (each 2x2)
+  const BIG_ROAD_COLS = isMobile ? 12 : 18;
+  // Derived roads: 6 rows x N cols of mini circles = Nx6 grid cells (each 2x2)
   const DERIVED_ROWS = 6;
-  const DERIVED_COLS = 12;
+  const DERIVED_COLS = isMobile ? 8 : 12;
 
   const bigRoadColumns = useMemo(() => buildBigRoadColumns(roadHistory), [roadHistory]);
   const bigRoadGrid = useMemo(() => buildBigRoadGrid(bigRoadColumns, BIG_ROAD_ROWS, BIG_ROAD_COLS), [bigRoadColumns]);
@@ -272,8 +273,8 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
     <div ref={containerRef} className="flex h-full overflow-hidden" style={{ backgroundColor: LINE }}>
       {containerWidth > 0 && (
         <>
-          {/* Left: Bead Road (珠盤路) - 6x12 */}
-          <div className="h-full" style={{ width: '28%', borderRight: `1px solid ${LINE}` }}>
+          {/* Left: Bead Road (珠盤路) */}
+          <div className="h-full" style={{ width: isMobile ? '24%' : '28%', borderRight: `1px solid ${LINE}` }}>
             <BeadRoad grid={beadRoadGrid} rows={BEAD_ROWS} cols={BEAD_COLS} />
           </div>
 
