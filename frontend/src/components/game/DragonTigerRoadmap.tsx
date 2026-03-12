@@ -417,14 +417,14 @@ function DerivedRoad({
   renderCell,
   keyPrefix,
   width,
-  predictedCount = 0,
+  predictedCells,
 }: {
   grid: ('red' | 'blue' | null)[][];
   cellSize: number;
   renderCell: (val: 'red' | 'blue') => React.ReactNode;
   keyPrefix: string;
   width: number;
-  predictedCount?: number;
+  predictedCells?: Set<string>;
 }) {
   const ROWS = 6;
   const maxCols = Math.max(Math.floor(width / (cellSize + 1)), 1);
@@ -438,22 +438,6 @@ function DerivedRoad({
   const colOffset = Math.max(0, displayCols - maxCols);
   const visibleCols = Math.min(displayCols, maxCols);
 
-  // Build a set of predicted cell positions by counting from the end (column-major)
-  const predictedSet = new Set<string>();
-  if (predictedCount > 0) {
-    // Collect all non-null cells in column-major order
-    const allCells: string[] = [];
-    for (let c = 0; c < (grid[0]?.length ?? 0); c++) {
-      for (let r = 0; r < ROWS; r++) {
-        if (grid[r]?.[c]) allCells.push(`${r}-${c}`);
-      }
-    }
-    // The last N are predicted
-    for (let i = Math.max(0, allCells.length - predictedCount); i < allCells.length; i++) {
-      predictedSet.add(allCells[i]);
-    }
-  }
-
   const cells: React.ReactNode[] = [];
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < visibleCols; c++) {
@@ -462,7 +446,8 @@ function DerivedRoad({
       if (!val) {
         cells.push(<div key={key} style={{ background: CELL_BG }} />);
       } else {
-        const isPred = predictedSet.has(`${r}-${c + colOffset}`);
+        // Use original grid coordinates for prediction check
+        const isPred = predictedCells?.has(`${r}-${c + colOffset}`) ?? false;
         const blinkStyle = isPred ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
         cells.push(
           <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG, ...blinkStyle }}>
@@ -546,15 +531,20 @@ function DragonTigerRoadmap({ roadHistory, askRoadMode, onToggleAskRoad }: Drago
     return predicted.size > 0 ? predicted : undefined;
   }, [bigRoadGrid, realBigRoadGrid, isAskActive]);
 
-  // Derived road predicted counts
-  const countNonNull = (grid: ('red' | 'blue' | null)[][]) => {
-    let n = 0;
-    for (const row of grid) for (const cell of row) if (cell != null) n++;
-    return n;
+  // Build predicted cell Sets for derived roads
+  const buildPredictedSet = (full: ('red' | 'blue' | null)[][], real: ('red' | 'blue' | null)[][], maxR: number, maxC: number): Set<string> | undefined => {
+    if (!isAskActive) return undefined;
+    const predicted = new Set<string>();
+    for (let r = 0; r < maxR; r++) {
+      for (let c = 0; c < maxC; c++) {
+        if (full[r]?.[c] && !real[r]?.[c]) predicted.add(`${r}-${c}`);
+      }
+    }
+    return predicted.size > 0 ? predicted : undefined;
   };
-  const bigEyePredCount = isAskActive ? countNonNull(bigEyeGrid) - countNonNull(realBigEyeGrid) : 0;
-  const smallPredCount = isAskActive ? countNonNull(smallGrid) - countNonNull(realSmallGrid) : 0;
-  const cockroachPredCount = isAskActive ? countNonNull(cockroachGrid) - countNonNull(realCockroachGrid) : 0;
+  const bigEyePredCells = useMemo(() => buildPredictedSet(bigEyeGrid, realBigEyeGrid, 6, 60), [bigEyeGrid, realBigEyeGrid, isAskActive]);
+  const smallPredCells = useMemo(() => buildPredictedSet(smallGrid, realSmallGrid, 6, 40), [smallGrid, realSmallGrid, isAskActive]);
+  const cockroachPredCells = useMemo(() => buildPredictedSet(cockroachGrid, realCockroachGrid, 6, 40), [cockroachGrid, realCockroachGrid, isAskActive]);
 
   let bigRoadUsedCols = 0;
   for (let c = 0; c < 60; c++) {
@@ -614,13 +604,13 @@ function DragonTigerRoadmap({ roadHistory, askRoadMode, onToggleAskRoad }: Drago
             {/* Bottom: Three Derived Roads - side by side */}
             <div className="flex-1 flex overflow-hidden" style={{ gap: 1 }}>
               <div className="flex-1 overflow-hidden">
-                <DerivedRoad grid={bigEyeGrid} cellSize={7} renderCell={renderBigEye} keyPrefix="be" width={Math.floor(roadWidth / 3)} predictedCount={bigEyePredCount} />
+                <DerivedRoad grid={bigEyeGrid} cellSize={7} renderCell={renderBigEye} keyPrefix="be" width={Math.floor(roadWidth / 3)} predictedCells={bigEyePredCells} />
               </div>
               <div className="flex-1 overflow-hidden">
-                <DerivedRoad grid={smallGrid} cellSize={7} renderCell={renderSmall} keyPrefix="sr" width={Math.floor(roadWidth / 3)} predictedCount={smallPredCount} />
+                <DerivedRoad grid={smallGrid} cellSize={7} renderCell={renderSmall} keyPrefix="sr" width={Math.floor(roadWidth / 3)} predictedCells={smallPredCells} />
               </div>
               <div className="flex-1 overflow-hidden">
-                <DerivedRoad grid={cockroachGrid} cellSize={7} renderCell={renderCockroach} keyPrefix="cr" width={Math.floor(roadWidth / 3)} predictedCount={cockroachPredCount} />
+                <DerivedRoad grid={cockroachGrid} cellSize={7} renderCell={renderCockroach} keyPrefix="cr" width={Math.floor(roadWidth / 3)} predictedCells={cockroachPredCells} />
               </div>
             </div>
           </div>

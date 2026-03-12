@@ -156,31 +156,17 @@ function DerivedRoadGrid({
   type,
   rows,
   cols,
-  predictedCount = 0,
+  predictedCells,
 }: {
   grid: ('red' | 'blue' | null)[][];
   type: 'big_eye' | 'small' | 'cockroach';
   rows: number;
   cols: number;
-  predictedCount?: number;
+  predictedCells?: Set<string>;
 }) {
   // Each grid cell contains 2x2 mini circles
   const gridRows = Math.ceil(rows / 2);
   const gridCols = Math.ceil(cols / 2);
-
-  // Build a set of predicted cell positions (column-major order, last N are predicted)
-  const predictedSet = new Set<string>();
-  if (predictedCount > 0) {
-    const allCells: string[] = [];
-    for (let c = 0; c < cols; c++) {
-      for (let r = 0; r < rows; r++) {
-        if (grid[r]?.[c] != null) allCells.push(`${r}-${c}`);
-      }
-    }
-    for (let i = Math.max(0, allCells.length - predictedCount); i < allCells.length; i++) {
-      predictedSet.add(allCells[i]);
-    }
-  }
 
   const gridCells: React.ReactNode[] = [];
 
@@ -201,7 +187,7 @@ function DerivedRoadGrid({
             continue;
           }
 
-          const isPred = predictedSet.has(`${dataRow}-${dataCol}`);
+          const isPred = predictedCells?.has(`${dataRow}-${dataCol}`) ?? false;
           const blinkStyle = isPred ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
 
           const color = value === 'red' ? '#DC2626' : '#2563EB';
@@ -293,48 +279,105 @@ function LobbyRoadmap({ roadHistory, predictedCount = 0 }: LobbyRoadmapProps) {
   const DERIVED_ROWS = 6;
   const DERIVED_COLS = isNarrow ? 10 : 12;
 
-  // Build grids with full data (including predicted entries)
+  // Use large grids for computation so predicted entries aren't truncated
+  const LARGE_COLS = 200;
+  const LARGE_DERIVED_COLS = 200;
+
+  // Build grids with full data (including predicted entries) - large for comparison
   const bigRoadColumns = useMemo(() => buildBigRoadColumns(roadHistory), [roadHistory]);
-  const bigRoadGrid = useMemo(() => buildBigRoadGrid(bigRoadColumns, BIG_ROAD_ROWS, BIG_ROAD_COLS), [bigRoadColumns, BIG_ROAD_COLS]);
+  const bigRoadGridLarge = useMemo(() => buildBigRoadGrid(bigRoadColumns, BIG_ROAD_ROWS, LARGE_COLS), [bigRoadColumns]);
   const beadRoadGrid = useMemo(() => buildBeadRoadGrid(roadHistory, BEAD_ROWS), [roadHistory]);
 
   // Also build grids without predicted entries to find which cells are predicted
   const realHistory = useMemo(() => predictedCount > 0 ? roadHistory.slice(0, -predictedCount) : roadHistory, [roadHistory, predictedCount]);
   const realBigRoadColumns = useMemo(() => predictedCount > 0 ? buildBigRoadColumns(realHistory) : bigRoadColumns, [realHistory, predictedCount, bigRoadColumns]);
-  const realBigRoadGrid = useMemo(() => predictedCount > 0 ? buildBigRoadGrid(realBigRoadColumns, BIG_ROAD_ROWS, BIG_ROAD_COLS) : bigRoadGrid, [realBigRoadColumns, predictedCount, bigRoadGrid, BIG_ROAD_COLS]);
+  const realBigRoadGridLarge = useMemo(() => predictedCount > 0 ? buildBigRoadGrid(realBigRoadColumns, BIG_ROAD_ROWS, LARGE_COLS) : bigRoadGridLarge, [realBigRoadColumns, predictedCount, bigRoadGridLarge]);
 
-  // Compute predicted cells in big road grid
+  // Find the rightmost used column to create a sliding window
+  let maxUsedCol = 0;
+  for (let c = 0; c < LARGE_COLS; c++) {
+    for (let r = 0; r < BIG_ROAD_ROWS; r++) {
+      if (bigRoadGridLarge[r]?.[c]) maxUsedCol = c;
+    }
+  }
+  const bigRoadColOffset = Math.max(0, maxUsedCol - BIG_ROAD_COLS + 1);
+
+  // Extract visible window from large grid
+  const bigRoadGrid = useMemo(() => {
+    const grid: (BigRoadCell | null)[][] = Array(BIG_ROAD_ROWS).fill(null).map(() => Array(BIG_ROAD_COLS).fill(null));
+    for (let r = 0; r < BIG_ROAD_ROWS; r++) {
+      for (let c = 0; c < BIG_ROAD_COLS; c++) {
+        grid[r][c] = bigRoadGridLarge[r]?.[c + bigRoadColOffset] ?? null;
+      }
+    }
+    return grid;
+  }, [bigRoadGridLarge, bigRoadColOffset, BIG_ROAD_COLS]);
+
+  // Compute predicted cells in big road grid (compare large grids, then offset to window)
   const bigRoadPredictedCells = useMemo(() => {
     if (predictedCount === 0) return undefined;
     const predicted = new Set<string>();
     for (let r = 0; r < BIG_ROAD_ROWS; r++) {
-      for (let c = 0; c < BIG_ROAD_COLS; c++) {
-        if (bigRoadGrid[r]?.[c] && !realBigRoadGrid[r]?.[c]) {
-          predicted.add(`${r}-${c}`);
+      for (let c = 0; c < LARGE_COLS; c++) {
+        if (bigRoadGridLarge[r]?.[c] && !realBigRoadGridLarge[r]?.[c]) {
+          const windowCol = c - bigRoadColOffset;
+          if (windowCol >= 0 && windowCol < BIG_ROAD_COLS) {
+            predicted.add(`${r}-${windowCol}`);
+          }
         }
       }
     }
     return predicted.size > 0 ? predicted : undefined;
-  }, [bigRoadGrid, realBigRoadGrid, predictedCount, BIG_ROAD_ROWS, BIG_ROAD_COLS]);
+  }, [bigRoadGridLarge, realBigRoadGridLarge, predictedCount, bigRoadColOffset, BIG_ROAD_COLS]);
 
-  // Derived road predicted counts
-  const bigEyeGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 1, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns, DERIVED_COLS]);
-  const smallGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 2, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns, DERIVED_COLS]);
-  const cockroachGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 3, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns, DERIVED_COLS]);
+  // Derived roads - use large grids for comparison
+  const bigEyeGridLarge = useMemo(() => buildDerivedRoad(bigRoadColumns, 1, DERIVED_ROWS, LARGE_DERIVED_COLS), [bigRoadColumns]);
+  const smallGridLarge = useMemo(() => buildDerivedRoad(bigRoadColumns, 2, DERIVED_ROWS, LARGE_DERIVED_COLS), [bigRoadColumns]);
+  const cockroachGridLarge = useMemo(() => buildDerivedRoad(bigRoadColumns, 3, DERIVED_ROWS, LARGE_DERIVED_COLS), [bigRoadColumns]);
 
-  const realBigEyeGrid = useMemo(() => predictedCount > 0 ? buildDerivedRoad(realBigRoadColumns, 1, DERIVED_ROWS, DERIVED_COLS) : bigEyeGrid, [realBigRoadColumns, predictedCount, bigEyeGrid, DERIVED_COLS]);
-  const realSmallGrid = useMemo(() => predictedCount > 0 ? buildDerivedRoad(realBigRoadColumns, 2, DERIVED_ROWS, DERIVED_COLS) : smallGrid, [realBigRoadColumns, predictedCount, smallGrid, DERIVED_COLS]);
-  const realCockroachGrid = useMemo(() => predictedCount > 0 ? buildDerivedRoad(realBigRoadColumns, 3, DERIVED_ROWS, DERIVED_COLS) : cockroachGrid, [realBigRoadColumns, predictedCount, cockroachGrid, DERIVED_COLS]);
+  const realBigEyeGridLarge = useMemo(() => predictedCount > 0 ? buildDerivedRoad(realBigRoadColumns, 1, DERIVED_ROWS, LARGE_DERIVED_COLS) : bigEyeGridLarge, [realBigRoadColumns, predictedCount, bigEyeGridLarge]);
+  const realSmallGridLarge = useMemo(() => predictedCount > 0 ? buildDerivedRoad(realBigRoadColumns, 2, DERIVED_ROWS, LARGE_DERIVED_COLS) : smallGridLarge, [realBigRoadColumns, predictedCount, smallGridLarge]);
+  const realCockroachGridLarge = useMemo(() => predictedCount > 0 ? buildDerivedRoad(realBigRoadColumns, 3, DERIVED_ROWS, LARGE_DERIVED_COLS) : cockroachGridLarge, [realBigRoadColumns, predictedCount, cockroachGridLarge]);
 
-  // Count non-null entries in derived grids to compute predicted count
-  const countNonNull = (grid: ('red' | 'blue' | null)[][]) => {
-    let n = 0;
-    for (const row of grid) for (const cell of row) if (cell != null) n++;
-    return n;
+  // Extract visible derived road grids (rightmost DERIVED_COLS columns)
+  const extractWindow = (large: ('red' | 'blue' | null)[][], cols: number) => {
+    let maxC = 0;
+    for (let c = 0; c < LARGE_DERIVED_COLS; c++) {
+      for (let r = 0; r < DERIVED_ROWS; r++) {
+        if (large[r]?.[c]) maxC = c;
+      }
+    }
+    const offset = Math.max(0, maxC - cols + 1);
+    const grid: ('red' | 'blue' | null)[][] = Array(DERIVED_ROWS).fill(null).map(() => Array(cols).fill(null));
+    for (let r = 0; r < DERIVED_ROWS; r++) {
+      for (let c = 0; c < cols; c++) {
+        grid[r][c] = large[r]?.[c + offset] ?? null;
+      }
+    }
+    return { grid, offset };
   };
-  const bigEyePredCount = predictedCount > 0 ? countNonNull(bigEyeGrid) - countNonNull(realBigEyeGrid) : 0;
-  const smallPredCount = predictedCount > 0 ? countNonNull(smallGrid) - countNonNull(realSmallGrid) : 0;
-  const cockroachPredCount = predictedCount > 0 ? countNonNull(cockroachGrid) - countNonNull(realCockroachGrid) : 0;
+
+  const { grid: bigEyeGrid, offset: bigEyeOffset } = useMemo(() => extractWindow(bigEyeGridLarge, DERIVED_COLS), [bigEyeGridLarge, DERIVED_COLS]);
+  const { grid: smallGrid, offset: smallOffset } = useMemo(() => extractWindow(smallGridLarge, DERIVED_COLS), [smallGridLarge, DERIVED_COLS]);
+  const { grid: cockroachGrid, offset: cockroachOffset } = useMemo(() => extractWindow(cockroachGridLarge, DERIVED_COLS), [cockroachGridLarge, DERIVED_COLS]);
+
+  // Build predicted cell Sets for derived roads by comparing large grids, mapped to window coords
+  const buildDerivedPredictedCells = (full: ('red' | 'blue' | null)[][], real: ('red' | 'blue' | null)[][], offset: number, cols: number): Set<string> | undefined => {
+    if (predictedCount === 0) return undefined;
+    const predicted = new Set<string>();
+    for (let r = 0; r < DERIVED_ROWS; r++) {
+      for (let c = 0; c < LARGE_DERIVED_COLS; c++) {
+        if (full[r]?.[c] && !real[r]?.[c]) {
+          const windowCol = c - offset;
+          if (windowCol >= 0 && windowCol < cols) predicted.add(`${r}-${windowCol}`);
+        }
+      }
+    }
+    return predicted.size > 0 ? predicted : undefined;
+  };
+  const bigEyePredCells = useMemo(() => buildDerivedPredictedCells(bigEyeGridLarge, realBigEyeGridLarge, bigEyeOffset, DERIVED_COLS), [bigEyeGridLarge, realBigEyeGridLarge, bigEyeOffset, DERIVED_COLS, predictedCount]);
+  const smallPredCells = useMemo(() => buildDerivedPredictedCells(smallGridLarge, realSmallGridLarge, smallOffset, DERIVED_COLS), [smallGridLarge, realSmallGridLarge, smallOffset, DERIVED_COLS, predictedCount]);
+  const cockroachPredCells = useMemo(() => buildDerivedPredictedCells(cockroachGridLarge, realCockroachGridLarge, cockroachOffset, DERIVED_COLS), [cockroachGridLarge, realCockroachGridLarge, cockroachOffset, DERIVED_COLS, predictedCount]);
 
   return (
     <div ref={containerRef} className="flex h-full overflow-hidden" style={{ backgroundColor: LINE }}>
@@ -355,13 +398,13 @@ function LobbyRoadmap({ roadHistory, predictedCount = 0 }: LobbyRoadmapProps) {
             {/* Bottom: Three Derived Roads - each 3x6 grid cells (6x12 mini circles) */}
             <div className="flex-1 flex">
               <div className="flex-1" style={{ borderRight: `1px solid ${LINE}` }}>
-                <DerivedRoadGrid grid={bigEyeGrid} type="big_eye" rows={DERIVED_ROWS} cols={DERIVED_COLS} predictedCount={bigEyePredCount} />
+                <DerivedRoadGrid grid={bigEyeGrid} type="big_eye" rows={DERIVED_ROWS} cols={DERIVED_COLS} predictedCells={bigEyePredCells} />
               </div>
               <div className="flex-1" style={{ borderRight: `1px solid ${LINE}` }}>
-                <DerivedRoadGrid grid={smallGrid} type="small" rows={DERIVED_ROWS} cols={DERIVED_COLS} predictedCount={smallPredCount} />
+                <DerivedRoadGrid grid={smallGrid} type="small" rows={DERIVED_ROWS} cols={DERIVED_COLS} predictedCells={smallPredCells} />
               </div>
               <div className="flex-1">
-                <DerivedRoadGrid grid={cockroachGrid} type="cockroach" rows={DERIVED_ROWS} cols={DERIVED_COLS} predictedCount={cockroachPredCount} />
+                <DerivedRoadGrid grid={cockroachGrid} type="cockroach" rows={DERIVED_ROWS} cols={DERIVED_COLS} predictedCells={cockroachPredCells} />
               </div>
             </div>
           </div>
