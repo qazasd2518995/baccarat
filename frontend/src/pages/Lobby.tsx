@@ -650,10 +650,23 @@ export default function Lobby() {
                       <div className="flex" style={{ height: 130 }}>
                         {/* Left: Dealer photo area */}
                         <div className="relative" style={{ width: 130, minWidth: 130 }}>
-                          {/* Placeholder for dealer photo - gray background */}
-                          <div className="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
-                            <User className="w-12 h-12 text-gray-500" />
-                          </div>
+                          {/* Dealer photo - try multiple extensions */}
+                          <img
+                            src={`/images/dealers/${table.id}.jpg`}
+                            alt={table.dealer}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const img = e.currentTarget;
+                              // Try png if jpg fails
+                              if (img.src.endsWith('.jpg')) {
+                                img.src = `/images/dealers/${table.id}.png`;
+                              } else {
+                                // Fallback to gradient placeholder
+                                img.style.display = 'none';
+                                img.parentElement!.classList.add('bg-gradient-to-br', 'from-gray-700', 'to-gray-800', 'flex', 'items-center', 'justify-center');
+                              }
+                            }}
+                          />
 
                           {/* Dealer name badge — bottom */}
                           <div className="absolute bottom-0 left-0 right-0 bg-black/80 px-2 py-1 flex items-center gap-1">
