@@ -63,23 +63,23 @@ async function main() {
   // Note: Bet limits are per-user setting, not per-table
 
   const tableConfigs = [
-    // Baccarat tables (8)
-    { id: 'baccarat-1', name: 'B1', dealer: '詩涵', type: 'baccarat', order: 1 },
-    { id: 'baccarat-2', name: 'B2', dealer: '小魚', type: 'baccarat', order: 2 },
-    { id: 'baccarat-3', name: 'B3', dealer: '蜜桃', type: 'baccarat', order: 3 },
-    { id: 'baccarat-4', name: 'B4', dealer: '棉花糖', type: 'baccarat', order: 4 },
-    { id: 'baccarat-5', name: 'B5', dealer: 'Yuki', type: 'baccarat', order: 5 },
-    { id: 'baccarat-6', name: 'B6', dealer: '小櫻', type: 'baccarat', order: 6 },
-    { id: 'baccarat-7', name: 'B7', dealer: '可可', type: 'baccarat', order: 7 },
-    { id: 'baccarat-8', name: 'B8', dealer: '布丁', type: 'baccarat', order: 8 },
-    // Dragon Tiger tables (7)
-    { id: 'dragon-tiger-1', name: 'D1', dealer: '奈奈', type: 'dragonTiger', order: 9 },
-    { id: 'dragon-tiger-2', name: 'D2', dealer: 'Lulu', type: 'dragonTiger', order: 10 },
-    { id: 'dragon-tiger-3', name: 'D3', dealer: '糖糖', type: 'dragonTiger', order: 11 },
-    { id: 'dragon-tiger-4', name: 'D4', dealer: '萌萌', type: 'dragonTiger', order: 12 },
-    { id: 'dragon-tiger-5', name: 'D5', dealer: '小甜', type: 'dragonTiger', order: 13 },
-    { id: 'dragon-tiger-6', name: 'D6', dealer: 'Momo', type: 'dragonTiger', order: 14 },
-    { id: 'dragon-tiger-7', name: 'D7', dealer: 'Cherry', type: 'dragonTiger', order: 15 },
+    // Baccarat tables (8): B1-B5 標準30秒, B6-B8 極速15秒
+    { id: 'baccarat-1', name: 'B1', dealer: '詩涵', type: 'baccarat', order: 1, betting: 30 },
+    { id: 'baccarat-2', name: 'B2', dealer: '小魚', type: 'baccarat', order: 2, betting: 30 },
+    { id: 'baccarat-3', name: 'B3', dealer: '蜜桃', type: 'baccarat', order: 3, betting: 30 },
+    { id: 'baccarat-4', name: 'B4', dealer: '棉花糖', type: 'baccarat', order: 4, betting: 30 },
+    { id: 'baccarat-5', name: 'B5', dealer: 'Yuki', type: 'baccarat', order: 5, betting: 30 },
+    { id: 'baccarat-6', name: 'B6', dealer: '小櫻', type: 'baccarat', order: 6, betting: 15 },
+    { id: 'baccarat-7', name: 'B7', dealer: '可可', type: 'baccarat', order: 7, betting: 15 },
+    { id: 'baccarat-8', name: 'B8', dealer: '布丁', type: 'baccarat', order: 8, betting: 15 },
+    // Dragon Tiger tables (7): D1-D4 標準30秒, D5-D7 極速15秒
+    { id: 'dragon-tiger-1', name: 'D1', dealer: '奈奈', type: 'dragonTiger', order: 9, betting: 30 },
+    { id: 'dragon-tiger-2', name: 'D2', dealer: 'Lulu', type: 'dragonTiger', order: 10, betting: 30 },
+    { id: 'dragon-tiger-3', name: 'D3', dealer: '糖糖', type: 'dragonTiger', order: 11, betting: 30 },
+    { id: 'dragon-tiger-4', name: 'D4', dealer: '萌萌', type: 'dragonTiger', order: 12, betting: 30 },
+    { id: 'dragon-tiger-5', name: 'D5', dealer: '小甜', type: 'dragonTiger', order: 13, betting: 15 },
+    { id: 'dragon-tiger-6', name: 'D6', dealer: 'Momo', type: 'dragonTiger', order: 14, betting: 15 },
+    { id: 'dragon-tiger-7', name: 'D7', dealer: 'Cherry', type: 'dragonTiger', order: 15, betting: 15 },
   ];
 
   for (const config of tableConfigs) {
@@ -99,6 +99,7 @@ async function main() {
         shoeNumber: 1,
         roundNumber: 0,
         sortOrder: config.order,
+        bettingDuration: config.betting,
       },
     });
     console.log('Created table:', config.name);
