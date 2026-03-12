@@ -63,24 +63,23 @@ async function main() {
   // Note: Bet limits are per-user setting, not per-table
 
   const tableConfigs = [
-    // Baccarat tables (5)
+    // Baccarat tables (8)
     { id: 'baccarat-1', name: 'B1', dealer: '詩涵', type: 'baccarat', order: 1 },
     { id: 'baccarat-2', name: 'B2', dealer: '小魚', type: 'baccarat', order: 2 },
     { id: 'baccarat-3', name: 'B3', dealer: '蜜桃', type: 'baccarat', order: 3 },
     { id: 'baccarat-4', name: 'B4', dealer: '棉花糖', type: 'baccarat', order: 4 },
     { id: 'baccarat-5', name: 'B5', dealer: 'Yuki', type: 'baccarat', order: 5 },
-    // Dragon Tiger tables (5)
-    { id: 'dragon-tiger-1', name: 'D1', dealer: '奈奈', type: 'dragonTiger', order: 6 },
-    { id: 'dragon-tiger-2', name: 'D2', dealer: 'Lulu', type: 'dragonTiger', order: 7 },
-    { id: 'dragon-tiger-3', name: 'D3', dealer: '糖糖', type: 'dragonTiger', order: 8 },
-    { id: 'dragon-tiger-4', name: 'D4', dealer: '萌萌', type: 'dragonTiger', order: 9 },
-    { id: 'dragon-tiger-5', name: 'D5', dealer: '小甜', type: 'dragonTiger', order: 10 },
-    // Bull Bull tables (5)
-    { id: 'bull-bull-1', name: 'N1', dealer: '甜甜', type: 'bullBull', order: 11 },
-    { id: 'bull-bull-2', name: 'N2', dealer: '小櫻', type: 'bullBull', order: 12 },
-    { id: 'bull-bull-3', name: 'N3', dealer: 'Momo', type: 'bullBull', order: 13 },
-    { id: 'bull-bull-4', name: 'N4', dealer: '果凍', type: 'bullBull', order: 14 },
-    { id: 'bull-bull-5', name: 'N5', dealer: '布丁', type: 'bullBull', order: 15 },
+    { id: 'baccarat-6', name: 'B6', dealer: '小櫻', type: 'baccarat', order: 6 },
+    { id: 'baccarat-7', name: 'B7', dealer: '可可', type: 'baccarat', order: 7 },
+    { id: 'baccarat-8', name: 'B8', dealer: '布丁', type: 'baccarat', order: 8 },
+    // Dragon Tiger tables (7)
+    { id: 'dragon-tiger-1', name: 'D1', dealer: '奈奈', type: 'dragonTiger', order: 9 },
+    { id: 'dragon-tiger-2', name: 'D2', dealer: 'Lulu', type: 'dragonTiger', order: 10 },
+    { id: 'dragon-tiger-3', name: 'D3', dealer: '糖糖', type: 'dragonTiger', order: 11 },
+    { id: 'dragon-tiger-4', name: 'D4', dealer: '萌萌', type: 'dragonTiger', order: 12 },
+    { id: 'dragon-tiger-5', name: 'D5', dealer: '小甜', type: 'dragonTiger', order: 13 },
+    { id: 'dragon-tiger-6', name: 'D6', dealer: 'Momo', type: 'dragonTiger', order: 14 },
+    { id: 'dragon-tiger-7', name: 'D7', dealer: 'Cherry', type: 'dragonTiger', order: 15 },
   ];
 
   for (const config of tableConfigs) {
@@ -119,9 +118,8 @@ async function main() {
   console.log('  - 出點: 下級還給上級，下級扣除，上級增加');
   console.log('  - 只能操作直屬下級');
   console.log('\nGame Tables (15 total):');
-  console.log('  百家乐: B1, B2, B3, B4, B5');
-  console.log('  龙虎: D1, D2, D3, D4, D5');
-  console.log('  牛牛: N1, N2, N3, N4, N5');
+  console.log('  百家乐: B1, B2, B3, B4, B5, B6, B7, B8');
+  console.log('  龙虎: D1, D2, D3, D4, D5, D6, D7');
   console.log('\n限红说明:');
   console.log('  - 限红是根据用户帐号设定，不是桌台');
   console.log('  - 在后台「会员管理」中设置用户的限红');
