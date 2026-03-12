@@ -513,58 +513,54 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
           </div>
 
           {/* Filters */}
-          <div className="flex flex-col gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-700/50 bg-[#141922]">
+          <div className="flex items-center gap-2 px-4 sm:px-6 py-3 border-b border-gray-700/50 bg-[#141922] overflow-x-auto">
             {/* Quick date buttons */}
-            <div className="flex gap-1.5 flex-wrap">
-              {([
-                { label: i18n.language === 'zh' ? '今日' : 'Today', getRange: () => { const d = new Date(); return [getLocalDateString(d), getLocalDateString(d)]; } },
-                { label: i18n.language === 'zh' ? '昨日' : 'Yesterday', getRange: () => { const d = new Date(); d.setDate(d.getDate() - 1); return [getLocalDateString(d), getLocalDateString(d)]; } },
-                { label: i18n.language === 'zh' ? '本週' : 'This Week', getRange: () => { const now = new Date(); const day = now.getDay() || 7; const mon = new Date(now); mon.setDate(now.getDate() - day + 1); return [getLocalDateString(mon), getLocalDateString(now)]; } },
-                { label: i18n.language === 'zh' ? '上週' : 'Last Week', getRange: () => { const now = new Date(); const day = now.getDay() || 7; const mon = new Date(now); mon.setDate(now.getDate() - day - 6); const sun = new Date(mon); sun.setDate(mon.getDate() + 6); return [getLocalDateString(mon), getLocalDateString(sun)]; } },
-                { label: i18n.language === 'zh' ? '本月' : 'This Month', getRange: () => { const now = new Date(); const first = new Date(now.getFullYear(), now.getMonth(), 1); return [getLocalDateString(first), getLocalDateString(now)]; } },
-                { label: i18n.language === 'zh' ? '上月' : 'Last Month', getRange: () => { const now = new Date(); const first = new Date(now.getFullYear(), now.getMonth() - 1, 1); const last = new Date(now.getFullYear(), now.getMonth(), 0); return [getLocalDateString(first), getLocalDateString(last)]; } },
-              ] as { label: string; getRange: () => [string, string] }[]).map((btn) => (
-                <button
-                  key={btn.label}
-                  onClick={() => {
-                    const [s, e] = btn.getRange();
-                    setStartDate(s);
-                    setEndDate(e);
-                    setCurrentPage(1);
-                  }}
-                  className="px-2.5 py-1 text-xs rounded bg-[#2a3548] text-gray-300 hover:bg-gray-600 hover:text-white transition"
-                >
-                  {btn.label}
-                </button>
-              ))}
-            </div>
-            {/* Date inputs + search */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
-              <div className="flex items-center gap-2 flex-wrap">
-                <Calendar className="w-4 h-4 text-gray-400 hidden sm:block" />
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="flex-1 sm:flex-none bg-[#2a3548] text-white text-xs sm:text-sm px-2 sm:px-3 py-2 rounded border border-gray-600/50 outline-none focus:border-orange-500/50"
-                />
-                <span className="text-gray-500">-</span>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="flex-1 sm:flex-none bg-[#2a3548] text-white text-xs sm:text-sm px-2 sm:px-3 py-2 rounded border border-gray-600/50 outline-none focus:border-orange-500/50"
-                />
-              </div>
+            {([
+              { label: i18n.language === 'zh' ? '今日' : 'Today', getRange: () => { const d = new Date(); return [getLocalDateString(d), getLocalDateString(d)]; } },
+              { label: i18n.language === 'zh' ? '昨日' : 'Yesterday', getRange: () => { const d = new Date(); d.setDate(d.getDate() - 1); return [getLocalDateString(d), getLocalDateString(d)]; } },
+              { label: i18n.language === 'zh' ? '本週' : 'This Week', getRange: () => { const now = new Date(); const day = now.getDay() || 7; const mon = new Date(now); mon.setDate(now.getDate() - day + 1); return [getLocalDateString(mon), getLocalDateString(now)]; } },
+              { label: i18n.language === 'zh' ? '上週' : 'Last Week', getRange: () => { const now = new Date(); const day = now.getDay() || 7; const mon = new Date(now); mon.setDate(now.getDate() - day - 6); const sun = new Date(mon); sun.setDate(mon.getDate() + 6); return [getLocalDateString(mon), getLocalDateString(sun)]; } },
+              { label: i18n.language === 'zh' ? '本月' : 'This Month', getRange: () => { const now = new Date(); const first = new Date(now.getFullYear(), now.getMonth(), 1); return [getLocalDateString(first), getLocalDateString(now)]; } },
+              { label: i18n.language === 'zh' ? '上月' : 'Last Month', getRange: () => { const now = new Date(); const first = new Date(now.getFullYear(), now.getMonth() - 1, 1); const last = new Date(now.getFullYear(), now.getMonth(), 0); return [getLocalDateString(first), getLocalDateString(last)]; } },
+            ] as { label: string; getRange: () => [string, string] }[]).map((btn) => (
               <button
-                onClick={handleSearch}
-                disabled={loading}
-                className="bg-orange-500 hover:bg-orange-400 text-white px-4 py-2 rounded text-sm font-medium transition flex items-center justify-center gap-2 disabled:opacity-50"
+                key={btn.label}
+                onClick={() => {
+                  const [s, e] = btn.getRange();
+                  setStartDate(s);
+                  setEndDate(e);
+                  setCurrentPage(1);
+                }}
+                className="shrink-0 px-2.5 py-1.5 text-xs rounded bg-[#2a3548] text-gray-300 hover:bg-gray-600 hover:text-white transition"
               >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                {t('search')}
+                {btn.label}
               </button>
-            </div>
+            ))}
+            {/* Separator */}
+            <div className="shrink-0 w-px h-6 bg-gray-600/50 mx-1" />
+            {/* Date inputs */}
+            <Calendar className="shrink-0 w-4 h-4 text-gray-400 hidden sm:block" />
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="shrink-0 bg-[#2a3548] text-white text-xs px-2 py-1.5 rounded border border-gray-600/50 outline-none focus:border-orange-500/50"
+            />
+            <span className="shrink-0 text-gray-500 text-xs">-</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="shrink-0 bg-[#2a3548] text-white text-xs px-2 py-1.5 rounded border border-gray-600/50 outline-none focus:border-orange-500/50"
+            />
+            <button
+              onClick={handleSearch}
+              disabled={loading}
+              className="shrink-0 bg-orange-500 hover:bg-orange-400 text-white px-3 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+              {t('search')}
+            </button>
           </div>
 
           {/* Table Content */}
