@@ -70,11 +70,24 @@ interface BalanceRecord {
   note: string;
 }
 
+// Helper to get date string in YYYY-MM-DD format
+function getLocalDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export default function GameReportModal({ isOpen, onClose }: GameReportModalProps) {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<ReportTab>('betting');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  // Default to last 7 days
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return getLocalDateString(d);
+  });
+  const [endDate, setEndDate] = useState(() => getLocalDateString(new Date()));
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
