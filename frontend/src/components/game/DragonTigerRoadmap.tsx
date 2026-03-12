@@ -497,7 +497,6 @@ function DragonTigerRoadmap({ roadHistory }: DragonTigerRoadmapProps) {
   // Bead road ~30%, roads ~remaining
   const beadWidth = Math.floor((containerWidth - statsWidth - 2) * 0.30);
   const roadWidth = containerWidth - beadWidth - statsWidth - 2;
-  const halfRoadWidth = Math.floor((roadWidth - 1) / 2);
 
   const renderBigEye = (val: 'red' | 'blue') => {
     const color = val === 'red' ? '#ef4444' : '#3b82f6';
@@ -534,25 +533,23 @@ function DragonTigerRoadmap({ roadHistory }: DragonTigerRoadmapProps) {
           {/* 1px vertical divider */}
           <div style={{ width: 1, backgroundColor: LINE }} />
 
-          {/* Middle: Stacked roads */}
+          {/* Middle: Big Road + Derived Roads (same layout as Baccarat) */}
           <div className="flex-1 flex flex-col overflow-hidden" style={{ gap: 1, backgroundColor: LINE }}>
-            {/* Big Road */}
-            <div className="flex-[3] overflow-hidden">
+            {/* Top: Big Road - 60% height */}
+            <div style={{ height: '60%' }} className="overflow-hidden">
               <BigRoad grid={bigRoadGrid} usedCols={bigRoadUsedCols} width={roadWidth} />
             </div>
 
-            {/* Big Eye Boy */}
-            <div className="flex-[2] overflow-hidden">
-              <DerivedRoad grid={bigEyeGrid} cellSize={7} renderCell={renderBigEye} keyPrefix="be" width={roadWidth} />
-            </div>
-
-            {/* Small Road + Cockroach Pig */}
-            <div className="flex-[2] flex overflow-hidden" style={{ gap: 1 }}>
+            {/* Bottom: Three Derived Roads - side by side */}
+            <div className="flex-1 flex overflow-hidden" style={{ gap: 1 }}>
               <div className="flex-1 overflow-hidden">
-                <DerivedRoad grid={smallGrid} cellSize={7} renderCell={renderSmall} keyPrefix="sr" width={halfRoadWidth} />
+                <DerivedRoad grid={bigEyeGrid} cellSize={7} renderCell={renderBigEye} keyPrefix="be" width={Math.floor(roadWidth / 3)} />
               </div>
               <div className="flex-1 overflow-hidden">
-                <DerivedRoad grid={cockroachGrid} cellSize={7} renderCell={renderCockroach} keyPrefix="cr" width={halfRoadWidth} />
+                <DerivedRoad grid={smallGrid} cellSize={7} renderCell={renderSmall} keyPrefix="sr" width={Math.floor(roadWidth / 3)} />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <DerivedRoad grid={cockroachGrid} cellSize={7} renderCell={renderCockroach} keyPrefix="cr" width={Math.floor(roadWidth / 3)} />
               </div>
             </div>
           </div>
