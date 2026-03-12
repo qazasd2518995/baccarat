@@ -296,7 +296,7 @@ function DTStatsPanel({ data, nextDragon, nextTiger, askRoadMode, onToggleAskRoa
 }
 
 // Bead Road — solid circles with 龍/虎/和 labels
-function BeadRoad({ data, width }: { data: Array<{ result: string }>; width: number }) {
+function BeadRoad({ data, width, predictedCount = 0 }: { data: Array<{ result: string }>; width: number; predictedCount?: number }) {
   const ROWS = 6;
   const CELL = 15;
   const cols = Math.max(Math.floor(width / (CELL + 1)), 1);
@@ -333,6 +333,8 @@ function BeadRoad({ data, width }: { data: Array<{ result: string }>; width: num
         const key = `b-${row}-${col}`;
         const result = entry ? normalizeResult(entry.result) : null;
         if (!result) return <div key={key} style={{ background: CELL_BG }} />;
+        const isPred = predictedCount > 0 && (startIdx + dataIdx) >= (data.length - predictedCount);
+        const blinkStyle = isPred ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
         return (
           <div key={key} className="relative flex items-center justify-center" style={{ background: CELL_BG }}>
             <div
@@ -343,6 +345,7 @@ function BeadRoad({ data, width }: { data: Array<{ result: string }>; width: num
                 backgroundColor: bgColors[result],
                 fontSize: '7px',
                 lineHeight: 1,
+                ...blinkStyle,
               }}
             >
               {labels[result]}
@@ -355,7 +358,7 @@ function BeadRoad({ data, width }: { data: Array<{ result: string }>; width: num
 }
 
 // Big Road — outlined circles
-function BigRoad({ grid, usedCols, width }: { grid: (DTBigRoadCell | null)[][]; usedCols: number; width: number }) {
+function BigRoad({ grid, usedCols, width, predictedCells }: { grid: (DTBigRoadCell | null)[][]; usedCols: number; width: number; predictedCells?: Set<string> }) {
   const ROWS = 6;
   const CELL = 13;
   const maxCols = Math.max(Math.floor(width / (CELL + 1)), 1);
@@ -373,11 +376,13 @@ function BigRoad({ grid, usedCols, width }: { grid: (DTBigRoadCell | null)[][]; 
         continue;
       }
       const color = cell.result === 'dragon' ? '#ef4444' : '#3b82f6';
+      const isPred = predictedCells?.has(`${r}-${c + colOffset}`) ?? false;
+      const blinkStyle = isPred ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
       cells.push(
         <div key={key} className="relative flex items-center justify-center" style={{ background: CELL_BG }}>
           <div
             className="rounded-full flex items-center justify-center"
-            style={{ width: 10, height: 10, border: `1.5px solid ${color}` }}
+            style={{ width: 10, height: 10, border: `1.5px solid ${color}`, ...blinkStyle }}
           >
             {cell.tieCount > 0 && (
               <span style={{ fontSize: '5px', color: '#22c55e', fontWeight: 'bold', lineHeight: 1 }}>
@@ -412,12 +417,14 @@ function DerivedRoad({
   renderCell,
   keyPrefix,
   width,
+  predictedCount = 0,
 }: {
   grid: ('red' | 'blue' | null)[][];
   cellSize: number;
   renderCell: (val: 'red' | 'blue') => React.ReactNode;
   keyPrefix: string;
   width: number;
+  predictedCount?: number;
 }) {
   const ROWS = 6;
   const maxCols = Math.max(Math.floor(width / (cellSize + 1)), 1);
@@ -431,6 +438,22 @@ function DerivedRoad({
   const colOffset = Math.max(0, displayCols - maxCols);
   const visibleCols = Math.min(displayCols, maxCols);
 
+  // Build a set of predicted cell positions by counting from the end (column-major)
+  const predictedSet = new Set<string>();
+  if (predictedCount > 0) {
+    // Collect all non-null cells in column-major order
+    const allCells: string[] = [];
+    for (let c = 0; c < (grid[0]?.length ?? 0); c++) {
+      for (let r = 0; r < ROWS; r++) {
+        if (grid[r]?.[c]) allCells.push(`${r}-${c}`);
+      }
+    }
+    // The last N are predicted
+    for (let i = Math.max(0, allCells.length - predictedCount); i < allCells.length; i++) {
+      predictedSet.add(allCells[i]);
+    }
+  }
+
   const cells: React.ReactNode[] = [];
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < visibleCols; c++) {
@@ -439,8 +462,10 @@ function DerivedRoad({
       if (!val) {
         cells.push(<div key={key} style={{ background: CELL_BG }} />);
       } else {
+        const isPred = predictedSet.has(`${r}-${c + colOffset}`);
+        const blinkStyle = isPred ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
         cells.push(
-          <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
+          <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG, ...blinkStyle }}>
             {renderCell(val)}
           </div>
         );
@@ -478,16 +503,58 @@ function DragonTigerRoadmap({ roadHistory, askRoadMode, onToggleAskRoad }: Drago
     return () => ro.disconnect();
   }, []);
 
-  const bigRoadColumns = useMemo(() => buildDTBigRoadColumns(roadHistory), [roadHistory]);
+  // Simulated data when ask road is active
+  const isAskActive = askRoadMode && askRoadMode !== 'none';
+  const simHistory = useMemo(() => {
+    if (!isAskActive) return roadHistory;
+    return [...roadHistory, { result: askRoadMode! }];
+  }, [roadHistory, askRoadMode, isAskActive]);
+
+  // Real data (without prediction)
+  const realBigRoadColumns = useMemo(() => buildDTBigRoadColumns(roadHistory), [roadHistory]);
+  // Simulated or real data
+  const bigRoadColumns = useMemo(() => isAskActive ? buildDTBigRoadColumns(simHistory) : realBigRoadColumns, [simHistory, realBigRoadColumns, isAskActive]);
   const bigRoadGrid = useMemo(() => buildDTBigRoadGrid(bigRoadColumns, 6, 60), [bigRoadColumns]);
+  const realBigRoadGrid = useMemo(() => isAskActive ? buildDTBigRoadGrid(realBigRoadColumns, 6, 60) : bigRoadGrid, [realBigRoadColumns, bigRoadGrid, isAskActive]);
 
   const bigEyeGrid = useMemo(() => buildDTDerivedRoad(bigRoadColumns, 1, 6, 60), [bigRoadColumns]);
   const smallGrid = useMemo(() => buildDTDerivedRoad(bigRoadColumns, 2, 6, 40), [bigRoadColumns]);
   const cockroachGrid = useMemo(() => buildDTDerivedRoad(bigRoadColumns, 3, 6, 40), [bigRoadColumns]);
 
+  const realBigEyeGrid = useMemo(() => isAskActive ? buildDTDerivedRoad(realBigRoadColumns, 1, 6, 60) : bigEyeGrid, [realBigRoadColumns, bigEyeGrid, isAskActive]);
+  const realSmallGrid = useMemo(() => isAskActive ? buildDTDerivedRoad(realBigRoadColumns, 2, 6, 40) : smallGrid, [realBigRoadColumns, smallGrid, isAskActive]);
+  const realCockroachGrid = useMemo(() => isAskActive ? buildDTDerivedRoad(realBigRoadColumns, 3, 6, 40) : cockroachGrid, [realBigRoadColumns, cockroachGrid, isAskActive]);
+
   // Calculate predictions
-  const nextDragon = useMemo(() => calculateDTNextPrediction(bigRoadColumns, 'dragon'), [bigRoadColumns]);
-  const nextTiger = useMemo(() => calculateDTNextPrediction(bigRoadColumns, 'tiger'), [bigRoadColumns]);
+  const nextDragon = useMemo(() => calculateDTNextPrediction(realBigRoadColumns, 'dragon'), [realBigRoadColumns]);
+  const nextTiger = useMemo(() => calculateDTNextPrediction(realBigRoadColumns, 'tiger'), [realBigRoadColumns]);
+
+  // Count predicted cells
+  const predictedCount = isAskActive ? 1 : 0;
+
+  // Big road predicted cells
+  const bigRoadPredictedCells = useMemo(() => {
+    if (!isAskActive) return undefined;
+    const predicted = new Set<string>();
+    for (let r = 0; r < 6; r++) {
+      for (let c = 0; c < 60; c++) {
+        if (bigRoadGrid[r]?.[c] && !realBigRoadGrid[r]?.[c]) {
+          predicted.add(`${r}-${c}`);
+        }
+      }
+    }
+    return predicted.size > 0 ? predicted : undefined;
+  }, [bigRoadGrid, realBigRoadGrid, isAskActive]);
+
+  // Derived road predicted counts
+  const countNonNull = (grid: ('red' | 'blue' | null)[][]) => {
+    let n = 0;
+    for (const row of grid) for (const cell of row) if (cell != null) n++;
+    return n;
+  };
+  const bigEyePredCount = isAskActive ? countNonNull(bigEyeGrid) - countNonNull(realBigEyeGrid) : 0;
+  const smallPredCount = isAskActive ? countNonNull(smallGrid) - countNonNull(realSmallGrid) : 0;
+  const cockroachPredCount = isAskActive ? countNonNull(cockroachGrid) - countNonNull(realCockroachGrid) : 0;
 
   let bigRoadUsedCols = 0;
   for (let c = 0; c < 60; c++) {
@@ -531,7 +598,7 @@ function DragonTigerRoadmap({ roadHistory, askRoadMode, onToggleAskRoad }: Drago
         <>
           {/* Left: Bead Road */}
           <div className="shrink-0 overflow-hidden" style={{ width: beadWidth }}>
-            <BeadRoad data={roadHistory} width={beadWidth} />
+            <BeadRoad data={simHistory} width={beadWidth} predictedCount={predictedCount} />
           </div>
 
           {/* 1px vertical divider */}
@@ -541,19 +608,19 @@ function DragonTigerRoadmap({ roadHistory, askRoadMode, onToggleAskRoad }: Drago
           <div className="flex-1 flex flex-col overflow-hidden" style={{ gap: 1, backgroundColor: LINE }}>
             {/* Top: Big Road - 60% height */}
             <div style={{ height: '60%' }} className="overflow-hidden">
-              <BigRoad grid={bigRoadGrid} usedCols={bigRoadUsedCols} width={roadWidth} />
+              <BigRoad grid={bigRoadGrid} usedCols={bigRoadUsedCols} width={roadWidth} predictedCells={bigRoadPredictedCells} />
             </div>
 
             {/* Bottom: Three Derived Roads - side by side */}
             <div className="flex-1 flex overflow-hidden" style={{ gap: 1 }}>
               <div className="flex-1 overflow-hidden">
-                <DerivedRoad grid={bigEyeGrid} cellSize={7} renderCell={renderBigEye} keyPrefix="be" width={Math.floor(roadWidth / 3)} />
+                <DerivedRoad grid={bigEyeGrid} cellSize={7} renderCell={renderBigEye} keyPrefix="be" width={Math.floor(roadWidth / 3)} predictedCount={bigEyePredCount} />
               </div>
               <div className="flex-1 overflow-hidden">
-                <DerivedRoad grid={smallGrid} cellSize={7} renderCell={renderSmall} keyPrefix="sr" width={Math.floor(roadWidth / 3)} />
+                <DerivedRoad grid={smallGrid} cellSize={7} renderCell={renderSmall} keyPrefix="sr" width={Math.floor(roadWidth / 3)} predictedCount={smallPredCount} />
               </div>
               <div className="flex-1 overflow-hidden">
-                <DerivedRoad grid={cockroachGrid} cellSize={7} renderCell={renderCockroach} keyPrefix="cr" width={Math.floor(roadWidth / 3)} />
+                <DerivedRoad grid={cockroachGrid} cellSize={7} renderCell={renderCockroach} keyPrefix="cr" width={Math.floor(roadWidth / 3)} predictedCount={cockroachPredCount} />
               </div>
             </div>
           </div>

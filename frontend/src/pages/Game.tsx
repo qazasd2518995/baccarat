@@ -2284,11 +2284,17 @@ export default function Game() {
               <div className="flex h-[140px] sm:h-[148px] sm:pb-14">
                 {/* Roadmap */}
                 <div className="flex-1 overflow-hidden">
-                  <LobbyRoadmap roadHistory={roadmapData.map(r => ({
-                    result: r.result,
-                    playerPair: r.playerPair || false,
-                    bankerPair: r.bankerPair || false,
-                  }))} />
+                  <LobbyRoadmap roadHistory={(() => {
+                    const base = roadmapData.map(r => ({
+                      result: r.result,
+                      playerPair: r.playerPair || false,
+                      bankerPair: r.bankerPair || false,
+                    }));
+                    if (askRoadMode !== 'none') {
+                      base.push({ result: askRoadMode as 'banker' | 'player', playerPair: false, bankerPair: false });
+                    }
+                    return base;
+                  })()} predictedCount={askRoadMode !== 'none' ? 1 : 0} />
                 </div>
                 {/* Stats Panel */}
                 <div className="shrink-0 w-[55px] h-full flex flex-col justify-center px-1.5 py-1 text-[8px] border-l border-gray-700/50" style={{ backgroundColor: '#1e2433' }}>

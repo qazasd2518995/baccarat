@@ -10,6 +10,7 @@ import {
 
 interface LobbyRoadmapProps {
   roadHistory: RoadHistoryEntry[];
+  predictedCount?: number; // Number of predicted entries at end of roadHistory (for ask road blink)
 }
 
 /* Colors */
@@ -17,11 +18,14 @@ const CELL_BG = '#FFFFFF';
 const LINE = '#D1D5DB';
 
 // Bead Road (珠盤路) - colored circles with 庄/闲/和 text, auto-sized to fit
-function BeadRoad({ grid, rows, cols }: { grid: (RoadHistoryEntry | null)[][]; rows: number; cols: number }) {
+function BeadRoad({ grid, rows, cols, totalEntries, predictedCount }: { grid: (RoadHistoryEntry | null)[][]; rows: number; cols: number; totalEntries: number; predictedCount: number }) {
   const cells: React.ReactNode[] = [];
   // Show the rightmost `cols` columns (latest data)
   const totalGridCols = grid[0]?.length ?? 0;
   const colOffset = Math.max(0, totalGridCols - cols);
+
+  // Calculate which entries are predicted (last N entries in bead road are column-major)
+  const realCount = totalEntries - predictedCount;
 
   for (let c = 0; c < cols; c++) {
     for (let r = 0; r < rows; r++) {
@@ -32,6 +36,11 @@ function BeadRoad({ grid, rows, cols }: { grid: (RoadHistoryEntry | null)[][]; r
         cells.push(<div key={key} style={{ background: CELL_BG }} />);
         continue;
       }
+
+      // Calculate the absolute index of this entry
+      const absCol = c + colOffset;
+      const entryIndex = absCol * rows + r;
+      const isPredicted = predictedCount > 0 && entryIndex >= realCount;
 
       let bgColor = '#FFFFFF';
       let text = '';
@@ -47,11 +56,13 @@ function BeadRoad({ grid, rows, cols }: { grid: (RoadHistoryEntry | null)[][]; r
         text = '和';
       }
 
+      const blinkStyle = isPredicted ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
+
       cells.push(
         <div key={key} className="flex items-center justify-center p-px" style={{ background: CELL_BG }}>
           <div
             className="rounded-full flex items-center justify-center w-full aspect-square max-w-[14px]"
-            style={{ backgroundColor: bgColor }}
+            style={{ backgroundColor: bgColor, ...blinkStyle }}
           >
             <span style={{ color: '#FFFFFF', fontSize: '6px', fontWeight: 'bold', lineHeight: 1 }}>{text}</span>
           </div>
@@ -77,7 +88,7 @@ function BeadRoad({ grid, rows, cols }: { grid: (RoadHistoryEntry | null)[][]; r
 }
 
 // Big Road (大路) - hollow circles with grid lines
-function BigRoad({ grid, rows, cols }: { grid: (BigRoadCell | null)[][]; rows: number; cols: number }) {
+function BigRoad({ grid, rows, cols, predictedCells }: { grid: (BigRoadCell | null)[][]; rows: number; cols: number; predictedCells?: Set<string> }) {
   const cells: React.ReactNode[] = [];
 
   for (let c = 0; c < cols; c++) {
@@ -91,6 +102,8 @@ function BigRoad({ grid, rows, cols }: { grid: (BigRoadCell | null)[][]; rows: n
       }
 
       const borderColor = cell.result === 'banker' ? '#DC2626' : '#2563EB';
+      const isPredicted = predictedCells?.has(`${r}-${c}`) ?? false;
+      const blinkStyle = isPredicted ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
 
       cells.push(
         <div key={key} className="relative flex items-center justify-center" style={{ background: CELL_BG }}>
@@ -100,6 +113,7 @@ function BigRoad({ grid, rows, cols }: { grid: (BigRoadCell | null)[][]; rows: n
               width: 9,
               height: 9,
               border: `1.5px solid ${borderColor}`,
+              ...blinkStyle,
             }}
           />
           {cell.tieCount > 0 && (
@@ -141,16 +155,32 @@ function DerivedRoadGrid({
   grid,
   type,
   rows,
-  cols
+  cols,
+  predictedCount = 0,
 }: {
   grid: ('red' | 'blue' | null)[][];
   type: 'big_eye' | 'small' | 'cockroach';
   rows: number;
   cols: number;
+  predictedCount?: number;
 }) {
   // Each grid cell contains 2x2 mini circles
   const gridRows = Math.ceil(rows / 2);
   const gridCols = Math.ceil(cols / 2);
+
+  // Build a set of predicted cell positions (column-major order, last N are predicted)
+  const predictedSet = new Set<string>();
+  if (predictedCount > 0) {
+    const allCells: string[] = [];
+    for (let c = 0; c < cols; c++) {
+      for (let r = 0; r < rows; r++) {
+        if (grid[r]?.[c] != null) allCells.push(`${r}-${c}`);
+      }
+    }
+    for (let i = Math.max(0, allCells.length - predictedCount); i < allCells.length; i++) {
+      predictedSet.add(allCells[i]);
+    }
+  }
 
   const gridCells: React.ReactNode[] = [];
 
@@ -171,6 +201,9 @@ function DerivedRoadGrid({
             continue;
           }
 
+          const isPred = predictedSet.has(`${dataRow}-${dataCol}`);
+          const blinkStyle = isPred ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
+
           const color = value === 'red' ? '#DC2626' : '#2563EB';
 
           if (type === 'big_eye') {
@@ -178,7 +211,7 @@ function DerivedRoadGrid({
               <div key={miniKey} className="flex items-center justify-center">
                 <div
                   className="rounded-full"
-                  style={{ width: 5, height: 5, border: `1px solid ${color}` }}
+                  style={{ width: 5, height: 5, border: `1px solid ${color}`, ...blinkStyle }}
                 />
               </div>
             );
@@ -187,13 +220,13 @@ function DerivedRoadGrid({
               <div key={miniKey} className="flex items-center justify-center">
                 <div
                   className="rounded-full"
-                  style={{ width: 5, height: 5, backgroundColor: color }}
+                  style={{ width: 5, height: 5, backgroundColor: color, ...blinkStyle }}
                 />
               </div>
             );
           } else {
             miniCells.push(
-              <div key={miniKey} className="flex items-center justify-center">
+              <div key={miniKey} className="flex items-center justify-center" style={blinkStyle}>
                 <svg viewBox="0 0 10 10" style={{ width: 6, height: 6 }}>
                   <line x1="1" y1="9" x2="9" y2="1" stroke={color} strokeWidth="2" strokeLinecap="round" />
                 </svg>
@@ -236,7 +269,7 @@ function DerivedRoadGrid({
 }
 
 // ── Main Component ──
-function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
+function LobbyRoadmap({ roadHistory, predictedCount = 0 }: LobbyRoadmapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -260,13 +293,48 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
   const DERIVED_ROWS = 6;
   const DERIVED_COLS = isNarrow ? 10 : 12;
 
+  // Build grids with full data (including predicted entries)
   const bigRoadColumns = useMemo(() => buildBigRoadColumns(roadHistory), [roadHistory]);
   const bigRoadGrid = useMemo(() => buildBigRoadGrid(bigRoadColumns, BIG_ROAD_ROWS, BIG_ROAD_COLS), [bigRoadColumns, BIG_ROAD_COLS]);
   const beadRoadGrid = useMemo(() => buildBeadRoadGrid(roadHistory, BEAD_ROWS), [roadHistory]);
 
+  // Also build grids without predicted entries to find which cells are predicted
+  const realHistory = useMemo(() => predictedCount > 0 ? roadHistory.slice(0, -predictedCount) : roadHistory, [roadHistory, predictedCount]);
+  const realBigRoadColumns = useMemo(() => predictedCount > 0 ? buildBigRoadColumns(realHistory) : bigRoadColumns, [realHistory, predictedCount, bigRoadColumns]);
+  const realBigRoadGrid = useMemo(() => predictedCount > 0 ? buildBigRoadGrid(realBigRoadColumns, BIG_ROAD_ROWS, BIG_ROAD_COLS) : bigRoadGrid, [realBigRoadColumns, predictedCount, bigRoadGrid, BIG_ROAD_COLS]);
+
+  // Compute predicted cells in big road grid
+  const bigRoadPredictedCells = useMemo(() => {
+    if (predictedCount === 0) return undefined;
+    const predicted = new Set<string>();
+    for (let r = 0; r < BIG_ROAD_ROWS; r++) {
+      for (let c = 0; c < BIG_ROAD_COLS; c++) {
+        if (bigRoadGrid[r]?.[c] && !realBigRoadGrid[r]?.[c]) {
+          predicted.add(`${r}-${c}`);
+        }
+      }
+    }
+    return predicted.size > 0 ? predicted : undefined;
+  }, [bigRoadGrid, realBigRoadGrid, predictedCount, BIG_ROAD_ROWS, BIG_ROAD_COLS]);
+
+  // Derived road predicted counts
   const bigEyeGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 1, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns, DERIVED_COLS]);
   const smallGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 2, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns, DERIVED_COLS]);
   const cockroachGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 3, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns, DERIVED_COLS]);
+
+  const realBigEyeGrid = useMemo(() => predictedCount > 0 ? buildDerivedRoad(realBigRoadColumns, 1, DERIVED_ROWS, DERIVED_COLS) : bigEyeGrid, [realBigRoadColumns, predictedCount, bigEyeGrid, DERIVED_COLS]);
+  const realSmallGrid = useMemo(() => predictedCount > 0 ? buildDerivedRoad(realBigRoadColumns, 2, DERIVED_ROWS, DERIVED_COLS) : smallGrid, [realBigRoadColumns, predictedCount, smallGrid, DERIVED_COLS]);
+  const realCockroachGrid = useMemo(() => predictedCount > 0 ? buildDerivedRoad(realBigRoadColumns, 3, DERIVED_ROWS, DERIVED_COLS) : cockroachGrid, [realBigRoadColumns, predictedCount, cockroachGrid, DERIVED_COLS]);
+
+  // Count non-null entries in derived grids to compute predicted count
+  const countNonNull = (grid: ('red' | 'blue' | null)[][]) => {
+    let n = 0;
+    for (const row of grid) for (const cell of row) if (cell != null) n++;
+    return n;
+  };
+  const bigEyePredCount = predictedCount > 0 ? countNonNull(bigEyeGrid) - countNonNull(realBigEyeGrid) : 0;
+  const smallPredCount = predictedCount > 0 ? countNonNull(smallGrid) - countNonNull(realSmallGrid) : 0;
+  const cockroachPredCount = predictedCount > 0 ? countNonNull(cockroachGrid) - countNonNull(realCockroachGrid) : 0;
 
   return (
     <div ref={containerRef} className="flex h-full overflow-hidden" style={{ backgroundColor: LINE }}>
@@ -274,26 +342,26 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
         <>
           {/* Left: Bead Road (珠盤路) */}
           <div className="h-full shrink-0" style={{ width: isNarrow ? '22%' : '28%', borderRight: `2px solid ${LINE}` }}>
-            <BeadRoad grid={beadRoadGrid} rows={BEAD_ROWS} cols={BEAD_COLS} />
+            <BeadRoad grid={beadRoadGrid} rows={BEAD_ROWS} cols={BEAD_COLS} totalEntries={roadHistory.length} predictedCount={predictedCount} />
           </div>
 
           {/* Right: Big Road + Derived Roads */}
           <div className="flex-1 flex flex-col h-full">
             {/* Top: Big Road (大路) - 6x18, takes 60% height */}
             <div style={{ height: '60%', borderBottom: `1px solid ${LINE}` }}>
-              <BigRoad grid={bigRoadGrid} rows={BIG_ROAD_ROWS} cols={BIG_ROAD_COLS} />
+              <BigRoad grid={bigRoadGrid} rows={BIG_ROAD_ROWS} cols={BIG_ROAD_COLS} predictedCells={bigRoadPredictedCells} />
             </div>
 
             {/* Bottom: Three Derived Roads - each 3x6 grid cells (6x12 mini circles) */}
             <div className="flex-1 flex">
               <div className="flex-1" style={{ borderRight: `1px solid ${LINE}` }}>
-                <DerivedRoadGrid grid={bigEyeGrid} type="big_eye" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
+                <DerivedRoadGrid grid={bigEyeGrid} type="big_eye" rows={DERIVED_ROWS} cols={DERIVED_COLS} predictedCount={bigEyePredCount} />
               </div>
               <div className="flex-1" style={{ borderRight: `1px solid ${LINE}` }}>
-                <DerivedRoadGrid grid={smallGrid} type="small" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
+                <DerivedRoadGrid grid={smallGrid} type="small" rows={DERIVED_ROWS} cols={DERIVED_COLS} predictedCount={smallPredCount} />
               </div>
               <div className="flex-1">
-                <DerivedRoadGrid grid={cockroachGrid} type="cockroach" rows={DERIVED_ROWS} cols={DERIVED_COLS} />
+                <DerivedRoadGrid grid={cockroachGrid} type="cockroach" rows={DERIVED_ROWS} cols={DERIVED_COLS} predictedCount={cockroachPredCount} />
               </div>
             </div>
           </div>
