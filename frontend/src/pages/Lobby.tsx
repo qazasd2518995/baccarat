@@ -50,6 +50,7 @@ interface Table {
   countdown?: number;
   roadmap: { banker: number; player: number; tie: number };
   gameType: 'baccarat' | 'dragonTiger' | 'bullBull';
+  bettingDuration?: number;
   shoeNumber: number;
   roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
   hasGoodRoad?: boolean;
