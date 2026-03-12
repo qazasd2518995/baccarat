@@ -650,16 +650,16 @@ export default function Lobby() {
                       <div className="flex" style={{ height: 130 }}>
                         {/* Left: Dealer photo area */}
                         <div className="relative" style={{ width: 130, minWidth: 130 }}>
-                          {/* Dealer photo - try multiple extensions */}
+                          {/* Dealer photo - use table name (B1, D1, etc.) */}
                           <img
-                            src={`/images/dealers/${table.id}.jpg`}
+                            src={`/images/dealers/${table.name}.jpg`}
                             alt={table.dealer}
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               const img = e.currentTarget;
                               // Try png if jpg fails
                               if (img.src.endsWith('.jpg')) {
-                                img.src = `/images/dealers/${table.id}.png`;
+                                img.src = `/images/dealers/${table.name}.png`;
                               } else {
                                 // Fallback to gradient placeholder
                                 img.style.display = 'none';
