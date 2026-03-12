@@ -1735,7 +1735,7 @@ export default function Game() {
           />
 
           {/* Betting Panel */}
-          <div className="bg-[#0d1117]">
+          <div className="bg-[#0d1117] lg:flex-none flex-1 flex flex-col">
             {/* Quick Message Buttons - Desktop only, above Control Bar */}
             <div className="hidden lg:flex items-center gap-1 px-2 sm:px-4 py-1.5 border-b border-gray-800/30 bg-black/30">
               <span className="text-[10px] text-gray-500 mr-2">廣播:</span>
