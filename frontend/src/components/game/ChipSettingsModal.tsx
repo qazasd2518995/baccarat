@@ -147,38 +147,44 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
             </div>
 
             {/* Standard Chip grid */}
-            <div className="p-3 sm:p-4 grid grid-cols-5 gap-2 sm:gap-3">
+            <div className="p-3 sm:p-4 grid grid-cols-5 gap-2 sm:gap-3 justify-items-center">
               {ALL_CHIP_OPTIONS.map((chip) => {
                 const isSelected = selected.includes(chip.value);
                 const isDisabled = !isSelected && selected.length >= 6;
 
                 return (
-                  <motion.button
-                    key={chip.value}
-                    whileHover={!isDisabled ? { scale: 1.05 } : {}}
-                    whileTap={!isDisabled ? { scale: 0.95 } : {}}
-                    onClick={() => toggleChip(chip.value)}
-                    disabled={isDisabled}
-                    className={`
-                      relative rounded-full
-                      shadow-lg transition-all duration-200
-                      ${isSelected ? 'ring-[3px] ring-green-400 ring-offset-2 ring-offset-[#1a1f2e]' : ''}
-                      ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
-                    `}
-                  >
-                    <CasinoChip size={52} value={chip.value} label={formatChipValue(chip.value)} />
+                  <div key={chip.value} className="relative flex items-center justify-center" style={{ width: 62, height: 62 }}>
+                    {/* Green border circle behind chip */}
+                    {isSelected && (
+                      <div
+                        className="absolute rounded-full border-[3px] border-green-400"
+                        style={{ width: 60, height: 60 }}
+                      />
+                    )}
+                    <motion.button
+                      whileHover={!isDisabled ? { scale: 1.05 } : {}}
+                      whileTap={!isDisabled ? { scale: 0.95 } : {}}
+                      onClick={() => toggleChip(chip.value)}
+                      disabled={isDisabled}
+                      className={`
+                        relative shadow-lg transition-all duration-200
+                        ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
+                      `}
+                    >
+                      <CasinoChip size={52} value={chip.value} label={formatChipValue(chip.value)} />
+                    </motion.button>
 
                     {/* Check indicator */}
                     {isSelected && (
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow"
+                        className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow z-10"
                       >
                         <Check className="w-3 h-3 text-white" />
                       </motion.div>
                     )}
-                  </motion.button>
+                  </div>
                 );
               })}
             </div>
@@ -200,35 +206,41 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
                     <div key={index} className="flex flex-col items-center gap-1.5">
                       {hasValue ? (
                         // Show custom chip
-                        <div className="relative">
+                        <div className="relative flex items-center justify-center" style={{ width: 62, height: 62 }}>
+                          {isSelected && (
+                            <div
+                              className="absolute rounded-full border-[3px] border-green-400"
+                              style={{ width: 60, height: 60 }}
+                            />
+                          )}
                           <motion.button
                             whileHover={!isDisabled ? { scale: 1.05 } : {}}
                             whileTap={!isDisabled ? { scale: 0.95 } : {}}
                             onClick={() => toggleChip(customValue)}
                             disabled={isDisabled}
                             className={`
-                              relative rounded-full shadow-lg transition-all duration-200
-                              ${isSelected ? 'ring-[3px] ring-green-400 ring-offset-2 ring-offset-[#1a1f2e]' : ''}
+                              relative shadow-lg transition-all duration-200
                               ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
                             `}
                           >
                             <CasinoChip size={52} value={customValue} label={formatChipValue(customValue)} />
-
-                            {isSelected && (
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow"
-                              >
-                                <Check className="w-3 h-3 text-white" />
-                              </motion.div>
-                            )}
                           </motion.button>
+
+                          {/* Check indicator */}
+                          {isSelected && (
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow z-10"
+                            >
+                              <Check className="w-3 h-3 text-white" />
+                            </motion.div>
+                          )}
 
                           {/* Remove button */}
                           <button
                             onClick={() => handleRemoveCustomChip(customValue)}
-                            className="absolute -top-1 -left-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow hover:bg-red-600 transition"
+                            className="absolute -top-0.5 -left-0.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow hover:bg-red-600 transition z-10"
                           >
                             <X className="w-3 h-3 text-white" />
                           </button>
