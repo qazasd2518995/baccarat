@@ -650,20 +650,28 @@ export default function Lobby() {
                       <div className="flex" style={{ height: 130 }}>
                         {/* Left: Dealer photo area */}
                         <div className="relative" style={{ width: 130, minWidth: 130 }}>
-                          {/* Dealer photo - use table name (B1, D1, etc.) */}
+                          {/* Dealer photo - try table.name, table.id, then fallback */}
                           <img
                             src={`/images/dealers/${table.name}.jpg`}
                             alt={table.dealer}
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               const img = e.currentTarget;
-                              // Try png if jpg fails
-                              if (img.src.endsWith('.jpg')) {
+                              const src = img.getAttribute('src') || '';
+                              if (src.includes(table.name) && src.endsWith('.jpg')) {
                                 img.src = `/images/dealers/${table.name}.png`;
+                              } else if (src.includes(table.name) && src.endsWith('.png')) {
+                                img.src = `/images/dealers/${table.id}.jpg`;
+                              } else if (src.includes(table.id) && src.endsWith('.jpg')) {
+                                img.src = `/images/dealers/${table.id}.png`;
                               } else {
-                                // Fallback to gradient placeholder
                                 img.style.display = 'none';
-                                img.parentElement!.classList.add('bg-gradient-to-br', 'from-gray-700', 'to-gray-800', 'flex', 'items-center', 'justify-center');
+                                if (img.parentElement) {
+                                  img.parentElement.style.background = 'linear-gradient(to bottom right, #374151, #1f2937)';
+                                  img.parentElement.style.display = 'flex';
+                                  img.parentElement.style.alignItems = 'center';
+                                  img.parentElement.style.justifyContent = 'center';
+                                }
                               }
                             }}
                           />

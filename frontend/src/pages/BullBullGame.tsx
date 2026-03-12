@@ -27,6 +27,7 @@ import CountdownTimer from '../components/game/CountdownTimer';
 import DealerTable3D from '../components/game/DealerTable3D';
 import { VirtualPlayersBar } from '../components/game/VirtualPlayersBar';
 import { formatAmount } from '../utils/format';
+import { tablesApi } from '../services/api';
 
 // Chip component - uses CasinoChip SVG
 function Chip({ value, selected, onClick, disabled }: { value: number; selected: boolean; onClick: () => void; disabled?: boolean }) {
@@ -200,6 +201,15 @@ export default function BullBullGame() {
   // Get tableId from URL query params
   const [searchParams] = useSearchParams();
   const tableId = searchParams.get('table') || undefined;
+
+  // Current dealer name — fetched from API
+  const [currentDealerName, setCurrentDealerName] = useState<string>('');
+  useEffect(() => {
+    if (!tableId) return;
+    tablesApi.getTable(tableId)
+      .then(res => { if (res.data?.dealer) setCurrentDealerName(res.data.dealer); })
+      .catch(() => {});
+  }, [tableId]);
 
   const { submitBets, cancelBets } = useBullBullSocket(tableId);
 
@@ -437,10 +447,7 @@ export default function BullBullGame() {
       {/* Main game area - 3D Dealer Table */}
       <DealerTable3D
         isDealing={phase === 'dealing'}
-        dealerName={(() => {
-          const names = ['Yuna', '若汐', '梓涵', '雨桐', '詩涵', '欣妍', 'Mia', 'Coco', 'Luna', 'Ivy', 'Lena', 'Zoe'];
-          return names[(tableId || '').split('').reduce((sum, c) => sum + c.charCodeAt(0), 0) % names.length];
-        })()}
+        dealerName={currentDealerName}
         gameType="bullBull"
         isShuffling={isShuffling}
         dealerModel="v3"
