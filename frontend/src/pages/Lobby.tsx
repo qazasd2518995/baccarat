@@ -241,6 +241,7 @@ export default function Lobby() {
           dealer: string;
           dealerAvatar?: string;
           gameType: string;
+          bettingDuration?: number;
           minBet: number;
           maxBet: number;
           players: number;
@@ -266,6 +267,7 @@ export default function Lobby() {
           countdown: t.countdown || 30,
           roadmap: t.roadmap,
           gameType: t.gameType as 'baccarat' | 'dragonTiger' | 'bullBull',
+          bettingDuration: t.bettingDuration,
           shoeNumber: t.shoeNumber,
           roundNumber: t.roundNumber,
           hasGoodRoad: t.hasGoodRoad || false,
