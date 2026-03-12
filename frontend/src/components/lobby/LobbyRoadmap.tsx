@@ -16,13 +16,16 @@ interface LobbyRoadmapProps {
 const CELL_BG = '#FFFFFF';
 const LINE = '#D1D5DB';
 
-// Bead Road (珠盤路) - 6 rows x 12 cols, colored circles with 庄/闲/和 text
+// Bead Road (珠盤路) - colored circles with 庄/闲/和 text, auto-sized to fit
 function BeadRoad({ grid, rows, cols }: { grid: (RoadHistoryEntry | null)[][]; rows: number; cols: number }) {
   const cells: React.ReactNode[] = [];
+  // Show the rightmost `cols` columns (latest data)
+  const totalGridCols = grid[0]?.length ?? 0;
+  const colOffset = Math.max(0, totalGridCols - cols);
 
   for (let c = 0; c < cols; c++) {
     for (let r = 0; r < rows; r++) {
-      const entry = grid[r]?.[c] ?? null;
+      const entry = grid[r]?.[c + colOffset] ?? null;
       const key = `bead-${r}-${c}`;
 
       if (!entry) {
@@ -45,16 +48,12 @@ function BeadRoad({ grid, rows, cols }: { grid: (RoadHistoryEntry | null)[][]; r
       }
 
       cells.push(
-        <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
+        <div key={key} className="flex items-center justify-center p-px" style={{ background: CELL_BG }}>
           <div
-            className="rounded-full flex items-center justify-center"
-            style={{
-              width: 12,
-              height: 12,
-              backgroundColor: bgColor,
-            }}
+            className="rounded-full flex items-center justify-center w-full aspect-square max-w-[14px]"
+            style={{ backgroundColor: bgColor }}
           >
-            <span style={{ color: '#FFFFFF', fontSize: '7px', fontWeight: 'bold' }}>{text}</span>
+            <span style={{ color: '#FFFFFF', fontSize: '6px', fontWeight: 'bold', lineHeight: 1 }}>{text}</span>
           </div>
         </div>
       );
@@ -252,29 +251,29 @@ function LobbyRoadmap({ roadHistory }: LobbyRoadmapProps) {
   }, []);
 
   // Grid dimensions — reduce columns on small screens
-  const isMobile = containerWidth > 0 && containerWidth < 300;
+  const isNarrow = containerWidth > 0 && containerWidth < 350;
   const BEAD_ROWS = 6;
-  const BEAD_COLS = isMobile ? 8 : 12;
+  const BEAD_COLS = isNarrow ? 6 : 12;
   const BIG_ROAD_ROWS = 6;
-  const BIG_ROAD_COLS = isMobile ? 12 : 18;
+  const BIG_ROAD_COLS = isNarrow ? 14 : 18;
   // Derived roads: 6 rows x N cols of mini circles = Nx6 grid cells (each 2x2)
   const DERIVED_ROWS = 6;
-  const DERIVED_COLS = isMobile ? 8 : 12;
+  const DERIVED_COLS = isNarrow ? 10 : 12;
 
   const bigRoadColumns = useMemo(() => buildBigRoadColumns(roadHistory), [roadHistory]);
-  const bigRoadGrid = useMemo(() => buildBigRoadGrid(bigRoadColumns, BIG_ROAD_ROWS, BIG_ROAD_COLS), [bigRoadColumns]);
+  const bigRoadGrid = useMemo(() => buildBigRoadGrid(bigRoadColumns, BIG_ROAD_ROWS, BIG_ROAD_COLS), [bigRoadColumns, BIG_ROAD_COLS]);
   const beadRoadGrid = useMemo(() => buildBeadRoadGrid(roadHistory, BEAD_ROWS), [roadHistory]);
 
-  const bigEyeGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 1, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns]);
-  const smallGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 2, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns]);
-  const cockroachGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 3, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns]);
+  const bigEyeGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 1, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns, DERIVED_COLS]);
+  const smallGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 2, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns, DERIVED_COLS]);
+  const cockroachGrid = useMemo(() => buildDerivedRoad(bigRoadColumns, 3, DERIVED_ROWS, DERIVED_COLS), [bigRoadColumns, DERIVED_COLS]);
 
   return (
     <div ref={containerRef} className="flex h-full overflow-hidden" style={{ backgroundColor: LINE }}>
       {containerWidth > 0 && (
         <>
           {/* Left: Bead Road (珠盤路) */}
-          <div className="h-full" style={{ width: isMobile ? '24%' : '28%', borderRight: `1px solid ${LINE}` }}>
+          <div className="h-full shrink-0" style={{ width: isNarrow ? '22%' : '28%', borderRight: `2px solid ${LINE}` }}>
             <BeadRoad grid={beadRoadGrid} rows={BEAD_ROWS} cols={BEAD_COLS} />
           </div>
 
