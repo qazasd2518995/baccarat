@@ -65,22 +65,22 @@ async function main() {
   const tableConfigs = [
     // Baccarat tables (5)
     { id: 'baccarat-1', name: 'B1', dealer: '詩涵', type: 'baccarat', order: 1 },
-    { id: 'baccarat-2', name: 'B2', dealer: '語嫣', type: 'baccarat', order: 2 },
-    { id: 'baccarat-3', name: 'B3', dealer: '欣妍', type: 'baccarat', order: 3 },
-    { id: 'baccarat-4', name: 'B4', dealer: '小魚', type: 'baccarat', order: 4 },
-    { id: 'baccarat-5', name: 'B5', dealer: '蜜糖', type: 'baccarat', order: 5 },
+    { id: 'baccarat-2', name: 'B2', dealer: '小魚', type: 'baccarat', order: 2 },
+    { id: 'baccarat-3', name: 'B3', dealer: '蜜桃', type: 'baccarat', order: 3 },
+    { id: 'baccarat-4', name: 'B4', dealer: '棉花糖', type: 'baccarat', order: 4 },
+    { id: 'baccarat-5', name: 'B5', dealer: 'Yuki', type: 'baccarat', order: 5 },
     // Dragon Tiger tables (5)
     { id: 'dragon-tiger-1', name: 'D1', dealer: '奈奈', type: 'dragonTiger', order: 6 },
-    { id: 'dragon-tiger-2', name: 'D2', dealer: '小鹿', type: 'dragonTiger', order: 7 },
-    { id: 'dragon-tiger-3', name: 'D3', dealer: '蜜桃', type: 'dragonTiger', order: 8 },
-    { id: 'dragon-tiger-4', name: 'D4', dealer: '泡泡', type: 'dragonTiger', order: 9 },
-    { id: 'dragon-tiger-5', name: 'D5', dealer: 'Cherry', type: 'dragonTiger', order: 10 },
+    { id: 'dragon-tiger-2', name: 'D2', dealer: 'Lulu', type: 'dragonTiger', order: 7 },
+    { id: 'dragon-tiger-3', name: 'D3', dealer: '糖糖', type: 'dragonTiger', order: 8 },
+    { id: 'dragon-tiger-4', name: 'D4', dealer: '萌萌', type: 'dragonTiger', order: 9 },
+    { id: 'dragon-tiger-5', name: 'D5', dealer: '小甜', type: 'dragonTiger', order: 10 },
     // Bull Bull tables (5)
     { id: 'bull-bull-1', name: 'N1', dealer: '甜甜', type: 'bullBull', order: 11 },
-    { id: 'bull-bull-2', name: 'N2', dealer: 'Yuki', type: 'bullBull', order: 12 },
+    { id: 'bull-bull-2', name: 'N2', dealer: '小櫻', type: 'bullBull', order: 12 },
     { id: 'bull-bull-3', name: 'N3', dealer: 'Momo', type: 'bullBull', order: 13 },
     { id: 'bull-bull-4', name: 'N4', dealer: '果凍', type: 'bullBull', order: 14 },
-    { id: 'bull-bull-5', name: 'N5', dealer: 'Lulu', type: 'bullBull', order: 15 },
+    { id: 'bull-bull-5', name: 'N5', dealer: '布丁', type: 'bullBull', order: 15 },
   ];
 
   for (const config of tableConfigs) {
