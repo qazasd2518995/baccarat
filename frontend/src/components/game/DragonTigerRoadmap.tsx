@@ -2,6 +2,8 @@ import { useMemo, memo, useRef, useState, useLayoutEffect } from 'react';
 
 interface DragonTigerRoadmapProps {
   roadHistory: Array<{ result: string }>;
+  askRoadMode?: 'none' | 'dragon' | 'tiger';
+  onToggleAskRoad?: (mode: 'dragon' | 'tiger') => void;
 }
 
 /* White theme colors - matching Baccarat LobbyRoadmap */
@@ -199,10 +201,12 @@ function calculateDTNextPrediction(
 }
 
 // Statistics Panel for Dragon Tiger
-function DTStatsPanel({ data, nextDragon, nextTiger }: {
+function DTStatsPanel({ data, nextDragon, nextTiger, askRoadMode, onToggleAskRoad }: {
   data: Array<{ result: string }>;
   nextDragon: { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null };
   nextTiger: { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null };
+  askRoadMode?: 'none' | 'dragon' | 'tiger';
+  onToggleAskRoad?: (mode: 'dragon' | 'tiger') => void;
 }) {
   const stats = useMemo(() => {
     let dragon = 0, tiger = 0, tie = 0;
@@ -271,12 +275,20 @@ function DTStatsPanel({ data, nextDragon, nextTiger }: {
       </div>
       {/* Prediction - Next Dragon */}
       <div className="flex items-center justify-between gap-1 border-t border-gray-300 pt-0.5 mt-0.5">
-        <span style={{ color: '#DC2626' }}>龍問路</span>
+        <button
+          onClick={() => onToggleAskRoad?.('dragon')}
+          style={{ color: '#DC2626' }}
+          className={askRoadMode === 'dragon' ? 'underline font-bold' : ''}
+        >龍問路</button>
         {renderPrediction(nextDragon.bigEye, nextDragon.small, nextDragon.cockroach)}
       </div>
       {/* Prediction - Next Tiger */}
       <div className="flex items-center justify-between gap-1">
-        <span style={{ color: '#2563EB' }}>虎問路</span>
+        <button
+          onClick={() => onToggleAskRoad?.('tiger')}
+          style={{ color: '#2563EB' }}
+          className={askRoadMode === 'tiger' ? 'underline font-bold' : ''}
+        >虎問路</button>
         {renderPrediction(nextTiger.bigEye, nextTiger.small, nextTiger.cockroach)}
       </div>
     </div>
@@ -452,7 +464,7 @@ function DerivedRoad({
 }
 
 // ── Main Component ──
-function DragonTigerRoadmap({ roadHistory }: DragonTigerRoadmapProps) {
+function DragonTigerRoadmap({ roadHistory, askRoadMode, onToggleAskRoad }: DragonTigerRoadmapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -551,7 +563,7 @@ function DragonTigerRoadmap({ roadHistory }: DragonTigerRoadmapProps) {
 
           {/* Right: Stats Panel */}
           <div className="shrink-0 overflow-hidden" style={{ width: statsWidth }}>
-            <DTStatsPanel data={roadHistory} nextDragon={nextDragon} nextTiger={nextTiger} />
+            <DTStatsPanel data={roadHistory} nextDragon={nextDragon} nextTiger={nextTiger} askRoadMode={askRoadMode} onToggleAskRoad={onToggleAskRoad} />
           </div>
         </>
       )}

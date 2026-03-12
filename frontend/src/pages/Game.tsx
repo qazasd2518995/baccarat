@@ -168,7 +168,7 @@ function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair, blink }: { 
 
 // Derived Road Grid - displays data in 2x2 mini-cells per grid cell with grid lines
 // Each visual grid cell contains 4 small circles arranged in a 2x2 pattern
-function DerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_eye' | 'small' | 'cockroach' }) {
+function DerivedRoadGrid({ data, type, predictedCount = 0 }: { data: ('red' | 'blue')[]; type: 'big_eye' | 'small' | 'cockroach'; predictedCount?: number }) {
   // Display: 6 rows x 12 cols of small circles
   const SMALL_ROWS = 6;
   const SMALL_COLS = 12;
@@ -177,6 +177,7 @@ function DerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_
   // Same color goes down, different color starts new column
   // Dragon tail when hitting bottom or occupied cell
   const grid2D: (('red' | 'blue') | null)[][] = Array(SMALL_ROWS).fill(null).map(() => Array(SMALL_COLS).fill(null));
+  const predictedCells = new Set<string>();
 
   // Group consecutive same colors into columns
   const columns: ('red' | 'blue')[][] = [];
@@ -200,6 +201,8 @@ function DerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_
 
   // Place columns in grid with dragon tail handling
   let gridCol = 0;
+  let dataIndex = 0;
+  const predictedStartIndex = data.length - predictedCount;
   for (const column of columns) {
     let row = 0;
     let col = gridCol;
@@ -216,8 +219,12 @@ function DerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_
 
       if (col < SMALL_COLS) {
         grid2D[row][col] = color;
+        if (dataIndex >= predictedStartIndex) {
+          predictedCells.add(`${row}-${col}`);
+        }
       }
       row++;
+      dataIndex++;
     }
 
     gridCol = col + 1;
@@ -252,13 +259,15 @@ function DerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_
           }
 
           const color = colors[value];
+          const isPred = predictedCells.has(`${dataRow}-${dataCol}`);
+          const blinkStyle = isPred ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
 
           if (type === 'big_eye') {
             miniCells.push(
               <div key={miniKey} className="flex items-center justify-center">
                 <div
                   className="w-[7px] h-[7px] rounded-full"
-                  style={{ border: `1.5px solid ${color.border}` }}
+                  style={{ border: `1.5px solid ${color.border}`, ...blinkStyle }}
                 />
               </div>
             );
@@ -267,13 +276,13 @@ function DerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_
               <div key={miniKey} className="flex items-center justify-center">
                 <div
                   className="w-[7px] h-[7px] rounded-full"
-                  style={{ backgroundColor: color.fill }}
+                  style={{ backgroundColor: color.fill, ...blinkStyle }}
                 />
               </div>
             );
           } else {
             miniCells.push(
-              <div key={miniKey} className="flex items-center justify-center">
+              <div key={miniKey} className="flex items-center justify-center" style={blinkStyle}>
                 <svg viewBox="0 0 10 10" className="w-[9px] h-[9px]">
                   <line x1="1" y1="9" x2="9" y2="1" stroke={color.fill} strokeWidth="2" strokeLinecap="round" />
                 </svg>
@@ -2235,17 +2244,29 @@ export default function Game() {
                 <div className="flex h-[54px] border-t border-gray-400">
                   {/* Big Eye Boy - hollow circles */}
                   <div className="flex-1 border-r border-gray-400">
-                    <DerivedRoadGrid data={bigEyeBoyDataFull} type="big_eye" />
+                    <DerivedRoadGrid
+                      data={askRoadMode !== 'none' ? (askRoadMode === 'banker' ? bankerAskRoad.bigEye : playerAskRoad.bigEye) : bigEyeBoyDataFull}
+                      type="big_eye"
+                      predictedCount={askRoadMode !== 'none' ? ((askRoadMode === 'banker' ? bankerAskRoad.bigEye : playerAskRoad.bigEye).length - bigEyeBoyDataFull.length) : 0}
+                    />
                   </div>
 
                   {/* Small Road - filled circles */}
                   <div className="flex-1 border-r border-gray-400">
-                    <DerivedRoadGrid data={smallRoadDataFull} type="small" />
+                    <DerivedRoadGrid
+                      data={askRoadMode !== 'none' ? (askRoadMode === 'banker' ? bankerAskRoad.smallRoad : playerAskRoad.smallRoad) : smallRoadDataFull}
+                      type="small"
+                      predictedCount={askRoadMode !== 'none' ? ((askRoadMode === 'banker' ? bankerAskRoad.smallRoad : playerAskRoad.smallRoad).length - smallRoadDataFull.length) : 0}
+                    />
                   </div>
 
                   {/* Cockroach Pig - slashes */}
                   <div className="flex-1">
-                    <DerivedRoadGrid data={cockroachDataFull} type="cockroach" />
+                    <DerivedRoadGrid
+                      data={askRoadMode !== 'none' ? (askRoadMode === 'banker' ? bankerAskRoad.cockroach : playerAskRoad.cockroach) : cockroachDataFull}
+                      type="cockroach"
+                      predictedCount={askRoadMode !== 'none' ? ((askRoadMode === 'banker' ? bankerAskRoad.cockroach : playerAskRoad.cockroach).length - cockroachDataFull.length) : 0}
+                    />
                   </div>
                 </div>
 
@@ -2288,7 +2309,10 @@ export default function Game() {
                     <span className="text-white font-medium">{total}</span>
                   </div>
                   <div className="flex items-center justify-between gap-1 border-t border-gray-600 pt-0.5 mt-0.5">
-                    <span className="text-red-500">莊問路</span>
+                    <button
+                      onClick={() => setAskRoadMode(prev => prev === 'banker' ? 'none' : 'banker')}
+                      className={`text-red-500 ${askRoadMode === 'banker' ? 'underline font-bold' : ''}`}
+                    >莊問路</button>
                     <div className="flex items-center gap-0.5">
                       {(() => {
                         const be = bankerAskRoad.bigEye.slice(bigEyeBoyDataFull.length);
@@ -2308,7 +2332,10 @@ export default function Game() {
                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-blue-500">閒問路</span>
+                    <button
+                      onClick={() => setAskRoadMode(prev => prev === 'player' ? 'none' : 'player')}
+                      className={`text-blue-500 ${askRoadMode === 'player' ? 'underline font-bold' : ''}`}
+                    >閒問路</button>
                     <div className="flex items-center gap-0.5">
                       {(() => {
                         const be = playerAskRoad.bigEye.slice(bigEyeBoyDataFull.length);

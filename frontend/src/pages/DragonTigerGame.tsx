@@ -311,7 +311,7 @@ function DTBigRoadCell({ result, tieCount = 0, blink }: { result?: 'dragon' | 't
 }
 
 // Derived Road Grid for Dragon Tiger - displays data in 2x2 mini-cells per grid cell
-function DTDerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'big_eye' | 'small' | 'cockroach' }) {
+function DTDerivedRoadGrid({ data, type, predictedCount = 0 }: { data: ('red' | 'blue')[]; type: 'big_eye' | 'small' | 'cockroach'; predictedCount?: number }) {
   // Display: 6 rows x 12 cols of small circles (3 rows x 6 cols of 2x2 grid cells)
   const SMALL_ROWS = 6;
   const SMALL_COLS = 12;
@@ -319,13 +319,17 @@ function DTDerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'bi
 
   // Fill array column by column (top to bottom, then next column)
   const grid: (('red' | 'blue') | null)[] = Array(TOTAL_CELLS).fill(null);
+  const predictedIndices = new Set<number>();
+  const predictedStartIndex = data.length - predictedCount;
   for (let i = 0; i < Math.min(data.length, TOTAL_CELLS); i++) {
-    // Column-first fill: col 0 rows 0-5, col 1 rows 0-5, etc.
     const col = Math.floor(i / SMALL_ROWS);
     const row = i % SMALL_ROWS;
     const idx = row * SMALL_COLS + col;
     if (idx < TOTAL_CELLS) {
       grid[idx] = data[i];
+      if (i >= predictedStartIndex) {
+        predictedIndices.add(idx);
+      }
     }
   }
 
@@ -334,39 +338,37 @@ function DTDerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'bi
     blue: { border: '#2563EB', fill: '#2563EB' },
   };
 
-  const renderMiniCell = (value: ('red' | 'blue') | null, key: string) => {
+  const renderMiniCell = (value: ('red' | 'blue') | null, key: string, isPred: boolean) => {
     if (!value) {
       return <div key={key} className="w-full h-full" />;
     }
     const color = colors[value];
+    const blinkStyle = isPred ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
 
     if (type === 'big_eye') {
-      // Hollow circle
       return (
         <div key={key} className="w-full h-full flex items-center justify-center">
           <div
             className="w-[7px] h-[7px] rounded-full"
-            style={{ border: `1.5px solid ${color.border}` }}
+            style={{ border: `1.5px solid ${color.border}`, ...blinkStyle }}
           />
         </div>
       );
     }
 
     if (type === 'small') {
-      // Filled circle
       return (
         <div key={key} className="w-full h-full flex items-center justify-center">
           <div
             className="w-[7px] h-[7px] rounded-full"
-            style={{ backgroundColor: color.fill }}
+            style={{ backgroundColor: color.fill, ...blinkStyle }}
           />
         </div>
       );
     }
 
-    // Cockroach: diagonal slash
     return (
-      <div key={key} className="w-full h-full flex items-center justify-center">
+      <div key={key} className="w-full h-full flex items-center justify-center" style={blinkStyle}>
         <svg viewBox="0 0 10 10" className="w-[9px] h-[9px]">
           <line x1="1" y1="9" x2="9" y2="1" stroke={color.fill} strokeWidth="2" strokeLinecap="round" />
         </svg>
@@ -383,7 +385,7 @@ function DTDerivedRoadGrid({ data, type }: { data: ('red' | 'blue')[]; type: 'bi
         backgroundColor: '#FFFFFF',
       }}
     >
-      {grid.map((value, idx) => renderMiniCell(value, `cell-${idx}`))}
+      {grid.map((value, idx) => renderMiniCell(value, `cell-${idx}`, predictedIndices.has(idx)))}
     </div>
   );
 }
@@ -1958,17 +1960,29 @@ export default function DragonTigerGame() {
                 <div className="flex h-[54px] border-t border-gray-400">
                   {/* Big Eye Boy - hollow circles */}
                   <div className="flex-1 border-r border-gray-400">
-                    <DTDerivedRoadGrid data={bigEyeBoyDataFull} type="big_eye" />
+                    <DTDerivedRoadGrid
+                      data={askRoadMode !== 'none' ? (askRoadMode === 'dragon' ? dragonAskRoad.bigEye : tigerAskRoad.bigEye) : bigEyeBoyDataFull}
+                      type="big_eye"
+                      predictedCount={askRoadMode !== 'none' ? ((askRoadMode === 'dragon' ? dragonAskRoad.bigEye : tigerAskRoad.bigEye).length - bigEyeBoyDataFull.length) : 0}
+                    />
                   </div>
 
                   {/* Small Road - filled circles */}
                   <div className="flex-1 border-r border-gray-400">
-                    <DTDerivedRoadGrid data={smallRoadDataFull} type="small" />
+                    <DTDerivedRoadGrid
+                      data={askRoadMode !== 'none' ? (askRoadMode === 'dragon' ? dragonAskRoad.smallRoad : tigerAskRoad.smallRoad) : smallRoadDataFull}
+                      type="small"
+                      predictedCount={askRoadMode !== 'none' ? ((askRoadMode === 'dragon' ? dragonAskRoad.smallRoad : tigerAskRoad.smallRoad).length - smallRoadDataFull.length) : 0}
+                    />
                   </div>
 
                   {/* Cockroach Pig - slashes */}
                   <div className="flex-1">
-                    <DTDerivedRoadGrid data={cockroachDataFull} type="cockroach" />
+                    <DTDerivedRoadGrid
+                      data={askRoadMode !== 'none' ? (askRoadMode === 'dragon' ? dragonAskRoad.cockroach : tigerAskRoad.cockroach) : cockroachDataFull}
+                      type="cockroach"
+                      predictedCount={askRoadMode !== 'none' ? ((askRoadMode === 'dragon' ? dragonAskRoad.cockroach : tigerAskRoad.cockroach).length - cockroachDataFull.length) : 0}
+                    />
                   </div>
                 </div>
 
@@ -1985,7 +1999,7 @@ export default function DragonTigerGame() {
             <div className="bg-[#0d1117] lg:hidden">
               {/* Roadmap with built-in stats panel */}
               <div className="h-[140px] sm:h-[148px]">
-                <DragonTigerRoadmap roadHistory={roadmapData} />
+                <DragonTigerRoadmap roadHistory={roadmapData} askRoadMode={askRoadMode} onToggleAskRoad={(mode) => setAskRoadMode(prev => prev === mode ? 'none' : mode)} />
               </div>
             </div>
           </div>
