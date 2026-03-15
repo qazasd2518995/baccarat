@@ -603,6 +603,7 @@ export default function DragonTigerGame() {
     fakeBroadcasts,
     removeFakeBroadcast,
     isShuffling,
+    applyPendingRoadmap,
   } = useDragonTigerStore();
 
   // Progressive fake chip amounts for bet areas
@@ -896,6 +897,8 @@ export default function DragonTigerGame() {
 
       resultTimerRef.current = setTimeout(() => {
         setShowResult(true);
+        // Apply pending roadmap now that result is shown
+        applyPendingRoadmap();
         // Auto-hide after 2.5s
         resultTimerRef.current = setTimeout(() => {
           setShowResult(false);

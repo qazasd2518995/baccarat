@@ -39,6 +39,7 @@ export function useGameSocket(tableId?: string) {
     setLastResult,
     setLastSettlement,
     setRoadmapData,
+    setPendingRoadmapData,
     setShoeInfo,
     resetAll,
     saveLastBets,
@@ -193,11 +194,15 @@ export function useGameSocket(tableId?: string) {
     };
 
     const handleRoadmap = (data: RoadmapUpdateEvent) => {
-      console.log('[useGameSocket] Roadmap updated:', data.recentRounds.length, 'rounds');
-      // Delay roadmap update to let card animations complete
-      setTimeout(() => {
+      console.log('[useGameSocket] Roadmap received:', data.recentRounds.length, 'rounds');
+      const currentPhase = useGameStore.getState().phase;
+      if (currentPhase === 'betting' || currentPhase === 'shuffling') {
+        // No active round — apply immediately (initial load / reconnect)
         setRoadmapData(data.recentRounds);
-      }, 2000);
+      } else {
+        // Mid-round — store as pending, Game.tsx will apply when result is shown
+        setPendingRoadmapData(data.recentRounds);
+      }
     };
 
     const handleFakeBets = (data: { bets: Record<string, number> }) => {

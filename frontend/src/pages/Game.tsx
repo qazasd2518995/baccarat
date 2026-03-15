@@ -733,6 +733,7 @@ export default function Game() {
     fakeBroadcasts,
     removeFakeBroadcast,
     isShuffling,
+    applyPendingRoadmap,
   } = useGameStore();
 
   // Progressive fake chip amounts for bet areas
@@ -1189,6 +1190,8 @@ export default function Game() {
         else if (lastResult === 'banker') playSound('bankerWins');
         else if (lastResult === 'tie') playSound('tie');
         setShowResult(true);
+        // Apply pending roadmap now that result is shown
+        applyPendingRoadmap();
         showResultTimerRef.current = setTimeout(() => {
           console.log(`[Game] 🔚 Hiding result overlay after 2s display`);
           setShowResult(false);

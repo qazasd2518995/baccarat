@@ -110,6 +110,13 @@ interface DragonTigerStore {
     dragonValue: number;
     tigerValue: number;
   }>;
+  pendingRoadmapData: Array<{
+    roundNumber: string;
+    result: DragonTigerResult;
+    isSuitedTie: boolean;
+    dragonValue: number;
+    tigerValue: number;
+  }> | null;
   setRoadmapData: (data: Array<{
     roundNumber: string;
     result: DragonTigerResult;
@@ -117,6 +124,14 @@ interface DragonTigerStore {
     dragonValue: number;
     tigerValue: number;
   }>) => void;
+  setPendingRoadmapData: (data: Array<{
+    roundNumber: string;
+    result: DragonTigerResult;
+    isSuitedTie: boolean;
+    dragonValue: number;
+    tigerValue: number;
+  }> | null) => void;
+  applyPendingRoadmap: () => void;
 
   // Shoe info
   shoeNumber: number;
@@ -291,7 +306,15 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
 
   // Roadmap
   roadmapData: [],
+  pendingRoadmapData: null,
   setRoadmapData: (data) => set({ roadmapData: data }),
+  setPendingRoadmapData: (data) => set({ pendingRoadmapData: data }),
+  applyPendingRoadmap: () => {
+    const { pendingRoadmapData } = get();
+    if (pendingRoadmapData) {
+      set({ roadmapData: pendingRoadmapData, pendingRoadmapData: null });
+    }
+  },
 
   // Shoe
   shoeNumber: 1,
@@ -354,6 +377,7 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
       isSuitedTie: false,
       lastSettlement: null,
       roadmapData: [],
+      pendingRoadmapData: null,
       shoeNumber: 1,
       cardsRemaining: 416,
       fakeBets: {},

@@ -72,6 +72,7 @@ export function useDragonTigerSocket(tableId?: string) {
     setLastResult,
     setLastSettlement,
     setRoadmapData,
+    setPendingRoadmapData,
     setShoeInfo,
     resetForNewRound,
     resetAll,
@@ -206,11 +207,15 @@ export function useDragonTigerSocket(tableId?: string) {
     };
 
     const handleRoadmap = (data: any) => {
-      console.log('[useDragonTigerSocket] Roadmap updated:', data.recentRounds.length, 'rounds');
-      // Delay roadmap update to let card animations complete
-      setTimeout(() => {
+      console.log('[useDragonTigerSocket] Roadmap received:', data.recentRounds.length, 'rounds');
+      const currentPhase = useDragonTigerStore.getState().phase;
+      if (currentPhase === 'betting' || currentPhase === 'shuffling') {
+        // No active round — apply immediately (initial load / reconnect)
         setRoadmapData(data.recentRounds);
-      }, 2000);
+      } else {
+        // Mid-round — store as pending, DragonTigerGame.tsx will apply when result is shown
+        setPendingRoadmapData(data.recentRounds);
+      }
     };
 
     const handleFakeBets = (data: { bets: Record<string, number> }) => {

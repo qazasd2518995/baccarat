@@ -155,6 +155,15 @@ interface GameStore {
     bankerPoints: number;
     totalCards: number;
   }>;
+  pendingRoadmapData: Array<{
+    roundNumber: string;
+    result: GameResult;
+    playerPair: boolean;
+    bankerPair: boolean;
+    playerPoints: number;
+    bankerPoints: number;
+    totalCards: number;
+  }> | null;
   setRoadmapData: (data: Array<{
     roundNumber: string;
     result: GameResult;
@@ -164,6 +173,16 @@ interface GameStore {
     bankerPoints: number;
     totalCards: number;
   }>) => void;
+  setPendingRoadmapData: (data: Array<{
+    roundNumber: string;
+    result: GameResult;
+    playerPair: boolean;
+    bankerPair: boolean;
+    playerPoints: number;
+    bankerPoints: number;
+    totalCards: number;
+  }> | null) => void;
+  applyPendingRoadmap: () => void;
 
   // Shoe info
   shoeNumber: number;
@@ -379,7 +398,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   // Roadmap
   roadmapData: [],
+  pendingRoadmapData: null,
   setRoadmapData: (data) => set({ roadmapData: data }),
+  setPendingRoadmapData: (data) => set({ pendingRoadmapData: data }),
+  applyPendingRoadmap: () => {
+    const { pendingRoadmapData } = get();
+    if (pendingRoadmapData) {
+      set({ roadmapData: pendingRoadmapData, pendingRoadmapData: null });
+    }
+  },
 
   // Shoe
   shoeNumber: 1,
@@ -444,6 +471,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       lastBankerPair: false,
       lastSettlement: null,
       roadmapData: [],
+      pendingRoadmapData: null,
       shoeNumber: 1,
       cardsRemaining: 416,
       bettingLimits: null,
