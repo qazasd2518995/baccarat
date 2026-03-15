@@ -1533,7 +1533,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
                     {getBetAmount('dragon_big') > 0 && (
                       <>
-                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dragon_big')}</div>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dragon_big')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('dragon_big')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_big')} />
                         </div>
@@ -1552,7 +1552,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
                     {getBetAmount('dragon_small') > 0 && (
                       <>
-                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dragon_small')}</div>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dragon_small')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('dragon_small')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_small')} />
                         </div>
@@ -1571,7 +1571,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:50</span>
                     {getBetAmount('dt_suited_tie') > 0 && (
                       <>
-                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dt_suited_tie')}</div>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dt_suited_tie')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('dt_suited_tie')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dt_suited_tie')} />
                         </div>
@@ -1590,7 +1590,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
                     {getBetAmount('tiger_small') > 0 && (
                       <>
-                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('tiger_small')}</div>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('tiger_small')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('tiger_small')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_small')} />
                         </div>
@@ -1609,7 +1609,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
                     {getBetAmount('tiger_big') > 0 && (
                       <>
-                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('tiger_big')}</div>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('tiger_big')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('tiger_big')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_big')} />
                         </div>
@@ -1632,7 +1632,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1.05</span>
                     {getBetAmount('dragon_even') > 0 && (
                       <>
-                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dragon_even')}</div>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dragon_even')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('dragon_even')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_even')} />
                         </div>
@@ -1651,7 +1651,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.75</span>
                     {getBetAmount('dragon_odd') > 0 && (
                       <>
-                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dragon_odd')}</div>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dragon_odd')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('dragon_odd')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_odd')} />
                         </div>
@@ -1670,7 +1670,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.75</span>
                     {getBetAmount('tiger_odd') > 0 && (
                       <>
-                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('tiger_odd')}</div>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('tiger_odd')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('tiger_odd')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_odd')} />
                         </div>
@@ -1689,7 +1689,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1.05</span>
                     {getBetAmount('tiger_even') > 0 && (
                       <>
-                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('tiger_even')}</div>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('tiger_even')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('tiger_even')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_even')} />
                         </div>
@@ -1712,7 +1712,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
                     {getBetAmount('dragon_black') > 0 && (
                       <>
-                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dragon_black')}</div>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dragon_black')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('dragon_black')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_black')} />
                         </div>
@@ -1731,7 +1731,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
                     {getBetAmount('dragon_red') > 0 && (
                       <>
-                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('dragon_red')}</div>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dragon_red')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('dragon_red')} chipSize={16} maxChips={2} chipValue={getBetChipValue('dragon_red')} />
                         </div>
@@ -1750,7 +1750,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
                     {getBetAmount('tiger_red') > 0 && (
                       <>
-                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('tiger_red')}</div>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('tiger_red')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('tiger_red')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_red')} />
                         </div>
@@ -1769,7 +1769,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
                     {getBetAmount('tiger_black') > 0 && (
                       <>
-                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[8px] font-bold px-1 rounded-full z-10">{getBetAmount('tiger_black')}</div>
+                        <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('tiger_black')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('tiger_black')} chipSize={16} maxChips={2} chipValue={getBetChipValue('tiger_black')} />
                         </div>
@@ -1795,7 +1795,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:1</span>
                     {getBetAmount('dragon') > 0 && (
                       <>
-                        <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-[8px] sm:text-sm font-bold px-1 py-0 rounded-full shadow-lg z-10">{getBetAmount('dragon')}</div>
+                        <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10">{getBetAmount('dragon')}</div>
                         <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('dragon')} chipSize={20} maxChips={3} chipValue={getBetChipValue('dragon')} />
                         </div>
@@ -1816,7 +1816,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:8</span>
                     {getBetAmount('dt_tie') > 0 && (
                       <>
-                        <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-[8px] sm:text-sm font-bold px-1 py-0 rounded-full shadow-lg z-10">{getBetAmount('dt_tie')}</div>
+                        <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10">{getBetAmount('dt_tie')}</div>
                         <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('dt_tie')} chipSize={20} maxChips={3} chipValue={getBetChipValue('dt_tie')} />
                         </div>
@@ -1839,7 +1839,7 @@ export default function DragonTigerGame() {
                     <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:1</span>
                     {getBetAmount('tiger') > 0 && (
                       <>
-                        <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-[8px] sm:text-sm font-bold px-1 py-0 rounded-full shadow-lg z-10">{getBetAmount('tiger')}</div>
+                        <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10">{getBetAmount('tiger')}</div>
                         <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2">
                           <ChipStack amount={getBetAmount('tiger')} chipSize={20} maxChips={3} chipValue={getBetChipValue('tiger')} />
                         </div>
