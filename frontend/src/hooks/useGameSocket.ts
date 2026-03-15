@@ -132,8 +132,8 @@ export function useGameSocket(tableId?: string) {
       setPhase(data.phase);
       setTimeRemaining(data.timeRemaining);
       setRoundId(data.roundId);
-      // Clear shuffling state when dealing starts (shuffle animation is over)
-      if (data.phase === 'dealing') {
+      // Clear shuffling state when betting starts (shuffle happens between result and betting)
+      if (data.phase === 'betting') {
         setIsShuffling(false);
       }
       // Note: resetForNewRound() is NOT called here.
@@ -196,7 +196,7 @@ export function useGameSocket(tableId?: string) {
     const handleRoadmap = (data: RoadmapUpdateEvent) => {
       console.log('[useGameSocket] Roadmap received:', data.recentRounds.length, 'rounds');
       const currentPhase = useGameStore.getState().phase;
-      if (currentPhase === 'betting' || currentPhase === 'shuffling') {
+      if (currentPhase === 'betting') {
         // No active round — apply immediately (initial load / reconnect)
         setRoadmapData(data.recentRounds);
       } else {

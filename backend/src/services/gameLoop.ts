@@ -203,42 +203,6 @@ async function handleSealedPhase(io: TypedServer, duration: number): Promise<voi
 async function handleDealingPhase(io: TypedServer): Promise<void> {
   const round = getCurrentRound();
 
-  // Check if shoe needs reshuffle (less than 20 cards remaining)
-  if (currentShoe.length < 20) {
-    await startNewShoe();
-    currentShoe = createShoe();
-    burnCards(currentShoe);
-    setShuffledDeck(currentShoe);
-    setCardsRemaining(currentShoe.length);
-    await savePersistedState();
-
-    // Reset all baccarat table statistics in DB
-    const resetTables = await prisma.gameTable.findMany({
-      where: { gameType: 'baccarat', isActive: true },
-    });
-    for (const table of resetTables) {
-      await prisma.gameTable.update({
-        where: { id: table.id },
-        data: { shoeNumber: getShoeNumber(), roundNumber: 0, bankerWins: 0, playerWins: 0, tieCount: 0 },
-      });
-      io.to('lobby').emit('lobby:tableUpdate', {
-        tableId: table.id,
-        phase: 'dealing' as const,
-        timeRemaining: 0,
-        roundNumber: '',  // New shoe, no round yet
-        shoeNumber: getShoeNumber(),
-        roadmap: { banker: 0, player: 0, tie: 0 },
-        newShoe: true,
-      });
-    }
-
-    console.log(`[GameLoop] New shoe #${getShoeNumber()} created with ${currentShoe.length} cards — stats reset`);
-
-    // Notify game room of shuffle — frontend shows animation
-    io.to('table:default').emit('game:shuffle', { shoeNumber: getShoeNumber() });
-    await delay(4000);
-  }
-
   // Broadcast phase change
   io.to('table:default').emit('game:phase', {
     phase: 'dealing',
@@ -455,6 +419,43 @@ async function handleResultPhase(io: TypedServer, duration: number): Promise<voi
   }
 
   await delay(duration);
+
+  // Check if shoe needs reshuffle after result is shown (before next betting phase)
+  if (currentShoe.length < 20) {
+    // Notify game room of shuffle — frontend shows animation
+    io.to('table:default').emit('game:shuffle', { shoeNumber: getShoeNumber() + 1 });
+    console.log(`[GameLoop] Shoe low (${currentShoe.length} cards), shuffling for 15s...`);
+    await delay(15000);
+
+    await startNewShoe();
+    currentShoe = createShoe();
+    burnCards(currentShoe);
+    setShuffledDeck(currentShoe);
+    setCardsRemaining(currentShoe.length);
+    await savePersistedState();
+
+    // Reset all baccarat table statistics in DB
+    const resetTables = await prisma.gameTable.findMany({
+      where: { gameType: 'baccarat', isActive: true },
+    });
+    for (const table of resetTables) {
+      await prisma.gameTable.update({
+        where: { id: table.id },
+        data: { shoeNumber: getShoeNumber(), roundNumber: 0, bankerWins: 0, playerWins: 0, tieCount: 0 },
+      });
+      io.to('lobby').emit('lobby:tableUpdate', {
+        tableId: table.id,
+        phase: 'result' as const,
+        timeRemaining: 0,
+        roundNumber: '',
+        shoeNumber: getShoeNumber(),
+        roadmap: { banker: 0, player: 0, tie: 0 },
+        newShoe: true,
+      });
+    }
+
+    console.log(`[GameLoop] New shoe #${getShoeNumber()} created with ${currentShoe.length} cards — stats reset`);
+  }
 
   // Start next round
   runPhase(io, 'betting');

@@ -147,10 +147,8 @@ export function useDragonTigerSocket(tableId?: string) {
       setTimeRemaining(data.timeRemaining);
       setRoundId(data.roundId);
 
-      if (data.phase === 'dealing') {
-        setIsShuffling(false);
-      }
       if (data.phase === 'betting') {
+        setIsShuffling(false);
         resetForNewRound();
       }
     };
@@ -209,7 +207,7 @@ export function useDragonTigerSocket(tableId?: string) {
     const handleRoadmap = (data: any) => {
       console.log('[useDragonTigerSocket] Roadmap received:', data.recentRounds.length, 'rounds');
       const currentPhase = useDragonTigerStore.getState().phase;
-      if (currentPhase === 'betting' || currentPhase === 'shuffling') {
+      if (currentPhase === 'betting') {
         // No active round — apply immediately (initial load / reconnect)
         setRoadmapData(data.recentRounds);
       } else {

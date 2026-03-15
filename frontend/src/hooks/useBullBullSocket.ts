@@ -149,10 +149,8 @@ export function useBullBullSocket(tableId?: string) {
       setTimeRemaining(data.timeRemaining);
       setRoundId(data.roundId);
 
-      if (data.phase === 'dealing') {
-        setIsShuffling(false);
-      }
       if (data.phase === 'betting') {
+        setIsShuffling(false);
         resetForNewRound();
         clearRevealed();
       }
