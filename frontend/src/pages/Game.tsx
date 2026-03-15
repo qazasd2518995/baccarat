@@ -1734,7 +1734,7 @@ export default function Game() {
           />
 
           {/* Betting Panel */}
-          <div className="bg-[#0d1117] lg:flex-none flex-1 flex flex-col">
+          <div className="bg-[#0d1117] lg:flex-none shrink-0 flex flex-col">
             {/* Quick Message Buttons - Desktop only, above Control Bar */}
             <div className="hidden lg:flex items-center gap-1 px-2 sm:px-4 py-1.5 border-b border-gray-800/30 bg-black/30">
               <span className="text-[10px] text-gray-500 mr-2">廣播:</span>
@@ -2279,8 +2279,8 @@ export default function Game() {
             </div>
 
             {/* Mobile Roadmap Section - Only visible on mobile/tablet */}
-            <div className="lg:hidden bg-[#0d1117]">
-              <div className="h-[140px] sm:h-[148px] sm:pb-14">
+            <div className="lg:hidden bg-[#0d1117] flex-1 flex flex-col min-h-[140px]">
+              <div className="flex-1 min-h-0">
                 <LobbyRoadmap
                   roadHistory={(() => {
                     const base = roadmapData.map(r => ({
@@ -2317,6 +2317,12 @@ export default function Game() {
                     };
                   })()}
                 />
+              </div>
+              {/* Mobile Bottom Stats - 莊對/閒對/總數 */}
+              <div className="flex items-center justify-around py-1.5 bg-[#1a1f2e] shrink-0">
+                <span className="text-red-500 font-bold text-sm">莊 <span className="text-white">{roadmapData.filter(r => r.bankerPair).length}</span></span>
+                <span className="text-blue-500 font-bold text-sm">閒對 <span className="text-white">{roadmapData.filter(r => r.playerPair).length}</span></span>
+                <span className="text-gray-400 text-sm">總數 <span className="text-white">{total}</span></span>
               </div>
             </div>
           </div>
