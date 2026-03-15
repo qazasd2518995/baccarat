@@ -2280,10 +2280,9 @@ export default function Game() {
 
             {/* Mobile Roadmap Section - Only visible on mobile/tablet */}
             <div className="lg:hidden bg-[#0d1117]">
-              <div className="flex h-[140px] sm:h-[148px] sm:pb-14">
-                {/* Roadmap */}
-                <div className="flex-1 overflow-hidden">
-                  <LobbyRoadmap roadHistory={(() => {
+              <div className="h-[140px] sm:h-[148px] sm:pb-14">
+                <LobbyRoadmap
+                  roadHistory={(() => {
                     const base = roadmapData.map(r => ({
                       result: r.result,
                       playerPair: r.playerPair || false,
@@ -2293,73 +2292,31 @@ export default function Game() {
                       base.push({ result: askRoadMode as 'banker' | 'player', playerPair: false, bankerPair: false });
                     }
                     return base;
-                  })()} predictedCount={askRoadMode !== 'none' ? 1 : 0} />
-                </div>
-                {/* Stats Panel */}
-                <div className="shrink-0 w-[55px] h-full flex flex-col justify-center px-1.5 py-1 text-[8px] border-l border-gray-700/50" style={{ backgroundColor: '#1e2433' }}>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-red-500">莊</span>
-                    <span className="text-white font-medium">{bankerWins}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-blue-500">閒</span>
-                    <span className="text-white font-medium">{playerWins}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-green-500">和</span>
-                    <span className="text-white font-medium">{ties}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-1 border-t border-gray-600 pt-0.5 mt-0.5">
-                    <span className="text-gray-400">總數</span>
-                    <span className="text-white font-medium">{total}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-1 border-t border-gray-600 pt-0.5 mt-0.5">
-                    <button
-                      onClick={() => setAskRoadMode(prev => prev === 'banker' ? 'none' : 'banker')}
-                      className={`text-red-500 ${askRoadMode === 'banker' ? 'underline font-bold' : ''}`}
-                    >莊問路</button>
-                    <div className="flex items-center gap-0.5">
-                      {(() => {
-                        const be = bankerAskRoad.bigEye.slice(bigEyeBoyDataFull.length);
-                        const sr = bankerAskRoad.smallRoad.slice(smallRoadDataFull.length);
-                        const cp = bankerAskRoad.cockroach.slice(cockroachDataFull.length);
-                        const beC = be.length > 0 ? be[be.length - 1] : null;
-                        const srC = sr.length > 0 ? sr[sr.length - 1] : null;
-                        const cpC = cp.length > 0 ? cp[cp.length - 1] : null;
-                        return (
-                          <>
-                            <div className="w-1.5 h-1.5 rounded-full" style={{ border: `1px solid ${beC === 'red' ? '#ef4444' : beC === 'blue' ? '#3b82f6' : '#666'}` }} />
-                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: srC === 'red' ? '#ef4444' : srC === 'blue' ? '#3b82f6' : '#666' }} />
-                            <div style={{ width: 5, height: 1.5, backgroundColor: cpC === 'red' ? '#ef4444' : cpC === 'blue' ? '#3b82f6' : '#666', transform: 'rotate(-45deg)' }} />
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between gap-1">
-                    <button
-                      onClick={() => setAskRoadMode(prev => prev === 'player' ? 'none' : 'player')}
-                      className={`text-blue-500 ${askRoadMode === 'player' ? 'underline font-bold' : ''}`}
-                    >閒問路</button>
-                    <div className="flex items-center gap-0.5">
-                      {(() => {
-                        const be = playerAskRoad.bigEye.slice(bigEyeBoyDataFull.length);
-                        const sr = playerAskRoad.smallRoad.slice(smallRoadDataFull.length);
-                        const cp = playerAskRoad.cockroach.slice(cockroachDataFull.length);
-                        const beC = be.length > 0 ? be[be.length - 1] : null;
-                        const srC = sr.length > 0 ? sr[sr.length - 1] : null;
-                        const cpC = cp.length > 0 ? cp[cp.length - 1] : null;
-                        return (
-                          <>
-                            <div className="w-1.5 h-1.5 rounded-full" style={{ border: `1px solid ${beC === 'red' ? '#ef4444' : beC === 'blue' ? '#3b82f6' : '#666'}` }} />
-                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: srC === 'red' ? '#ef4444' : srC === 'blue' ? '#3b82f6' : '#666' }} />
-                            <div style={{ width: 5, height: 1.5, backgroundColor: cpC === 'red' ? '#ef4444' : cpC === 'blue' ? '#3b82f6' : '#666', transform: 'rotate(-45deg)' }} />
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </div>
+                  })()}
+                  predictedCount={askRoadMode !== 'none' ? 1 : 0}
+                  askRoadMode={askRoadMode}
+                  onToggleAskRoad={(mode) => setAskRoadMode(prev => prev === mode ? 'none' : mode)}
+                  bankerAskPrediction={(() => {
+                    const be = bankerAskRoad.bigEye.slice(bigEyeBoyDataFull.length);
+                    const sr = bankerAskRoad.smallRoad.slice(smallRoadDataFull.length);
+                    const cp = bankerAskRoad.cockroach.slice(cockroachDataFull.length);
+                    return {
+                      bigEye: be.length > 0 ? be[be.length - 1] : null,
+                      small: sr.length > 0 ? sr[sr.length - 1] : null,
+                      cockroach: cp.length > 0 ? cp[cp.length - 1] : null,
+                    };
+                  })()}
+                  playerAskPrediction={(() => {
+                    const be = playerAskRoad.bigEye.slice(bigEyeBoyDataFull.length);
+                    const sr = playerAskRoad.smallRoad.slice(smallRoadDataFull.length);
+                    const cp = playerAskRoad.cockroach.slice(cockroachDataFull.length);
+                    return {
+                      bigEye: be.length > 0 ? be[be.length - 1] : null,
+                      small: sr.length > 0 ? sr[sr.length - 1] : null,
+                      cockroach: cp.length > 0 ? cp[cp.length - 1] : null,
+                    };
+                  })()}
+                />
               </div>
             </div>
           </div>
