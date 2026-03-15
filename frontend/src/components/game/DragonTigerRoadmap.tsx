@@ -238,7 +238,7 @@ function DragonTigerRoadmap({ roadHistory, askRoadMode, onToggleAskRoad }: Drago
 
   const BEAD_ROWS = 6, BEAD_COLS = 6;
   const BR_ROWS = 6, BR_COLS = 14;
-  const DR_ROWS = 6, DR_COLS = 10;
+  const DR_ROWS = 6, DR_COLS = 20;
 
   const realCols = useMemo(() => buildDTBigRoadColumns(roadHistory), [roadHistory]);
   const bigRoadCols = useMemo(() => isAskActive ? buildDTBigRoadColumns(simHistory) : realCols, [simHistory, realCols, isAskActive]);

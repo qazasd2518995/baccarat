@@ -168,7 +168,7 @@ function LobbyRoadmap({
   // Grid dimensions
   const BEAD_ROWS = 6, BEAD_COLS = 6;
   const BR_ROWS = 6, BR_COLS = 14;
-  const DR_ROWS = 6, DR_COLS = 10;
+  const DR_ROWS = 6, DR_COLS = 20;
 
   // Build grids
   const bigRoadColumns = useMemo(() => buildBigRoadColumns(roadHistory), [roadHistory]);
