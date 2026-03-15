@@ -979,6 +979,13 @@ export default function DragonTigerGame() {
           >
             <Settings className="w-4 h-4" />
           </button>
+          <button
+            onClick={() => setIsRoadmapOpen(true)}
+            className="p-1 text-amber-400 hover:text-amber-300"
+            title="路單"
+          >
+            <MapPin className="w-4 h-4" />
+          </button>
           <div className={`flex items-center gap-1 text-xs ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
             {isConnected ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
             <span>{isConnected ? t('live') : t('offline')}</span>
