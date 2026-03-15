@@ -3,10 +3,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import type { GameResult } from '../../../types';
-import { buildBigRoadColumns, buildBigRoadGrid, buildDerivedRoadFlat } from '../../../utils/roadmap';
+import {
+  buildBigRoadColumns,
+  buildBigRoadGrid,
+  buildDerivedRoad,
+  buildBeadRoadGrid,
+  type RoadHistoryEntry,
+} from '../../../utils/roadmap';
 
 type RoadmapEntry = {
-  roundNumber: string;  // Format: YYYYMMDDNNN (e.g., 20260228001)
+  roundNumber: string;
   result: GameResult;
   playerPair: boolean;
   bankerPair: boolean;
@@ -23,11 +29,19 @@ interface RoadmapModalProps {
 
 type RoadType = 'bead' | 'big' | 'bigEye' | 'small' | 'cockroach';
 
+const CELL_BG = '#1e2433';
+const LINE_COLOR = '#2a3142';
+
 export default function RoadmapModal({ isOpen, onClose, data }: RoadmapModalProps) {
   const { t } = useTranslation();
   const [activeRoad, setActiveRoad] = useState<RoadType>('bead');
 
-  const bigRoadColumns = useMemo(() => buildBigRoadColumns(data), [data]);
+  const roadHistory: RoadHistoryEntry[] = useMemo(() =>
+    data.map(r => ({ result: r.result, playerPair: r.playerPair, bankerPair: r.bankerPair })),
+    [data]
+  );
+
+  const bigRoadColumns = useMemo(() => buildBigRoadColumns(roadHistory), [roadHistory]);
 
   const tabs: { type: RoadType; label: string }[] = [
     { type: 'bead', label: '珠盤路' },
@@ -37,92 +51,201 @@ export default function RoadmapModal({ isOpen, onClose, data }: RoadmapModalProp
     { type: 'cockroach', label: '蟑螂路' },
   ];
 
+  // ── Bead Road ──
   const renderBeadRoad = () => {
     const ROWS = 6;
-    const cols = Math.max(Math.ceil(data.length / ROWS), 8);
-    return (
-      <div className="overflow-x-auto">
-        <div className="inline-grid gap-px" style={{ gridTemplateRows: `repeat(${ROWS}, 1fr)`, gridTemplateColumns: `repeat(${cols}, 24px)`, backgroundColor: '#D1D5DB' }}>
-          {Array(ROWS).fill(null).flatMap((_, row) =>
-            Array(cols).fill(null).map((_, col) => {
-              const idx = col * ROWS + row;
-              const r = data[idx];
-              if (!r) return <div key={`${row}-${col}`} className="w-6 h-6 bg-white" />;
-              const bg = r.result === 'banker' ? '#DC2626' : r.result === 'player' ? '#2563EB' : '#16A34A';
-              const label = r.result === 'banker' ? '莊' : r.result === 'player' ? '閒' : '和';
-              return (
-                <div key={`${row}-${col}`} className="relative w-6 h-6 flex items-center justify-center bg-white">
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: bg, fontSize: '8px' }}>{label}</div>
-                  {r.bankerPair && <div className="absolute top-0 left-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#DC2626' }} />}
-                  {r.playerPair && <div className="absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#2563EB' }} />}
-                </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-    );
-  };
+    const grid = buildBeadRoadGrid(roadHistory, ROWS);
+    const totalCols = grid[0]?.length ?? 0;
+    const displayCols = Math.max(totalCols, 10);
 
-  const renderBigRoad = () => {
-    const ROWS = 6;
-    const maxCols = 30;
-    const grid = buildBigRoadGrid(bigRoadColumns, ROWS, maxCols);
-    let usedCols = 0;
-    for (let c = 0; c < maxCols; c++) {
+    const cells: React.ReactNode[] = [];
+    for (let c = 0; c < displayCols; c++) {
       for (let r = 0; r < ROWS; r++) {
-        if (grid[r][c]) usedCols = c + 1;
+        const entry = grid[r]?.[c] ?? null;
+        const key = `bead-${r}-${c}`;
+
+        if (!entry) {
+          cells.push(<div key={key} style={{ background: CELL_BG }} />);
+          continue;
+        }
+
+        let bgColor = '#FFFFFF';
+        let text = '';
+        if (entry.result === 'banker') { bgColor = '#DC2626'; text = '莊'; }
+        else if (entry.result === 'player') { bgColor = '#2563EB'; text = '閒'; }
+        else if (entry.result === 'tie') { bgColor = '#16A34A'; text = '和'; }
+
+        cells.push(
+          <div key={key} className="relative flex items-center justify-center" style={{ background: CELL_BG }}>
+            <div
+              className="rounded-full flex items-center justify-center"
+              style={{ width: 22, height: 22, backgroundColor: bgColor }}
+            >
+              <span style={{ color: '#FFFFFF', fontSize: '9px', fontWeight: 'bold', lineHeight: 1 }}>{text}</span>
+            </div>
+            {entry.bankerPair && (
+              <div className="absolute top-0.5 left-0.5 w-2 h-2 rounded-full" style={{ backgroundColor: '#DC2626', border: '1px solid #1e2433' }} />
+            )}
+            {entry.playerPair && (
+              <div className="absolute bottom-0.5 right-0.5 w-2 h-2 rounded-full" style={{ backgroundColor: '#2563EB', border: '1px solid #1e2433' }} />
+            )}
+          </div>
+        );
       }
     }
-    const displayCols = Math.max(usedCols, 12);
+
     return (
       <div className="overflow-x-auto">
-        <div className="inline-grid gap-px" style={{ gridTemplateRows: `repeat(${ROWS}, 1fr)`, gridTemplateColumns: `repeat(${displayCols}, 24px)`, backgroundColor: '#D1D5DB' }}>
-          {Array(ROWS).fill(null).flatMap((_, row) =>
-            Array(displayCols).fill(null).map((_, col) => {
-              const cell = grid[row]?.[col];
-              if (!cell) return <div key={`${row}-${col}`} className="w-6 h-6 bg-white" />;
-              const borderColor = cell.result === 'banker' ? '#DC2626' : '#2563EB';
-              return (
-                <div key={`${row}-${col}`} className="relative w-6 h-6 flex items-center justify-center bg-white">
-                  <div className="w-5 h-5 rounded-full border-2" style={{ borderColor }}>
-                    {cell.tieCount > 0 && (
-                      <span className="flex items-center justify-center text-green-600 font-bold" style={{ fontSize: '7px' }}>{cell.tieCount}</span>
-                    )}
-                  </div>
-                  {cell.bankerPair && <div className="absolute top-0 right-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#DC2626' }} />}
-                  {cell.playerPair && <div className="absolute bottom-0 left-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: '#2563EB' }} />}
-                </div>
-              );
-            })
-          )}
+        <div
+          className="inline-grid"
+          style={{
+            gridTemplateRows: `repeat(${ROWS}, 28px)`,
+            gridTemplateColumns: `repeat(${displayCols}, 28px)`,
+            gridAutoFlow: 'column',
+            gap: '1px',
+            backgroundColor: LINE_COLOR,
+          }}
+        >
+          {cells}
         </div>
       </div>
     );
   };
 
-  const renderDerivedRoad = (type: 'bigEye' | 'small' | 'cockroach') => {
-    const results = buildDerivedRoadFlat(bigRoadColumns, type === 'bigEye' ? 1 : type === 'small' ? 2 : 3);
+  // ── Big Road ──
+  const renderBigRoad = () => {
     const ROWS = 6;
-    const cols = Math.max(Math.ceil(results.length / ROWS), 8);
+    const LARGE_COLS = 200;
+    const gridLarge = buildBigRoadGrid(bigRoadColumns, ROWS, LARGE_COLS);
+
+    // Find rightmost used column
+    let maxUsedCol = 0;
+    for (let c = 0; c < LARGE_COLS; c++) {
+      for (let r = 0; r < ROWS; r++) {
+        if (gridLarge[r][c]) maxUsedCol = c;
+      }
+    }
+    const displayCols = Math.max(maxUsedCol + 1, 14);
+
+    const cells: React.ReactNode[] = [];
+    for (let c = 0; c < displayCols; c++) {
+      for (let r = 0; r < ROWS; r++) {
+        const cell = gridLarge[r]?.[c] ?? null;
+        const key = `br-${r}-${c}`;
+
+        if (!cell) {
+          cells.push(<div key={key} style={{ background: CELL_BG }} />);
+          continue;
+        }
+
+        const borderColor = cell.result === 'banker' ? '#DC2626' : '#2563EB';
+        cells.push(
+          <div key={key} className="relative flex items-center justify-center" style={{ background: CELL_BG }}>
+            <div
+              className="rounded-full"
+              style={{ width: 18, height: 18, border: `2px solid ${borderColor}` }}
+            >
+              {cell.tieCount > 0 && (
+                <span className="flex items-center justify-center text-green-500 font-bold" style={{ fontSize: '8px', lineHeight: '14px' }}>
+                  {cell.tieCount}
+                </span>
+              )}
+            </div>
+            {cell.bankerPair && (
+              <div className="absolute top-0.5 right-0.5 w-2 h-2 rounded-full" style={{ backgroundColor: '#DC2626', border: '1px solid #1e2433' }} />
+            )}
+            {cell.playerPair && (
+              <div className="absolute bottom-0.5 left-0.5 w-2 h-2 rounded-full" style={{ backgroundColor: '#2563EB', border: '1px solid #1e2433' }} />
+            )}
+          </div>
+        );
+      }
+    }
+
     return (
       <div className="overflow-x-auto">
-        <div className="inline-grid gap-px" style={{ gridTemplateRows: `repeat(${ROWS}, 1fr)`, gridTemplateColumns: `repeat(${cols}, 16px)`, backgroundColor: '#D1D5DB' }}>
-          {Array(ROWS).fill(null).flatMap((_, row) =>
-            Array(cols).fill(null).map((_, col) => {
-              const idx = col * ROWS + row;
-              const val = results[idx];
-              if (!val) return <div key={`${row}-${col}`} className="w-4 h-4 bg-white" />;
-              const color = val === 'red' ? '#DC2626' : '#2563EB';
-              if (type === 'bigEye') {
-                return <div key={`${row}-${col}`} className="w-4 h-4 flex items-center justify-center bg-white"><div className="w-3 h-3 rounded-full border-2" style={{ borderColor: color }} /></div>;
-              }
-              if (type === 'small') {
-                return <div key={`${row}-${col}`} className="w-4 h-4 flex items-center justify-center bg-white"><div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} /></div>;
-              }
-              return <div key={`${row}-${col}`} className="w-4 h-4 flex items-center justify-center bg-white"><div className="w-3 h-0.5" style={{ backgroundColor: color, transform: val === 'red' ? 'rotate(45deg)' : 'rotate(-45deg)' }} /></div>;
-            })
-          )}
+        <div
+          className="inline-grid"
+          style={{
+            gridTemplateRows: `repeat(${ROWS}, 28px)`,
+            gridTemplateColumns: `repeat(${displayCols}, 28px)`,
+            gridAutoFlow: 'column',
+            gap: '1px',
+            backgroundColor: LINE_COLOR,
+          }}
+        >
+          {cells}
+        </div>
+      </div>
+    );
+  };
+
+  // ── Derived Roads ──
+  const renderDerivedRoad = (type: 'bigEye' | 'small' | 'cockroach') => {
+    const offset = type === 'bigEye' ? 1 : type === 'small' ? 2 : 3;
+    const ROWS = 6;
+    const LARGE_COLS = 200;
+    const grid = buildDerivedRoad(bigRoadColumns, offset, ROWS, LARGE_COLS);
+
+    // Find rightmost used column
+    let maxUsedCol = 0;
+    for (let c = 0; c < LARGE_COLS; c++) {
+      for (let r = 0; r < ROWS; r++) {
+        if (grid[r][c]) maxUsedCol = c;
+      }
+    }
+    const displayCols = Math.max(maxUsedCol + 1, 14);
+
+    const cells: React.ReactNode[] = [];
+    for (let c = 0; c < displayCols; c++) {
+      for (let r = 0; r < ROWS; r++) {
+        const value = grid[r]?.[c] ?? null;
+        const key = `dr-${r}-${c}`;
+
+        if (!value) {
+          cells.push(<div key={key} style={{ background: CELL_BG }} />);
+          continue;
+        }
+
+        const color = value === 'red' ? '#DC2626' : '#2563EB';
+
+        if (type === 'bigEye') {
+          cells.push(
+            <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
+              <div className="rounded-full" style={{ width: 12, height: 12, border: `2px solid ${color}` }} />
+            </div>
+          );
+        } else if (type === 'small') {
+          cells.push(
+            <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
+              <div className="rounded-full" style={{ width: 10, height: 10, backgroundColor: color }} />
+            </div>
+          );
+        } else {
+          cells.push(
+            <div key={key} className="flex items-center justify-center" style={{ background: CELL_BG }}>
+              <svg viewBox="0 0 10 10" style={{ width: 12, height: 12 }}>
+                <line x1="1" y1="9" x2="9" y2="1" stroke={color} strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </div>
+          );
+        }
+      }
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <div
+          className="inline-grid"
+          style={{
+            gridTemplateRows: `repeat(${ROWS}, 20px)`,
+            gridTemplateColumns: `repeat(${displayCols}, 20px)`,
+            gridAutoFlow: 'column',
+            gap: '1px',
+            backgroundColor: LINE_COLOR,
+          }}
+        >
+          {cells}
         </div>
       </div>
     );
