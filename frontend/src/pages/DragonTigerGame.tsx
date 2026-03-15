@@ -1362,7 +1362,7 @@ export default function DragonTigerGame() {
           />
 
           {/* Betting Panel */}
-          <div className="bg-[#0d1117]">
+          <div className="bg-[#0d1117] lg:flex-none shrink-0 flex flex-col">
             {/* Quick Message Buttons - Desktop only, above Control Bar */}
             <div className="hidden xl:flex items-center gap-1 px-4 py-1.5 border-b border-gray-800/30 bg-black/30">
               <span className="text-[10px] text-gray-500 mr-2">廣播:</span>
@@ -2004,9 +2004,9 @@ export default function DragonTigerGame() {
             </div>
 
             {/* Roadmap Section - Bottom area (dark theme like Baccarat) - Mobile/Tablet only */}
-            <div className="bg-[#0d1117] lg:hidden">
+            <div className="lg:hidden bg-[#0d1117] flex-1 flex flex-col min-h-[110px]">
               {/* Roadmap with built-in stats panel */}
-              <div className="h-[110px] sm:h-[148px]">
+              <div className="flex-1 min-h-0">
                 <DragonTigerRoadmap roadHistory={roadmapData} askRoadMode={askRoadMode} onToggleAskRoad={(mode) => setAskRoadMode(prev => prev === mode ? 'none' : mode)} />
               </div>
             </div>
