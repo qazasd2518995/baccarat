@@ -1522,7 +1522,7 @@ export default function DragonTigerGame() {
               {/* Center: Betting Buttons - All on casino green felt */}
               <div className="flex-1 flex flex-col border-l border-r border-[#d4af37]/30 casino-betting-surface">
                 {/* Row 0 - 龍大/龍小/同花和/虎小/虎大 */}
-                <div className="flex h-[40px] lg:h-[60px] border-b border-[#d4af37]/30">
+                <div className="flex h-[32px] sm:h-[40px] lg:h-[60px] border-b border-[#d4af37]/30">
                   <button
                     onClick={(e) => handleBet('dragon_big', e)}
                     disabled={!canBet}
@@ -1621,7 +1621,7 @@ export default function DragonTigerGame() {
                 </div>
 
                 {/* Row 1 - 龍雙/龍單/虎單/虎雙 */}
-                <div className="flex h-[40px] lg:h-[70px] border-b border-[#d4af37]/30">
+                <div className="flex h-[32px] sm:h-[40px] lg:h-[70px] border-b border-[#d4af37]/30">
                   <button
                     onClick={(e) => handleBet('dragon_even', e)}
                     disabled={!canBet}
@@ -1701,7 +1701,7 @@ export default function DragonTigerGame() {
                 </div>
 
                 {/* Row 2 - 龍黑/龍紅/虎紅/虎黑 */}
-                <div className="flex h-[40px] lg:h-[70px] border-b border-[#d4af37]/30">
+                <div className="flex h-[32px] sm:h-[40px] lg:h-[70px] border-b border-[#d4af37]/30">
                   <button
                     onClick={(e) => handleBet('dragon_black', e)}
                     disabled={!canBet}
@@ -2006,7 +2006,7 @@ export default function DragonTigerGame() {
             {/* Roadmap Section - Bottom area (dark theme like Baccarat) - Mobile/Tablet only */}
             <div className="bg-[#0d1117] lg:hidden">
               {/* Roadmap with built-in stats panel */}
-              <div className="h-[140px] sm:h-[148px]">
+              <div className="h-[110px] sm:h-[148px]">
                 <DragonTigerRoadmap roadHistory={roadmapData} askRoadMode={askRoadMode} onToggleAskRoad={(mode) => setAskRoadMode(prev => prev === mode ? 'none' : mode)} />
               </div>
             </div>

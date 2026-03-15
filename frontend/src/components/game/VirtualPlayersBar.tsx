@@ -314,7 +314,7 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
 
   return (
     <div
-      className="w-full relative overflow-hidden"
+      className="w-full relative overflow-hidden shrink-0"
       style={{
         background: 'linear-gradient(180deg, rgba(30,35,40,0.95) 0%, rgba(20,25,30,0.98) 100%)',
         borderTop: '1px solid rgba(212,175,55,0.3)',
