@@ -45,7 +45,7 @@ function CountdownTimer({ timeRemaining, totalTime = 15, phase, hidden }: Countd
 
   return (
     <div
-      className="absolute top-2 right-2 sm:top-3 sm:right-3 lg:top-2 lg:left-2 lg:right-auto z-30"
+      className="absolute top-2 right-2 sm:top-3 sm:right-3 z-30"
       style={{ width: size, height: size }}
     >
       <div
