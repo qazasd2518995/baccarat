@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
@@ -35,6 +35,23 @@ const LINE_COLOR = '#2a3142';
 export default function RoadmapModal({ isOpen, onClose, data }: RoadmapModalProps) {
   const { t } = useTranslation();
   const [activeRoad, setActiveRoad] = useState<RoadType>('bead');
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to rightmost (latest data) when tab changes or modal opens
+  const scrollToRight = useCallback(() => {
+    requestAnimationFrame(() => {
+      const container = contentRef.current;
+      if (!container) return;
+      const scrollable = container.querySelector('.overflow-x-auto');
+      if (scrollable) {
+        scrollable.scrollLeft = scrollable.scrollWidth;
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) scrollToRight();
+  }, [isOpen, activeRoad, scrollToRight]);
 
   const roadHistory: RoadHistoryEntry[] = useMemo(() =>
     data.map(r => ({ result: r.result, playerPair: r.playerPair, bankerPair: r.bankerPair })),
@@ -296,7 +313,7 @@ export default function RoadmapModal({ isOpen, onClose, data }: RoadmapModalProp
             </div>
 
             {/* Content */}
-            <div className="flex-1 p-3 overflow-auto">
+            <div ref={contentRef} className="flex-1 p-3 overflow-auto">
               {activeRoad === 'bead' && renderBeadRoad()}
               {activeRoad === 'big' && renderBigRoad()}
               {activeRoad === 'bigEye' && renderDerivedRoad('bigEye')}
