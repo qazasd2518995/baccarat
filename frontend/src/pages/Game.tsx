@@ -1536,9 +1536,6 @@ export default function Game() {
 
         {/* Center - Game Area */}
         <div className="flex-1 flex flex-col min-w-0 min-h-0 relative">
-          {/* Countdown timer — positioned over entire game area (above dealer + table) */}
-          <CountdownTimer timeRemaining={timeRemaining} phase={phase} hidden={lastResult !== null || frozenResult !== null || showResult} />
-
           {/* Video Area - 3D Dealer Table */}
           <DealerTable3D
             isDealing={dealerAnimating}
@@ -1547,6 +1544,8 @@ export default function Game() {
             dealerModel={dealerModelForTable}
             isShuffling={isShuffling}
           >
+            {/* Countdown timer — positioned inside dealer table, top-right on mobile, top-left on desktop */}
+            <CountdownTimer timeRemaining={timeRemaining} phase={phase} hidden={lastResult !== null || frozenResult !== null || showResult} />
 
               {/* Top info bar */}
               {/* Desktop only: Game info bar */}

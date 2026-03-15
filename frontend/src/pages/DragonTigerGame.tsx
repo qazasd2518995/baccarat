@@ -1219,9 +1219,6 @@ export default function DragonTigerGame() {
 
         {/* Center - Game Area */}
         <div className="flex-1 flex flex-col min-w-0 min-h-0 relative">
-          {/* Countdown timer — over entire game area */}
-          <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
-
           {/* Fake bet stats — positioned on table area for desktop, uses animated amounts for sync */}
           <div className="absolute top-[72px] sm:top-[94px] lg:top-[22%] left-2 sm:left-3 lg:left-4 z-50 pointer-events-none">
             <FakeBetStats fakeBets={fakeAmounts} gameType="dragonTiger" size="large" />
@@ -1235,6 +1232,8 @@ export default function DragonTigerGame() {
             dealerModel={dealerModelForTable}
             isShuffling={isShuffling}
           >
+            {/* Countdown timer — positioned inside dealer table, top-right on mobile */}
+            <CountdownTimer timeRemaining={timeRemaining} phase={phase} />
             {/* Round Info - Hidden on mobile, compact on tablet */}
             <div className="hidden sm:block absolute top-2 left-1/2 -translate-x-1/2 bg-black/60 rounded px-2 sm:px-3 py-1 text-xs sm:text-sm z-20">
               <span className="text-gray-400">{t('dragonTiger')} {shoeNumber}</span>
