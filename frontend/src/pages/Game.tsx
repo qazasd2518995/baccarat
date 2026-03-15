@@ -2318,12 +2318,6 @@ export default function Game() {
                   })()}
                 />
               </div>
-              {/* Mobile Bottom Stats - 莊對/閒對/總數 */}
-              <div className="flex items-center justify-around py-1.5 bg-[#1a1f2e] shrink-0">
-                <span className="text-red-500 font-bold text-sm">莊 <span className="text-white">{roadmapData.filter(r => r.bankerPair).length}</span></span>
-                <span className="text-blue-500 font-bold text-sm">閒對 <span className="text-white">{roadmapData.filter(r => r.playerPair).length}</span></span>
-                <span className="text-gray-400 text-sm">總數 <span className="text-white">{total}</span></span>
-              </div>
             </div>
           </div>
         </div>
