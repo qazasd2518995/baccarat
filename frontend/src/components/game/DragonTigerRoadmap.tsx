@@ -18,9 +18,9 @@ function normalizeResult(result: string | undefined): 'dragon' | 'tiger' | 'tie'
   return undefined;
 }
 
-interface DTBigRoadCell { result: 'dragon' | 'tiger'; tieCount: number; }
+export interface DTBigRoadCell { result: 'dragon' | 'tiger'; tieCount: number; }
 
-function buildDTBigRoadColumns(data: Array<{ result: string }>): DTBigRoadCell[][] {
+export function buildDTBigRoadColumns(data: Array<{ result: string }>): DTBigRoadCell[][] {
   const columns: DTBigRoadCell[][] = [];
   let currentCol: DTBigRoadCell[] = [];
   let lastResult: 'dragon' | 'tiger' | null = null;
@@ -57,7 +57,7 @@ function buildDTBigRoadGrid(columns: DTBigRoadCell[][], rows: number, maxCols: n
   return grid;
 }
 
-function buildDTDerivedRoad(columns: DTBigRoadCell[][], offset: number, maxRows: number, maxCols: number): ('red' | 'blue' | null)[][] {
+export function buildDTDerivedRoad(columns: DTBigRoadCell[][], offset: number, maxRows: number, maxCols: number): ('red' | 'blue' | null)[][] {
   const grid: ('red' | 'blue' | null)[][] = Array(maxRows).fill(null).map(() => Array(maxCols).fill(null));
   const startCol = offset + 1;
   if (columns.length < startCol) return grid;

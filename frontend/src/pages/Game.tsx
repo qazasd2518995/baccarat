@@ -59,6 +59,7 @@ import { useFakeChipAmounts, FakeChipStack, FakeBetStats } from '../components/g
 import DealerTable3D from '../components/game/DealerTable3D';
 import GameLoadingScreen from '../components/game/GameLoadingScreen';
 import LobbyRoadmap from '../components/lobby/LobbyRoadmap';
+import { buildBigRoadColumns, buildDerivedRoad } from '../utils/roadmap';
 import MarqueeChat, { useMarqueeChat, MarqueeQuickButtons } from '../components/game/MarqueeChat';
 import { FlyingChipOverlay, useFlyingChips, ChipStack } from '../components/game/BetAreaChips';
 import NoticeMarquee from '../components/game/NoticeMarquee';
@@ -168,158 +169,58 @@ function BigRoadCell({ result, tieCount = 0, bankerPair, playerPair, blink }: { 
 
 // Derived Road Grid - displays data in 2x2 mini-cells per grid cell with grid lines
 // Each visual grid cell contains 4 small circles arranged in a 2x2 pattern
-function DerivedRoadGrid({ data, type, predictedCount = 0 }: { data: ('red' | 'blue')[]; type: 'big_eye' | 'small' | 'cockroach'; predictedCount?: number }) {
-  // Display: 6 rows x 12 cols of small circles
-  const SMALL_ROWS = 6;
-  const SMALL_COLS = 12;
-
-  // Build grid using Big Road layout logic:
-  // Same color goes down, different color starts new column
-  // Dragon tail when hitting bottom or occupied cell
-  const grid2D: (('red' | 'blue') | null)[][] = Array(SMALL_ROWS).fill(null).map(() => Array(SMALL_COLS).fill(null));
-  const predictedCells = new Set<string>();
-
-  // Group consecutive same colors into columns
-  const columns: ('red' | 'blue')[][] = [];
-  let currentCol: ('red' | 'blue')[] = [];
-  let lastColor: 'red' | 'blue' | null = null;
-
-  for (const color of data) {
-    if (lastColor !== null && color !== lastColor) {
-      if (currentCol.length > 0) {
-        columns.push(currentCol);
-      }
-      currentCol = [color];
-    } else {
-      currentCol.push(color);
-    }
-    lastColor = color;
-  }
-  if (currentCol.length > 0) {
-    columns.push(currentCol);
-  }
-
-  // Place columns in grid with dragon tail handling
-  let gridCol = 0;
-  let dataIndex = 0;
-  const predictedStartIndex = data.length - predictedCount;
-  for (const column of columns) {
-    let row = 0;
-    let col = gridCol;
-
-    for (const color of column) {
-      if (row >= SMALL_ROWS) {
-        col++;
-        row = SMALL_ROWS - 1;
-      }
-
-      while (col < SMALL_COLS && grid2D[row][col] !== null) {
-        col++;
-      }
-
-      if (col < SMALL_COLS) {
-        grid2D[row][col] = color;
-        if (dataIndex >= predictedStartIndex) {
-          predictedCells.add(`${row}-${col}`);
-        }
-      }
-      row++;
-      dataIndex++;
-    }
-
-    gridCol = col + 1;
-  }
-
-  const colors = {
-    red: { border: '#DC2626', fill: '#DC2626' },
-    blue: { border: '#2563EB', fill: '#2563EB' },
-  };
-
-  // Grid cells are 2x2, so we have 3 rows x 6 cols of grid cells
-  const GRID_ROWS = Math.ceil(SMALL_ROWS / 2);
-  const GRID_COLS = Math.ceil(SMALL_COLS / 2);
-
+function DerivedRoadGrid({ grid, type, rows, cols, predictedCells }: {
+  grid: ('red' | 'blue' | null)[][]; type: 'big_eye' | 'small' | 'cockroach'; rows: number; cols: number; predictedCells?: Set<string>;
+}) {
+  const vRows = Math.ceil(rows / 2);
+  const vCols = Math.ceil(cols / 2);
   const gridCells: React.ReactNode[] = [];
 
-  for (let gc = 0; gc < GRID_COLS; gc++) {
-    for (let gr = 0; gr < GRID_ROWS; gr++) {
-      const key = `grid-${gr}-${gc}`;
-
-      const miniCells: React.ReactNode[] = [];
+  for (let vc = 0; vc < vCols; vc++) {
+    for (let vr = 0; vr < vRows; vr++) {
+      const key = `d-${vr}-${vc}`;
+      const minis: React.ReactNode[] = [];
       for (let mr = 0; mr < 2; mr++) {
         for (let mc = 0; mc < 2; mc++) {
-          const dataRow = gr * 2 + mr;
-          const dataCol = gc * 2 + mc;
-          const value = grid2D[dataRow]?.[dataCol] ?? null;
-          const miniKey = `mini-${mr}-${mc}`;
-
-          if (!value) {
-            miniCells.push(<div key={miniKey} />);
-            continue;
-          }
-
-          const color = colors[value];
-          const isPred = predictedCells.has(`${dataRow}-${dataCol}`);
-          const blinkStyle = isPred ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
-
+          const dr = vr * 2 + mr, dc = vc * 2 + mc;
+          const val = grid[dr]?.[dc] ?? null;
+          const mk = `m-${mr}-${mc}`;
+          if (!val) { minis.push(<div key={mk} />); continue; }
+          const isPred = predictedCells?.has(`${dr}-${dc}`) ?? false;
+          const blink = isPred ? { animation: 'askBlink 0.6s ease-in-out infinite' } : {};
+          const c = val === 'red' ? '#DC2626' : '#2563EB';
           if (type === 'big_eye') {
-            miniCells.push(
-              <div key={miniKey} className="flex items-center justify-center">
-                <div
-                  className="w-[7px] h-[7px] rounded-full"
-                  style={{ border: `1.5px solid ${color.border}`, ...blinkStyle }}
-                />
-              </div>
-            );
+            minis.push(<div key={mk} className="flex items-center justify-center"><div className="rounded-full" style={{ width: 7, height: 7, border: `1.5px solid ${c}`, ...blink }} /></div>);
           } else if (type === 'small') {
-            miniCells.push(
-              <div key={miniKey} className="flex items-center justify-center">
-                <div
-                  className="w-[7px] h-[7px] rounded-full"
-                  style={{ backgroundColor: color.fill, ...blinkStyle }}
-                />
-              </div>
-            );
+            minis.push(<div key={mk} className="flex items-center justify-center"><div className="rounded-full" style={{ width: 7, height: 7, backgroundColor: c, ...blink }} /></div>);
           } else {
-            miniCells.push(
-              <div key={miniKey} className="flex items-center justify-center" style={blinkStyle}>
-                <svg viewBox="0 0 10 10" className="w-[9px] h-[9px]">
-                  <line x1="1" y1="9" x2="9" y2="1" stroke={color.fill} strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </div>
-            );
+            minis.push(<div key={mk} className="flex items-center justify-center" style={blink}><svg viewBox="0 0 10 10" style={{ width: 9, height: 9 }}><line x1="1" y1="9" x2="9" y2="1" stroke={c} strokeWidth="2" strokeLinecap="round" /></svg></div>);
           }
         }
       }
-
       gridCells.push(
-        <div
-          key={key}
-          className="grid bg-white"
-          style={{
-            gridTemplateRows: 'repeat(2, 1fr)',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-          }}
-        >
-          {miniCells}
+        <div key={key} className="grid" style={{ gridTemplateRows: 'repeat(2,1fr)', gridTemplateColumns: 'repeat(2,1fr)', background: '#FFFFFF' }}>
+          {minis}
         </div>
       );
     }
   }
-
   return (
-    <div
-      className="grid h-full w-full"
-      style={{
-        gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
-        gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
-        gridAutoFlow: 'column',
-        gap: '1px',
-        backgroundColor: '#D1D5DB',
-      }}
-    >
+    <div className="grid h-full w-full" style={{ gridTemplateRows: `repeat(${vRows}, 1fr)`, gridTemplateColumns: `repeat(${vCols}, 1fr)`, gridAutoFlow: 'column', gap: '1px', backgroundColor: '#D1D5DB' }}>
       {gridCells}
     </div>
+  );
+}
+
+// Prediction dots for ask road buttons (matches mobile PredictionDots)
+function PredictionDots({ bigEye, small, cockroach }: { bigEye: 'red' | 'blue' | null; small: 'red' | 'blue' | null; cockroach: 'red' | 'blue' | null }) {
+  const c = (v: 'red' | 'blue' | null) => v === 'red' ? '#ef4444' : v === 'blue' ? '#3b82f6' : '#FFFFFF50';
+  return (
+    <span className="inline-flex items-center gap-0.5 mt-1">
+      <span className="inline-block rounded-full" style={{ width: 7, height: 7, border: `1.5px solid ${c(bigEye)}` }} />
+      <span className="inline-block rounded-full" style={{ width: 7, height: 7, backgroundColor: c(small) }} />
+      <span className="inline-block" style={{ width: 7, height: 1.5, backgroundColor: c(cockroach), transform: 'rotate(-45deg)' }} />
+    </span>
   );
 }
 
@@ -958,10 +859,32 @@ export default function Game() {
   // Build full logical Big Road (unlimited columns) and derived roads
   const bigRoadFull = buildBigRoad(roadmapData);
 
-  // Calculate derived roads from full grid
+  // Calculate derived roads from full grid (flat arrays, used by ask road)
   const bigEyeBoyDataFull = calculateBigEyeBoy(bigRoadFull);
   const smallRoadDataFull = calculateSmallRoad(bigRoadFull);
   const cockroachDataFull = calculateCockroachPig(bigRoadFull);
+
+  // Build derived road 2D grids for desktop display (same algorithm as mobile LobbyRoadmap)
+  const DR_ROWS = 6;
+  const DR_COLS = 20;
+  const LARGE_COLS_DR = 200;
+  const bigRoadColumns = buildBigRoadColumns(roadmapData);
+  const beGridLarge = buildDerivedRoad(bigRoadColumns, 1, DR_ROWS, LARGE_COLS_DR);
+  const srGridLarge = buildDerivedRoad(bigRoadColumns, 2, DR_ROWS, LARGE_COLS_DR);
+  const crGridLarge = buildDerivedRoad(bigRoadColumns, 3, DR_ROWS, LARGE_COLS_DR);
+
+  // Sliding window for derived roads
+  const extractDerivedWindow = (large: ('red' | 'blue' | null)[][], cols: number) => {
+    let mx = 0;
+    for (let c = 0; c < LARGE_COLS_DR; c++) for (let r = 0; r < DR_ROWS; r++) if (large[r]?.[c]) mx = c;
+    const off = Math.max(0, mx - cols + 1);
+    const g: ('red' | 'blue' | null)[][] = Array(DR_ROWS).fill(null).map(() => Array(cols).fill(null));
+    for (let r = 0; r < DR_ROWS; r++) for (let c = 0; c < cols; c++) g[r][c] = large[r]?.[c + off] ?? null;
+    return g;
+  };
+  const beGrid = extractDerivedWindow(beGridLarge, DR_COLS);
+  const srGrid = extractDerivedWindow(srGridLarge, DR_COLS);
+  const crGrid = extractDerivedWindow(crGridLarge, DR_COLS);
 
   // Display constants
   const BIG_ROAD_DISPLAY_COLS = 20;
@@ -1805,23 +1728,11 @@ export default function Game() {
                       style={{ backgroundColor: '#DC2626' }}
                     >
                       <span className="writing-vertical tracking-wider text-[10px]">莊問路</span>
-                      <div className="flex gap-0.5 mt-1">
-                        {(() => {
-                          const be = bankerAskRoad.bigEye.slice(bigEyeBoyDataFull.length);
-                          const sr = bankerAskRoad.smallRoad.slice(smallRoadDataFull.length);
-                          const cp = bankerAskRoad.cockroach.slice(cockroachDataFull.length);
-                          const beC = be.length > 0 ? be[be.length - 1] : null;
-                          const srC = sr.length > 0 ? sr[sr.length - 1] : null;
-                          const cpC = cp.length > 0 ? cp[cp.length - 1] : null;
-                          return (
-                            <>
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: beC ? (beC === 'red' ? '#FCA5A5' : '#93C5FD') : '#FFFFFF50' }} />
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: srC ? (srC === 'red' ? '#FCA5A5' : '#93C5FD') : '#FFFFFF50' }} />
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cpC ? (cpC === 'red' ? '#FCA5A5' : '#93C5FD') : '#FFFFFF50' }} />
-                            </>
-                          );
-                        })()}
-                      </div>
+                      <PredictionDots
+                        bigEye={(() => { const be = bankerAskRoad.bigEye.slice(bigEyeBoyDataFull.length); return be.length > 0 ? be[be.length - 1] : null; })()}
+                        small={(() => { const sr = bankerAskRoad.smallRoad.slice(smallRoadDataFull.length); return sr.length > 0 ? sr[sr.length - 1] : null; })()}
+                        cockroach={(() => { const cp = bankerAskRoad.cockroach.slice(cockroachDataFull.length); return cp.length > 0 ? cp[cp.length - 1] : null; })()}
+                      />
                     </button>
                     {/* 閒問路 button */}
                     <button
@@ -1830,23 +1741,11 @@ export default function Game() {
                       style={{ backgroundColor: '#2563EB' }}
                     >
                       <span className="writing-vertical tracking-wider text-[10px]">閒問路</span>
-                      <div className="flex gap-0.5 mt-1">
-                        {(() => {
-                          const be = playerAskRoad.bigEye.slice(bigEyeBoyDataFull.length);
-                          const sr = playerAskRoad.smallRoad.slice(smallRoadDataFull.length);
-                          const cp = playerAskRoad.cockroach.slice(cockroachDataFull.length);
-                          const beC = be.length > 0 ? be[be.length - 1] : null;
-                          const srC = sr.length > 0 ? sr[sr.length - 1] : null;
-                          const cpC = cp.length > 0 ? cp[cp.length - 1] : null;
-                          return (
-                            <>
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: beC ? (beC === 'red' ? '#FCA5A5' : '#93C5FD') : '#FFFFFF50' }} />
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: srC ? (srC === 'red' ? '#FCA5A5' : '#93C5FD') : '#FFFFFF50' }} />
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cpC ? (cpC === 'red' ? '#FCA5A5' : '#93C5FD') : '#FFFFFF50' }} />
-                            </>
-                          );
-                        })()}
-                      </div>
+                      <PredictionDots
+                        bigEye={(() => { const be = playerAskRoad.bigEye.slice(bigEyeBoyDataFull.length); return be.length > 0 ? be[be.length - 1] : null; })()}
+                        small={(() => { const sr = playerAskRoad.smallRoad.slice(smallRoadDataFull.length); return sr.length > 0 ? sr[sr.length - 1] : null; })()}
+                        cockroach={(() => { const cp = playerAskRoad.cockroach.slice(cockroachDataFull.length); return cp.length > 0 ? cp[cp.length - 1] : null; })()}
+                      />
                     </button>
                   </div>
 
@@ -2246,29 +2145,17 @@ export default function Game() {
                 <div className="flex h-[54px] border-t border-gray-400">
                   {/* Big Eye Boy - hollow circles */}
                   <div className="flex-1 border-r border-gray-400">
-                    <DerivedRoadGrid
-                      data={askRoadMode !== 'none' ? (askRoadMode === 'banker' ? bankerAskRoad.bigEye : playerAskRoad.bigEye) : bigEyeBoyDataFull}
-                      type="big_eye"
-                      predictedCount={askRoadMode !== 'none' ? ((askRoadMode === 'banker' ? bankerAskRoad.bigEye : playerAskRoad.bigEye).length - bigEyeBoyDataFull.length) : 0}
-                    />
+                    <DerivedRoadGrid grid={beGrid} type="big_eye" rows={DR_ROWS} cols={DR_COLS} />
                   </div>
 
                   {/* Small Road - filled circles */}
                   <div className="flex-1 border-r border-gray-400">
-                    <DerivedRoadGrid
-                      data={askRoadMode !== 'none' ? (askRoadMode === 'banker' ? bankerAskRoad.smallRoad : playerAskRoad.smallRoad) : smallRoadDataFull}
-                      type="small"
-                      predictedCount={askRoadMode !== 'none' ? ((askRoadMode === 'banker' ? bankerAskRoad.smallRoad : playerAskRoad.smallRoad).length - smallRoadDataFull.length) : 0}
-                    />
+                    <DerivedRoadGrid grid={srGrid} type="small" rows={DR_ROWS} cols={DR_COLS} />
                   </div>
 
                   {/* Cockroach Pig - slashes */}
                   <div className="flex-1">
-                    <DerivedRoadGrid
-                      data={askRoadMode !== 'none' ? (askRoadMode === 'banker' ? bankerAskRoad.cockroach : playerAskRoad.cockroach) : cockroachDataFull}
-                      type="cockroach"
-                      predictedCount={askRoadMode !== 'none' ? ((askRoadMode === 'banker' ? bankerAskRoad.cockroach : playerAskRoad.cockroach).length - cockroachDataFull.length) : 0}
-                    />
+                    <DerivedRoadGrid grid={crGrid} type="cockroach" rows={DR_ROWS} cols={DR_COLS} />
                   </div>
                 </div>
 
