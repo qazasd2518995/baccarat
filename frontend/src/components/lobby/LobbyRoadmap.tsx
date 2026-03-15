@@ -234,11 +234,11 @@ function LobbyRoadmap({
 
   const isNarrow = containerWidth > 0 && containerWidth < 350;
   const BEAD_ROWS = 6;
-  const BEAD_COLS = isNarrow ? 6 : 8;
+  const BEAD_COLS = isNarrow ? 5 : 6;
   const BIG_ROAD_ROWS = 6;
-  const BIG_ROAD_COLS = isNarrow ? 18 : 24;
+  const BIG_ROAD_COLS = isNarrow ? 12 : 16;
   const DERIVED_ROWS = 6;
-  const DERIVED_COLS = isNarrow ? 10 : 14;
+  const DERIVED_COLS = isNarrow ? 8 : 10;
 
   const bigRoadColumns = useMemo(() => buildBigRoadColumns(roadHistory), [roadHistory]);
   const bigRoadGridLarge = useMemo(() => buildBigRoadGrid(bigRoadColumns, BIG_ROAD_ROWS, LARGE_COLS), [bigRoadColumns]);
@@ -346,26 +346,26 @@ function LobbyRoadmap({
       {containerWidth > 0 && (
         <>
           {/* Roads area */}
-          <div className="flex-1 flex" style={{ gap: '1px' }}>
-            {/* Bead Road (珠盤路) ~15% */}
-            <div className="h-full shrink-0" style={{ width: '15%', borderRight: `1px solid ${LINE}` }}>
+          <div className="flex-1 flex">
+            {/* Bead Road (珠盤路) ~16% */}
+            <div className="h-full shrink-0" style={{ width: '16%', borderRight: `2px solid #999` }}>
               <BeadRoad grid={beadRoadGrid} rows={BEAD_ROWS} cols={BEAD_COLS} totalEntries={roadHistory.length} predictedCount={predictedCount} />
             </div>
 
-            {/* Big Road (大路) ~50% */}
-            <div className="h-full" style={{ width: '50%', borderRight: `1px solid ${LINE}` }}>
+            {/* Big Road (大路) ~48% */}
+            <div className="h-full" style={{ width: '48%', borderRight: `2px solid #999` }}>
               <BigRoad grid={bigRoadGrid} rows={BIG_ROAD_ROWS} cols={BIG_ROAD_COLS} predictedCells={bigRoadPredictedCells} />
             </div>
 
-            {/* Derived Roads (下三路) ~35% */}
-            <div className="flex-1 flex flex-col h-full" style={{ gap: '1px' }}>
+            {/* Derived Roads (下三路) ~36% */}
+            <div className="flex-1 flex flex-col h-full">
               {/* Big Eye Boy (大眼路) - top half */}
-              <div className="flex-1" style={{ borderBottom: `1px solid ${LINE}` }}>
+              <div className="flex-1" style={{ borderBottom: `2px solid #999` }}>
                 <DerivedRoadGrid grid={bigEyeGrid} type="big_eye" rows={DERIVED_ROWS} cols={DERIVED_COLS} predictedCells={bigEyePredCells} />
               </div>
               {/* Small Road + Cockroach Road - bottom half, side by side */}
-              <div className="flex-1 flex" style={{ gap: '1px' }}>
-                <div className="flex-1" style={{ borderRight: `1px solid ${LINE}` }}>
+              <div className="flex-1 flex">
+                <div className="flex-1" style={{ borderRight: `2px solid #999` }}>
                   <DerivedRoadGrid grid={smallGrid} type="small" rows={DERIVED_ROWS} cols={DERIVED_COLS} predictedCells={smallPredCells} />
                 </div>
                 <div className="flex-1">
