@@ -56,7 +56,7 @@ const MarqueeItem = memo(function MarqueeItem({
       animate={{ x: '-100%', opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{
-        x: { duration: 10, ease: 'linear' },
+        x: { duration: 6, ease: 'linear' },
         opacity: { duration: 0.3 }
       }}
       onAnimationComplete={onComplete}
