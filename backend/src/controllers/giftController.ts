@@ -3,16 +3,16 @@ import { prisma } from '../lib/prisma.js';
 import { getSocketInstance } from '../socket/socketManager.js';
 
 
-// 預定義的禮物列表
+// 預定義的禮物列表（與前端 GiftModal GIFT_ITEMS 一致）
 const GIFTS = [
-  { type: 'flower', name: '鮮花', price: 10 },
-  { type: 'coffee', name: '咖啡', price: 20 },
-  { type: 'cake', name: '蛋糕', price: 50 },
-  { type: 'ring', name: '戒指', price: 100 },
-  { type: 'crown', name: '皇冠', price: 200 },
-  { type: 'car', name: '跑車', price: 500 },
-  { type: 'yacht', name: '遊艇', price: 1000 },
-  { type: 'rocket', name: '火箭', price: 5000 },
+  { type: 'rose', name: '玫瑰', price: 10 },
+  { type: 'heart', name: '愛心', price: 20 },
+  { type: 'star', name: '星星', price: 50 },
+  { type: 'sparkle', name: '閃耀', price: 100 },
+  { type: 'gem', name: '寶石', price: 200 },
+  { type: 'diamond', name: '鑽石', price: 500 },
+  { type: 'crown', name: '皇冠', price: 1000 },
+  { type: 'trophy', name: '獎盃', price: 5000 },
 ];
 
 /**
