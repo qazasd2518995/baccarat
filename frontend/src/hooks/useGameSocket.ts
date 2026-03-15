@@ -42,6 +42,7 @@ export function useGameSocket(tableId?: string) {
     setPendingRoadmapData,
     setShoeInfo,
     resetAll,
+    resetForNewRound,
     saveLastBets,
     setBettingLimits,
     setFakeBets,
@@ -212,6 +213,8 @@ export function useGameSocket(tableId?: string) {
     const handleShuffle = (data: { shoeNumber: number }) => {
       console.log('[useGameSocket] New shoe shuffle:', data.shoeNumber);
       setIsShuffling(true);
+      // Clear cards and result from previous round so shuffle screen is clean
+      resetForNewRound();
     };
 
     const handleFakeBroadcast = (data: { username: string; text: string; color: string }) => {

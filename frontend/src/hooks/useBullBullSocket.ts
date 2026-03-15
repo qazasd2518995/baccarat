@@ -255,6 +255,8 @@ export function useBullBullSocket(tableId?: string) {
     const handleShuffle = (data: { shoeNumber: number }) => {
       console.log('[useBullBullSocket] New shoe shuffle:', data.shoeNumber);
       setIsShuffling(true);
+      resetForNewRound();
+      clearRevealed();
     };
 
     const handleError = (data: any) => {

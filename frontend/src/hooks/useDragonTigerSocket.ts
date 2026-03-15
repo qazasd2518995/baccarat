@@ -223,6 +223,7 @@ export function useDragonTigerSocket(tableId?: string) {
     const handleShuffle = (data: { shoeNumber: number }) => {
       console.log('[useDragonTigerSocket] New shoe shuffle:', data.shoeNumber);
       setIsShuffling(true);
+      resetForNewRound();
     };
 
     const handleFakeBroadcast = (data: { username: string; text: string; color: string }) => {

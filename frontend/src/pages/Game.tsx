@@ -1153,6 +1153,25 @@ export default function Game() {
     return 'winning-flash winning-flash-gold';
   };
 
+  // Clear all display state when shuffling starts (no cards should be visible during shuffle)
+  useEffect(() => {
+    if (isShuffling) {
+      setShowResult(false);
+      setFrozenResult(null);
+      setFrozenNetResult(0);
+      setFrozenPlayerCards([]);
+      setFrozenBankerCards([]);
+      setFrozenPlayerPoints(null);
+      setFrozenBankerPoints(null);
+      setFrozenWinningBets(new Set());
+      resultShownRef.current = false;
+      if (showResultTimerRef.current) {
+        clearTimeout(showResultTimerRef.current);
+        showResultTimerRef.current = null;
+      }
+    }
+  }, [isShuffling]);
+
   // When result display is fully done AND we're in betting phase, do the round reset + sound
   // This handles both cases:
   //   A) phase=betting arrived WHILE displaying → pendingResetRef was set
