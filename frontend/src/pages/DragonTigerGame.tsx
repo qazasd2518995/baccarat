@@ -1486,12 +1486,6 @@ export default function DragonTigerGame() {
                   </div>
                 </div>
 
-                {/* Bottom Stats bar */}
-                <div className="flex items-center justify-around py-1.5 bg-[#1a1f2e]">
-                  <span className="text-red-500 font-bold text-sm">{t('dtRoadDragon')} <span className="text-white">{dragonWins}</span></span>
-                  <span className="text-blue-500 font-bold text-sm">{t('dtRoadTiger')} <span className="text-white">{tigerWins}</span></span>
-                  <span className="text-green-500 font-bold text-sm">{t('dtRoadTie')} <span className="text-white">{ties}</span></span>
-                </div>
               </div>
 
               {/* Center: Betting Buttons - All on casino green felt */}
@@ -1957,12 +1951,6 @@ export default function DragonTigerGame() {
                   </div>
                 </div>
 
-                {/* Bottom Stats */}
-                <div className="flex items-center justify-around py-1.5 bg-[#1a1f2e]">
-                  <span className="text-red-500 font-bold text-sm">龍 <span className="text-white">{dragonWins}</span></span>
-                  <span className="text-blue-500 font-bold text-sm">虎 <span className="text-white">{tigerWins}</span></span>
-                  <span className="text-green-500 font-bold text-sm">和 <span className="text-white">{ties}</span></span>
-                </div>
               </div>
             </div>
 

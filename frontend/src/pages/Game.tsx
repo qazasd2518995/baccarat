@@ -1816,12 +1816,6 @@ export default function Game() {
                   </div>
                 </div>
 
-                {/* Bottom Stats bar */}
-                <div className="flex items-center justify-around py-1.5 bg-[#1a1f2e]">
-                  <span className="text-red-500 font-bold text-sm">{t('roadBanker')} <span className="text-white">{bankerWins}</span></span>
-                  <span className="text-blue-500 font-bold text-sm">{t('roadPlayer')} <span className="text-white">{playerWins}</span></span>
-                  <span className="text-green-500 font-bold text-sm">{t('roadTie')} <span className="text-white">{ties}</span></span>
-                </div>
               </div>
 
               {/* Center: Betting Buttons */}
@@ -2159,12 +2153,6 @@ export default function Game() {
                   </div>
                 </div>
 
-                {/* Bottom Stats - 莊對/閒對/總數 */}
-                <div className="flex items-center justify-around py-1.5 bg-[#1a1f2e]">
-                  <span className="text-red-500 font-bold text-sm">莊 <span className="text-white">{roadmapData.filter(r => r.bankerPair).length}</span></span>
-                  <span className="text-blue-500 font-bold text-sm">閒對 <span className="text-white">{roadmapData.filter(r => r.playerPair).length}</span></span>
-                  <span className="text-gray-400 text-sm">總數 <span className="text-white">{total}</span></span>
-                </div>
               </div>
             </div>
 
