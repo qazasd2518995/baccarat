@@ -60,6 +60,7 @@ import {
   FollowingListModal,
   TableSwitchModal,
   GiftModal,
+  DTRoadmapModal,
 } from '../components/game/modals';
 
 // Chip component - uses CasinoChip SVG
@@ -450,6 +451,7 @@ export default function DragonTigerGame() {
   const [isTableSwitchOpen, setIsTableSwitchOpen] = useState(false);
   const [isGiftOpen, setIsGiftOpen] = useState(false);
   const [isChipSettingsOpen, setIsChipSettingsOpen] = useState(false);
+  const [isRoadmapOpen, setIsRoadmapOpen] = useState(false);
 
   // Mobile hamburger menu state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -1086,7 +1088,14 @@ export default function DragonTigerGame() {
                 <FileText className="w-4 h-4" />
                 <span>報表</span>
               </button>
-              {/* Results Proportion */}
+              {/* Roadmap */}
+              <button
+                onClick={() => { setIsRoadmapOpen(true); setIsMobileMenuOpen(false); }}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 rounded"
+              >
+                <MapPin className="w-4 h-4" />
+                <span>路單</span>
+              </button>
               {/* Back to Lobby */}
               <button
                 onClick={() => navigate('/lobby')}
@@ -2201,6 +2210,7 @@ export default function DragonTigerGame() {
         balance={balance}
       />
       <ChipSettingsModal isOpen={isChipSettingsOpen} onClose={() => setIsChipSettingsOpen(false)} />
+      <DTRoadmapModal isOpen={isRoadmapOpen} onClose={() => setIsRoadmapOpen(false)} data={roadmapData} />
 
       {/* Bet Success Notification Toast */}
       <AnimatePresence>
