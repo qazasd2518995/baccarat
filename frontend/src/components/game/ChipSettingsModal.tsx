@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -14,92 +14,99 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
   const { t } = useTranslation();
   const { displayedChips, setDisplayedChips, customChips, addCustomChip, removeCustomChip } = useGameStore();
   const [selected, setSelected] = useState<number[]>([]);
-  const [customInputs, setCustomInputs] = useState<string[]>(['', '', '', '']);
   const [localCustomChips, setLocalCustomChips] = useState<number[]>([]);
+
+  // Add custom chip flow
+  const [isAddingChip, setIsAddingChip] = useState(false);
+  const [addInput, setAddInput] = useState('');
+  const [addError, setAddError] = useState('');
+  const addInputRef = useRef<HTMLInputElement>(null);
 
   // Reset selected to current displayedChips when modal opens
   useEffect(() => {
     if (isOpen) {
       setSelected([...displayedChips]);
       setLocalCustomChips([...customChips]);
-      // Initialize custom inputs with existing custom chip values
-      const inputs = customChips.map(v => v.toString());
-      while (inputs.length < 4) inputs.push('');
-      setCustomInputs(inputs);
+      setIsAddingChip(false);
+      setAddInput('');
+      setAddError('');
     }
   }, [isOpen, displayedChips, customChips]);
+
+  // Auto-focus input when adding
+  useEffect(() => {
+    if (isAddingChip) {
+      setTimeout(() => addInputRef.current?.focus(), 100);
+    }
+  }, [isAddingChip]);
 
   const toggleChip = (value: number) => {
     setSelected(prev => {
       if (prev.includes(value)) {
-        // Don't allow deselecting if only 1 chip is selected
         if (prev.length === 1) return prev;
         return prev.filter(v => v !== value);
       } else {
-        // Don't allow selecting more than 6 chips
         if (prev.length >= 6) return prev;
         return [...prev, value].sort((a, b) => a - b);
       }
     });
   };
 
-  const handleCustomInputChange = (index: number, value: string) => {
-    // Only allow numbers
-    const numericValue = value.replace(/[^0-9]/g, '');
-    const newInputs = [...customInputs];
-    newInputs[index] = numericValue;
-    setCustomInputs(newInputs);
-  };
+  const handleAddCustomChip = () => {
+    const value = parseInt(addInput);
+    if (isNaN(value) || value <= 0) {
+      setAddError('請輸入有效金額');
+      return;
+    }
 
-  const handleAddCustomChip = (index: number) => {
-    const value = parseInt(customInputs[index]);
-    if (isNaN(value) || value <= 0) return;
+    // Check duplicates against standard chips
+    if (ALL_CHIP_OPTIONS.some(c => c.value === value)) {
+      setAddError(`${formatChipValue(value)} 已存在於標準籌碼中`);
+      return;
+    }
 
-    // Check if value already exists
-    const allValues = [...ALL_CHIP_OPTIONS.map(c => c.value), ...localCustomChips];
-    if (allValues.includes(value)) return;
+    // Check duplicates against existing custom chips
+    if (localCustomChips.includes(value)) {
+      setAddError(`${formatChipValue(value)} 已存在於自定義籌碼中`);
+      return;
+    }
 
-    if (localCustomChips.length >= 4) return;
+    if (localCustomChips.length >= 4) {
+      setAddError('最多只能新增 4 個自定義籌碼');
+      return;
+    }
 
     const newLocalCustomChips = [...localCustomChips, value];
     setLocalCustomChips(newLocalCustomChips);
 
-    // Update input to show the value is set
-    const newInputs = [...customInputs];
-    newInputs[index] = value.toString();
-    setCustomInputs(newInputs);
+    // Auto-select the new chip if under 6
+    if (selected.length < 6) {
+      setSelected(prev => [...prev, value].sort((a, b) => a - b));
+    }
+
+    // Reset add flow
+    setIsAddingChip(false);
+    setAddInput('');
+    setAddError('');
   };
 
   const handleRemoveCustomChip = (value: number) => {
     setLocalCustomChips(prev => prev.filter(v => v !== value));
-    // Also remove from selected if present
     setSelected(prev => prev.filter(v => v !== value));
-    // Clear the input
-    const index = localCustomChips.indexOf(value);
-    if (index >= 0) {
-      const newInputs = [...customInputs];
-      newInputs[index] = '';
-      setCustomInputs(newInputs);
-    }
   };
 
   const handleConfirm = () => {
     if (selected.length > 0 && selected.length <= 6) {
-      // First update custom chips
-      // Remove chips that are no longer in localCustomChips
       customChips.forEach(chip => {
         if (!localCustomChips.includes(chip)) {
           removeCustomChip(chip);
         }
       });
-      // Add new custom chips
       localCustomChips.forEach(chip => {
         if (!customChips.includes(chip)) {
           addCustomChip(chip);
         }
       });
-
-      // Then update displayed chips
       setDisplayedChips(selected);
       onClose();
     }
@@ -129,7 +136,7 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-700/50">
               <h3 className="text-white font-bold text-lg">
-                {t('selectChips') || '选择显示的筹码'}
+                {t('selectChips') || '選擇顯示的籌碼'}
               </h3>
               <button
                 onClick={onClose}
@@ -142,7 +149,7 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
             {/* Chip count indicator */}
             <div className="px-4 pt-3 pb-1">
               <span className="text-gray-400 text-sm">
-                {t('selectedCount') || '已选择'}: {selected.length}/6
+                已選擇: <span className={selected.length >= 6 ? 'text-orange-400' : 'text-white'}>{selected.length}</span>/6
               </span>
             </div>
 
@@ -154,7 +161,6 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
 
                 return (
                   <div key={chip.value} className="relative flex items-center justify-center" style={{ width: 62, height: 62 }}>
-                    {/* Green border circle behind chip */}
                     {isSelected && (
                       <div
                         className="absolute rounded-full border-[3px] border-green-400"
@@ -174,7 +180,6 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
                       <CasinoChip size={52} value={chip.value} label={formatChipValue(chip.value)} />
                     </motion.button>
 
-                    {/* Check indicator */}
                     {isSelected && (
                       <motion.div
                         initial={{ scale: 0 }}
@@ -191,99 +196,137 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
 
             {/* Custom Chips Section */}
             <div className="px-4 pb-4">
-              <div className="text-gray-400 text-sm mb-3 border-t border-gray-700/50 pt-3">
-                {t('customChips', '自定义筹码')}
+              <div className="flex items-center justify-between border-t border-gray-700/50 pt-3 mb-3">
+                <span className="text-gray-400 text-sm">
+                  自定義籌碼 ({localCustomChips.length}/4)
+                </span>
               </div>
 
-              <div className="grid grid-cols-4 gap-3">
-                {[0, 1, 2, 3].map((index) => {
-                  const customValue = localCustomChips[index];
-                  const hasValue = customValue !== undefined;
-                  const isSelected = hasValue && selected.includes(customValue);
-                  const isDisabled = !isSelected && selected.length >= 6;
+              {/* Existing custom chips */}
+              {localCustomChips.length > 0 && (
+                <div className="flex flex-wrap gap-3 mb-3">
+                  {localCustomChips.map((chipValue) => {
+                    const isSelected = selected.includes(chipValue);
+                    const isDisabled = !isSelected && selected.length >= 6;
 
-                  return (
-                    <div key={index} className="flex flex-col items-center gap-1.5">
-                      {hasValue ? (
-                        // Show custom chip
-                        <div className="relative flex items-center justify-center" style={{ width: 62, height: 62 }}>
-                          {isSelected && (
-                            <div
-                              className="absolute rounded-full border-[3px] border-green-400"
-                              style={{ width: 60, height: 60 }}
-                            />
-                          )}
-                          <motion.button
-                            whileHover={!isDisabled ? { scale: 1.05 } : {}}
-                            whileTap={!isDisabled ? { scale: 0.95 } : {}}
-                            onClick={() => toggleChip(customValue)}
-                            disabled={isDisabled}
-                            className={`
-                              relative shadow-lg transition-all duration-200
-                              ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
-                            `}
-                          >
-                            <CasinoChip size={52} value={customValue} label={formatChipValue(customValue)} />
-                          </motion.button>
-
-                          {/* Check indicator */}
-                          {isSelected && (
-                            <motion.div
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow z-10"
-                            >
-                              <Check className="w-3 h-3 text-white" />
-                            </motion.div>
-                          )}
-
-                          {/* Remove button */}
-                          <button
-                            onClick={() => handleRemoveCustomChip(customValue)}
-                            className="absolute -top-0.5 -left-0.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow hover:bg-red-600 transition z-10"
-                          >
-                            <X className="w-3 h-3 text-white" />
-                          </button>
-                        </div>
-                      ) : (
-                        // Show add button placeholder
-                        <button
-                          onClick={() => handleAddCustomChip(index)}
-                          disabled={!customInputs[index] || localCustomChips.length >= 4}
+                    return (
+                      <div key={chipValue} className="relative flex items-center justify-center" style={{ width: 62, height: 62 }}>
+                        {isSelected && (
+                          <div
+                            className="absolute rounded-full border-[3px] border-green-400"
+                            style={{ width: 60, height: 60 }}
+                          />
+                        )}
+                        <motion.button
+                          whileHover={!isDisabled ? { scale: 1.05 } : {}}
+                          whileTap={!isDisabled ? { scale: 0.95 } : {}}
+                          onClick={() => toggleChip(chipValue)}
+                          disabled={isDisabled}
                           className={`
-                            w-[52px] h-[52px] rounded-full border-2 border-dashed
-                            flex items-center justify-center transition-all
-                            ${customInputs[index] ? 'border-green-500 hover:bg-green-500/20 cursor-pointer' : 'border-gray-600 cursor-default'}
+                            relative shadow-lg transition-all duration-200
+                            ${isDisabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
                           `}
                         >
-                          <Plus className={`w-6 h-6 ${customInputs[index] ? 'text-green-500' : 'text-gray-600'}`} />
-                        </button>
-                      )}
+                          <CasinoChip size={52} value={chipValue} label={formatChipValue(chipValue)} />
+                        </motion.button>
 
-                      {/* Input field */}
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={hasValue ? customValue.toString() : customInputs[index]}
-                        onChange={(e) => !hasValue && handleCustomInputChange(index, e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !hasValue) {
-                            handleAddCustomChip(index);
-                          }
-                        }}
-                        disabled={hasValue}
-                        placeholder={t('chipAmount', '金额')}
-                        className={`
-                          w-full px-2 py-1 text-center text-sm rounded
-                          bg-gray-800 border border-gray-600
-                          ${hasValue ? 'text-gray-400' : 'text-white'}
-                          focus:outline-none focus:border-orange-500
-                        `}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
+                        {isSelected && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center shadow z-10"
+                          >
+                            <Check className="w-3 h-3 text-white" />
+                          </motion.div>
+                        )}
+
+                        {/* Remove button */}
+                        <button
+                          onClick={() => handleRemoveCustomChip(chipValue)}
+                          className="absolute -top-0.5 -left-0.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow hover:bg-red-600 transition z-10"
+                        >
+                          <X className="w-3 h-3 text-white" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Add custom chip */}
+              {localCustomChips.length < 4 && (
+                <AnimatePresence mode="wait">
+                  {!isAddingChip ? (
+                    // Step 1: Show add button
+                    <motion.button
+                      key="add-btn"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => { setIsAddingChip(true); setAddError(''); }}
+                      className="w-full py-2.5 border-2 border-dashed border-gray-600 rounded-lg flex items-center justify-center gap-2 text-gray-400 hover:border-green-500 hover:text-green-400 transition"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span className="text-sm">新增自定義籌碼</span>
+                    </motion.button>
+                  ) : (
+                    // Step 2: Show input field
+                    <motion.div
+                      key="add-input"
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="space-y-2"
+                    >
+                      <div className="flex gap-2">
+                        <input
+                          ref={addInputRef}
+                          type="text"
+                          inputMode="numeric"
+                          value={addInput}
+                          onChange={(e) => {
+                            setAddInput(e.target.value.replace(/[^0-9]/g, ''));
+                            setAddError('');
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleAddCustomChip();
+                            if (e.key === 'Escape') { setIsAddingChip(false); setAddInput(''); setAddError(''); }
+                          }}
+                          placeholder="輸入籌碼金額"
+                          className="flex-1 px-3 py-2 text-sm rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:border-orange-500 placeholder-gray-500"
+                        />
+                        <button
+                          onClick={handleAddCustomChip}
+                          disabled={!addInput}
+                          className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          確認
+                        </button>
+                        <button
+                          onClick={() => { setIsAddingChip(false); setAddInput(''); setAddError(''); }}
+                          className="px-3 py-2 bg-gray-700 text-gray-300 text-sm rounded-lg hover:bg-gray-600 transition"
+                        >
+                          取消
+                        </button>
+                      </div>
+                      {/* Error message */}
+                      {addError && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-red-400 text-xs px-1"
+                        >
+                          {addError}
+                        </motion.p>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              )}
+
+              {localCustomChips.length >= 4 && (
+                <p className="text-gray-500 text-xs text-center">已達自定義籌碼上限 (4/4)</p>
+              )}
             </div>
 
             {/* Footer */}
@@ -299,7 +342,7 @@ export default function ChipSettingsModal({ isOpen, onClose }: ChipSettingsModal
                 disabled={selected.length === 0}
                 className="flex-1 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold rounded-lg hover:from-orange-600 hover:to-orange-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {t('confirm') || '确定'}
+                {t('confirm') || '確定'}
               </button>
             </div>
           </motion.div>
