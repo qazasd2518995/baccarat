@@ -2104,9 +2104,9 @@ export default function Game() {
               </div>
 
               {/* Right: Big Road + Derived Roads - Hidden on mobile */}
-              <div className="hidden lg:flex lg:w-[20%] flex-col overflow-hidden">
+              <div className="hidden lg:flex lg:w-[20%] flex-col overflow-hidden" style={{ backgroundColor: '#D1D5DB' }}>
                 {/* Big Road - circles with sliding window */}
-                <div className="flex-1 p-1 overflow-hidden" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex-1 overflow-hidden" style={{ backgroundColor: '#FFFFFF' }}>
                   <div className="grid grid-rows-6 gap-px h-full" style={{ backgroundColor: '#D1D5DB', gridTemplateColumns: `repeat(${BIG_ROAD_DISPLAY_COLS}, 1fr)` }}>
                     {Array(6).fill(null).flatMap((_, rowIndex) =>
                       Array(BIG_ROAD_DISPLAY_COLS).fill(null).map((_, colIndex) => {
@@ -2136,14 +2136,14 @@ export default function Game() {
                 </div>
 
                 {/* Three Derived Roads - side by side (2x2 mini-cells per grid cell) */}
-                <div className="flex h-[54px] border-t border-gray-400 overflow-hidden">
+                <div className="flex shrink-0 overflow-hidden" style={{ height: 54, borderTop: '2px solid #aaa' }}>
                   {/* Big Eye Boy - hollow circles */}
-                  <div className="flex-1 min-w-0 border-r border-gray-400">
+                  <div className="flex-1 min-w-0" style={{ borderRight: '2px solid #aaa' }}>
                     <DerivedRoadGrid grid={beGrid} type="big_eye" rows={DR_ROWS} cols={DR_COLS} />
                   </div>
 
                   {/* Small Road - filled circles */}
-                  <div className="flex-1 min-w-0 border-r border-gray-400">
+                  <div className="flex-1 min-w-0" style={{ borderRight: '2px solid #aaa' }}>
                     <DerivedRoadGrid grid={srGrid} type="small" rows={DR_ROWS} cols={DR_COLS} />
                   </div>
 
