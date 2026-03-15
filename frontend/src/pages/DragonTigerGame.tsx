@@ -1405,7 +1405,7 @@ export default function DragonTigerGame() {
             {/* Betting Areas - Full Width */}
             <div className="flex flex-col lg:flex-row lg:items-stretch lg:h-[360px] xl:pb-0" style={{ backgroundColor: '#FFFFFF' }}>
               {/* Left: Ask Road Buttons + Bead Plate (珠盤路) - Hidden on mobile */}
-              <div className="hidden lg:flex lg:w-[22%] flex-col">
+              <div className="hidden lg:flex lg:w-[20%] flex-col">
                 <div className="flex flex-1">
                   {/* 龍問路 / 虎問路 buttons on left edge */}
                   <div className="w-8 flex flex-col border-r border-gray-400">
@@ -1910,9 +1910,9 @@ export default function DragonTigerGame() {
               </div>
 
               {/* Right: Big Road + Derived Roads - Hidden on mobile */}
-              <div className="hidden lg:flex lg:w-[22%] flex-col">
+              <div className="hidden lg:flex lg:w-[20%] flex-col overflow-hidden">
                 {/* Big Road - circles with sliding window */}
-                <div className="flex-1 p-1" style={{ backgroundColor: '#FFFFFF' }}>
+                <div className="flex-1 p-1 overflow-hidden" style={{ backgroundColor: '#FFFFFF' }}>
                   <div className="grid grid-rows-6 gap-px h-full" style={{ backgroundColor: '#D1D5DB', gridTemplateColumns: `repeat(${BIG_ROAD_DISPLAY_COLS}, minmax(0, 1fr))` }}>
                     {Array(6).fill(null).flatMap((_, rowIndex) =>
                       Array(BIG_ROAD_DISPLAY_COLS).fill(null).map((_, colIndex) => {
@@ -1940,19 +1940,19 @@ export default function DragonTigerGame() {
                 </div>
 
                 {/* Three Derived Roads - side by side (2x2 mini-cells per grid cell) */}
-                <div className="flex h-[54px] border-t border-gray-400">
+                <div className="flex h-[54px] border-t border-gray-400 overflow-hidden">
                   {/* Big Eye Boy - hollow circles */}
-                  <div className="flex-1 border-r border-gray-400">
+                  <div className="flex-1 min-w-0 border-r border-gray-400">
                     <DTDerivedRoadGrid grid={dtBeGrid} type="big_eye" rows={DT_DR_ROWS} cols={DT_DR_COLS} />
                   </div>
 
                   {/* Small Road - filled circles */}
-                  <div className="flex-1 border-r border-gray-400">
+                  <div className="flex-1 min-w-0 border-r border-gray-400">
                     <DTDerivedRoadGrid grid={dtSrGrid} type="small" rows={DT_DR_ROWS} cols={DT_DR_COLS} />
                   </div>
 
                   {/* Cockroach Pig - slashes */}
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <DTDerivedRoadGrid grid={dtCrGrid} type="cockroach" rows={DT_DR_ROWS} cols={DT_DR_COLS} />
                   </div>
                 </div>

@@ -1717,7 +1717,7 @@ export default function Game() {
             {/* Betting Areas - Casino Felt Surface */}
             <div className="flex flex-col lg:flex-row lg:items-stretch lg:h-[360px] casino-betting-surface border-t-2 border-[#d4af37]/40">
               {/* Left: Bead Plate (珠盤路) + Ask Road buttons - Hidden on mobile */}
-              <div className="hidden lg:flex lg:w-[22%] flex-col">
+              <div className="hidden lg:flex lg:w-[20%] flex-col">
                 <div className="flex flex-1">
                   {/* 莊問路 / 閒問路 buttons on left edge */}
                   <div className="w-8 flex flex-col border-r border-gray-400">
@@ -2110,10 +2110,10 @@ export default function Game() {
               </div>
 
               {/* Right: Big Road + Derived Roads - Hidden on mobile */}
-              <div className="hidden lg:flex lg:w-[22%] flex-col">
+              <div className="hidden lg:flex lg:w-[20%] flex-col overflow-hidden">
                 {/* Big Road - circles with sliding window */}
-                <div className="flex-1 p-1 overflow-x-auto" style={{ backgroundColor: '#FFFFFF' }}>
-                  <div className="grid grid-rows-6 gap-px h-full" style={{ backgroundColor: '#D1D5DB', gridTemplateColumns: `repeat(${BIG_ROAD_DISPLAY_COLS}, minmax(16px, 1fr))`, minWidth: `${BIG_ROAD_DISPLAY_COLS * 16}px` }}>
+                <div className="flex-1 p-1 overflow-hidden" style={{ backgroundColor: '#FFFFFF' }}>
+                  <div className="grid grid-rows-6 gap-px h-full" style={{ backgroundColor: '#D1D5DB', gridTemplateColumns: `repeat(${BIG_ROAD_DISPLAY_COLS}, 1fr)` }}>
                     {Array(6).fill(null).flatMap((_, rowIndex) =>
                       Array(BIG_ROAD_DISPLAY_COLS).fill(null).map((_, colIndex) => {
                         const cell = bigRoadWindow[rowIndex]?.[colIndex];
@@ -2142,19 +2142,19 @@ export default function Game() {
                 </div>
 
                 {/* Three Derived Roads - side by side (2x2 mini-cells per grid cell) */}
-                <div className="flex h-[54px] border-t border-gray-400">
+                <div className="flex h-[54px] border-t border-gray-400 overflow-hidden">
                   {/* Big Eye Boy - hollow circles */}
-                  <div className="flex-1 border-r border-gray-400">
+                  <div className="flex-1 min-w-0 border-r border-gray-400">
                     <DerivedRoadGrid grid={beGrid} type="big_eye" rows={DR_ROWS} cols={DR_COLS} />
                   </div>
 
                   {/* Small Road - filled circles */}
-                  <div className="flex-1 border-r border-gray-400">
+                  <div className="flex-1 min-w-0 border-r border-gray-400">
                     <DerivedRoadGrid grid={srGrid} type="small" rows={DR_ROWS} cols={DR_COLS} />
                   </div>
 
                   {/* Cockroach Pig - slashes */}
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <DerivedRoadGrid grid={crGrid} type="cockroach" rows={DR_ROWS} cols={DR_COLS} />
                   </div>
                 </div>
