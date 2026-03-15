@@ -223,7 +223,7 @@ export default function DealerTable3D({
   const tableTop = bp === 'mobile' ? '32%' : '35%';
 
   return (
-    <div className={`flex-1 relative flex flex-col overflow-visible bg-[#050a0d] ${isDT ? 'min-h-[235px] sm:min-h-[300px] lg:min-h-[700px]' : 'min-h-[280px] sm:min-h-[320px] lg:min-h-[700px]'}`}>
+    <div className={`flex-1 relative flex flex-col overflow-visible bg-[#050a0d] ${isDT ? 'min-h-[235px] max-h-[38vh] sm:min-h-[300px] sm:max-h-[45vh] lg:min-h-[700px] lg:max-h-none' : 'min-h-[280px] max-h-[45vh] sm:min-h-[320px] sm:max-h-[50vh] lg:min-h-[700px] lg:max-h-none'}`}>
 
       {/* === Opulent Art Deco Noir Casino Background === */}
       <div className="absolute inset-0 z-0 overflow-hidden">
