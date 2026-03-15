@@ -329,7 +329,7 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
       />
 
       {/* Players container */}
-      <div className="flex items-center justify-center gap-0.5 sm:gap-1 px-1 sm:px-2 py-1 sm:py-2 overflow-x-auto scrollbar-hide">
+      <div className="flex items-center justify-center gap-1 sm:gap-1.5 px-1 sm:px-2 py-1.5 sm:py-2 overflow-x-auto scrollbar-hide min-h-[56px] sm:min-h-[72px]">
         <AnimatePresence mode="popLayout">
           {players.map((player) => (
             <motion.div
@@ -348,7 +348,7 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
                   background: 'linear-gradient(145deg, rgba(40,45,55,0.9) 0%, rgba(25,30,40,0.95) 100%)',
                   border: '1px solid rgba(100,110,130,0.3)',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
-                  minWidth: '60px',
+                  minWidth: '52px',
                 }}
               >
                 {/* Balance change indicator */}
@@ -368,7 +368,7 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
                 </AnimatePresence>
 
                 {/* Avatar with flag */}
-                <div className="flex justify-center mb-0.5 sm:mb-1">
+                <div className="flex justify-center mb-0.5">
                   <div className="relative">
                     <div className={`
                       w-6 h-6 sm:w-8 sm:h-8
@@ -391,7 +391,7 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
                 </div>
 
                 {/* Name */}
-                <div className="text-[8px] sm:text-[10px] text-gray-200 text-center font-medium whitespace-nowrap">
+                <div className="text-[8px] sm:text-[10px] text-gray-200 text-center font-medium whitespace-nowrap leading-tight">
                   {player.name}
                 </div>
 
@@ -406,7 +406,7 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
                       : '#e8d48b'
                   }}
                   transition={{ duration: 0.3 }}
-                  className="text-[7px] sm:text-[9px] font-mono text-center font-semibold"
+                  className="text-[8px] sm:text-[10px] font-mono text-center font-semibold leading-tight"
                   style={{ color: '#e8d48b' }}
                 >
                   ${formatBalance(player.balance)}
