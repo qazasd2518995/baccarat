@@ -1529,8 +1529,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_big') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dragon_big')}`}
                   >
-                    <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonBig')}</span>
-                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
+                    <span className="text-blue-300 text-xs lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonBig')}</span>
+                    <span className="text-[#d4af37] text-[10px] lg:text-xs font-medium">1:1</span>
                     {getBetAmount('dragon_big') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dragon_big')}</div>
@@ -1548,8 +1548,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_small') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dragon_small')}`}
                   >
-                    <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonSmall')}</span>
-                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
+                    <span className="text-blue-300 text-xs lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonSmall')}</span>
+                    <span className="text-[#d4af37] text-[10px] lg:text-xs font-medium">1:1</span>
                     {getBetAmount('dragon_small') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dragon_small')}</div>
@@ -1567,8 +1567,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-[1.5] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dt_suited_tie') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dt_suited_tie')}`}
                   >
-                    <span className="text-green-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dtSuitedTie')}</span>
-                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:50</span>
+                    <span className="text-green-300 text-xs lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dtSuitedTie')}</span>
+                    <span className="text-[#d4af37] text-[10px] lg:text-xs font-medium">1:50</span>
                     {getBetAmount('dt_suited_tie') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dt_suited_tie')}</div>
@@ -1586,8 +1586,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tiger_small') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tiger_small')}`}
                   >
-                    <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerSmall')}</span>
-                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
+                    <span className="text-red-300 text-xs lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerSmall')}</span>
+                    <span className="text-[#d4af37] text-[10px] lg:text-xs font-medium">1:1</span>
                     {getBetAmount('tiger_small') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('tiger_small')}</div>
@@ -1605,8 +1605,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger_big') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tiger_big')}`}
                   >
-                    <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerBig')}</span>
-                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1</span>
+                    <span className="text-red-300 text-xs lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerBig')}</span>
+                    <span className="text-[#d4af37] text-[10px] lg:text-xs font-medium">1:1</span>
                     {getBetAmount('tiger_big') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('tiger_big')}</div>
@@ -1628,8 +1628,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_even') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dragon_even')}`}
                   >
-                    <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonEven')}</span>
-                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1.05</span>
+                    <span className="text-blue-300 text-xs lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonEven')}</span>
+                    <span className="text-[#d4af37] text-[10px] lg:text-xs font-medium">1:1.05</span>
                     {getBetAmount('dragon_even') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dragon_even')}</div>
@@ -1647,8 +1647,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_odd') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dragon_odd')}`}
                   >
-                    <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonOdd')}</span>
-                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.75</span>
+                    <span className="text-blue-300 text-xs lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonOdd')}</span>
+                    <span className="text-[#d4af37] text-[10px] lg:text-xs font-medium">1:0.75</span>
                     {getBetAmount('dragon_odd') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dragon_odd')}</div>
@@ -1666,8 +1666,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tiger_odd') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tiger_odd')}`}
                   >
-                    <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerOdd')}</span>
-                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.75</span>
+                    <span className="text-red-300 text-xs lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerOdd')}</span>
+                    <span className="text-[#d4af37] text-[10px] lg:text-xs font-medium">1:0.75</span>
                     {getBetAmount('tiger_odd') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('tiger_odd')}</div>
@@ -1685,8 +1685,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger_even') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tiger_even')}`}
                   >
-                    <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerEven')}</span>
-                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:1.05</span>
+                    <span className="text-red-300 text-xs lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerEven')}</span>
+                    <span className="text-[#d4af37] text-[10px] lg:text-xs font-medium">1:1.05</span>
                     {getBetAmount('tiger_even') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('tiger_even')}</div>
@@ -1708,8 +1708,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_black') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dragon_black')}`}
                   >
-                    <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonBlack')}</span>
-                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
+                    <span className="text-blue-300 text-xs lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonBlack')}</span>
+                    <span className="text-[#d4af37] text-[10px] lg:text-xs font-medium">1:0.9</span>
                     {getBetAmount('dragon_black') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dragon_black')}</div>
@@ -1727,8 +1727,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dragon_red') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dragon_red')}`}
                   >
-                    <span className="text-blue-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonRed')}</span>
-                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
+                    <span className="text-blue-300 text-xs lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('dragonRed')}</span>
+                    <span className="text-[#d4af37] text-[10px] lg:text-xs font-medium">1:0.9</span>
                     {getBetAmount('dragon_red') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('dragon_red')}</div>
@@ -1746,8 +1746,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tiger_red') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tiger_red')}`}
                   >
-                    <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerRed')}</span>
-                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
+                    <span className="text-red-300 text-xs lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerRed')}</span>
+                    <span className="text-[#d4af37] text-[10px] lg:text-xs font-medium">1:0.9</span>
                     {getBetAmount('tiger_red') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('tiger_red')}</div>
@@ -1765,8 +1765,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-1 py-0.5 lg:py-0 flex flex-col items-center justify-center transition disabled:opacity-50 ${getBetAmount('tiger_black') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tiger_black')}`}
                   >
-                    <span className="text-red-300 text-[10px] lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerBlack')}</span>
-                    <span className="text-[#d4af37] text-[8px] lg:text-xs font-medium">1:0.9</span>
+                    <span className="text-red-300 text-xs lg:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('tigerBlack')}</span>
+                    <span className="text-[#d4af37] text-[10px] lg:text-xs font-medium">1:0.9</span>
                     {getBetAmount('tiger_black') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('tiger_black')}</div>
@@ -1791,8 +1791,8 @@ export default function DragonTigerGame() {
                   >
                     <div className="casino-corner-ornament top-left hidden sm:block" />
                     <div className="casino-corner-ornament bottom-right hidden sm:block" />
-                    <span className="casino-display text-blue-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('dtDragon')}</span>
-                    <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:1</span>
+                    <span className="casino-display text-blue-300 text-3xl sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('dtDragon')}</span>
+                    <span className="text-[#d4af37] text-sm sm:text-lg lg:text-xl font-bold">1:1</span>
                     {getBetAmount('dragon') > 0 && (
                       <>
                         <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10">{getBetAmount('dragon')}</div>
@@ -1812,8 +1812,8 @@ export default function DragonTigerGame() {
                     disabled={!canBet}
                     className={`casino-bet-spot relative flex-[1.2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('dt_tie') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('dt_tie')}`}
                   >
-                    <span className="casino-display text-green-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('dtTie')}</span>
-                    <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:8</span>
+                    <span className="casino-display text-green-300 text-3xl sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('dtTie')}</span>
+                    <span className="text-[#d4af37] text-sm sm:text-lg lg:text-xl font-bold">1:8</span>
                     {getBetAmount('dt_tie') > 0 && (
                       <>
                         <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10">{getBetAmount('dt_tie')}</div>
@@ -1835,8 +1835,8 @@ export default function DragonTigerGame() {
                   >
                     <div className="casino-corner-ornament top-right hidden sm:block" />
                     <div className="casino-corner-ornament bottom-left hidden sm:block" />
-                    <span className="casino-display text-red-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('dtTiger')}</span>
-                    <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:1</span>
+                    <span className="casino-display text-red-300 text-3xl sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('dtTiger')}</span>
+                    <span className="text-[#d4af37] text-sm sm:text-lg lg:text-xl font-bold">1:1</span>
                     {getBetAmount('tiger') > 0 && (
                       <>
                         <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10">{getBetAmount('tiger')}</div>

@@ -1933,8 +1933,8 @@ export default function Game() {
                     disabled={!canBet}
                     className={`casino-bet-spot casino-bet-player relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('player_bonus') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('player_bonus')}`}
                   >
-                    <span className="text-blue-300 text-[8px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('playerBonus')}</span>
-                    <span className="text-[#d4af37] text-[7px] sm:text-xs font-semibold">1:30</span>
+                    <span className="text-blue-300 text-[10px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('playerBonus')}</span>
+                    <span className="text-[#d4af37] text-[9px] sm:text-xs font-semibold">1:30</span>
                     {getBetAmount('player_bonus') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('player_bonus')}</div>
@@ -1954,8 +1954,8 @@ export default function Game() {
                     disabled={!canBet}
                     className={`casino-bet-spot casino-bet-pair relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('player_pair') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('player_pair')}`}
                   >
-                    <span className="text-blue-300 text-[8px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('playerPair')}</span>
-                    <span className="text-[#d4af37] text-[8px] sm:text-sm font-bold">1:11</span>
+                    <span className="text-blue-300 text-[10px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('playerPair')}</span>
+                    <span className="text-[#d4af37] text-[10px] sm:text-sm font-bold">1:11</span>
                     {getBetAmount('player_pair') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('player_pair')}</div>
@@ -1975,9 +1975,9 @@ export default function Game() {
                     disabled={!canBet}
                     className={`casino-bet-spot casino-bet-super6 relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('super_six') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('super_six')}`}
                   >
-                    <span className="text-purple-300 text-[6px] sm:text-[10px] font-bold tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">SUPER</span>
-                    <span className="text-purple-200 text-sm sm:text-3xl font-black leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">6</span>
-                    <span className="text-[#d4af37] text-[6px] sm:text-[10px] font-semibold">1:12/1:20</span>
+                    <span className="text-purple-300 text-[8px] sm:text-[10px] font-bold tracking-wider drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">SUPER</span>
+                    <span className="text-purple-200 text-base sm:text-3xl font-black leading-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">6</span>
+                    <span className="text-[#d4af37] text-[8px] sm:text-[10px] font-semibold">1:12/1:20</span>
                     {getBetAmount('super_six') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('super_six')}</div>
@@ -1997,8 +1997,8 @@ export default function Game() {
                     disabled={!canBet}
                     className={`casino-bet-spot casino-bet-pair relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-r border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('banker_pair') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('banker_pair')}`}
                   >
-                    <span className="text-red-300 text-[8px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('bankerPair')}</span>
-                    <span className="text-[#d4af37] text-[8px] sm:text-sm font-bold">1:11</span>
+                    <span className="text-red-300 text-[10px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('bankerPair')}</span>
+                    <span className="text-[#d4af37] text-[10px] sm:text-sm font-bold">1:11</span>
                     {getBetAmount('banker_pair') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('banker_pair')}</div>
@@ -2018,8 +2018,8 @@ export default function Game() {
                     disabled={!canBet}
                     className={`casino-bet-spot casino-bet-banker relative flex-1 min-w-[40px] py-0.5 lg:py-0 flex flex-col items-center justify-center border-b lg:border-b-0 border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('banker_bonus') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('banker_bonus')}`}
                   >
-                    <span className="text-red-300 text-[8px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('bankerBonus')}</span>
-                    <span className="text-[#d4af37] text-[7px] sm:text-xs font-semibold">1:30</span>
+                    <span className="text-red-300 text-[10px] sm:text-sm font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{t('bankerBonus')}</span>
+                    <span className="text-[#d4af37] text-[9px] sm:text-xs font-semibold">1:30</span>
                     {getBetAmount('banker_bonus') > 0 && (
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('banker_bonus')}</div>
@@ -2045,8 +2045,8 @@ export default function Game() {
                     {/* Corner ornaments */}
                     <div className="casino-corner-ornament top-left hidden sm:block" />
                     <div className="casino-corner-ornament bottom-right hidden sm:block" />
-                    <span className="casino-display text-blue-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('player')}</span>
-                    <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:1</span>
+                    <span className="casino-display text-blue-300 text-3xl sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('player')}</span>
+                    <span className="text-[#d4af37] text-sm sm:text-lg lg:text-xl font-bold">1:1</span>
                     {getBetAmount('player') > 0 && (
                       <>
                         <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10">{getBetAmount('player')}</div>
@@ -2066,8 +2066,8 @@ export default function Game() {
                     disabled={!canBet}
                     className={`casino-bet-spot casino-bet-tie relative flex-[1.2] py-1 sm:py-6 lg:py-0 flex flex-col items-center justify-center border-r border-[#d4af37]/30 transition disabled:opacity-50 ${getBetAmount('tie') > 0 ? 'has-bet' : ''} ${getWinningFlashClass('tie')}`}
                   >
-                    <span className="casino-display text-green-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('tie')}</span>
-                    <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">1:8</span>
+                    <span className="casino-display text-green-300 text-3xl sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('tie')}</span>
+                    <span className="text-[#d4af37] text-sm sm:text-lg lg:text-xl font-bold">1:8</span>
                     {getBetAmount('tie') > 0 && (
                       <>
                         <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10">{getBetAmount('tie')}</div>
@@ -2090,12 +2090,12 @@ export default function Game() {
                     {/* Corner ornaments */}
                     <div className="casino-corner-ornament top-right hidden sm:block" />
                     <div className="casino-corner-ornament bottom-left hidden sm:block" />
-                    <span className="casino-display text-red-300 text-lg sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('banker')}</span>
-                    <span className="text-[#d4af37] text-[10px] sm:text-lg lg:text-xl font-bold">
+                    <span className="casino-display text-red-300 text-3xl sm:text-4xl lg:text-5xl font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{t('banker')}</span>
+                    <span className="text-[#d4af37] text-sm sm:text-lg lg:text-xl font-bold">
                       {isNoCommission ? '1:1' : '1:0.95'}
                     </span>
                     {isNoCommission && (
-                      <span className="text-[#d4af37]/70 text-[7px] sm:text-xs">(6點贏 1:0.5)</span>
+                      <span className="text-[#d4af37]/70 text-[9px] sm:text-xs">(6點贏 1:0.5)</span>
                     )}
                     {getBetAmount('banker') > 0 && (
                       <>
