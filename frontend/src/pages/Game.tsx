@@ -2371,6 +2371,12 @@ export default function Game() {
           {/* Menu Links */}
           <div className="p-3 border-t border-gray-800/50 space-y-1">
             <button
+              onClick={() => setIsRoadmapOpen(true)}
+              className="w-full text-left text-xs text-amber-400 flex items-center gap-2 py-1 hover:bg-gray-800/50 rounded px-2 -mx-2"
+            >
+              <MapPin className="w-3 h-3" /> {t('roadmap') || '路單'}
+            </button>
+            <button
               onClick={() => setIsFollowingOpen(true)}
               className="w-full text-left text-xs text-pink-400 flex items-center gap-2 py-1 hover:bg-gray-800/50 rounded px-2 -mx-2"
             >
