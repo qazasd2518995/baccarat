@@ -120,6 +120,7 @@ model User {
   isLocked        Boolean     @default(false) @map("is_locked")          // 鎖定登入
   isFullDisabled  Boolean     @default(false) @map("is_full_disabled")   // 全線禁用
   isReadonly      Boolean     @default(false) @map("is_readonly")        // 禁止投注/操作
+  materializedPath String?    @map("materialized_path")         // 物化路徑 e.g. "id1.id2.id3"
   lastLoginIp     String?     @map("last_login_ip")            // 最後登入IP
   lastLoginAt     DateTime?   @map("last_login_at")            // 最後登入時間
   remark          String?                                      // 備註
@@ -143,6 +144,7 @@ model User {
   subAccounts            SubAccount[]
   loginLogs              LoginLog[]
 
+  @@index([materializedPath])
   @@map("users")
 }
 

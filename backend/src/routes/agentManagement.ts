@@ -28,37 +28,34 @@ async function getUniqueInviteCode(): Promise<string> {
   return code;
 }
 
-// Helper to get downline summary
+// Helper to get downline summary using materialized path (2 queries instead of N+1)
 async function getDownlineSummary(userId: string) {
-  // Count direct agents
-  const directAgents = await prisma.user.count({
-    where: { parentAgentId: userId, role: 'agent' }
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { materializedPath: true },
   });
 
-  // Count direct members
-  const directMembers = await prisma.user.count({
-    where: { parentAgentId: userId, role: 'member' }
-  });
+  // Count direct agents and members (always fast, single level)
+  const [directAgents, directMembers] = await Promise.all([
+    prisma.user.count({ where: { parentAgentId: userId, role: 'agent' } }),
+    prisma.user.count({ where: { parentAgentId: userId, role: 'member' } }),
+  ]);
 
-  // Count total members under all downline agents recursively
-  const allDownlineUsers = await prisma.user.findMany({
-    where: { parentAgentId: userId }
-  });
-
+  // Count ALL members in entire downline tree (single query with materialized path)
   let totalMembers = directMembers;
-  for (const user of allDownlineUsers) {
-    if (user.role === 'agent') {
-      const subCount = await prisma.user.count({
-        where: { parentAgentId: user.id, role: 'member' }
-      });
-      totalMembers += subCount;
-    }
+  if (user?.materializedPath) {
+    totalMembers = await prisma.user.count({
+      where: {
+        materializedPath: { startsWith: `${user.materializedPath}.` },
+        role: 'member',
+      },
+    });
   }
 
   return {
     agentCount: directAgents,
     directMemberCount: directMembers,
-    totalMemberCount: totalMembers
+    totalMemberCount: totalMembers,
   };
 }
 
@@ -138,27 +135,21 @@ router.get('/dashboard', requireRole('admin', 'agent'), async (req: Request, res
   }
 });
 
-// Helper to verify user is in downline chain
+// Helper to verify user is in downline chain (using materialized path - no recursive queries)
 async function isInDownlineChain(rootUserId: string, targetUserId: string): Promise<boolean> {
   if (rootUserId === targetUserId) return true;
 
-  let currentId = targetUserId;
-  for (let i = 0; i < 10; i++) { // Max 10 levels deep
-    const user = await prisma.user.findUnique({
-      where: { id: currentId },
-      select: { parentAgentId: true }
-    });
-    if (!user || !user.parentAgentId) return false;
-    if (user.parentAgentId === rootUserId) return true;
-    currentId = user.parentAgentId;
-  }
-  return false;
+  const [rootUser, targetUser] = await Promise.all([
+    prisma.user.findUnique({ where: { id: rootUserId }, select: { materializedPath: true } }),
+    prisma.user.findUnique({ where: { id: targetUserId }, select: { materializedPath: true } }),
+  ]);
+
+  if (!rootUser?.materializedPath || !targetUser?.materializedPath) return false;
+  return targetUser.materializedPath.startsWith(`${rootUser.materializedPath}.`);
 }
 
-// Helper to build breadcrumb for agent navigation
+// Helper to build breadcrumb for agent navigation (using materialized path - single query)
 async function buildBreadcrumb(rootUserId: string, targetUserId: string | null): Promise<Array<{ id: string; username: string; nickname: string | null }>> {
-  type BreadcrumbUser = { id: string; username: string; nickname: string | null; parentAgentId: string | null };
-
   if (!targetUserId || targetUserId === rootUserId) {
     const rootUser = await prisma.user.findUnique({
       where: { id: rootUserId },
@@ -167,21 +158,30 @@ async function buildBreadcrumb(rootUserId: string, targetUserId: string | null):
     return rootUser ? [{ id: rootUser.id, username: rootUser.username, nickname: rootUser.nickname }] : [];
   }
 
-  const breadcrumb: Array<{ id: string; username: string; nickname: string | null }> = [];
-  let currentId: string | null = targetUserId;
+  // Get target's materialized path, extract ancestor IDs from root to target
+  const target = await prisma.user.findUnique({
+    where: { id: targetUserId },
+    select: { materializedPath: true },
+  });
 
-  for (let i = 0; i < 10 && currentId; i++) {
-    const foundUser: BreadcrumbUser | null = await prisma.user.findUnique({
-      where: { id: currentId },
-      select: { id: true, username: true, nickname: true, parentAgentId: true }
-    });
-    if (!foundUser) break;
-    breadcrumb.unshift({ id: foundUser.id, username: foundUser.username, nickname: foundUser.nickname });
-    if (foundUser.id === rootUserId) break;
-    currentId = foundUser.parentAgentId;
-  }
+  if (!target?.materializedPath) return [];
 
-  return breadcrumb;
+  const pathIds = target.materializedPath.split('.');
+  // Find root's position in path, then take from root to target
+  const rootIndex = pathIds.indexOf(rootUserId);
+  const relevantIds = rootIndex >= 0 ? pathIds.slice(rootIndex) : pathIds;
+
+  // Single query to get all users in the breadcrumb
+  const users = await prisma.user.findMany({
+    where: { id: { in: relevantIds } },
+    select: { id: true, username: true, nickname: true },
+  });
+
+  // Sort by path order
+  const userMap = new Map(users.map(u => [u.id, u]));
+  return relevantIds
+    .map(id => userMap.get(id))
+    .filter((u): u is { id: string; username: string; nickname: string | null } => !!u);
 }
 
 /**
@@ -425,7 +425,7 @@ router.post('/agents', requireRole('admin', 'agent'), async (req: Request, res: 
     }
 
     // Determine agent level (parent level + 1)
-    const parentUser = await prisma.user.findUnique({ where: { id: currentUser.userId } });
+    const parentUser = await prisma.user.findUnique({ where: { id: currentUser.userId }, select: { agentLevel: true, materializedPath: true } });
     const newAgentLevel = Math.min((parentUser?.agentLevel || 1) + 1, 5);
 
     // Hash password
@@ -449,6 +449,10 @@ router.post('/agents', requireRole('admin', 'agent'), async (req: Request, res: 
         inviteCode
       }
     });
+
+    // Set materialized path
+    const parentPath = parentUser?.materializedPath || currentUser.userId;
+    await prisma.user.update({ where: { id: agent.id }, data: { materializedPath: `${parentPath}.${agent.id}` } });
 
     // Create share settings if provided
     if (shareSettings.length > 0) {
@@ -525,6 +529,9 @@ router.post('/members', requireRole('admin', 'agent'), async (req: Request, res:
     // Generate invite code
     const inviteCode = await getUniqueInviteCode();
 
+    // Get parent's materialized path
+    const parentUser = await prisma.user.findUnique({ where: { id: currentUser.userId }, select: { materializedPath: true } });
+
     // Create member
     const member = await prisma.user.create({
       data: {
@@ -538,6 +545,10 @@ router.post('/members', requireRole('admin', 'agent'), async (req: Request, res:
         inviteCode
       }
     });
+
+    // Set materialized path
+    const parentPath = parentUser?.materializedPath || currentUser.userId;
+    await prisma.user.update({ where: { id: member.id }, data: { materializedPath: `${parentPath}.${member.id}` } });
 
     // Create bet limits for member if provided
     if (betLimits.length > 0) {

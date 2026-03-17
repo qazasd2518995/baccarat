@@ -689,26 +689,18 @@ export async function getBettingRecords(req: Request, res: Response) {
 
     // If agent, only show bets from their downline members
     if (currentUser.role === 'agent') {
-      // Get all members under this agent (recursively)
-      const getDownlineIds = async (agentId: string): Promise<string[]> => {
-        const directChildren = await prisma.user.findMany({
-          where: { parentAgentId: agentId },
-          select: { id: true, role: true }
-        });
-
-        let allIds: string[] = [];
-        for (const child of directChildren) {
-          if (child.role === 'member') {
-            allIds.push(child.id);
-          } else if (child.role === 'agent') {
-            const childDownline = await getDownlineIds(child.id);
-            allIds = allIds.concat(childDownline);
-          }
-        }
-        return allIds;
-      };
-
-      const downlineIds = await getDownlineIds(currentUser.userId);
+      // Get all members under this agent using materialized path (single query)
+      const agent = await prisma.user.findUnique({
+        where: { id: currentUser.userId },
+        select: { materializedPath: true },
+      });
+      const downlineMembers = agent?.materializedPath
+        ? await prisma.user.findMany({
+            where: { materializedPath: { startsWith: `${agent.materializedPath}.` }, role: 'member' },
+            select: { id: true },
+          })
+        : [];
+      const downlineIds = downlineMembers.map(m => m.id);
 
       if (where.userId) {
         // Verify the requested user is in agent's downline

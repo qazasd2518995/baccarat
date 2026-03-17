@@ -162,13 +162,22 @@ export async function createUser(req: Request, res: Response) {
 
     const passwordHash = await bcrypt.hash(data.password, 10);
 
+    const parentId = currentUser.role === 'agent' ? currentUser.userId : null;
+
+    // Get parent's materialized path for building this user's path
+    let parentPath: string | null = null;
+    if (parentId) {
+      const parent = await prisma.user.findUnique({ where: { id: parentId }, select: { materializedPath: true } });
+      parentPath = parent?.materializedPath ?? null;
+    }
+
     const user = await prisma.user.create({
       data: {
         username: data.username,
         passwordHash,
         nickname: data.nickname,
         role: data.role as UserRole,
-        parentAgentId: currentUser.role === 'agent' ? currentUser.userId : null,
+        parentAgentId: parentId,
       },
       select: {
         id: true,
@@ -180,6 +189,10 @@ export async function createUser(req: Request, res: Response) {
         createdAt: true,
       },
     });
+
+    // Set materialized path after creation (need the generated ID)
+    const materializedPath = parentPath ? `${parentPath}.${user.id}` : user.id;
+    await prisma.user.update({ where: { id: user.id }, data: { materializedPath } });
 
     res.status(201).json(user);
   } catch (error) {

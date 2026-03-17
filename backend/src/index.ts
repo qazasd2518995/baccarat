@@ -91,6 +91,10 @@ setSocketInstance(io);
 
 // Start the server and all game loops
 async function start() {
+  // Rebuild materialized paths for agent hierarchy (fast, runs once on startup)
+  const { rebuildAllPaths } = await import('./utils/materializedPath.js');
+  await rebuildAllPaths().catch(err => console.error('[Start] Failed to rebuild paths:', err));
+
   // Start the multi-table baccarat system (each table has independent game loop)
   startMultiTableGameLoop(io);
 

@@ -80,47 +80,40 @@ async function calculateBettingStats(userId: string, startDate: Date, endDate: D
   return { betCount, betAmount, validBet, memberWinLoss };
 }
 
-// Helper to get all downline members recursively
+// Helper to get all downline members using materialized path (single query)
 async function getAllDownlineMembers(agentId: string): Promise<string[]> {
-  const memberIds: string[] = [];
-
-  // Get direct downline
-  const directDownline = await prisma.user.findMany({
-    where: { parentAgentId: agentId },
-    select: { id: true, role: true }
+  const agent = await prisma.user.findUnique({
+    where: { id: agentId },
+    select: { materializedPath: true },
   });
+  if (!agent?.materializedPath) return [];
 
-  for (const user of directDownline) {
-    if (user.role === 'member') {
-      memberIds.push(user.id);
-    } else if (user.role === 'agent') {
-      // Recursively get members under this agent
-      const subMembers = await getAllDownlineMembers(user.id);
-      memberIds.push(...subMembers);
-    }
-  }
-
-  return memberIds;
+  const members = await prisma.user.findMany({
+    where: {
+      materializedPath: { startsWith: `${agent.materializedPath}.` },
+      role: 'member',
+    },
+    select: { id: true },
+  });
+  return members.map(m => m.id);
 }
 
-// Helper to get all downline agents recursively
+// Helper to get all downline agents using materialized path (single query)
 async function getAllDownlineAgents(agentId: string): Promise<string[]> {
-  const agentIds: string[] = [];
-
-  // Get direct downline agents
-  const directAgents = await prisma.user.findMany({
-    where: { parentAgentId: agentId, role: 'agent' },
-    select: { id: true }
+  const agent = await prisma.user.findUnique({
+    where: { id: agentId },
+    select: { materializedPath: true },
   });
+  if (!agent?.materializedPath) return [];
 
-  for (const agent of directAgents) {
-    agentIds.push(agent.id);
-    // Recursively get sub-agents
-    const subAgents = await getAllDownlineAgents(agent.id);
-    agentIds.push(...subAgents);
-  }
-
-  return agentIds;
+  const agents = await prisma.user.findMany({
+    where: {
+      materializedPath: { startsWith: `${agent.materializedPath}.` },
+      role: 'agent',
+    },
+    select: { id: true },
+  });
+  return agents.map(a => a.id);
 }
 
 // Helper to build breadcrumb path from root user to target
