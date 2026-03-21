@@ -17,6 +17,17 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Fallback for browsers that don't support dvh (in-app browsers like LINE, Telegram)
+      // Sets --vh custom property to the actual visible viewport height
+      function setVH() {
+        var vh = window.innerHeight;
+        document.documentElement.style.setProperty('--app-height', vh + 'px');
+      }
+      setVH();
+      window.addEventListener('resize', setVH);
+      window.addEventListener('orientationchange', function() { setTimeout(setVH, 100); });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
