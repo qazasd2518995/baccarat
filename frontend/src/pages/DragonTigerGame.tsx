@@ -459,8 +459,9 @@ export default function DragonTigerGame() {
 
   // Current dealer name — fetched from API
   const [currentDealerName, setCurrentDealerName] = useState<string>('');
+  const [currentTableName, setCurrentTableName] = useState<string>('');
 
-  // Fetch table info to get dealer name
+  // Fetch table info to get dealer name and table name
   useEffect(() => {
     const fetchTableInfo = async () => {
       if (!tableId) return;
@@ -468,6 +469,9 @@ export default function DragonTigerGame() {
         const res = await tablesApi.getTable(tableId);
         if (res.data?.dealer) {
           setCurrentDealerName(res.data.dealer);
+        }
+        if (res.data?.name) {
+          setCurrentTableName(res.data.name);
         }
       } catch (err) {
         console.error('[DragonTiger] Failed to fetch table info:', err);
@@ -1973,8 +1977,24 @@ export default function DragonTigerGame() {
           {/* Dealer Info */}
           <div className="p-3 border-b border-gray-800/50">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center">
-                <User className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center shrink-0">
+                {currentTableName ? (
+                  <img
+                    src={(() => {
+                      const dtMatch = currentTableName.match(/DT(\d+)/i);
+                      return dtMatch ? `/images/dealers/D${dtMatch[1]}.jpg` : `/images/dealers/${currentTableName}.jpg`;
+                    })()}
+                    alt={currentDealerName}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const img = e.currentTarget;
+                      if (img.src.endsWith('.jpg')) { img.src = img.src.replace('.jpg', '.png'); }
+                      else { img.style.display = 'none'; }
+                    }}
+                  />
+                ) : (
+                  <User className="w-6 h-6 text-white" />
+                )}
               </div>
               <div>
                 <div className="text-sm font-bold text-white">{currentDealerName}</div>

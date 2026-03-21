@@ -505,8 +505,9 @@ export default function Game() {
 
   // Current dealer name — fetched from API
   const [currentDealerName, setCurrentDealerName] = useState<string>('');
+  const [currentTableName, setCurrentTableName] = useState<string>('');
 
-  // Fetch table info to get dealer name
+  // Fetch table info to get dealer name and table name
   useEffect(() => {
     const fetchTableInfo = async () => {
       if (!tableId) return;
@@ -514,6 +515,9 @@ export default function Game() {
         const res = await tablesApi.getTable(tableId);
         if (res.data?.dealer) {
           setCurrentDealerName(res.data.dealer);
+        }
+        if (res.data?.name) {
+          setCurrentTableName(res.data.name);
         }
       } catch (err) {
         console.error('[Game] Failed to fetch table info:', err);
@@ -2232,8 +2236,25 @@ export default function Game() {
           {/* Dealer Info */}
           <div className="p-3 border-b border-gray-800/50">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center">
-                <User className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center shrink-0">
+                {currentTableName ? (
+                  <img
+                    src={(() => {
+                      if (currentTableName.includes('極速百家樂')) return `/images/dealers/${currentTableName}.jpg`;
+                      const m = currentTableName.match(/B(\d+)/i);
+                      return m ? `/images/dealers/B${m[1]}.jpg` : `/images/dealers/${currentTableName}.jpg`;
+                    })()}
+                    alt={currentDealerName}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const img = e.currentTarget;
+                      if (img.src.endsWith('.jpg')) { img.src = img.src.replace('.jpg', '.png'); }
+                      else { img.style.display = 'none'; }
+                    }}
+                  />
+                ) : (
+                  <User className="w-6 h-6 text-white" />
+                )}
               </div>
               <div>
                 <div className="text-sm font-bold text-white">{currentDealerName}</div>
