@@ -1032,7 +1032,7 @@ export default function DragonTigerGame() {
       {/* Mobile Dealer Avatar - top left */}
       {currentTableName && (
         <div className="lg:hidden fixed top-2 left-2 z-50">
-          <div className="w-[120px] h-[120px] rounded-full overflow-hidden border-2 border-[#d4af37]/60 shadow-lg bg-black/40">
+          <div className="w-[60px] h-[60px] rounded-full overflow-hidden border-2 border-[#d4af37]/60 shadow-lg bg-black/40">
             <img
               src={(() => {
                 const dtMatch = currentTableName.match(/DT(\d+)/i);
