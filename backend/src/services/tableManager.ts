@@ -586,19 +586,19 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
         }
       }
 
-      // Apply win cap enforcement
-      const netWin = totalPayout - totalBet;
-      if (netWin > 0) {
-        const cappedNetWin = await applyWinCap(prisma, userId, netWin);
-        if (cappedNetWin < netWin) {
-          totalPayout = totalBet + cappedNetWin;
-        }
-      }
-
-      const netResult = totalPayout - totalBet;
-
-      // Atomic settlement transaction
+      // Atomic settlement transaction (win cap applied inside for consistency)
       const finalBalance = await prisma.$transaction(async (tx) => {
+        // Apply win cap enforcement inside transaction to prevent race conditions
+        const netWin = totalPayout - totalBet;
+        if (netWin > 0) {
+          const cappedNetWin = await applyWinCap(tx, userId, netWin);
+          if (cappedNetWin < netWin) {
+            totalPayout = totalBet + cappedNetWin;
+          }
+        }
+
+        const netResult = totalPayout - totalBet;
+
         if (totalPayout > 0) {
           await tx.user.update({
             where: { id: userId },
@@ -632,6 +632,8 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
         }
         return balance;
       });
+
+      const netResult = totalPayout - totalBet;
 
       io.to(`user:${userId}`).emit('bet:settlement', {
         roundId: savedRound.id,

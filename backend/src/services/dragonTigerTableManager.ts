@@ -538,7 +538,7 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
           totalPayout += result.amount + result.payout;
         } else if (result.payout === 0) {
           totalPayout += result.amount;
-        } else if (result.payout === -result.amount * 0.5) {
+        } else if (Math.abs(result.payout + result.amount * 0.5) < 0.01) {
           totalPayout += result.amount * 0.5;
         }
       }
@@ -568,7 +568,7 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
           let payoutAmount: number;
           if (bet.won) { status = 'won'; payoutAmount = bet.amount + bet.payout; }
           else if (bet.payout === 0) { status = 'refunded'; payoutAmount = bet.amount; }
-          else if (bet.payout === -bet.amount * 0.5) { status = 'refunded'; payoutAmount = bet.amount * 0.5; }
+          else if (Math.abs(bet.payout + bet.amount * 0.5) < 0.01) { status = 'refunded'; payoutAmount = bet.amount * 0.5; }
           else { status = 'lost'; payoutAmount = 0; }
 
           await tx.bet.create({

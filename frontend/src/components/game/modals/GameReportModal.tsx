@@ -787,9 +787,10 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
                                             <div key={idx} className="flex items-center justify-between text-xs bg-gray-800/50 px-2 py-1 rounded">
                                               <span className="text-gray-300">{translateBetType(bet.type)}</span>
                                               <span className="text-gray-400">{bet.amount.toLocaleString()}</span>
-                                              <span className={bet.status === 'won' ? 'text-green-400' : bet.status === 'lost' ? 'text-red-400' : 'text-gray-400'}>
+                                              <span className={bet.status === 'won' ? 'text-green-400' : bet.status === 'lost' ? 'text-red-400' : bet.status === 'refunded' && bet.payout < bet.amount ? 'text-red-400' : 'text-gray-400'}>
                                                 {bet.status === 'won' ? `+${bet.payout.toLocaleString()}` :
                                                  bet.status === 'lost' ? `-${bet.amount.toLocaleString()}` :
+                                                 bet.status === 'refunded' ? `${(bet.payout - bet.amount) >= 0 ? '' : ''}${(bet.payout - bet.amount).toLocaleString()}` :
                                                  '0'}
                                               </span>
                                             </div>

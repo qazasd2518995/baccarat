@@ -10,7 +10,7 @@ router.use(authenticate);
 // Helper to get date range from quick filter
 function getDateRange(quickFilter: string): { startDate: Date; endDate: Date } {
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -35,12 +35,12 @@ function getDateRange(quickFilter: string): { startDate: Date; endDate: Date } {
       return { startDate: startOfLastWeek, endDate: endOfLastWeek };
     }
     case 'thisMonth': {
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 12, 0, 0);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
       return { startDate: startOfMonth, endDate: tomorrow };
     }
     case 'lastMonth': {
-      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1, 12, 0, 0);
-      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 1, 12, 0, 0);
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0);
+      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
       return { startDate: startOfLastMonth, endDate: endOfLastMonth };
     }
     default:
@@ -74,6 +74,8 @@ async function calculateBettingStats(userId: string, startDate: Date, endDate: D
       memberWinLoss += Number(bet.payout) - Number(bet.amount);
     } else if (bet.status === 'lost') {
       memberWinLoss -= Number(bet.amount);
+    } else if (bet.status === 'refunded' && bet.payout !== null && bet.payout !== undefined) {
+      memberWinLoss += Number(bet.payout) - Number(bet.amount);
     }
   }
 
@@ -740,6 +742,8 @@ router.get('/platform-detail', requireRole('admin', 'agent'), async (req: Reques
         winLoss = Number(bet.payout) - amount;
       } else if (bet.status === 'lost') {
         winLoss = -amount;
+      } else if (bet.status === 'refunded' && bet.payout !== null && bet.payout !== undefined) {
+        winLoss = Number(bet.payout) - amount;
       }
 
       // Update game type stats
