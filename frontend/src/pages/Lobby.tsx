@@ -664,10 +664,12 @@ export default function Lobby() {
                               if (name.includes('極速百家樂')) {
                                 return `/images/dealers/${name}.jpg`;
                               }
-                              // Extract number for short-name images
+                              // Dragon Tiger: 龍虎 DT1→D1, DT2→D2, 極速龍虎 DT1→D3, DT2→D4
                               const dtMatch = name.match(/DT(\d+)/i);
                               if (dtMatch) {
-                                return `/images/dealers/D${dtMatch[1]}.jpg`;
+                                const num = parseInt(dtMatch[1]);
+                                const offset = name.includes('極速') ? 2 : 0; // 極速龍虎用 D3, D4...
+                                return `/images/dealers/D${num + offset}.jpg`;
                               }
                               const bMatch = name.match(/B(\d+)/i);
                               if (bMatch) {
