@@ -151,6 +151,10 @@ export function useDragonTigerSocket(tableId?: string) {
         setIsShuffling(false);
         resetForNewRound();
       }
+      // When betting ends (sealed), discard any unconfirmed pending bets
+      if (data.phase === 'sealed') {
+        clearPendingBets();
+      }
     };
 
     const handleTimer = (data: any) => {

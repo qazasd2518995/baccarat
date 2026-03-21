@@ -137,6 +137,10 @@ export function useGameSocket(tableId?: string) {
       if (data.phase === 'betting') {
         setIsShuffling(false);
       }
+      // When betting ends (sealed), discard any unconfirmed pending bets
+      if (data.phase === 'sealed') {
+        clearPendingBets();
+      }
       // Note: resetForNewRound() is NOT called here.
       // Game.tsx handles the reset with deferred timing to avoid
       // clearing result data before the result display finishes.

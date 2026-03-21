@@ -1846,66 +1846,63 @@ export default function DragonTigerGame() {
                   </button>
                 </div>
 
-                {/* Mobile: Two rows - Chips on top, Balance/Actions on bottom */}
+                {/* Mobile: Chips + Confirm/Cancel, Balance row below */}
                 <div className="lg:hidden bg-[#1a1f2e]">
-                  {/* Row 1: Chips */}
-                  <div className="flex items-center justify-center gap-0.5 py-0.5 px-1 overflow-x-auto scrollbar-hide">
-                    {displayedChips.map((value) => (
-                      <Chip
-                        key={value}
-                        value={value}
-                        selected={selectedChip === value}
-                        onClick={() => setSelectedChip(value)}
-                        disabled={value > balance}
-                        extraSmall={true}
-                      />
-                    ))}
-                    <button
-                      onClick={() => setIsChipSettingsOpen(true)}
-                      className="relative rounded-full flex items-center justify-center bg-gradient-to-br from-gray-500 to-gray-700 border-2 border-white/20 shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 w-6 h-6 shrink-0"
-                    >
-                      <Coins className="relative z-10 text-white drop-shadow-lg w-3 h-3" />
-                    </button>
+                  {/* Row 1: Chips + Confirm/Cancel */}
+                  <div className="flex items-center gap-0.5 py-0.5 px-1">
+                    <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide flex-1">
+                      {displayedChips.map((value) => (
+                        <Chip
+                          key={value}
+                          value={value}
+                          selected={selectedChip === value}
+                          onClick={() => setSelectedChip(value)}
+                          disabled={value > balance}
+                          extraSmall={true}
+                        />
+                      ))}
+                      <button
+                        onClick={() => setIsChipSettingsOpen(true)}
+                        className="relative rounded-full flex items-center justify-center bg-gradient-to-br from-gray-500 to-gray-700 border-2 border-white/20 shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 w-6 h-6 shrink-0"
+                      >
+                        <Coins className="relative z-10 text-white drop-shadow-lg w-3 h-3" />
+                      </button>
+                    </div>
+                    {/* Confirm + Cancel buttons next to chips */}
+                    <div className="flex flex-col gap-0.5 shrink-0 ml-1">
+                      <button
+                        onClick={handleConfirm}
+                        disabled={!canBet || pendingBets.length === 0}
+                        className="px-2 py-1 text-[9px] bg-amber-500 text-black font-bold rounded flex items-center justify-center gap-0.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <Check className="w-3 h-3" />
+                        確認下注
+                      </button>
+                      <button
+                        onClick={handleCancel}
+                        disabled={pendingBets.length === 0}
+                        className="px-2 py-1 text-[9px] bg-gray-600 text-gray-200 rounded flex items-center justify-center gap-0.5 disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <X className="w-3 h-3" />
+                        收回籌碼
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Row 2: Balance + Actions */}
+                  {/* Row 2: Balance + Repeat */}
                   <div className="flex items-center justify-between py-1 px-2 border-t border-gray-700/50">
-                    {/* Left: Balance Info */}
                     <div className="flex items-center gap-3 text-[9px]">
                       <span className="text-gray-400">餘額 <span className="text-yellow-400 font-bold">{balance.toLocaleString()}</span></span>
                       <span className="text-gray-400">下注 <span className="text-white font-bold">{totalBet.toLocaleString()}</span></span>
                       <span className="text-gray-400">輸贏 <span className={`font-bold ${sessionWinLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>{sessionWinLoss.toLocaleString()}</span></span>
                     </div>
-
-                    {/* Right: Actions */}
-                    <div className="flex items-center gap-1">
-                      {/* Action Buttons */}
-                      {pendingBets.length > 0 && (
-                        <>
-                          <button
-                            onClick={handleCancel}
-                            className="p-1 bg-gray-700 text-gray-300 rounded"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={handleRepeat}
-                            className="p-1 bg-gray-700 text-gray-300 rounded"
-                          >
-                            <RotateCcw className="w-3 h-3" />
-                          </button>
-                        </>
-                      )}
-                      {canBet && pendingBets.length > 0 && (
-                        <button
-                          onClick={handleConfirm}
-                          className="px-2 py-1 text-[9px] bg-amber-500 text-black font-bold rounded flex items-center gap-0.5"
-                        >
-                          <Check className="w-3 h-3" />
-                          確認
-                        </button>
-                      )}
-                    </div>
+                    <button
+                      onClick={handleRepeat}
+                      disabled={!canBet || lastBets.length === 0}
+                      className="p-1 bg-gray-700 text-gray-300 rounded disabled:opacity-30"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
               </div>
