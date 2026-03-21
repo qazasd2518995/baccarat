@@ -18,15 +18,21 @@
   <body>
     <div id="root"></div>
     <script>
-      // Fallback for browsers that don't support dvh (in-app browsers like LINE, Telegram)
-      // Sets --vh custom property to the actual visible viewport height
+      // Measure actual visible viewport height (handles Android Chrome nav bar, iOS Safari, in-app browsers)
       function setVH() {
-        var vh = window.innerHeight;
+        // visualViewport is most accurate on Android (excludes browser chrome)
+        var vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
         document.documentElement.style.setProperty('--app-height', vh + 'px');
       }
       setVH();
+      // Listen to all possible viewport change events
       window.addEventListener('resize', setVH);
-      window.addEventListener('orientationchange', function() { setTimeout(setVH, 100); });
+      window.addEventListener('orientationchange', function() { setTimeout(setVH, 150); });
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', setVH);
+      }
+      // Re-measure after fonts/resources load (can shift layout)
+      window.addEventListener('load', function() { setTimeout(setVH, 300); });
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
