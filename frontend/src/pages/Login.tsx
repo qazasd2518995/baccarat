@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, User, Lock, RefreshCw } from 'lucide-react';
+import { Loader2, User, Lock, RefreshCw, Shield, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../services/api';
 
@@ -20,8 +20,11 @@ export default function Login() {
   const [captcha, setCaptcha] = useState('');
   const [captchaCode, setCaptchaCode] = useState(generateCaptcha());
   const [error, setError] = useState('');
+  const [errorType, setErrorType] = useState<'password' | 'captcha' | 'account' | 'general' | ''>('');
   const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
 
   const refreshCaptcha = () => {
     setCaptchaCode(generateCaptcha());
@@ -32,27 +35,44 @@ export default function Login() {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!username || !password) {
-      setError(i18n.language === 'zh' ? '请输入用户名和密码' : 'Please enter username and password');
+    if (!username.trim()) {
+      setError(i18n.language === 'zh' ? '请输入用户名' : 'Please enter username');
+      setErrorType('general');
+      return;
+    }
+
+    if (!password) {
+      setError(i18n.language === 'zh' ? '请输入密码' : 'Please enter password');
+      setErrorType('password');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError(i18n.language === 'zh' ? '密码至少需要6位' : 'Password must be at least 6 characters');
+      setErrorType('password');
       return;
     }
 
     if (captcha !== captchaCode) {
-      setError(i18n.language === 'zh' ? '验证码错误' : 'Invalid captcha');
+      setError(i18n.language === 'zh' ? '验证码错误，请重新输入' : 'Invalid captcha, please try again');
+      setErrorType('captcha');
       refreshCaptcha();
       return;
     }
 
     setError('');
+    setErrorType('');
     setIsLoading(true);
 
     try {
-      const { data } = await authApi.login(username, password);
+      const { data } = await authApi.login(username.trim(), password);
 
       if (data.token && data.user) {
         if (data.user.role === 'admin' || data.user.role === 'agent') {
           setError(i18n.language === 'zh' ? '管理员和代理请使用管理后台登录' : 'Admins and agents please use admin panel to login');
+          setErrorType('account');
           setIsLoading(false);
+          refreshCaptcha();
           return;
         }
 
@@ -62,11 +82,33 @@ export default function Login() {
         navigate('/', { replace: true });
       } else {
         setError(i18n.language === 'zh' ? '登录响应无效' : 'Invalid login response');
+        setErrorType('general');
       }
     } catch (err: any) {
       console.error('Login error:', err);
-      const errorMessage = err.response?.data?.error || err.response?.data?.message || t('loginError');
-      setError(errorMessage);
+      const serverError = err.response?.data?.error || '';
+      setLoginAttempts(prev => prev + 1);
+      refreshCaptcha();
+
+      // Map backend errors to user-friendly messages with types
+      if (serverError.includes('密码错误') || serverError.includes('Invalid password')) {
+        setError(i18n.language === 'zh'
+          ? `密码错误，请重新输入${loginAttempts >= 2 ? '（连续错误多次将锁定账户）' : ''}`
+          : `Wrong password${loginAttempts >= 2 ? ' (multiple failures may lock account)' : ''}`);
+        setErrorType('password');
+      } else if (serverError.includes('不存在') || serverError.includes('not found')) {
+        setError(i18n.language === 'zh' ? '账户不存在，请确认用户名' : 'Account not found, please check username');
+        setErrorType('account');
+      } else if (serverError.includes('封禁') || serverError.includes('banned')) {
+        setError(i18n.language === 'zh' ? '账户已被封禁，请联系客服' : 'Account banned, please contact support');
+        setErrorType('account');
+      } else if (serverError.includes('停用') || serverError.includes('suspended')) {
+        setError(i18n.language === 'zh' ? '账户已被停用，请联系客服' : 'Account suspended, please contact support');
+        setErrorType('account');
+      } else {
+        setError(i18n.language === 'zh' ? '登录失败，请稍后重试' : 'Login failed, please try again');
+        setErrorType('general');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -258,16 +300,17 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-3 rounded-xl text-sm text-center"
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className="p-3 rounded-xl text-sm flex items-center gap-2"
                   style={{
-                    background: 'rgba(220, 38, 38, 0.1)',
-                    border: '1px solid rgba(220, 38, 38, 0.3)',
-                    color: '#fca5a5'
+                    background: errorType === 'captcha' ? 'rgba(234, 179, 8, 0.1)' : 'rgba(220, 38, 38, 0.1)',
+                    border: `1px solid ${errorType === 'captcha' ? 'rgba(234, 179, 8, 0.3)' : 'rgba(220, 38, 38, 0.3)'}`,
+                    color: errorType === 'captcha' ? '#fde047' : '#fca5a5'
                   }}
                 >
-                  {error}
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{error}</span>
                 </motion.div>
               )}
 
@@ -304,64 +347,76 @@ export default function Login() {
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-500/40" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     onFocus={() => setFocusedField('password')}
                     onBlur={() => setFocusedField(null)}
-                    className="w-full pl-12 pr-4 py-3.5 rounded-xl text-white text-sm transition-all duration-300 outline-none"
+                    className="w-full pl-12 pr-12 py-3.5 rounded-xl text-white text-sm transition-all duration-300 outline-none"
                     style={{
                       background: 'rgba(25,25,35,0.8)',
-                      border: focusedField === 'password' ? '2px solid #d4af37' : '2px solid rgba(212, 175, 55, 0.15)',
+                      border: focusedField === 'password' || errorType === 'password' ? `2px solid ${errorType === 'password' ? '#ef4444' : '#d4af37'}` : '2px solid rgba(212, 175, 55, 0.15)',
                       boxShadow: focusedField === 'password' ? '0 0 20px rgba(212, 175, 55, 0.15)' : 'none'
                     }}
                     placeholder={t('enterPassword')}
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-500/40 hover:text-amber-400 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
               {/* Captcha */}
               <div>
-                <label className="block text-[10px] sm:text-xs font-medium mb-1.5 text-amber-500/70 tracking-wider uppercase">
-                  {i18n.language === 'zh' ? '验证码' : 'Captcha'}
+                <label className="block text-xs font-medium mb-2 text-amber-500/80 tracking-wider uppercase flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5" />
+                  {i18n.language === 'zh' ? '安全验证' : 'Security Check'}
                 </label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <input
                       type="text"
+                      inputMode="numeric"
                       value={captcha}
                       onChange={(e) => setCaptcha(e.target.value.replace(/\D/g, '').slice(0, 4))}
                       onFocus={() => setFocusedField('captcha')}
                       onBlur={() => setFocusedField(null)}
                       maxLength={4}
-                      className="w-full px-3 py-3 rounded-lg text-white text-sm text-center tracking-[0.4em] transition-all duration-300 outline-none"
+                      className="w-full px-3 py-3.5 rounded-xl text-white text-sm text-center tracking-[0.4em] transition-all duration-300 outline-none"
                       style={{
-                        background: 'rgba(20,20,30,0.8)',
-                        border: focusedField === 'captcha' ? '2px solid #d4af37' : '2px solid rgba(212, 175, 55, 0.12)',
-                        boxShadow: focusedField === 'captcha' ? '0 0 15px rgba(212, 175, 55, 0.1)' : 'none'
+                        background: 'rgba(25,25,35,0.8)',
+                        border: focusedField === 'captcha' || errorType === 'captcha' ? `2px solid ${errorType === 'captcha' ? '#eab308' : '#d4af37'}` : '2px solid rgba(212, 175, 55, 0.15)',
+                        boxShadow: focusedField === 'captcha' ? '0 0 20px rgba(212, 175, 55, 0.15)' : 'none'
                       }}
-                      placeholder="• • • •"
+                      placeholder={i18n.language === 'zh' ? '输入验证码' : 'Enter code'}
                       required
                     />
                   </div>
                   <motion.div
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.96 }}
                     onClick={refreshCaptcha}
-                    className="flex items-center justify-center gap-1.5 px-3 rounded-lg cursor-pointer select-none"
+                    className="flex items-center justify-center gap-1.5 px-4 rounded-xl cursor-pointer select-none group"
                     style={{
-                      background: 'rgba(20,20,30,0.8)',
-                      border: '2px solid rgba(212, 175, 55, 0.12)',
-                      minWidth: '80px'
+                      background: 'rgba(25,25,35,0.8)',
+                      border: '2px solid rgba(212, 175, 55, 0.15)',
+                      minWidth: '110px'
                     }}
+                    title={i18n.language === 'zh' ? '点击刷新验证码' : 'Click to refresh'}
                   >
-                    <div className="flex">
+                    <div className="flex gap-0.5">
                       {captchaCode.split('').map((digit, i) => (
                         <span
-                          key={i}
+                          key={`${captchaCode}-${i}`}
                           className="text-lg font-bold text-amber-400"
                           style={{
-                            transform: `rotate(${(i - 1.5) * 5}deg)`,
+                            display: 'inline-block',
+                            transform: `rotate(${(i - 1.5) * 8}deg) translateY(${Math.sin(i * 2) * 2}px)`,
                             textShadow: '0 0 6px rgba(212,175,55,0.4)'
                           }}
                         >
@@ -369,7 +424,7 @@ export default function Login() {
                         </span>
                       ))}
                     </div>
-                    <RefreshCw className="w-3.5 h-3.5 text-amber-500/40" />
+                    <RefreshCw className="w-4 h-4 text-amber-500/50 group-hover:text-amber-400 transition-colors" />
                   </motion.div>
                 </div>
               </div>
