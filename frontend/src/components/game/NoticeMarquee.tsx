@@ -11,16 +11,14 @@ interface Notice {
   createdAt: string;
 }
 
-const SCROLL_SPEED = 60; // px per second
+const SCROLL_SPEED = 50; // px per second
 
 export default function NoticeMarquee() {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [animStyle, setAnimStyle] = useState<React.CSSProperties>({});
-  const textRef = useRef<HTMLSpanElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const styleElRef = useRef<HTMLStyleElement | null>(null);
-  const animCountRef = useRef(0);
+  const [duration, setDuration] = useState(30);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const measuredRef = useRef(false);
 
   useEffect(() => {
     fetchNotices();
@@ -31,7 +29,12 @@ export default function NoticeMarquee() {
   const fetchNotices = async () => {
     try {
       const { data } = await noticeApi.getPublicNotices('game_marquee');
-      setNotices(data || []);
+      // Only update if content actually changed (prevent animation restart)
+      setNotices(prev => {
+        const newText = (data || []).map((n: Notice) => n.content).join();
+        const oldText = prev.map(n => n.content).join();
+        return newText === oldText ? prev : (data || []);
+      });
     } catch (error) {
       console.error('Failed to fetch marquee notices:', error);
     } finally {
@@ -42,57 +45,27 @@ export default function NoticeMarquee() {
   const marqueeText = useMemo(() => {
     return notices
       .map((n) => `${n.type === 'urgent' ? '[緊急] ' : n.type === 'warning' ? '[警告] ' : ''}${n.title}：${n.content}`)
-      .join('　　　');
+      .join('　　　　　');
   }, [notices]);
 
+  // Measure track width once to calculate proper duration
   useEffect(() => {
-    if (!marqueeText) return;
-
-    const raf = requestAnimationFrame(() => {
-      const textEl = textRef.current;
-      const containerEl = containerRef.current;
-      if (!textEl || !containerEl) return;
-
-      const textWidth = textEl.offsetWidth;
-      const containerWidth = containerEl.offsetWidth;
-      const gap = containerWidth;
-      const scrollDistance = textWidth + gap;
-      const duration = scrollDistance / SCROLL_SPEED;
-
-      // Remove previous injected style
-      if (styleElRef.current) {
-        styleElRef.current.remove();
-      }
-
-      animCountRef.current += 1;
-      const animName = `noticeMarquee${animCountRef.current}`;
-
-      const styleEl = document.createElement('style');
-      styleEl.textContent = `@keyframes ${animName}{0%{transform:translateX(0)}100%{transform:translateX(-${scrollDistance}px)}}`;
-      document.head.appendChild(styleEl);
-      styleElRef.current = styleEl;
-
-      setAnimStyle({
-        display: 'inline-flex',
-        gap: `${gap}px`,
-        animation: `${animName} ${duration}s linear infinite`,
-        willChange: 'transform',
-      });
+    if (!marqueeText || measuredRef.current) return;
+    requestAnimationFrame(() => {
+      const track = trackRef.current;
+      if (!track) return;
+      // Track contains two copies, so half = one copy's width
+      const halfWidth = track.scrollWidth / 2;
+      const calc = Math.max(10, halfWidth / SCROLL_SPEED);
+      setDuration(calc);
+      measuredRef.current = true;
     });
-
-    return () => {
-      cancelAnimationFrame(raf);
-    };
   }, [marqueeText]);
 
-  // Cleanup style element on unmount
+  // Reset measurement flag when text changes
   useEffect(() => {
-    return () => {
-      if (styleElRef.current) {
-        styleElRef.current.remove();
-      }
-    };
-  }, []);
+    measuredRef.current = false;
+  }, [marqueeText]);
 
   if (loading || notices.length === 0) {
     return null;
@@ -104,18 +77,26 @@ export default function NoticeMarquee() {
         <Volume2 className="w-4 h-4 text-amber-400" />
       </div>
 
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-hidden relative"
-      >
+      <div className="flex-1 overflow-hidden relative h-full">
         <div
-          className="whitespace-nowrap text-sm text-amber-300/90"
-          style={animStyle}
+          ref={trackRef}
+          className="whitespace-nowrap text-sm text-amber-300/90 absolute top-0 left-0 h-full flex items-center"
+          style={{
+            animation: `noticeMarqueeScroll ${duration}s linear infinite`,
+            willChange: 'transform',
+          }}
         >
-          <span ref={textRef} className="inline-block">{marqueeText}</span>
           <span className="inline-block">{marqueeText}</span>
+          <span className="inline-block" style={{ paddingLeft: '5em' }}>{marqueeText}</span>
         </div>
       </div>
+
+      <style>{`
+        @keyframes noticeMarqueeScroll {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+      `}</style>
     </div>
   );
 }
