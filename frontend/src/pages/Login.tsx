@@ -2,9 +2,13 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Loader2, User, Lock } from 'lucide-react';
+import { Loader2, User, Lock, RefreshCw } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../services/api';
+
+function generateCaptcha(): string {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
 
 export default function Login() {
   const { t, i18n } = useTranslation();
@@ -13,9 +17,16 @@ export default function Login() {
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [captcha, setCaptcha] = useState('');
+  const [captchaCode, setCaptchaCode] = useState(generateCaptcha());
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+
+  const refreshCaptcha = () => {
+    setCaptchaCode(generateCaptcha());
+    setCaptcha('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,6 +34,12 @@ export default function Login() {
 
     if (!username || !password) {
       setError(i18n.language === 'zh' ? '请输入用户名和密码' : 'Please enter username and password');
+      return;
+    }
+
+    if (captcha !== captchaCode) {
+      setError(i18n.language === 'zh' ? '验证码错误' : 'Invalid captcha');
+      refreshCaptcha();
       return;
     }
 
@@ -301,6 +318,59 @@ export default function Login() {
                     placeholder={t('enterPassword')}
                     required
                   />
+                </div>
+              </div>
+
+              {/* Captcha */}
+              <div>
+                <label className="block text-[10px] sm:text-xs font-medium mb-1.5 text-amber-500/70 tracking-wider uppercase">
+                  {i18n.language === 'zh' ? '验证码' : 'Captcha'}
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={captcha}
+                      onChange={(e) => setCaptcha(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      onFocus={() => setFocusedField('captcha')}
+                      onBlur={() => setFocusedField(null)}
+                      maxLength={4}
+                      className="w-full px-3 py-3 rounded-lg text-white text-sm text-center tracking-[0.4em] transition-all duration-300 outline-none"
+                      style={{
+                        background: 'rgba(20,20,30,0.8)',
+                        border: focusedField === 'captcha' ? '2px solid #d4af37' : '2px solid rgba(212, 175, 55, 0.12)',
+                        boxShadow: focusedField === 'captcha' ? '0 0 15px rgba(212, 175, 55, 0.1)' : 'none'
+                      }}
+                      placeholder="• • • •"
+                      required
+                    />
+                  </div>
+                  <motion.div
+                    whileTap={{ scale: 0.98 }}
+                    onClick={refreshCaptcha}
+                    className="flex items-center justify-center gap-1.5 px-3 rounded-lg cursor-pointer select-none"
+                    style={{
+                      background: 'rgba(20,20,30,0.8)',
+                      border: '2px solid rgba(212, 175, 55, 0.12)',
+                      minWidth: '80px'
+                    }}
+                  >
+                    <div className="flex">
+                      {captchaCode.split('').map((digit, i) => (
+                        <span
+                          key={i}
+                          className="text-lg font-bold text-amber-400"
+                          style={{
+                            transform: `rotate(${(i - 1.5) * 5}deg)`,
+                            textShadow: '0 0 6px rgba(212,175,55,0.4)'
+                          }}
+                        >
+                          {digit}
+                        </span>
+                      ))}
+                    </div>
+                    <RefreshCw className="w-3.5 h-3.5 text-amber-500/40" />
+                  </motion.div>
                 </div>
               </div>
 
