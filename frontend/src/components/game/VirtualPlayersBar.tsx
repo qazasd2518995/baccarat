@@ -195,7 +195,8 @@ function formatBalance(balance: number): string {
 
 function getPlayerCountForTable(tableId: string): number {
   const seed = tableId.split('').reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
-  return 5 + Math.floor((Math.sin(seed * 7777) * 10000 % 1) * 8);
+  const raw = Math.abs(Math.sin(seed * 7777) * 10000) % 1;
+  return Math.max(5, 5 + Math.floor(raw * 8)); // 5~12, at least 5
 }
 
 interface VirtualPlayersBarProps {
@@ -253,10 +254,11 @@ export const VirtualPlayersBar = memo(function VirtualPlayersBar({
   // Simulate player entering/leaving
   const rotatePlayer = useCallback(() => {
     setPlayers(prev => {
-      // 15% chance of player leaving
+      // 15% chance of player leaving (never below 4)
       const shouldRemove = Math.random() < 0.15 && prev.length > 4;
-      // 20% chance of new player joining
-      const shouldAdd = Math.random() < 0.2 && prev.length < 15;
+      // Higher chance of joining when few players, cap at 15
+      const addChance = prev.length < 5 ? 0.6 : 0.2;
+      const shouldAdd = Math.random() < addChance && prev.length < 15;
 
       let newPlayers = [...prev];
 
