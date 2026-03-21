@@ -22,14 +22,12 @@ export async function startMultiTableGameLoop(io: TypedServer): Promise<void> {
   // Expected table configuration — auto-create missing tables on startup
   // 一般百家樂（30秒）+ 極速百家樂（15秒）
   const expectedTables = [
-    { name: '百家樂 B1', dealerName: 'Dealer 1', sortOrder: 1, bettingDuration: 30 },
-    { name: '百家樂 B2', dealerName: 'Dealer 2', sortOrder: 2, bettingDuration: 30 },
-    { name: '百家樂 B3', dealerName: 'Dealer 3', sortOrder: 3, bettingDuration: 30 },
-    { name: '百家樂 B4', dealerName: 'Dealer 4', sortOrder: 4, bettingDuration: 30 },
-    { name: '百家樂 B5', dealerName: 'Dealer 5', sortOrder: 5, bettingDuration: 30 },
-    { name: '極速百家樂 B1', dealerName: 'Dealer 6', sortOrder: 6, bettingDuration: 15 },
-    { name: '極速百家樂 B2', dealerName: 'Dealer 7', sortOrder: 7, bettingDuration: 15 },
-    { name: '極速百家樂 B3', dealerName: 'Dealer 8', sortOrder: 8, bettingDuration: 15 },
+    ...Array.from({ length: 10 }, (_, i) => ({
+      name: `百家樂 B${i + 1}`, dealerName: `Dealer ${i + 1}`, sortOrder: i + 1, bettingDuration: 30,
+    })),
+    ...Array.from({ length: 10 }, (_, i) => ({
+      name: `極速百家樂 B${i + 1}`, dealerName: `Dealer ${i + 11}`, sortOrder: i + 11, bettingDuration: 15,
+    })),
   ];
 
   // Create any missing tables
