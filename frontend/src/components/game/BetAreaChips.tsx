@@ -117,6 +117,7 @@ interface ChipStackProps {
   stackOffset?: number;
   className?: string;
   chipValue?: number; // Optional: force all chips to display as this denomination color
+  placedChips?: number[]; // Actual chip denominations placed by user (preserves colors)
 }
 
 export const ChipStack = memo(function ChipStack({
@@ -126,21 +127,22 @@ export const ChipStack = memo(function ChipStack({
   stackOffset = 2,
   className = '',
   chipValue,
+  placedChips,
 }: ChipStackProps) {
   if (amount <= 0) return null;
 
-  // Calculate number of chips to display based on bet count
-  const chipCount = Math.min(Math.ceil(amount / (chipValue || 500)), maxChips);
-
-  // If chipValue is specified, use that for all chips
-  // Otherwise, calculate based on denominations
   let chips: number[] = [];
 
-  if (chipValue) {
-    // Use the specified chip value for all chips
+  if (placedChips && placedChips.length > 0) {
+    // Use actual placed chip denominations (preserves user's chip colors)
+    // Show the last N chips (most recent on top)
+    chips = placedChips.slice(-maxChips);
+  } else if (chipValue) {
+    const chipCount = Math.min(Math.ceil(amount / chipValue), maxChips);
     chips = Array(chipCount).fill(chipValue);
   } else {
-    // Calculate chips based on denominations
+    // Fallback: calculate based on denominations
+    const chipCount = Math.min(Math.ceil(amount / 500), maxChips);
     const denominations = [100000, 50000, 10000, 5000, 1000, 500, 100];
     let remaining = amount;
 

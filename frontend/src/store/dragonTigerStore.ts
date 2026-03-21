@@ -27,6 +27,7 @@ export interface DTBet {
   type: DragonTigerBetType;
   amount: number;
   chipValue?: number; // Last chip value used for this bet (for display)
+  chips?: number[]; // Individual chip denominations placed (for display colors)
 }
 
 export interface DTBetResult extends DTBet {
@@ -77,6 +78,8 @@ interface DragonTigerStore {
 
   // Get chip value for display (last used chip for this bet type)
   getBetChipValue: (type: DragonTigerBetType) => number | undefined;
+  // Get placed chip denominations for display colors
+  getBetChips: (type: DragonTigerBetType) => number[];
 
   // Card state
   dragonCard: Card | null;
@@ -205,12 +208,13 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
         newBets[existingIndex] = {
           ...newBets[existingIndex],
           amount: newBets[existingIndex].amount + state.selectedChip,
-          chipValue: state.selectedChip, // Update to latest chip value
+          chipValue: state.selectedChip,
+          chips: [...(newBets[existingIndex].chips || []), state.selectedChip],
         };
         return { pendingBets: newBets };
       }
       return {
-        pendingBets: [...state.pendingBets, { type, amount: state.selectedChip, chipValue: state.selectedChip }],
+        pendingBets: [...state.pendingBets, { type, amount: state.selectedChip, chipValue: state.selectedChip, chips: [state.selectedChip] }],
       };
     });
     return true;
@@ -222,10 +226,23 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
 
   // Confirmed bets
   confirmedBets: [],
-  setConfirmedBets: (bets) => set({
-    confirmedBets: bets,
-    pendingBets: [],
-  }),
+  setConfirmedBets: (bets) => {
+    const { pendingBets, confirmedBets: existingConfirmed } = get();
+    const chipMap = new Map<string, number[]>();
+    for (const pb of pendingBets) {
+      if (pb.chips) chipMap.set(pb.type, pb.chips);
+    }
+    for (const cb of existingConfirmed) {
+      if (cb.chips) {
+        const existing = chipMap.get(cb.type) || [];
+        chipMap.set(cb.type, [...cb.chips, ...existing]);
+      }
+    }
+    set({
+      confirmedBets: bets.map(b => ({ ...b, chips: chipMap.get(b.type) || b.chips })),
+      pendingBets: [],
+    });
+  },
   clearConfirmedBets: () => set({ confirmedBets: [] }),
   getConfirmedTotal: () => get().confirmedBets.reduce((sum, bet) => sum + bet.amount, 0),
 
@@ -269,11 +286,16 @@ export const useDragonTigerStore = create<DragonTigerStore>((set, get) => ({
   // Get chip value for display
   getBetChipValue: (type) => {
     const state = get();
-    // Prefer pending bet's chip value (most recent), fall back to confirmed
     const pendingBet = state.pendingBets.find((b) => b.type === type);
     if (pendingBet?.chipValue) return pendingBet.chipValue;
     const confirmedBet = state.confirmedBets.find((b) => b.type === type);
     return confirmedBet?.chipValue;
+  },
+  getBetChips: (type) => {
+    const state = get();
+    const confirmedChips = state.confirmedBets.find((b) => b.type === type)?.chips || [];
+    const pendingChips = state.pendingBets.find((b) => b.type === type)?.chips || [];
+    return [...confirmedChips, ...pendingChips];
   },
 
   // Cards

@@ -612,6 +612,7 @@ export default function Game() {
     getPendingTotal,
     getConfirmedTotal,
     getBetAmount,
+    getBetChips,
     selectedChip,
     setSelectedChip,
     playerCards,
@@ -1860,7 +1861,7 @@ export default function Game() {
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('player_bonus')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
-                          <ChipStack amount={getBetAmount('player_bonus')} chipSize={14} maxChips={2} stackOffset={1} />
+                          <ChipStack amount={getBetAmount('player_bonus')} chipSize={14} maxChips={2} stackOffset={1} placedChips={getBetChips('player_bonus')} />
                         </div>
                       </>
                     )}
@@ -1881,7 +1882,7 @@ export default function Game() {
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('player_pair')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
-                          <ChipStack amount={getBetAmount('player_pair')} chipSize={14} maxChips={2} stackOffset={1} />
+                          <ChipStack amount={getBetAmount('player_pair')} chipSize={14} maxChips={2} stackOffset={1} placedChips={getBetChips('player_pair')} />
                         </div>
                       </>
                     )}
@@ -1903,7 +1904,7 @@ export default function Game() {
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('super_six')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
-                          <ChipStack amount={getBetAmount('super_six')} chipSize={14} maxChips={2} stackOffset={1} />
+                          <ChipStack amount={getBetAmount('super_six')} chipSize={14} maxChips={2} stackOffset={1} placedChips={getBetChips('super_six')} />
                         </div>
                       </>
                     )}
@@ -1924,7 +1925,7 @@ export default function Game() {
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('banker_pair')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
-                          <ChipStack amount={getBetAmount('banker_pair')} chipSize={14} maxChips={2} stackOffset={1} />
+                          <ChipStack amount={getBetAmount('banker_pair')} chipSize={14} maxChips={2} stackOffset={1} placedChips={getBetChips('banker_pair')} />
                         </div>
                       </>
                     )}
@@ -1945,7 +1946,7 @@ export default function Game() {
                       <>
                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-1 py-px rounded-full shadow z-10">{getBetAmount('banker_bonus')}</div>
                         <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
-                          <ChipStack amount={getBetAmount('banker_bonus')} chipSize={14} maxChips={2} stackOffset={1} />
+                          <ChipStack amount={getBetAmount('banker_bonus')} chipSize={14} maxChips={2} stackOffset={1} placedChips={getBetChips('banker_bonus')} />
                         </div>
                       </>
                     )}
@@ -1972,7 +1973,7 @@ export default function Game() {
                       <>
                         <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10">{getBetAmount('player')}</div>
                         <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2">
-                          <ChipStack amount={getBetAmount('player')} chipSize={20} maxChips={3} />
+                          <ChipStack amount={getBetAmount('player')} chipSize={20} maxChips={3} placedChips={getBetChips('player')} />
                         </div>
                       </>
                     )}
@@ -1993,7 +1994,7 @@ export default function Game() {
                       <>
                         <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10">{getBetAmount('tie')}</div>
                         <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2">
-                          <ChipStack amount={getBetAmount('tie')} chipSize={20} maxChips={3} />
+                          <ChipStack amount={getBetAmount('tie')} chipSize={20} maxChips={3} placedChips={getBetChips('tie')} />
                         </div>
                       </>
                     )}
@@ -2022,7 +2023,7 @@ export default function Game() {
                       <>
                         <div className="absolute top-0.5 right-0.5 sm:top-3 sm:right-3 bg-[#d4af37] text-black text-xs sm:text-sm font-bold px-1.5 py-0.5 rounded-full shadow-lg z-10">{getBetAmount('banker')}</div>
                         <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2">
-                          <ChipStack amount={getBetAmount('banker')} chipSize={20} maxChips={3} />
+                          <ChipStack amount={getBetAmount('banker')} chipSize={20} maxChips={3} placedChips={getBetChips('banker')} />
                         </div>
                       </>
                     )}

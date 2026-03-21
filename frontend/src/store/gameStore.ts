@@ -122,6 +122,8 @@ interface GameStore {
 
   // Get total bet for a specific type (pending + confirmed)
   getBetAmount: (type: BetType) => number;
+  // Get placed chip denominations for a specific bet type
+  getBetChips: (type: BetType) => number[];
 
   // Card dealing state
   playerCards: Card[];
@@ -289,11 +291,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
         newBets[existingIndex] = {
           ...newBets[existingIndex],
           amount: newBets[existingIndex].amount + state.selectedChip,
+          chips: [...(newBets[existingIndex].chips || []), state.selectedChip],
         };
         return { pendingBets: newBets };
       }
       return {
-        pendingBets: [...state.pendingBets, { type, amount: state.selectedChip }],
+        pendingBets: [...state.pendingBets, { type, amount: state.selectedChip, chips: [state.selectedChip] }],
       };
     });
     return true;
@@ -305,10 +308,28 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   // Confirmed bets
   confirmedBets: [],
-  setConfirmedBets: (bets) => set({
-    confirmedBets: bets.map(b => ({ type: b.type, amount: b.amount })),
-    pendingBets: [], // Clear pending when confirmed
-  }),
+  setConfirmedBets: (bets) => {
+    const { pendingBets, confirmedBets: existingConfirmed } = get();
+    // Merge chip info from pending bets into confirmed bets
+    const chipMap = new Map<string, number[]>();
+    for (const pb of pendingBets) {
+      if (pb.chips) chipMap.set(pb.type, pb.chips);
+    }
+    for (const cb of existingConfirmed) {
+      if (cb.chips) {
+        const existing = chipMap.get(cb.type) || [];
+        chipMap.set(cb.type, [...cb.chips, ...existing]);
+      }
+    }
+    set({
+      confirmedBets: bets.map(b => ({
+        type: b.type,
+        amount: b.amount,
+        chips: chipMap.get(b.type),
+      })),
+      pendingBets: [],
+    });
+  },
   clearConfirmedBets: () => set({ confirmedBets: [] }),
   getConfirmedTotal: () => get().confirmedBets.reduce((sum, bet) => sum + bet.amount, 0),
 
@@ -353,6 +374,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const pending = state.pendingBets.find((b) => b.type === type)?.amount || 0;
     const confirmed = state.confirmedBets.find((b) => b.type === type)?.amount || 0;
     return pending + confirmed;
+  },
+  getBetChips: (type) => {
+    const state = get();
+    const confirmedChips = state.confirmedBets.find((b) => b.type === type)?.chips || [];
+    const pendingChips = state.pendingBets.find((b) => b.type === type)?.chips || [];
+    return [...confirmedChips, ...pendingChips];
   },
 
   // Cards

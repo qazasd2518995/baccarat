@@ -46,6 +46,7 @@ export interface GameRound {
 export interface Bet {
   type: BetType;
   amount: number;
+  chips?: number[]; // Individual chip denominations placed (for display colors)
 }
 
 export interface BetResult extends Bet {
