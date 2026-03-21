@@ -1296,6 +1296,28 @@ export default function Game() {
         </div>
       </header>
 
+      {/* Mobile Dealer Avatar - top left */}
+      {currentTableName && (
+        <div className="lg:hidden fixed top-2 left-2 z-50">
+          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#d4af37]/60 shadow-lg bg-black/40">
+            <img
+              src={(() => {
+                if (currentTableName.includes('極速百家樂')) return `/images/dealers/${currentTableName}.jpg`;
+                const m = currentTableName.match(/B(\d+)/i);
+                return m ? `/images/dealers/B${m[1]}.jpg` : `/images/dealers/${currentTableName}.jpg`;
+              })()}
+              alt={currentDealerName}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const img = e.currentTarget;
+                if (img.src.endsWith('.jpg')) img.src = img.src.replace('.jpg', '.png');
+                else img.style.display = 'none';
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Mobile Hamburger Menu Button - Fixed position */}
       <div className="lg:hidden fixed top-2 right-2 z-50">
         <button
