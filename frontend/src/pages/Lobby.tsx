@@ -656,20 +656,33 @@ export default function Lobby() {
                       <div className="flex h-[100px] sm:h-[130px]">
                         {/* Left: Dealer photo area */}
                         <div className="relative w-[90px] min-w-[90px] sm:w-[130px] sm:min-w-[130px]">
-                          {/* Dealer photo - try table.name, table.id, then fallback */}
+                          {/* Dealer photo - map table name to image file */}
                           <img
-                            src={`/images/dealers/${table.name}.jpg`}
+                            src={(() => {
+                              const name = table.name;
+                              // 極速百家樂 B1~B10 → has dedicated images
+                              if (name.includes('極速百家樂')) {
+                                return `/images/dealers/${name}.jpg`;
+                              }
+                              // Extract number for short-name images
+                              const dtMatch = name.match(/DT(\d+)/i);
+                              if (dtMatch) {
+                                return `/images/dealers/D${dtMatch[1]}.jpg`;
+                              }
+                              const bMatch = name.match(/B(\d+)/i);
+                              if (bMatch) {
+                                return `/images/dealers/B${bMatch[1]}.jpg`;
+                              }
+                              return `/images/dealers/${name}.jpg`;
+                            })()}
                             alt={table.dealer}
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               const img = e.currentTarget;
                               const src = img.getAttribute('src') || '';
-                              if (src.includes(table.name) && src.endsWith('.jpg')) {
-                                img.src = `/images/dealers/${table.name}.png`;
-                              } else if (src.includes(table.name) && src.endsWith('.png')) {
-                                img.src = `/images/dealers/${table.id}.jpg`;
-                              } else if (src.includes(table.id) && src.endsWith('.jpg')) {
-                                img.src = `/images/dealers/${table.id}.png`;
+                              // Try .png if .jpg failed
+                              if (src.endsWith('.jpg')) {
+                                img.src = src.replace('.jpg', '.png');
                               } else {
                                 img.style.display = 'none';
                                 if (img.parentElement) {
