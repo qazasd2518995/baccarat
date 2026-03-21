@@ -109,15 +109,25 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
       super_six: { zh: '超级六', en: 'Super 6' },
       player_bonus: { zh: '闲龙宝', en: 'P.Dragon' },
       banker_bonus: { zh: '庄龙宝', en: 'B.Dragon' },
+      big: { zh: '大', en: 'Big' },
+      small: { zh: '小', en: 'Small' },
       // Dragon Tiger
       dragon: { zh: '龙', en: 'Dragon' },
       tiger: { zh: '虎', en: 'Tiger' },
       dt_tie: { zh: '和', en: 'Tie' },
       dt_suited_tie: { zh: '同花和', en: 'Suited Tie' },
-      dragon_big: { zh: '龙大', en: 'Dragon Big' },
-      dragon_small: { zh: '龙小', en: 'Dragon Small' },
-      tiger_big: { zh: '虎大', en: 'Tiger Big' },
-      tiger_small: { zh: '虎小', en: 'Tiger Small' },
+      dragon_big: { zh: '龙大', en: 'D.Big' },
+      dragon_small: { zh: '龙小', en: 'D.Small' },
+      dragon_odd: { zh: '龙单', en: 'D.Odd' },
+      dragon_even: { zh: '龙双', en: 'D.Even' },
+      dragon_red: { zh: '龙红', en: 'D.Red' },
+      dragon_black: { zh: '龙黑', en: 'D.Black' },
+      tiger_big: { zh: '虎大', en: 'T.Big' },
+      tiger_small: { zh: '虎小', en: 'T.Small' },
+      tiger_odd: { zh: '虎单', en: 'T.Odd' },
+      tiger_even: { zh: '虎双', en: 'T.Even' },
+      tiger_red: { zh: '虎红', en: 'T.Red' },
+      tiger_black: { zh: '虎黑', en: 'T.Black' },
       // Bull Bull
       bb_banker: { zh: '庄', en: 'Banker' },
       bb_player1: { zh: '闲1', en: 'Player 1' },
@@ -305,15 +315,20 @@ export default function GameReportModal({ isOpen, onClose }: GameReportModalProp
           status: b.status,
         }));
 
-        // Get table name from API response or use default
-        let tableName = round.table?.name;
-        if (!tableName) {
+        // Get table name from API response and normalize
+        let tableName = round.table?.name || '';
+        // Normalize legacy short names (B1→百家樂 B1, D1→龍虎 DT1, etc.)
+        if (/^B\d+$/i.test(tableName)) {
+          tableName = `百家樂 ${tableName}`;
+        } else if (/^D\d+$/i.test(tableName)) {
+          tableName = `龍虎 DT${tableName.replace(/^D/i, '')}`;
+        } else if (!tableName) {
           if (gameType === 'dragontiger') {
-            tableName = i18n.language === 'zh' ? '龙虎桌' : 'Dragon Tiger';
+            tableName = '龍虎';
           } else if (gameType === 'bullbull') {
-            tableName = i18n.language === 'zh' ? '牛牛桌' : 'Bull Bull';
+            tableName = '牛牛';
           } else {
-            tableName = i18n.language === 'zh' ? '默认桌' : 'Default Table';
+            tableName = '百家樂';
           }
         }
 
