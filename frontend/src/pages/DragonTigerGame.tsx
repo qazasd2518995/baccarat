@@ -446,7 +446,10 @@ export default function DragonTigerGame() {
   const { cooldown: marqueeCooldown, sendMessage: sendMarqueeMessage, messages: marqueeMessages, removeMessage: removeMarqueeMessage } = useMarqueeChat(user?.username || '玩家');
 
   // Get displayed chips from gameStore (shared with Baccarat)
-  const { displayedChips } = useGameStore();
+  const { displayedChips, loadChipsFromServer } = useGameStore();
+
+  // Load chip preferences from server on mount (sync across devices)
+  useEffect(() => { loadChipsFromServer(); }, []);
 
   // UI states
   const [isMuted, setIsMuted] = useState(false);

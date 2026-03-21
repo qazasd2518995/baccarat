@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Bet, BetType, Card, GameResult, BetResult } from '../types';
 import type { GamePhase, BetEntry } from '../services/socket';
+import { gameApi } from '../services/api';
 
 // All available chip values
 export const ALL_CHIP_OPTIONS = [
@@ -237,6 +238,9 @@ interface GameStore {
   setCustomChips: (chips: number[]) => void;
   addCustomChip: (value: number) => boolean;
   removeCustomChip: (value: number) => void;
+
+  // Server sync
+  loadChipsFromServer: () => Promise<void>;
 }
 
 export const CHIP_VALUES = [10, 50, 100, 500, 1000, 5000, 10000];
@@ -244,6 +248,17 @@ export const CHIP_VALUES = [10, 50, 100, 500, 1000, 5000, 10000];
 // Initialize from localStorage
 const initialDisplayedChips = loadChipPreferences();
 const initialCustomChips = loadCustomChips();
+
+// Debounced server sync (avoid spamming API on rapid chip changes)
+let syncTimer: ReturnType<typeof setTimeout> | null = null;
+function syncChipsToServer(chipPreferences: number[], customChips: number[]) {
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    gameApi.saveChipPreferences({ chipPreferences, customChips }).catch(err => {
+      console.error('[GameStore] Failed to sync chips to server:', err);
+    });
+  }, 500);
+}
 
 export const useGameStore = create<GameStore>((set, get) => ({
   // Socket connection
@@ -512,12 +527,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setDisplayedChips: (chips) => {
     saveChipPreferences(chips);
     const state = get();
-    // If current selected chip is not in the new list, select the first available
     if (!chips.includes(state.selectedChip)) {
       set({ displayedChips: chips, selectedChip: chips[0] });
     } else {
       set({ displayedChips: chips });
     }
+    syncChipsToServer(chips, get().customChips);
   },
 
   // Custom chips
@@ -525,29 +540,26 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setCustomChips: (chips) => {
     saveCustomChips(chips);
     set({ customChips: chips });
+    syncChipsToServer(get().displayedChips, chips);
   },
   addCustomChip: (value) => {
     const state = get();
-    // Max 4 custom chips
     if (state.customChips.length >= 4) return false;
-    // Value must be positive
     if (value <= 0) return false;
-    // Value must not already exist in custom chips
     if (state.customChips.includes(value)) return false;
     const newCustomChips = [...state.customChips, value];
     saveCustomChips(newCustomChips);
     set({ customChips: newCustomChips });
+    syncChipsToServer(state.displayedChips, newCustomChips);
     return true;
   },
   removeCustomChip: (value) => {
     const state = get();
     const newCustomChips = state.customChips.filter(v => v !== value);
     saveCustomChips(newCustomChips);
-    // Also remove from displayed chips if present
     const newDisplayedChips = state.displayedChips.filter(v => v !== value);
     if (newDisplayedChips.length !== state.displayedChips.length) {
       saveChipPreferences(newDisplayedChips);
-      // If current selected chip was removed, select first available
       if (state.selectedChip === value && newDisplayedChips.length > 0) {
         set({ customChips: newCustomChips, displayedChips: newDisplayedChips, selectedChip: newDisplayedChips[0] });
       } else {
@@ -555,6 +567,36 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
     } else {
       set({ customChips: newCustomChips });
+    }
+    syncChipsToServer(
+      newDisplayedChips.length !== state.displayedChips.length ? newDisplayedChips : state.displayedChips,
+      newCustomChips
+    );
+  },
+
+  // Load chip preferences from server (call after login)
+  loadChipsFromServer: async () => {
+    try {
+      const res = await gameApi.getChipPreferences();
+      const { chipPreferences, customChips } = res.data;
+
+      if (customChips && Array.isArray(customChips) && customChips.length > 0) {
+        saveCustomChips(customChips);
+        set({ customChips });
+      }
+
+      if (chipPreferences && Array.isArray(chipPreferences) && chipPreferences.length > 0) {
+        saveChipPreferences(chipPreferences);
+        const state = get();
+        if (!chipPreferences.includes(state.selectedChip)) {
+          set({ displayedChips: chipPreferences, selectedChip: chipPreferences[0] });
+        } else {
+          set({ displayedChips: chipPreferences });
+        }
+      }
+    } catch (err) {
+      // Silently fail — localStorage values are used as fallback
+      console.error('[GameStore] Failed to load chips from server:', err);
     }
   },
 }));

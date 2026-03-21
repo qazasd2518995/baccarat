@@ -121,6 +121,8 @@ model User {
   isFullDisabled  Boolean     @default(false) @map("is_full_disabled")   // 全線禁用
   isReadonly      Boolean     @default(false) @map("is_readonly")        // 禁止投注/操作
   materializedPath String?    @map("materialized_path")         // 物化路徑 e.g. "id1.id2.id3"
+  chipPreferences  Json?      @map("chip_preferences")          // 籌碼偏好 [10,50,100,500,1000,5000]
+  customChips      Json?      @map("custom_chips")              // 自定義籌碼 [888,1888]
   lastLoginIp     String?     @map("last_login_ip")            // 最後登入IP
   lastLoginAt     DateTime?   @map("last_login_at")            // 最後登入時間
   remark          String?                                      // 備註

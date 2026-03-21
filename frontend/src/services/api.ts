@@ -108,6 +108,10 @@ export const gameApi = {
     api.get('/game/rounds', { params }),
 
   getMyLimits: () => api.get('/game/my-limits'),
+
+  getChipPreferences: () => api.get('/game/chip-preferences'),
+  saveChipPreferences: (data: { chipPreferences?: number[]; customChips?: number[] }) =>
+    api.put('/game/chip-preferences', data),
 };
 
 // Reports API

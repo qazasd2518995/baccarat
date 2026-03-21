@@ -633,6 +633,7 @@ export default function Game() {
     loadRepeatBets,
     bettingLimits,
     displayedChips,
+    loadChipsFromServer,
     clearPendingBets,
     resetForNewRound,
     fakeBets,
@@ -644,6 +645,9 @@ export default function Game() {
 
   // Progressive fake chip amounts for bet areas
   const fakeAmounts = useFakeChipAmounts(fakeBets, phase);
+
+  // Load chip preferences from server on mount (sync across devices)
+  useEffect(() => { loadChipsFromServer(); }, []);
 
   // Can place bets only during betting phase
   const canBet = phase === 'betting' && isConnected && !isShuffling;

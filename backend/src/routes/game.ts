@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import {
   getGameState,
   playGame,
@@ -12,6 +12,7 @@ import {
   getBettingRecords,
 } from '../controllers/gameController.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { prisma } from '../lib/prisma.js';
 
 const router = Router();
 
@@ -47,5 +48,41 @@ router.get('/my-limits', getMyLimits);
 
 // Start new shoe (admin only)
 router.post('/new-shoe', requireRole('admin'), newShoe);
+
+// GET /api/game/chip-preferences — get user's chip preferences
+router.get('/chip-preferences', async (req: Request, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.userId },
+      select: { chipPreferences: true, customChips: true },
+    });
+    res.json({
+      chipPreferences: user?.chipPreferences ?? null,
+      customChips: user?.customChips ?? null,
+    });
+  } catch (error) {
+    console.error('[Game] Failed to get chip preferences:', error);
+    res.status(500).json({ error: 'Failed to get chip preferences' });
+  }
+});
+
+// PUT /api/game/chip-preferences — save user's chip preferences
+router.put('/chip-preferences', async (req: Request, res: Response) => {
+  try {
+    const { chipPreferences, customChips } = req.body;
+    const data: any = {};
+    if (chipPreferences !== undefined) data.chipPreferences = chipPreferences;
+    if (customChips !== undefined) data.customChips = customChips;
+
+    await prisma.user.update({
+      where: { id: req.user!.userId },
+      data,
+    });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[Game] Failed to save chip preferences:', error);
+    res.status(500).json({ error: 'Failed to save chip preferences' });
+  }
+});
 
 export default router;
