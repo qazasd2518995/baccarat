@@ -37,6 +37,18 @@ export async function startMultiTableGameLoop(io: TypedServer): Promise<void> {
     })),
   ];
 
+  // Deactivate old tables that are not in the expected list (e.g. legacy short names like "B1")
+  const expectedNames = new Set(expectedTables.map(t => t.name));
+  for (const table of tables) {
+    if (!expectedNames.has(table.name)) {
+      await prisma.gameTable.update({
+        where: { id: table.id },
+        data: { isActive: false },
+      });
+      console.log(`[MultiTable] Deactivated legacy table: ${table.name} (${table.id})`);
+    }
+  }
+
   // Create missing tables & sync dealer names on existing tables
   const existingByName = new Map(tables.map(t => [t.name, t]));
   for (const expected of expectedTables) {
