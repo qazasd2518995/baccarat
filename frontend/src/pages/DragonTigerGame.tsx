@@ -1982,7 +1982,12 @@ export default function DragonTigerGame() {
                   <img
                     src={(() => {
                       const dtMatch = currentTableName.match(/DT(\d+)/i);
-                      return dtMatch ? `/images/dealers/D${dtMatch[1]}.jpg` : `/images/dealers/${currentTableName}.jpg`;
+                      if (dtMatch) {
+                        const num = parseInt(dtMatch[1]);
+                        const offset = currentTableName.includes('極速') ? 2 : 0;
+                        return `/images/dealers/D${num + offset}.jpg`;
+                      }
+                      return `/images/dealers/${currentTableName}.jpg`;
                     })()}
                     alt={currentDealerName}
                     className="w-full h-full object-cover"
