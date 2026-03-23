@@ -7,10 +7,21 @@ const router = Router();
 // All routes require authentication
 router.use(authenticate);
 
-// Helper to get date range from quick filter
+// 遊戲日邊界：07:00 AM ~ 次日 06:59:59 AM（與賽車系統一致）
+// 如果現在是凌晨 3:00，「今日」= 昨天 07:00 ~ 今天 07:00
+function getGameDayStart(date: Date): Date {
+  const d = new Date(date);
+  if (d.getHours() < 7) {
+    // 凌晨 0:00~6:59 屬於前一遊戲日
+    d.setDate(d.getDate() - 1);
+  }
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 7, 0, 0);
+}
+
+// Helper to get date range from quick filter (遊戲日 07:00 制)
 function getDateRange(quickFilter: string): { startDate: Date; endDate: Date } {
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const today = getGameDayStart(now);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -35,12 +46,12 @@ function getDateRange(quickFilter: string): { startDate: Date; endDate: Date } {
       return { startDate: startOfLastWeek, endDate: endOfLastWeek };
     }
     case 'thisMonth': {
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 7, 0, 0);
       return { startDate: startOfMonth, endDate: tomorrow };
     }
     case 'lastMonth': {
-      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0);
-      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1, 7, 0, 0);
+      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 1, 7, 0, 0);
       return { startDate: startOfLastMonth, endDate: endOfLastMonth };
     }
     default:

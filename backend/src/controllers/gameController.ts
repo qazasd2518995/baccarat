@@ -610,45 +610,57 @@ export async function getBettingRecords(req: Request, res: Response) {
     const now = new Date();
 
     if (quickFilter) {
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      // 遊戲日 07:00 制：凌晨 0:00~6:59 屬於前一遊戲日
+      const gameDayStart = (d: Date) => {
+        const t = new Date(d);
+        if (t.getHours() < 7) t.setDate(t.getDate() - 1);
+        return new Date(t.getFullYear(), t.getMonth(), t.getDate(), 7, 0, 0);
+      };
+      const today = gameDayStart(now);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
 
       switch (quickFilter) {
         case 'today':
           dateFilter.gte = today;
-          dateFilter.lte = new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1);
+          dateFilter.lt = tomorrow;
           break;
-        case 'yesterday':
-          const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+        case 'yesterday': {
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
           dateFilter.gte = yesterday;
-          dateFilter.lte = new Date(today.getTime() - 1);
+          dateFilter.lt = today;
           break;
-        case 'thisWeek':
+        }
+        case 'thisWeek': {
           const startOfWeek = new Date(today);
-          startOfWeek.setDate(today.getDate() - today.getDay());
+          startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
           dateFilter.gte = startOfWeek;
-          dateFilter.lte = now;
+          dateFilter.lt = tomorrow;
           break;
-        case 'lastWeek':
+        }
+        case 'lastWeek': {
           const startOfLastWeek = new Date(today);
-          startOfLastWeek.setDate(today.getDate() - today.getDay() - 7);
+          startOfLastWeek.setDate(startOfLastWeek.getDate() - startOfLastWeek.getDay() - 7);
           const endOfLastWeek = new Date(startOfLastWeek);
-          endOfLastWeek.setDate(startOfLastWeek.getDate() + 6);
-          endOfLastWeek.setHours(23, 59, 59, 999);
+          endOfLastWeek.setDate(endOfLastWeek.getDate() + 7);
           dateFilter.gte = startOfLastWeek;
-          dateFilter.lte = endOfLastWeek;
+          dateFilter.lt = endOfLastWeek;
           break;
-        case 'thisMonth':
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        }
+        case 'thisMonth': {
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 7, 0, 0);
           dateFilter.gte = startOfMonth;
-          dateFilter.lte = now;
+          dateFilter.lt = tomorrow;
           break;
-        case 'lastMonth':
-          const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-          const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-          endOfLastMonth.setHours(23, 59, 59, 999);
+        }
+        case 'lastMonth': {
+          const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1, 7, 0, 0);
+          const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 1, 7, 0, 0);
           dateFilter.gte = startOfLastMonth;
-          dateFilter.lte = endOfLastMonth;
+          dateFilter.lt = endOfLastMonth;
           break;
+        }
       }
     } else if (startDate || endDate) {
       if (startDate) dateFilter.gte = new Date(startDate as string);

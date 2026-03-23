@@ -169,8 +169,11 @@ router.get('/agents', requireRole('admin'), async (req, res) => {
 router.get('/dashboard', async (req, res) => {
   try {
     const currentUser = req.user!;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // 遊戲日 07:00 制
+    const now = new Date();
+    const today = new Date(now);
+    if (today.getHours() < 7) today.setDate(today.getDate() - 1);
+    today.setHours(7, 0, 0, 0);
 
     // Member filter based on role
     const memberFilter: any = { role: 'member' };
