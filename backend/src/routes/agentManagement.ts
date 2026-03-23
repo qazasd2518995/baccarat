@@ -80,6 +80,12 @@ router.get('/dashboard', requireRole('admin', 'agent'), async (req: Request, res
       }
     });
 
+    // Also fetch rebateMode and maxRebatePercent (not available via include)
+    const userRebateInfo = await prisma.user.findUnique({
+      where: { id: currentUser.userId },
+      select: { rebateMode: true, maxRebatePercent: true }
+    });
+
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -115,6 +121,8 @@ router.get('/dashboard', requireRole('admin', 'agent'), async (req: Request, res
       inviteCode: user.inviteCode,
       sharePercent: Number(user.sharePercent),
       rebatePercent: Number(user.rebatePercent),
+      rebateMode: userRebateInfo?.rebateMode || 'percentage',
+      maxRebatePercent: Number(userRebateInfo?.maxRebatePercent || 0),
       isLocked: user.isLocked,
       isFullDisabled: user.isFullDisabled,
       isReadonly: user.isReadonly,
@@ -236,6 +244,8 @@ router.get('/agents', requireRole('admin', 'agent'), async (req: Request, res: R
           inviteCode: true,
           sharePercent: true,
           rebatePercent: true,
+          rebateMode: true,
+          maxRebatePercent: true,
           isLocked: true,
           isFullDisabled: true,
           isReadonly: true,
@@ -257,6 +267,7 @@ router.get('/agents', requireRole('admin', 'agent'), async (req: Request, res: R
           balance: Number(agent.balance),
           sharePercent: Number(agent.sharePercent),
           rebatePercent: Number(agent.rebatePercent),
+          maxRebatePercent: Number(agent.maxRebatePercent),
           ...summary
         };
       })
@@ -737,19 +748,29 @@ router.put('/users/:id/status', requireRole('admin', 'agent'), async (req: Reque
  */
 router.get('/users/:id/share-settings', requireRole('admin', 'agent'), async (req: Request, res: Response) => {
   try {
-    const id = req.params.id as string;
+    const targetUserId = req.params.id as string;
 
     const settings = await prisma.agentShareSetting.findMany({
-      where: { agentId: id },
+      where: { agentId: targetUserId },
       orderBy: [{ gameCategory: 'asc' }, { platform: 'asc' }]
     });
 
+    const formattedSettings = settings.map(s => ({
+      ...s,
+      sharePercent: Number(s.sharePercent),
+      rebatePercent: Number(s.rebatePercent)
+    }));
+
+    const agent = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { rebateMode: true, rebatePercent: true, maxRebatePercent: true }
+    });
+
     res.json({
-      settings: settings.map(s => ({
-        ...s,
-        sharePercent: Number(s.sharePercent),
-        rebatePercent: Number(s.rebatePercent)
-      }))
+      rebateMode: agent?.rebateMode || 'percentage',
+      rebatePercent: Number(agent?.rebatePercent || 0),
+      maxRebatePercent: Number(agent?.maxRebatePercent || 0),
+      settings: formattedSettings
     });
   } catch (error) {
     console.error('[AgentManagement] Error fetching share settings:', error);
@@ -858,6 +879,73 @@ router.put('/users/:id/share-settings', requireRole('admin', 'agent'), async (re
   } catch (error) {
     console.error('[AgentManagement] Error updating share settings:', error);
     res.status(500).json({ error: 'Failed to update share settings' });
+  }
+});
+
+/**
+ * PUT /api/agent-management/users/:id/rebate-mode
+ * 更新代理退水模式
+ */
+router.put('/users/:id/rebate-mode', requireRole('admin', 'agent'), async (req: Request, res: Response) => {
+  try {
+    const currentUser = req.user!;
+    const targetUserId = req.params.id as string;
+    const { rebateMode, rebatePercent } = req.body;
+
+    // Validate rebateMode
+    if (!['all', 'none', 'percentage'].includes(rebateMode)) {
+      return res.status(400).json({ error: 'Invalid rebate mode' });
+    }
+
+    // Verify permission (must be admin or in downline chain)
+    if (currentUser.role !== 'admin') {
+      const inChain = await isInDownlineChain(currentUser.userId, targetUserId);
+      if (!inChain) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    // Get target agent and parent info
+    const targetAgent = await prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { role: true, maxRebatePercent: true, rebatePercent: true, rebateMode: true }
+    });
+
+    if (!targetAgent || targetAgent.role !== 'agent') {
+      return res.status(404).json({ error: 'Agent not found' });
+    }
+
+    const updateData: any = { rebateMode };
+
+    // If mode is 'percentage' and rebatePercent is provided, validate and update
+    if (rebateMode === 'percentage' && rebatePercent !== undefined) {
+      const maxAllowed = Number(targetAgent.maxRebatePercent);
+      if (Number(rebatePercent) > maxAllowed + 0.0000001) {
+        return res.status(400).json({ error: `退水比例不可超過 ${maxAllowed}%` });
+      }
+      updateData.rebatePercent = rebatePercent;
+    }
+
+    await prisma.user.update({
+      where: { id: targetUserId },
+      data: updateData,
+    });
+
+    // When rebateMode changes, update children's maxRebatePercent
+    const { calculateChildMaxRebate } = await import('../utils/rebateCalculation.js');
+    const newRebatePercent = rebatePercent !== undefined ? Number(rebatePercent) : Number(targetAgent.rebatePercent);
+    const newChildMax = calculateChildMaxRebate(rebateMode, newRebatePercent);
+
+    // Update direct children's maxRebatePercent
+    await prisma.user.updateMany({
+      where: { parentAgentId: targetUserId, role: 'agent' },
+      data: { maxRebatePercent: newChildMax },
+    });
+
+    res.json({ success: true, rebateMode, rebatePercent: updateData.rebatePercent });
+  } catch (error) {
+    console.error('[AgentManagement] Update rebate mode error:', error);
+    res.status(500).json({ error: 'Failed to update rebate mode' });
   }
 });
 
