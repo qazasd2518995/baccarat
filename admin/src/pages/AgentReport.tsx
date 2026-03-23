@@ -31,6 +31,8 @@ interface AgentReportData {
   memberRebate: number;
   personalShare: number;
   personalRebate: number;
+  earnedRebate: number;
+  superiorSettlement: number;
   receivable: number;
   payable: number;
   profit: number;
@@ -45,6 +47,8 @@ interface SummaryData {
   memberRebate: number;
   personalShare: number;
   personalRebate: number;
+  earnedRebate: number;
+  superiorSettlement: number;
   receivable: number;
   payable: number;
   profit: number;
@@ -61,6 +65,8 @@ interface MemberReportData {
   memberRebate: number;
   personalShare: number;
   personalRebate: number;
+  earnedRebate: number;
+  superiorSettlement: number;
   receivable: number;
   payable: number;
   profit: number;
@@ -236,9 +242,9 @@ export default function AgentReport() {
     let csvContent = '\uFEFF';
 
     if (activeTab === 'agent') {
-      csvContent += '代理帳號,名稱,層級,注單筆數,下注金額,有效投注,會員輸贏,會員退水,個人佔成,個人退水,應收下線,應繳上線,個人盈虧\n';
+      csvContent += '代理帳號,名稱,層級,注單筆數,下注金額,有效投注,會員輸贏,會員退水,個人佔成,個人退水,賺水,上級交收,應收下線,應繳上線,個人盈虧\n';
       data.agents?.forEach((a) => {
-        csvContent += `${a.username},${a.nickname || ''},${a.agentLevel}級代理,${a.betCount},${a.betAmount},${a.validBet},${a.memberWinLoss},${a.memberRebate},${a.personalShare},${a.personalRebate},${a.receivable},${a.payable},${a.profit}\n`;
+        csvContent += `${a.username},${a.nickname || ''},${a.agentLevel}級代理,${a.betCount},${a.betAmount},${a.validBet},${a.memberWinLoss},${a.memberRebate},${a.personalShare},${a.personalRebate},${a.earnedRebate || 0},${a.superiorSettlement || 0},${a.receivable},${a.payable},${a.profit}\n`;
       });
     } else {
       csvContent += '會員帳號,名稱,注單筆數,下注金額,有效投注,會員輸贏\n';
@@ -413,6 +419,14 @@ export default function AgentReport() {
               <div className={getValueColor(summaryData.personalRebate)}>{formatCurrency(summaryData.personalRebate)}</div>
             </td>
             <td className="px-2 py-3 text-center border-r border-[#333]">
+              <div className="text-gray-500 text-xs">賺水</div>
+              <div className={getValueColor(summaryData.earnedRebate || 0)}>{formatCurrency(summaryData.earnedRebate || 0)}</div>
+            </td>
+            <td className="px-2 py-3 text-center border-r border-[#333]">
+              <div className="text-gray-500 text-xs">上級交收</div>
+              <div className={getValueColor(summaryData.superiorSettlement || 0)}>{formatCurrency(summaryData.superiorSettlement || 0)}</div>
+            </td>
+            <td className="px-2 py-3 text-center border-r border-[#333]">
               <div className="text-gray-500 text-xs">應收下線</div>
               <div className="text-white">{formatCurrency(summaryData.receivable)}</div>
             </td>
@@ -506,6 +520,14 @@ export default function AgentReport() {
                 <td className="px-4 py-3 text-center border-r border-[#333]">
                   <div className="text-gray-500 text-xs">個人退水</div>
                   <div className={getValueColor(data.currentUser.personalRebate)}>{formatCurrency(data.currentUser.personalRebate)}</div>
+                </td>
+                <td className="px-4 py-3 text-center border-r border-[#333]">
+                  <div className="text-gray-500 text-xs">賺水</div>
+                  <div className={getValueColor(data.currentUser.earnedRebate || 0)}>{formatCurrency(data.currentUser.earnedRebate || 0)}</div>
+                </td>
+                <td className="px-4 py-3 text-center border-r border-[#333]">
+                  <div className="text-gray-500 text-xs">上級交收</div>
+                  <div className={getValueColor(data.currentUser.superiorSettlement || 0)}>{formatCurrency(data.currentUser.superiorSettlement || 0)}</div>
                 </td>
                 <td className="px-4 py-3 text-center border-r border-[#333]">
                   <div className="text-gray-500 text-xs">應收下線</div>
@@ -749,6 +771,8 @@ export default function AgentReport() {
                       <th className="px-4 py-3 text-right">會員退水</th>
                       <th className="px-4 py-3 text-right">個人佔成</th>
                       <th className="px-4 py-3 text-right">個人退水</th>
+                      <th className="px-4 py-3 text-right">賺水</th>
+                      <th className="px-4 py-3 text-right">上級交收</th>
                       <th className="px-4 py-3 text-right">應收下線</th>
                       <th className="px-4 py-3 text-right">應繳上線</th>
                       <th className="px-4 py-3 text-right">個人盈虧</th>
@@ -781,6 +805,8 @@ export default function AgentReport() {
                         <td className="px-4 py-3 text-right text-white">{formatCurrency(agent.memberRebate)}</td>
                         <td className="px-4 py-3 text-right text-white">{formatCurrency(agent.personalShare)}</td>
                         <td className={`px-4 py-3 text-right ${getValueColor(agent.personalRebate)}`}>{formatCurrency(agent.personalRebate)}</td>
+                        <td className={`px-4 py-3 text-right ${getValueColor(agent.earnedRebate || 0)}`}>{formatCurrency(agent.earnedRebate || 0)}</td>
+                        <td className={`px-4 py-3 text-right ${getValueColor(agent.superiorSettlement || 0)}`}>{formatCurrency(agent.superiorSettlement || 0)}</td>
                         <td className="px-4 py-3 text-right text-white">{formatCurrency(agent.receivable)}</td>
                         <td className={`px-4 py-3 text-right ${getValueColor(agent.payable)}`}>{formatCurrency(agent.payable)}</td>
                         <td className={`px-4 py-3 text-right font-medium ${getValueColor(agent.profit)}`}>{formatCurrency(agent.profit)}</td>
@@ -825,6 +851,8 @@ export default function AgentReport() {
                       <th className="px-4 py-3 text-right">會員退水</th>
                       <th className="px-4 py-3 text-right">個人佔成</th>
                       <th className="px-4 py-3 text-right">個人退水</th>
+                      <th className="px-4 py-3 text-right">賺水</th>
+                      <th className="px-4 py-3 text-right">上級交收</th>
                       <th className="px-4 py-3 text-right">應收下線</th>
                       <th className="px-4 py-3 text-right">應繳上線</th>
                       <th className="px-4 py-3 text-right">個人盈虧</th>
@@ -851,6 +879,12 @@ export default function AgentReport() {
                         <td className="px-4 py-3 text-right text-white">{formatCurrency(member.personalShare)}</td>
                         <td className={`px-4 py-3 text-right ${getValueColor(member.personalRebate)}`}>
                           {formatCurrency(member.personalRebate)}
+                        </td>
+                        <td className={`px-4 py-3 text-right ${getValueColor(member.earnedRebate || 0)}`}>
+                          {formatCurrency(member.earnedRebate || 0)}
+                        </td>
+                        <td className={`px-4 py-3 text-right ${getValueColor(member.superiorSettlement || 0)}`}>
+                          {formatCurrency(member.superiorSettlement || 0)}
                         </td>
                         <td className="px-4 py-3 text-right text-white">{formatCurrency(member.receivable)}</td>
                         <td className={`px-4 py-3 text-right ${getValueColor(member.payable)}`}>
@@ -999,6 +1033,14 @@ export default function AgentReport() {
                         <td className="px-4 py-3 text-center border-r border-[#333]">
                           <div className="text-gray-500 text-xs">個人退水</div>
                           <div className={getValueColor(detailAgent.personalRebate)}>{formatCurrency(detailAgent.personalRebate)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">賺水</div>
+                          <div className={getValueColor(detailAgent.earnedRebate || 0)}>{formatCurrency(detailAgent.earnedRebate || 0)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">上級交收</div>
+                          <div className={getValueColor(detailAgent.superiorSettlement || 0)}>{formatCurrency(detailAgent.superiorSettlement || 0)}</div>
                         </td>
                         <td className="px-4 py-3 text-center border-r border-[#333]">
                           <div className="text-gray-500 text-xs">應收下線</div>
@@ -1181,6 +1223,14 @@ export default function AgentReport() {
                         <td className="px-4 py-3 text-center border-r border-[#333]">
                           <div className="text-gray-500 text-xs">個人退水</div>
                           <div className={getValueColor(detailMember.personalRebate)}>{formatCurrency(detailMember.personalRebate)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">賺水</div>
+                          <div className={getValueColor(detailMember.earnedRebate || 0)}>{formatCurrency(detailMember.earnedRebate || 0)}</div>
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-[#333]">
+                          <div className="text-gray-500 text-xs">上級交收</div>
+                          <div className={getValueColor(detailMember.superiorSettlement || 0)}>{formatCurrency(detailMember.superiorSettlement || 0)}</div>
                         </td>
                         <td className="px-4 py-3 text-center border-r border-[#333]">
                           <div className="text-gray-500 text-xs">應收下線</div>

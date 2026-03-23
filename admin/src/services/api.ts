@@ -235,6 +235,7 @@ export const agentManagementApi = {
     initialBalance?: number;
     sharePercent?: number;
     rebatePercent?: number;
+    rebateMode?: 'percentage' | 'all' | 'none';
     betLimits?: string[];
     platforms?: string[];
   }) => api.post('/agent-management/agents', data),
@@ -271,6 +272,7 @@ export const agentManagementApi = {
   updateShareSettings: (userId: string, data: {
     sharePercent?: number;
     rebatePercent?: number;
+    rebateMode?: 'percentage' | 'all' | 'none';
     gameCategory?: string;
     platform?: string;
     settings?: Array<{

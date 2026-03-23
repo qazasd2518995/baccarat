@@ -51,6 +51,7 @@ interface Agent {
   isReadonly: boolean;
   sharePercent: number;
   rebatePercent: number;
+  rebateMode?: 'percentage' | 'all' | 'none';
   inviteCode: string;
   agentCount: number;
   memberCount: number;
@@ -139,6 +140,7 @@ export default function AgentManagement() {
     initialBalance: 0,
     sharePercent: 0,
     rebatePercent: 0,
+    rebateMode: 'percentage' as 'percentage' | 'all' | 'none',
     betLimits: [] as string[],
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -280,6 +282,7 @@ export default function AgentManagement() {
         initialBalance: createForm.initialBalance,
         sharePercent: createForm.sharePercent,
         rebatePercent: createForm.rebatePercent,
+        rebateMode: createForm.rebateMode,
         betLimits: createForm.betLimits,
       });
       setShowCreateModal(false);
@@ -293,6 +296,7 @@ export default function AgentManagement() {
         initialBalance: 0,
         sharePercent: 0,
         rebatePercent: 0,
+        rebateMode: 'percentage',
         betLimits: [],
       });
       fetchData();
@@ -322,6 +326,7 @@ export default function AgentManagement() {
         initialBalance: 0,
         sharePercent: 0,
         rebatePercent: 0,
+        rebateMode: 'percentage',
         betLimits: [],
       });
       fetchData();
@@ -673,7 +678,20 @@ export default function AgentManagement() {
                             <Copy className="w-4 h-4" />
                           </button>
                         </div>
-                        <p className="text-gray-400 text-sm">({agent.nickname || '无名称'})</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-gray-400 text-sm">({agent.nickname || '无名称'})</p>
+                          {agent.rebateMode && (
+                            <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                              agent.rebateMode === 'all'
+                                ? 'bg-green-500/20 text-green-400'
+                                : agent.rebateMode === 'none'
+                                ? 'bg-blue-500/20 text-blue-400'
+                                : 'bg-amber-500/20 text-amber-400'
+                            }`}>
+                              {agent.rebateMode === 'all' ? '全拿退水' : agent.rebateMode === 'none' ? '全退下级' : '按比例'}
+                            </span>
+                          )}
+                        </div>
                         {agent.remark && (
                           <p className="text-gray-500 text-xs mt-0.5 italic">备注: {agent.remark}</p>
                         )}
@@ -1038,6 +1056,7 @@ export default function AgentManagement() {
                     initialBalance: 0,
                     sharePercent: 0,
                     rebatePercent: 0,
+                    rebateMode: 'percentage',
                     betLimits: [],
                   });
                 }}
@@ -1158,6 +1177,55 @@ export default function AgentManagement() {
                         className="w-full px-4 py-2 bg-[#2a2a2a] border border-[#444] rounded-lg text-white focus:outline-none focus:border-amber-500"
                         placeholder="請輸入代理名稱"
                       />
+                    </div>
+
+                    {/* 退水模式 */}
+                    <div>
+                      <label className="block text-gray-400 text-sm mb-2">退水模式</label>
+                      <div className="space-y-2">
+                        <label className="flex items-start gap-3 cursor-pointer p-2 bg-[#2a2a2a] rounded-lg hover:bg-[#333] transition-colors">
+                          <input
+                            type="radio"
+                            name="createRebateMode"
+                            value="percentage"
+                            checked={createForm.rebateMode === 'percentage'}
+                            onChange={() => setCreateForm({ ...createForm, rebateMode: 'percentage' })}
+                            className="mt-0.5 w-4 h-4 text-amber-500 bg-[#333] border-[#444] focus:ring-amber-500"
+                          />
+                          <div>
+                            <span className="text-white text-sm">按比例分配</span>
+                            <p className="text-gray-500 text-xs">退水按百分比在各级代理间分配</p>
+                          </div>
+                        </label>
+                        <label className="flex items-start gap-3 cursor-pointer p-2 bg-[#2a2a2a] rounded-lg hover:bg-[#333] transition-colors">
+                          <input
+                            type="radio"
+                            name="createRebateMode"
+                            value="all"
+                            checked={createForm.rebateMode === 'all'}
+                            onChange={() => setCreateForm({ ...createForm, rebateMode: 'all' })}
+                            className="mt-0.5 w-4 h-4 text-amber-500 bg-[#333] border-[#444] focus:ring-amber-500"
+                          />
+                          <div>
+                            <span className="text-white text-sm">全拿退水</span>
+                            <p className="text-gray-500 text-xs">本级获得全部退水，不分配给下级</p>
+                          </div>
+                        </label>
+                        <label className="flex items-start gap-3 cursor-pointer p-2 bg-[#2a2a2a] rounded-lg hover:bg-[#333] transition-colors">
+                          <input
+                            type="radio"
+                            name="createRebateMode"
+                            value="none"
+                            checked={createForm.rebateMode === 'none'}
+                            onChange={() => setCreateForm({ ...createForm, rebateMode: 'none' })}
+                            className="mt-0.5 w-4 h-4 text-amber-500 bg-[#333] border-[#444] focus:ring-amber-500"
+                          />
+                          <div>
+                            <span className="text-white text-sm">全退下级</span>
+                            <p className="text-gray-500 text-xs">退水全部分配给下级，本级不保留</p>
+                          </div>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 )}

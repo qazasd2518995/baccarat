@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { X, Check, History } from 'lucide-react';
 import { agentManagementApi } from '../services/api';
 
+type RebateMode = 'percentage' | 'all' | 'none';
+
 interface ShareSettingModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -43,6 +45,9 @@ export default function ShareSettingModal({
   const [batchRebatePercent, setBatchRebatePercent] = useState('');
   const [settings, setSettings] = useState<Record<string, { share: string; rebate: string }>>({});
   const [loading, setLoading] = useState(false);
+  const [rebateMode, setRebateMode] = useState<RebateMode>('percentage');
+
+  const isRebateDisabled = rebateMode === 'all' || rebateMode === 'none';
 
   const fetchPlatforms = async () => {
     try {
@@ -85,6 +90,11 @@ export default function ShareSettingModal({
       });
 
       setSettings(settingsMap);
+
+      // Load rebateMode if returned from API
+      if (res.data.rebateMode) {
+        setRebateMode(res.data.rebateMode as RebateMode);
+      }
     } catch (err) {
       console.error('Failed to fetch share settings:', err);
     }
@@ -203,7 +213,7 @@ export default function ShareSettingModal({
         });
       });
 
-      await agentManagementApi.updateShareSettings(agentId, { settings: shareSettings });
+      await agentManagementApi.updateShareSettings(agentId, { settings: shareSettings, rebateMode });
 
       onSuccess?.();
       onClose();
@@ -233,6 +243,60 @@ export default function ShareSettingModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+          {/* 退水模式 */}
+          <div className="bg-[#252525] rounded-lg p-3 sm:p-4 mb-4">
+            <h3 className="text-white font-medium mb-3 text-sm sm:text-base">退水模式</h3>
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-[#333] transition-colors">
+                <input
+                  type="radio"
+                  name="rebateMode"
+                  value="percentage"
+                  checked={rebateMode === 'percentage'}
+                  onChange={() => setRebateMode('percentage')}
+                  className="mt-0.5 w-4 h-4 text-amber-500 bg-[#333] border-[#444] focus:ring-amber-500"
+                />
+                <div>
+                  <span className="text-white text-sm font-medium">按比例分配</span>
+                  <p className="text-gray-500 text-xs mt-0.5">退水按照设定的百分比在各级代理之间分配</p>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-[#333] transition-colors">
+                <input
+                  type="radio"
+                  name="rebateMode"
+                  value="all"
+                  checked={rebateMode === 'all'}
+                  onChange={() => setRebateMode('all')}
+                  className="mt-0.5 w-4 h-4 text-amber-500 bg-[#333] border-[#444] focus:ring-amber-500"
+                />
+                <div>
+                  <span className="text-white text-sm font-medium">全拿退水</span>
+                  <p className="text-gray-500 text-xs mt-0.5">本级代理获得全部退水金额，不分配给下级</p>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 cursor-pointer p-2 rounded-lg hover:bg-[#333] transition-colors">
+                <input
+                  type="radio"
+                  name="rebateMode"
+                  value="none"
+                  checked={rebateMode === 'none'}
+                  onChange={() => setRebateMode('none')}
+                  className="mt-0.5 w-4 h-4 text-amber-500 bg-[#333] border-[#444] focus:ring-amber-500"
+                />
+                <div>
+                  <span className="text-white text-sm font-medium">全退下级</span>
+                  <p className="text-gray-500 text-xs mt-0.5">退水全部分配给下级代理，本级不保留</p>
+                </div>
+              </label>
+            </div>
+            {isRebateDisabled && (
+              <p className="text-amber-400 text-xs mt-3">
+                当前模式下退水百分比输入已禁用，退水将按所选模式自动处理。
+              </p>
+            )}
+          </div>
+
           {/* 快速设置 */}
           <div className="bg-[#252525] rounded-lg p-3 sm:p-4 mb-4">
             <h3 className="text-white font-medium mb-3 text-sm sm:text-base">快速设置</h3>
@@ -291,11 +355,13 @@ export default function ShareSettingModal({
                   value={batchRebatePercent}
                   onChange={(e) => setBatchRebatePercent(e.target.value)}
                   placeholder="下级退水"
-                  className="flex-1 sm:w-24 px-3 py-2 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500 min-h-[40px]"
+                  disabled={isRebateDisabled}
+                  className={`flex-1 sm:w-24 px-3 py-2 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm focus:outline-none focus:border-amber-500 min-h-[40px] ${isRebateDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                 />
                 <button
                   onClick={handleBatchSetRebate}
-                  className="px-3 sm:px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black text-xs sm:text-sm font-medium rounded transition-colors min-h-[40px] whitespace-nowrap"
+                  disabled={isRebateDisabled}
+                  className={`px-3 sm:px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black text-xs sm:text-sm font-medium rounded transition-colors min-h-[40px] whitespace-nowrap ${isRebateDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                 >
                   设置退水
                 </button>
@@ -357,11 +423,13 @@ export default function ShareSettingModal({
                                 type="number"
                                 value={settings[key]?.rebate || '0'}
                                 onChange={(e) => handleSettingChange(cat.category, platform, 'rebate', e.target.value)}
-                                className="flex-1 px-2 py-2 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm text-center focus:outline-none focus:border-amber-500 min-h-[40px]"
+                                disabled={isRebateDisabled}
+                                className={`flex-1 px-2 py-2 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm text-center focus:outline-none focus:border-amber-500 min-h-[40px] ${isRebateDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                               />
                               <button
                                 onClick={() => handleConfirmSetting(cat.category, platform, 'rebate')}
-                                className="p-2 text-green-400 hover:text-green-300"
+                                disabled={isRebateDisabled}
+                                className={`p-2 text-green-400 hover:text-green-300 ${isRebateDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                               >
                                 <Check className="w-4 h-4" />
                               </button>
@@ -456,17 +524,20 @@ export default function ShareSettingModal({
                                   type="number"
                                   value={settings[key]?.rebate || '0'}
                                   onChange={(e) => handleSettingChange(cat.category, platform, 'rebate', e.target.value)}
-                                  className="w-16 px-2 py-1 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm text-center focus:outline-none focus:border-amber-500"
+                                  disabled={isRebateDisabled}
+                                  className={`w-16 px-2 py-1 bg-[#1a1a1a] border border-[#444] rounded text-white text-sm text-center focus:outline-none focus:border-amber-500 ${isRebateDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                                 />
                                 <button
                                   onClick={() => handleConfirmSetting(cat.category, platform, 'rebate')}
-                                  className="p-1 text-green-400 hover:text-green-300"
+                                  disabled={isRebateDisabled}
+                                  className={`p-1 text-green-400 hover:text-green-300 ${isRebateDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                                 >
                                   <Check className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={() => handleClearSetting(cat.category, platform, 'rebate')}
-                                  className="p-1 text-red-400 hover:text-red-300"
+                                  disabled={isRebateDisabled}
+                                  className={`p-1 text-red-400 hover:text-red-300 ${isRebateDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
