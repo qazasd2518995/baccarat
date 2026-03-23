@@ -155,7 +155,7 @@ async function buildBreadcrumb(rootUserId: string, targetAgentId: string): Promi
   return breadcrumb;
 }
 
-// Helper to calculate agent report
+// Helper to calculate agent report (with earned rebate and superior settlement)
 async function calculateAgentReport(agentId: string, startDate: Date, endDate: Date) {
   // Get all members under this agent
   const memberIds = await getAllDownlineMembers(agentId);
@@ -173,40 +173,56 @@ async function calculateAgentReport(agentId: string, startDate: Date, endDate: D
     memberWinLoss += stats.memberWinLoss;
   }
 
-  // Get agent's share/rebate settings
+  // Get agent's settings
   const agent = await prisma.user.findUnique({
     where: { id: agentId },
-    select: { sharePercent: true, rebatePercent: true }
+    select: { sharePercent: true, rebatePercent: true, rebateMode: true, maxRebatePercent: true }
   });
 
   const sharePercent = Number(agent?.sharePercent || 0);
   const rebatePercent = Number(agent?.rebatePercent || 0);
+  const rebateMode = agent?.rebateMode || 'percentage';
 
-  // 會員退水 = 有效投注 * 退水比例
-  const memberRebate = validBet * (rebatePercent / 100);
-  // 個人佔成 = |會員輸贏| * 佔成比例（代理從會員輸贏中獲得的佔成）
+  // 完整退水 = 有效投注 × 退水比例
+  const fullRebate = validBet * (rebatePercent / 100);
+
+  // 實際賺水 = 從 RebateTransaction 聚合（結算時已實際入帳的退水）
+  const rebateAgg = await prisma.rebateTransaction.aggregate({
+    where: {
+      agentId,
+      createdAt: { gte: startDate, lt: endDate },
+    },
+    _sum: { rebateAmount: true },
+  });
+  const earnedRebate = Number(rebateAgg._sum?.rebateAmount || 0);
+
+  // 個人佔成
   const personalShare = Math.abs(memberWinLoss) * (sharePercent / 100);
-  // 個人退水 = 會員退水
-  const personalRebate = memberRebate;
 
-  // 應收下線：會員輸錢時，代理應收取的金額（會員輸的錢）
+  // 上級交收 = 會員輸贏 + 完整退水
+  const superiorSettlement = memberWinLoss + fullRebate;
+
+  // 應收下線 / 應繳上線
   const receivable = memberWinLoss < 0 ? Math.abs(memberWinLoss) : 0;
-  // 應繳上線：會員贏錢時，代理應繳給上線的金額（會員贏的錢 + 退水）
-  const payable = memberWinLoss > 0 ? memberWinLoss + memberRebate : memberRebate;
-  // 個人盈虧 = 應收下線 - 應繳上線 + 個人佔成 + 個人退水
-  const profit = receivable - payable + personalShare + personalRebate;
+  const payable = memberWinLoss > 0 ? memberWinLoss + fullRebate : fullRebate;
+  // 個人盈虧 = 應收 - 應繳 + 佔成 + 賺水
+  const profit = receivable - payable + personalShare + earnedRebate;
 
   return {
     betCount,
     betAmount,
     validBet,
     memberWinLoss,
-    memberRebate,
+    memberRebate: fullRebate,
+    earnedRebate,
+    superiorSettlement,
     personalShare,
-    personalRebate,
+    personalRebate: earnedRebate,
     receivable,
     payable,
-    profit
+    profit,
+    rebateMode,
+    rebatePercent,
   };
 }
 
@@ -436,7 +452,6 @@ router.get('/agent', requireRole('admin', 'agent'), async (req: Request, res: Re
           nickname: agent.nickname,
           agentLevel: agent.agentLevel,
           sharePercent: Number(agent.sharePercent),
-          rebatePercent: Number(agent.rebatePercent),
           ...report
         };
       })
@@ -461,7 +476,6 @@ router.get('/agent', requireRole('admin', 'agent'), async (req: Request, res: Re
         nickname: targetAgentData.nickname,
         agentLevel: targetAgentData.agentLevel,
         sharePercent: Number(targetAgentData.sharePercent),
-        rebatePercent: Number(targetAgentData.rebatePercent),
         ...targetAgentReport
       },
       agents: agentReports,
@@ -593,7 +607,6 @@ router.get('/member', requireRole('admin', 'agent'), async (req: Request, res: R
         nickname: targetAgentData?.nickname,
         agentLevel: targetAgentData?.agentLevel,
         sharePercent: Number(targetAgentData?.sharePercent),
-        rebatePercent: Number(targetAgentData?.rebatePercent),
         ...targetAgentReport
       },
       members: memberReports,

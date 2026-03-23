@@ -408,6 +408,7 @@ router.post('/agents', requireRole('admin', 'agent'), async (req: Request, res: 
       initialBalance = 0,
       sharePercent = 0,
       rebatePercent = 0,
+      rebateMode = 'percentage',
       platforms = [],
       shareSettings = [],
       betLimits = []
@@ -418,6 +419,11 @@ router.post('/agents', requireRole('admin', 'agent'), async (req: Request, res: 
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
+    // Validate rebateMode
+    if (!['all', 'none', 'percentage'].includes(rebateMode)) {
+      return res.status(400).json({ error: 'Invalid rebate mode. Must be: all, none, or percentage' });
+    }
+
     // Check if username exists
     const existingUser = await prisma.user.findUnique({ where: { username } });
     if (existingUser) {
@@ -425,8 +431,24 @@ router.post('/agents', requireRole('admin', 'agent'), async (req: Request, res: 
     }
 
     // Determine agent level (parent level + 1)
-    const parentUser = await prisma.user.findUnique({ where: { id: currentUser.userId }, select: { agentLevel: true, materializedPath: true } });
+    const parentUser = await prisma.user.findUnique({
+      where: { id: currentUser.userId },
+      select: { agentLevel: true, materializedPath: true, rebatePercent: true, rebateMode: true, role: true }
+    });
     const newAgentLevel = Math.min((parentUser?.agentLevel || 1) + 1, 5);
+
+    // Validate rebate hierarchy: child's rate cannot exceed parent's allocation
+    const { calculateChildMaxRebate, EPSILON } = await import('../utils/rebateCalculation.js');
+    const parentRebatePercent = Number(parentUser?.rebatePercent || 0);
+    const parentRebateMode = parentUser?.rebateMode || 'percentage';
+    // Admin (role=admin) always has max rebate = 1.0%
+    const childMaxRebate = parentUser?.role === 'admin'
+      ? 1.0
+      : calculateChildMaxRebate(parentRebateMode, parentRebatePercent);
+
+    if (Number(rebatePercent) > childMaxRebate + EPSILON) {
+      return res.status(400).json({ error: `退水比例不可超過 ${childMaxRebate}%` });
+    }
 
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
@@ -434,7 +456,7 @@ router.post('/agents', requireRole('admin', 'agent'), async (req: Request, res: 
     // Generate invite code
     const inviteCode = await getUniqueInviteCode();
 
-    // Create agent with sharePercent and rebatePercent
+    // Create agent with rebate settings
     const agent = await prisma.user.create({
       data: {
         username,
@@ -446,6 +468,8 @@ router.post('/agents', requireRole('admin', 'agent'), async (req: Request, res: 
         balance: initialBalance,
         sharePercent: sharePercent,
         rebatePercent: rebatePercent,
+        rebateMode: rebateMode,
+        maxRebatePercent: childMaxRebate,
         inviteCode
       }
     });

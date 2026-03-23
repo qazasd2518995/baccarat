@@ -588,6 +588,11 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
             data: { userId, operatorId: userId, type: 'win', amount: totalPayout, balanceBefore: balanceBeforeBet, balanceAfter: balance, note: `DT Table Round #${round.roundNumber} - ${round.result}` },
           });
         }
+
+        // Distribute rebate to agent hierarchy
+        const { distributeRebateForBets } = await import('../utils/rebateCalculation.js');
+        await distributeRebateForBets(tx as any, userId, totalBet, 'dragonTiger', savedRound.id);
+
         return balance;
       });
 

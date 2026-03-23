@@ -95,6 +95,23 @@ async function start() {
   const { rebuildAllPaths } = await import('./utils/materializedPath.js');
   await rebuildAllPaths().catch(err => console.error('[Start] Failed to rebuild paths:', err));
 
+  // Backfill maxRebatePercent for existing agents (set to parent's rebatePercent, admin = 1.0%)
+  const { MAX_REBATE_PERCENT } = await import('./utils/rebateCalculation.js');
+  const agentsToFix = await prisma.user.findMany({
+    where: { role: 'agent', maxRebatePercent: 0 },
+    select: { id: true, parentAgentId: true },
+  });
+  for (const a of agentsToFix) {
+    if (a.parentAgentId) {
+      const parent = await prisma.user.findUnique({ where: { id: a.parentAgentId }, select: { rebatePercent: true, role: true } });
+      const maxRebate = parent?.role === 'admin' ? MAX_REBATE_PERCENT : Number(parent?.rebatePercent || 0);
+      await prisma.user.update({ where: { id: a.id }, data: { maxRebatePercent: maxRebate } });
+    } else {
+      await prisma.user.update({ where: { id: a.id }, data: { maxRebatePercent: MAX_REBATE_PERCENT } });
+    }
+  }
+  if (agentsToFix.length > 0) console.log(`[Start] Backfilled maxRebatePercent for ${agentsToFix.length} agents`);
+
   // Start the multi-table baccarat system (each table has independent game loop)
   startMultiTableGameLoop(io);
 

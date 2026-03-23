@@ -26,6 +26,7 @@ enum TransactionType {
   win
   refund
   adjustment
+  rebate
 }
 
 enum BetType {
@@ -116,7 +117,9 @@ model User {
   agentLevel      Int         @default(5) @map("agent_level")  // 代理層級 1-5
   inviteCode      String?     @unique @map("invite_code")      // 邀請碼
   sharePercent    Decimal     @default(0) @map("share_percent") @db.Decimal(5, 2)  // 佔成比例
-  rebatePercent   Decimal     @default(0) @map("rebate_percent") @db.Decimal(5, 2) // 退水比例
+  rebatePercent   Decimal     @default(0) @map("rebate_percent") @db.Decimal(5, 4) // 退水比例（1.0 = 1%）
+  rebateMode      String      @default("percentage") @map("rebate_mode")          // all/none/percentage
+  maxRebatePercent Decimal    @default(0) @map("max_rebate_percent") @db.Decimal(5, 4) // 下級最大退水率
   isLocked        Boolean     @default(false) @map("is_locked")          // 鎖定登入
   isFullDisabled  Boolean     @default(false) @map("is_full_disabled")   // 全線禁用
   isReadonly      Boolean     @default(false) @map("is_readonly")        // 禁止投注/操作
@@ -531,6 +534,24 @@ model ShareSettingHistory {
   createdAt     DateTime @default(now()) @map("created_at")
 
   @@map("share_setting_histories")
+}
+
+// 退水交易記錄
+model RebateTransaction {
+  id              String   @id @default(uuid())
+  agentId         String   @map("agent_id")
+  memberId        String   @map("member_id")
+  roundId         String?  @map("round_id")
+  gameType        String   @map("game_type")           // baccarat, dragonTiger
+  betAmount       Decimal  @map("bet_amount") @db.Decimal(15, 2)
+  rebatePercent   Decimal  @map("rebate_percent") @db.Decimal(5, 4)
+  rebateAmount    Decimal  @map("rebate_amount") @db.Decimal(15, 4)
+  rebateType      String   @map("rebate_type")         // direct(直接退水) or earned(賺水)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([agentId, createdAt])
+  @@index([memberId, createdAt])
+  @@map("rebate_transactions")
 }
 
 // 登入日誌
