@@ -503,6 +503,36 @@ router.post('/agents', requireRole('admin', 'agent'), async (req: Request, res: 
       });
     }
 
+    // Validate bet limits don't exceed parent's limits
+    if (betLimits.length > 0) {
+      const parentBetLimits = await prisma.agentBetLimit.findMany({
+        where: { agentId: currentUser.userId, enabled: true },
+        select: { limitRange: true }
+      });
+
+      // If parent has limits set, child limits must be within parent's ranges
+      if (parentBetLimits.length > 0 && currentUser.role !== 'admin') {
+        const parentMaxes = parentBetLimits.map(l => {
+          const parts = l.limitRange.split('-');
+          return parts.length === 2 ? parseFloat(parts[1]) : 0;
+        });
+        const parentOverallMax = Math.max(...parentMaxes);
+
+        for (const limit of betLimits) {
+          const limitRange = typeof limit === 'string' ? limit : limit.limitRange;
+          const parts = limitRange.split('-');
+          if (parts.length === 2) {
+            const childMax = parseFloat(parts[1]);
+            if (childMax > parentOverallMax) {
+              return res.status(400).json({
+                error: `子代理限紅 ${limitRange} 超過上級最高限紅 ${parentOverallMax}`
+              });
+            }
+          }
+        }
+      }
+    }
+
     // Create bet limits if provided (support both string array and object array)
     if (betLimits.length > 0) {
       const limitsData = betLimits.map((l: any) => ({
@@ -1039,6 +1069,43 @@ router.put('/users/:id/bet-limits', requireRole('admin', 'agent'), async (req: R
           enabled: l.enabled !== false
         }))
       });
+    }
+
+    // Cascade: lower child agents' limits if they exceed new parent max
+    const newParentLimits = limits.filter((l: any) => l.enabled !== false);
+    if (newParentLimits.length > 0) {
+      const parentMaxes = newParentLimits.map((l: any) => {
+        const parts = l.limitRange.split('-');
+        return parts.length === 2 ? parseFloat(parts[1]) : 0;
+      });
+      const parentOverallMax = Math.max(...parentMaxes, 0);
+
+      // Get all direct child agents
+      const childAgents = await prisma.user.findMany({
+        where: { parentAgentId: id, role: 'agent' },
+        select: { id: true }
+      });
+
+      for (const child of childAgents) {
+        // Disable child limits that exceed new parent max
+        const childLimits = await prisma.agentBetLimit.findMany({
+          where: { agentId: child.id, enabled: true }
+        });
+
+        for (const childLimit of childLimits) {
+          const parts = childLimit.limitRange.split('-');
+          if (parts.length === 2) {
+            const childMax = parseFloat(parts[1]);
+            if (childMax > parentOverallMax) {
+              await prisma.agentBetLimit.update({
+                where: { id: childLimit.id },
+                data: { enabled: false }
+              });
+              console.log(`[BetLimit] Cascade disabled ${childLimit.limitRange} for child agent ${child.id} (exceeds parent max ${parentOverallMax})`);
+            }
+          }
+        }
+      }
     }
 
     // Log operation

@@ -826,8 +826,12 @@ export async function placeTableBet(
     for (const agentLimit of agentLimits) {
       const parts = agentLimit.limitRange.split('-');
       if (parts.length === 2) {
+        const agentMin = parseFloat(parts[0]);
         const agentMax = parseFloat(parts[1]);
         for (const bet of bets) {
+          if (bet.amount < agentMin) {
+            return { success: false, errorCode: 'AGENT_BET_LIMIT_BELOW_MIN', errorMessage: `最低下注 ${agentMin}` };
+          }
           const existingForType = existingBets.find((b) => b.type === bet.type)?.amount || 0;
           if (existingForType + bet.amount > agentMax) {
             return { success: false, errorCode: 'AGENT_BET_LIMIT_EXCEEDED', errorMessage: `代理限红最高 ${agentMax}` };
