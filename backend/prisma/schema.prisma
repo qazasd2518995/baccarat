@@ -129,6 +129,7 @@ model User {
   lastLoginIp     String?     @map("last_login_ip")            // 最後登入IP
   lastLoginAt     DateTime?   @map("last_login_at")            // 最後登入時間
   remark          String?                                      // 備註
+  lastSettlementAt DateTime?   @map("last_settlement_at")       // 最後結算時間
 
   transactionsAsUser     Transaction[]    @relation("UserTransactions")
   transactionsAsOperator Transaction[]    @relation("OperatorTransactions")

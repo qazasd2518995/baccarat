@@ -219,6 +219,19 @@ export async function createTransaction(req: Request, res: Response) {
         });
       }
 
+      // Create CashLog record for audit trail
+      await tx.cashLog.create({
+        data: {
+          userId: data.userId,
+          operatorId: currentUser.userId,
+          changeType: data.type, // deposit, withdraw, adjustment
+          amount: data.type === 'withdraw' ? -data.amount : data.amount,
+          balanceBefore: targetBalanceBefore,
+          balanceAfter: targetBalanceAfter,
+          note: data.note || '',
+        }
+      });
+
       // Create operation log
       await tx.operationLog.create({
         data: {

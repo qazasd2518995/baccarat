@@ -365,6 +365,93 @@ async function calculateSubAgentsReport(agentId: string, startDate: Date, endDat
 }
 
 /**
+ * GET /api/agent-report/cash-settlement
+ * 現紅即時計算 — 即時顯示當前遊戲日的上級交收狀況
+ */
+router.get('/cash-settlement', requireRole('admin', 'agent'), async (req: Request, res: Response) => {
+  try {
+    const currentUser = req.user!;
+    const { viewAgentId } = req.query;
+
+    const targetAgentId = (viewAgentId as string) || currentUser.userId;
+
+    // Verify access
+    if (targetAgentId !== currentUser.userId && currentUser.role !== 'admin') {
+      const allDownlineAgents = await getAllDownlineAgents(currentUser.userId);
+      if (!allDownlineAgents.includes(targetAgentId)) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    // Get current game day range (07:00 制)
+    const now = new Date();
+    const todayStart = new Date(now);
+    if (todayStart.getHours() < 7) todayStart.setDate(todayStart.getDate() - 1);
+    todayStart.setHours(7, 0, 0, 0);
+    const todayEnd = new Date(todayStart);
+    todayEnd.setDate(todayEnd.getDate() + 1);
+
+    // Calculate report for today
+    const report = await calculateAgentReport(targetAgentId, todayStart, todayEnd);
+
+    // Get agent info
+    const agent = await prisma.user.findUnique({
+      where: { id: targetAgentId },
+      select: { username: true, nickname: true, rebatePercent: true, rebateMode: true, balance: true }
+    });
+
+    res.json({
+      gameDayStart: todayStart.toISOString(),
+      gameDayEnd: todayEnd.toISOString(),
+      agent: {
+        id: targetAgentId,
+        username: agent?.username,
+        nickname: agent?.nickname,
+        balance: Number(agent?.balance || 0),
+        rebatePercent: Number(agent?.rebatePercent || 0),
+        rebateMode: agent?.rebateMode || 'percentage',
+      },
+      settlement: {
+        betCount: report.betCount,
+        betAmount: report.betAmount,
+        validBet: report.validBet,
+        memberWinLoss: report.memberWinLoss,
+        fullRebate: report.memberRebate,
+        earnedRebate: report.earnedRebate,
+        superiorSettlement: report.superiorSettlement,
+        personalShare: report.personalShare,
+        receivable: report.receivable,
+        payable: report.payable,
+        profit: report.profit,
+      }
+    });
+  } catch (error) {
+    console.error('[AgentReport] Cash settlement error:', error);
+    res.status(500).json({ error: 'Failed to calculate cash settlement' });
+  }
+});
+
+/**
+ * POST /api/agent-report/settle
+ * 標記當前遊戲日為已結算
+ */
+router.post('/settle', requireRole('admin', 'agent'), async (req: Request, res: Response) => {
+  try {
+    const currentUser = req.user!;
+
+    await prisma.user.update({
+      where: { id: currentUser.userId },
+      data: { lastSettlementAt: new Date() }
+    });
+
+    res.json({ success: true, settledAt: new Date().toISOString() });
+  } catch (error) {
+    console.error('[AgentReport] Settle error:', error);
+    res.status(500).json({ error: 'Failed to mark settlement' });
+  }
+});
+
+/**
  * GET /api/agent-report/agent
  * 遊戲代理報表
  * - viewAgentId: 查看特定代理的直屬下線（用於層級導航）
