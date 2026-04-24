@@ -16,6 +16,12 @@ services:
         value: postgresql://baccarat_db_24rf_user:9KXOIWX8BwMu13rQVFhjmIQbmWIjdmiw@dpg-d5ouijv5c7fs73aocvng-a/baccarat_db_24rf?connection_limit=20&pool_timeout=30
       - key: JWT_SECRET
         generateValue: true
+      # 必須與 BG 後端的 BACCARAT_INTEGRATION_SECRET 完全相同
+      - key: BG_INTEGRATION_SECRET
+        sync: false
+      # BG API 網址，例如 https://bg-api-xxxx.onrender.com
+      - key: BG_API_BASE
+        sync: false
       - key: CORS_ORIGIN
         value: https://baccarat-frontend-74oz.onrender.com,https://baccarat-admin.onrender.com
 

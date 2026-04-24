@@ -142,7 +142,11 @@ export async function me(req: Request, res: Response) {
 export async function bgLaunch(req: Request, res: Response) {
   try {
     const { launchToken } = bgLaunchSchema.parse(req.body);
-    const decoded = jwt.verify(launchToken, process.env.JWT_SECRET!) as unknown;
+    const bgLaunchSecret = process.env.BG_INTEGRATION_SECRET || process.env.JWT_SECRET;
+    if (!bgLaunchSecret) {
+      throw new Error('BG_INTEGRATION_SECRET is not configured');
+    }
+    const decoded = jwt.verify(launchToken, bgLaunchSecret) as unknown;
     const payload = bgLaunchPayloadSchema.parse(decoded);
 
     const existingByUsername = await prisma.user.findUnique({
@@ -173,8 +177,18 @@ export async function bgLaunch(req: Request, res: Response) {
       },
     });
 
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        username: user.username,
+        role: user.role,
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
     return res.json({
-      token: launchToken,
+      token,
       user: {
         id: user.id,
         username: user.username,
