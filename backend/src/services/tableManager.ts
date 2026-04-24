@@ -31,6 +31,45 @@ function getPhaseDurations(bettingDuration: number): Record<GamePhase, number> {
   };
 }
 
+type MirroredTransactionType = 'bet' | 'win' | 'refund';
+
+function toMoney(value: number): Prisma.Decimal {
+  return new Prisma.Decimal(value.toFixed(2));
+}
+
+function formatBetTransactionNote(roundNumber: string, bets?: BetEntry[]): string {
+  const summary = bets?.map((bet) => `${bet.type}:${bet.amount}`).join(', ');
+  return summary ? `Round #${roundNumber} - Bets: ${summary}` : `Round #${roundNumber}`;
+}
+
+function formatSettlementTransactionNote(roundNumber: string, result: string | null): string {
+  return `Table Round #${roundNumber} - ${result ?? ''}`;
+}
+
+async function createMirroredTransaction(
+  db: { transaction: { create: (args: any) => Promise<unknown> } },
+  input: {
+    userId: string;
+    type: MirroredTransactionType;
+    amount: number;
+    balanceBefore: number;
+    balanceAfter: number;
+    note: string;
+  }
+): Promise<void> {
+  await db.transaction.create({
+    data: {
+      userId: input.userId,
+      operatorId: input.userId,
+      type: input.type,
+      amount: toMoney(input.amount),
+      balanceBefore: toMoney(input.balanceBefore),
+      balanceAfter: toMoney(input.balanceAfter),
+      note: input.note,
+    },
+  });
+}
+
 // Table state interface
 interface TableState {
   tableId: string;
@@ -606,8 +645,19 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
       const finalBalance = await prisma.$transaction(async (tx) => {
         await tx.user.update({
           where: { id: userId },
-          data: { balance: new Prisma.Decimal(bridgeSettlement.balance.toFixed(2)) },
+          data: { balance: toMoney(bridgeSettlement.balance) },
         });
+
+        if (totalPayout > 0) {
+          await createMirroredTransaction(tx, {
+            userId,
+            type: totalPayout > totalBet ? 'win' : 'refund',
+            amount: totalPayout,
+            balanceBefore: bridgeSettlement.balance - totalPayout,
+            balanceAfter: bridgeSettlement.balance,
+            note: formatSettlementTransactionNote(round.roundNumber, round.result),
+          });
+        }
 
         for (const bet of betResults) {
           let status: 'won' | 'lost' | 'refunded';
@@ -860,9 +910,19 @@ export async function placeTableBet(
       bets,
       totalRequired: existingTotal + newBetTotal,
     });
-    await prisma.user.update({
-      where: { id: userId },
-      data: { balance: new Prisma.Decimal(newBalance.toFixed(2)) },
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { balance: toMoney(newBalance) },
+      });
+      await createMirroredTransaction(tx, {
+        userId,
+        type: 'bet',
+        amount: -newBetTotal,
+        balanceBefore: newBalance + newBetTotal,
+        balanceAfter: newBalance,
+        note: formatBetTransactionNote(state.roundNumber, bets),
+      });
     });
   } catch (error) {
     return {
@@ -906,9 +966,19 @@ export async function clearTableBets(tableId: string, userId: string): Promise<{
       roundNumber: state.roundNumber,
       bets: existingBets,
     });
-    await prisma.user.update({
-      where: { id: userId },
-      data: { balance: new Prisma.Decimal(newBalance.toFixed(2)) },
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { balance: toMoney(newBalance) },
+      });
+      await createMirroredTransaction(tx, {
+        userId,
+        type: 'refund',
+        amount: totalToRefund,
+        balanceBefore: newBalance - totalToRefund,
+        balanceAfter: newBalance,
+        note: formatBetTransactionNote(state.roundNumber, existingBets),
+      });
     });
 
     state.currentBets.delete(userId);

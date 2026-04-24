@@ -11,6 +11,7 @@ import {
   RoundResult,
 } from '../utils/gameLogic.js';
 import { generateRoundNumber } from '../utils/roundNumberGenerator.js';
+import { parseTaipeiReportDate, resolveReportUserIds } from '../utils/reportFilters.js';
 
 
 // In-memory shoe (in production, use Redis)
@@ -228,14 +229,13 @@ export async function getGameHistory(req: Request, res: Response) {
 
     // Build date filter
     const dateFilter: any = {};
-    if (from) dateFilter.gte = new Date(from as string);
-    if (to) {
-      const toDate = new Date(to as string);
-      toDate.setHours(23, 59, 59, 999);
-      dateFilter.lte = toDate;
-    }
+    const fromDate = parseTaipeiReportDate(from);
+    const toDate = parseTaipeiReportDate(to, true);
+    if (fromDate) dateFilter.gte = fromDate;
+    if (toDate) dateFilter.lte = toDate;
 
-    const where: any = { userId: currentUser.userId };
+    const reportUserIds = await resolveReportUserIds(currentUser);
+    const where: any = { userId: { in: reportUserIds } };
     if (Object.keys(dateFilter).length > 0) {
       where.createdAt = dateFilter;
     }

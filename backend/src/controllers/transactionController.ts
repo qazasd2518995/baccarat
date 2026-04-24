@@ -4,6 +4,7 @@ import { TransactionType } from '@prisma/client';
 import { z } from 'zod';
 import { canManageUser } from '../middleware/auth.js';
 import { emitBalanceUpdate } from '../socket/socketManager.js';
+import { parseTaipeiReportDate, resolveReportUserIds } from '../utils/reportFilters.js';
 
 
 const transactionSchema = z.object({
@@ -34,7 +35,7 @@ export async function getTransactions(req: Request, res: Response) {
 
     // Role-based filtering
     if (currentUser.role === 'member') {
-      where.userId = currentUser.userId;
+      where.userId = { in: await resolveReportUserIds(currentUser) };
     } else if (currentUser.role === 'agent') {
       // Agent can see their own and their sub-users' transactions
       const subUserIds = await prisma.user.findMany({
@@ -56,12 +57,10 @@ export async function getTransactions(req: Request, res: Response) {
 
     if (startDate || endDate) {
       where.createdAt = {};
-      if (startDate) {
-        where.createdAt.gte = new Date(startDate as string);
-      }
-      if (endDate) {
-        where.createdAt.lte = new Date(endDate as string);
-      }
+      const parsedStartDate = parseTaipeiReportDate(startDate);
+      const parsedEndDate = parseTaipeiReportDate(endDate, true);
+      if (parsedStartDate) where.createdAt.gte = parsedStartDate;
+      if (parsedEndDate) where.createdAt.lte = parsedEndDate;
     }
 
     const [transactions, total] = await Promise.all([
