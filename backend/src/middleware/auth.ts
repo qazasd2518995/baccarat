@@ -8,6 +8,7 @@ export interface JWTPayload {
   userId: string;
   username: string;
   role: UserRole;
+  bgUserId?: string;
 }
 
 declare global {

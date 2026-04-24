@@ -149,15 +149,21 @@ export async function bgLaunch(req: Request, res: Response) {
     const decoded = jwt.verify(launchToken, bgLaunchSecret) as unknown;
     const payload = bgLaunchPayloadSchema.parse(decoded);
 
+    const existingByBgUserId = await prisma.user.findUnique({
+      where: { bgUserId: payload.userId },
+      select: { id: true, username: true, bgUserId: true },
+    });
     const existingByUsername = await prisma.user.findUnique({
       where: { username: payload.username },
-      select: { id: true },
+      select: { id: true, username: true, bgUserId: true },
     });
-    if (existingByUsername && existingByUsername.id !== payload.userId) {
+
+    if (existingByBgUserId && existingByUsername && existingByBgUserId.id !== existingByUsername.id) {
       console.warn('[BG launch] account mapping conflict', {
         username: payload.username,
         bgUserId: payload.userId,
         existingUserId: existingByUsername.id,
+        mappedUserId: existingByBgUserId.id,
       });
       return res.status(409).json({
         code: 'BG_ACCOUNT_MAPPING_CONFLICT',
@@ -165,31 +171,51 @@ export async function bgLaunch(req: Request, res: Response) {
       });
     }
 
-    const user = await prisma.user.upsert({
-      where: { id: payload.userId },
-      update: {
+    if (existingByUsername?.bgUserId && existingByUsername.bgUserId !== payload.userId) {
+      console.warn('[BG launch] account mapping conflict', {
         username: payload.username,
-        nickname: payload.displayName ?? payload.username,
-        role: 'member',
-        status: 'active',
-        balance: payload.balance ? new Prisma.Decimal(payload.balance) : undefined,
-      },
-      create: {
-        id: payload.userId,
-        username: payload.username,
-        passwordHash: '__bg_launch_only__',
-        nickname: payload.displayName ?? payload.username,
-        role: 'member',
-        status: 'active',
-        balance: payload.balance ? new Prisma.Decimal(payload.balance) : new Prisma.Decimal(0),
-      },
-    });
+        bgUserId: payload.userId,
+        existingUserId: existingByUsername.id,
+        existingBgUserId: existingByUsername.bgUserId,
+      });
+      return res.status(409).json({
+        code: 'BG_ACCOUNT_MAPPING_CONFLICT',
+        error: 'BG 账号映射冲突，请先处理同名旧账号',
+      });
+    }
+
+    const userIdToUpdate = existingByBgUserId?.id ?? existingByUsername?.id;
+    const user = userIdToUpdate
+      ? await prisma.user.update({
+          where: { id: userIdToUpdate },
+          data: {
+            username: payload.username,
+            bgUserId: payload.userId,
+            nickname: payload.displayName ?? payload.username,
+            role: 'member',
+            status: 'active',
+            balance: payload.balance ? new Prisma.Decimal(payload.balance) : undefined,
+          },
+        })
+      : await prisma.user.create({
+          data: {
+            id: payload.userId,
+            username: payload.username,
+            bgUserId: payload.userId,
+            passwordHash: '__bg_launch_only__',
+            nickname: payload.displayName ?? payload.username,
+            role: 'member',
+            status: 'active',
+            balance: payload.balance ? new Prisma.Decimal(payload.balance) : new Prisma.Decimal(0),
+          },
+        });
 
     const token = jwt.sign(
       {
         userId: user.id,
         username: user.username,
         role: user.role,
+        bgUserId: payload.userId,
       },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' }
