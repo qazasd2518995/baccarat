@@ -154,7 +154,15 @@ export async function bgLaunch(req: Request, res: Response) {
       select: { id: true },
     });
     if (existingByUsername && existingByUsername.id !== payload.userId) {
-      return res.status(409).json({ error: 'BG 账号映射冲突，请先处理同名旧账号' });
+      console.warn('[BG launch] account mapping conflict', {
+        username: payload.username,
+        bgUserId: payload.userId,
+        existingUserId: existingByUsername.id,
+      });
+      return res.status(409).json({
+        code: 'BG_ACCOUNT_MAPPING_CONFLICT',
+        error: 'BG 账号映射冲突，请先处理同名旧账号',
+      });
     }
 
     const user = await prisma.user.upsert({

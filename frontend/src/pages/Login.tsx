@@ -11,6 +11,7 @@ export default function Login() {
   const { setAuth } = useAuthStore();
   const launchToken = useMemo(() => new URLSearchParams(window.location.search).get('launchToken'), []);
   const [error, setError] = useState('');
+  const [debug, setDebug] = useState<LaunchDebug | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(launchToken));
 
   useEffect(() => {
@@ -18,6 +19,7 @@ export default function Login() {
 
     let cancelled = false;
     setError('');
+    setDebug(null);
     setIsLoading(true);
 
     authApi
@@ -34,9 +36,12 @@ export default function Login() {
         localStorage.setItem('user', JSON.stringify(data.user));
         navigate('/', { replace: true });
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
-        setError(i18n.language === 'zh' ? '無法從 BG 自動登入百家樂' : 'Failed to sign in from BG');
+        const nextError = getLaunchError(err, i18n.language);
+        console.error('[BG Gateway] bg-launch failed', nextError.debug, err);
+        setError(nextError.message);
+        setDebug(nextError.debug);
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -60,6 +65,7 @@ export default function Login() {
         }
         isLoading={isLoading}
         tone={error ? 'error' : 'loading'}
+        debug={debug}
       />
     );
   }
@@ -78,16 +84,60 @@ export default function Login() {
   );
 }
 
+
+interface LaunchDebug {
+  statusCode: string;
+  errorCode: string;
+  backendMessage: string;
+  apiUrl: string;
+}
+
+function getLaunchError(error: unknown, language: string): { message: string; debug: LaunchDebug } {
+  const axiosError = error as {
+    message?: string;
+    response?: { status?: number; data?: { code?: string; error?: string; message?: string } };
+  };
+  const statusCode = String(axiosError.response?.status ?? 'n/a');
+  const errorCode = axiosError.response?.data?.code ?? 'BG_LAUNCH_FAILED';
+  const backendMessage = axiosError.response?.data?.error ?? axiosError.response?.data?.message ?? axiosError.message ?? 'unknown';
+  const debug = {
+    statusCode,
+    errorCode,
+    backendMessage,
+    apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',
+  };
+
+  if (statusCode === '409' || errorCode === 'BG_ACCOUNT_MAPPING_CONFLICT') {
+    return {
+      message:
+        language === 'zh'
+          ? '百家樂已有同名舊帳號，尚未綁定這個 BG 帳號。請通知管理員處理帳號映射。'
+          : 'Baccarat already has an old account with this username. Ask an admin to resolve the account mapping.',
+      debug,
+    };
+  }
+
+  return {
+    message:
+      language === 'zh'
+        ? `無法從 BG 自動登入百家樂：${backendMessage}`
+        : `Failed to sign in from BG: ${backendMessage}`,
+    debug,
+  };
+}
+
 function LaunchScreen({
   title,
   subtitle,
   isLoading,
   tone,
+  debug,
 }: {
   title: string;
   subtitle: string;
   isLoading: boolean;
   tone: 'loading' | 'error' | 'idle';
+  debug?: LaunchDebug | null;
 }) {
   const accent =
     tone === 'error'
@@ -139,6 +189,14 @@ function LaunchScreen({
           <p className="mt-3 text-[14px] leading-relaxed" style={{ color: accent.text }}>
             {subtitle}
           </p>
+          {tone === 'error' && debug ? (
+            <div className="mt-5 rounded-2xl border border-red-400/20 bg-red-950/20 px-4 py-3 text-left font-mono text-[11px] leading-relaxed text-red-100/80">
+              <div>status: {debug.statusCode}</div>
+              <div>code: {debug.errorCode}</div>
+              <div>message: {debug.backendMessage}</div>
+              <div className="break-all">api: {debug.apiUrl}</div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
