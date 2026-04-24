@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
+import { bgGetBalance } from '../lib/bgIntegration.js';
 import type { AuthenticatedSocket, TypedServer } from './index.js';
 import {
   getTableGameState,
@@ -159,18 +160,19 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
       });
 
       // Fetch balance from DB (only DB query needed)
-      const user = await prisma.user.findUnique({
+      const balance = await bgGetBalance(userId);
+      await prisma.user.update({
         where: { id: userId },
-        select: { balance: true },
-      });
+        data: { balance },
+      }).catch(() => undefined);
 
       socket.emit('user:balance', {
-        balance: Number(user?.balance || 0),
+        balance,
         reason: 'deposit',
       });
 
       console.log(
-        `[Socket] ${username} requested state for table ${tableId}: phase=${state.phase}, round=${state.roundNumber}, balance=${user?.balance}`
+        `[Socket] ${username} requested state for table ${tableId}: phase=${state.phase}, round=${state.roundNumber}, balance=${balance}`
       );
     } catch (error) {
       console.error(`[Socket] Error getting state for ${username}:`, error);

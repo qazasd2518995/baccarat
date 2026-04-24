@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { z } from 'zod';
 
@@ -8,6 +9,19 @@ import { z } from 'zod';
 const loginSchema = z.object({
   username: z.string().min(3).max(50),
   password: z.string().min(6),
+});
+
+const bgLaunchSchema = z.object({
+  launchToken: z.string().min(20),
+});
+
+const bgLaunchPayloadSchema = z.object({
+  aud: z.literal('baccarat-launch'),
+  userId: z.string().min(1),
+  username: z.string().min(1),
+  displayName: z.string().nullable().optional(),
+  balance: z.string().optional(),
+  role: z.literal('member'),
 });
 
 export async function login(req: Request, res: Response) {
@@ -122,6 +136,59 @@ export async function me(req: Request, res: Response) {
   } catch (error) {
     console.error('Me error:', error);
     res.status(500).json({ error: '服务器内部错误' });
+  }
+}
+
+export async function bgLaunch(req: Request, res: Response) {
+  try {
+    const { launchToken } = bgLaunchSchema.parse(req.body);
+    const decoded = jwt.verify(launchToken, process.env.JWT_SECRET!) as unknown;
+    const payload = bgLaunchPayloadSchema.parse(decoded);
+
+    const existingByUsername = await prisma.user.findUnique({
+      where: { username: payload.username },
+      select: { id: true },
+    });
+    if (existingByUsername && existingByUsername.id !== payload.userId) {
+      return res.status(409).json({ error: 'BG 账号映射冲突，请先处理同名旧账号' });
+    }
+
+    const user = await prisma.user.upsert({
+      where: { id: payload.userId },
+      update: {
+        username: payload.username,
+        nickname: payload.displayName ?? payload.username,
+        role: 'member',
+        status: 'active',
+        balance: payload.balance ? new Prisma.Decimal(payload.balance) : undefined,
+      },
+      create: {
+        id: payload.userId,
+        username: payload.username,
+        passwordHash: '__bg_launch_only__',
+        nickname: payload.displayName ?? payload.username,
+        role: 'member',
+        status: 'active',
+        balance: payload.balance ? new Prisma.Decimal(payload.balance) : new Prisma.Decimal(0),
+      },
+    });
+
+    return res.json({
+      token: launchToken,
+      user: {
+        id: user.id,
+        username: user.username,
+        nickname: user.nickname,
+        role: user.role,
+        balance: user.balance,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: 'BG 启动凭证格式错误', details: error.errors });
+    }
+    console.error('BG launch error:', error);
+    return res.status(401).json({ error: 'BG 启动凭证无效' });
   }
 }
 

@@ -1,8 +1,9 @@
 import { Server } from 'socket.io';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { createShoe, burnCards, playRound, calculateBetResult, type Card, type RoundResult } from '../utils/gameLogic.js';
 import { playControlledBaccaratRound, type BettingUserInfo } from '../utils/gameResultControl.js';
-import { applyWinCap } from '../utils/winCapCheck.js';
+import { bgClearBet, bgPlaceBet, bgSettleRound } from '../lib/bgIntegration.js';
 import type { GamePhase, BetEntry, BetType } from '../socket/types.js';
 import type { ServerToClientEvents, ClientToServerEvents } from '../socket/types.js';
 import { generateFakeBets } from './fakeBetGenerator.js';
@@ -586,56 +587,55 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
         }
       }
 
-      // Atomic settlement transaction (win cap applied inside for consistency)
+      const bridgeSettlement = await bgSettleRound({
+        userId,
+        amount: totalBet,
+        payout: totalPayout,
+        resultData: {
+          tableId,
+          roundId: savedRound.id,
+          roundNumber: round.roundNumber,
+          shoeNumber: round.shoeNumber,
+          result: round.result,
+          playerPair: round.playerPair,
+          bankerPair: round.bankerPair,
+          bets: betResults,
+        },
+      });
+
       const finalBalance = await prisma.$transaction(async (tx) => {
-        // Apply win cap enforcement inside transaction to prevent race conditions
-        const netWin = totalPayout - totalBet;
-        if (netWin > 0) {
-          const cappedNetWin = await applyWinCap(tx, userId, netWin);
-          if (cappedNetWin < netWin) {
-            totalPayout = totalBet + cappedNetWin;
-          }
-        }
-
-        const netResult = totalPayout - totalBet;
-
-        if (totalPayout > 0) {
-          await tx.user.update({
-            where: { id: userId },
-            data: { balance: { increment: totalPayout } },
-          });
-        }
+        await tx.user.update({
+          where: { id: userId },
+          data: { balance: new Prisma.Decimal(bridgeSettlement.balance.toFixed(2)) },
+        });
 
         for (const bet of betResults) {
           let status: 'won' | 'lost' | 'refunded';
           let payoutAmount: number;
-          if (bet.won) { status = 'won'; payoutAmount = bet.amount + bet.payout; }
-          else if (bet.payout === 0) { status = 'refunded'; payoutAmount = bet.amount; }
-          else { status = 'lost'; payoutAmount = 0; }
+          if (bet.won) {
+            status = 'won';
+            payoutAmount = bet.amount + bet.payout;
+          } else if (bet.payout === 0) {
+            status = 'refunded';
+            payoutAmount = bet.amount;
+          } else {
+            status = 'lost';
+            payoutAmount = 0;
+          }
 
           await tx.bet.create({
-            data: { userId, roundId: savedRound.id, betType: bet.type as any, amount: bet.amount, payout: payoutAmount, status },
+            data: {
+              userId,
+              roundId: savedRound.id,
+              betType: bet.type as any,
+              amount: bet.amount,
+              payout: payoutAmount,
+              status,
+            },
           });
         }
 
-        const updatedUser = await tx.user.findUnique({ where: { id: userId }, select: { balance: true } });
-        const balance = Number(updatedUser?.balance || 0);
-        const balanceBeforeBet = balance - netResult;
-
-        await tx.transaction.create({
-          data: { userId, operatorId: userId, type: 'bet', amount: -totalBet, balanceBefore: balanceBeforeBet + totalBet, balanceAfter: balanceBeforeBet, note: `Table Round #${round.roundNumber}` },
-        });
-        if (totalPayout > 0) {
-          await tx.transaction.create({
-            data: { userId, operatorId: userId, type: 'win', amount: totalPayout, balanceBefore: balanceBeforeBet, balanceAfter: balance, note: `Table Round #${round.roundNumber} - ${round.result}` },
-          });
-        }
-
-        // Distribute rebate to agent hierarchy
-        const { distributeRebateForBets } = await import('../utils/rebateCalculation.js');
-        await distributeRebateForBets(tx as any, userId, totalBet, 'baccarat', savedRound.id);
-
-        return balance;
+        return bridgeSettlement.balance;
       });
 
       const netResult = totalPayout - totalBet;
@@ -805,11 +805,9 @@ export async function placeTableBet(
     return { success: false, errorCode: 'USER_INACTIVE', errorMessage: 'User not active' };
   }
 
-  const currentBalance = Number(user.balance);
   const existingBets = state.currentBets.get(userId) || [];
   const existingTotal = existingBets.reduce((sum, b) => sum + b.amount, 0);
   const newBetTotal = bets.reduce((sum, b) => sum + b.amount, 0);
-  const totalRequired = existingTotal + newBetTotal;
 
   // Validate bets
   for (const newBet of bets) {
@@ -852,13 +850,26 @@ export async function placeTableBet(
     }
   }
 
-  // Atomic balance deduction with concurrency protection
-  const deductResult = await prisma.user.updateMany({
-    where: { id: userId, balance: { gte: totalRequired }, status: 'active' },
-    data: { balance: { decrement: newBetTotal } },
-  });
-  if (deductResult.count === 0) {
-    return { success: false, errorCode: 'INSUFFICIENT_BALANCE', errorMessage: 'Insufficient balance' };
+  let newBalance = 0;
+  try {
+    newBalance = await bgPlaceBet(userId, newBetTotal, {
+      tableId,
+      roundId: state.roundId,
+      roundNumber: state.roundNumber,
+      isNoCommission,
+      bets,
+      totalRequired: existingTotal + newBetTotal,
+    });
+    await prisma.user.update({
+      where: { id: userId },
+      data: { balance: new Prisma.Decimal(newBalance.toFixed(2)) },
+    });
+  } catch (error) {
+    return {
+      success: false,
+      errorCode: 'INSUFFICIENT_BALANCE',
+      errorMessage: error instanceof Error ? error.message : 'Insufficient balance',
+    };
   }
 
   state.currentBets.set(userId, mergedBets);
@@ -868,8 +879,8 @@ export async function placeTableBet(
     success: true,
     roundId: state.roundId || undefined,
     bets: mergedBets,
-    totalBet: totalRequired,
-    newBalance: currentBalance - newBetTotal,
+    totalBet: existingTotal + newBetTotal,
+    newBalance,
   };
 }
 
@@ -889,20 +900,21 @@ export async function clearTableBets(tableId: string, userId: string): Promise<{
   const totalToRefund = existingBets.reduce((sum, b) => sum + b.amount, 0);
 
   if (totalToRefund > 0) {
+    const newBalance = await bgClearBet(userId, totalToRefund, {
+      tableId,
+      roundId: state.roundId,
+      roundNumber: state.roundNumber,
+      bets: existingBets,
+    });
     await prisma.user.update({
       where: { id: userId },
-      data: { balance: { increment: totalToRefund } },
-    });
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { balance: true },
+      data: { balance: new Prisma.Decimal(newBalance.toFixed(2)) },
     });
 
     state.currentBets.delete(userId);
     state.noCommissionMode.delete(userId);
 
-    return { success: true, newBalance: Number(user?.balance || 0) };
+    return { success: true, newBalance };
   }
 
   return { success: true };

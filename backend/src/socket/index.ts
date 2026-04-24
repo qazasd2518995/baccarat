@@ -1,6 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma.js';
+import { bgGetBalance } from '../lib/bgIntegration.js';
 import type { JWTPayload } from '../middleware/auth.js';
 import { handleGameEvents } from './gameSocket.js';
 import { handleDragonTigerEvents } from './dragonTigerSocket.js';
@@ -54,16 +55,18 @@ export function initializeSocket(io: TypedServer): void {
 
     // Send initial balance on connection
     try {
-      const user = await prisma.user.findUnique({
+      const balance = await bgGetBalance(authSocket.user.userId);
+      await prisma.user.update({
         where: { id: authSocket.user.userId },
-        select: { balance: true },
-      });
-      if (user) {
+        data: { balance },
+      }).catch(() => undefined);
+
+      if (Number.isFinite(balance)) {
         socket.emit('user:balance', {
-          balance: Number(user.balance),
+          balance,
           reason: 'deposit', // Using 'deposit' as a generic initial load reason
         });
-        console.log(`[Socket] Sent initial balance to ${authSocket.user.username}: ${user.balance}`);
+        console.log(`[Socket] Sent initial balance to ${authSocket.user.username}: ${balance}`);
       }
     } catch (error) {
       console.error(`[Socket] Failed to fetch initial balance for ${authSocket.user.username}:`, error);

@@ -36,6 +36,9 @@ export const authApi = {
   login: (username: string, password: string) =>
     api.post('/auth/login', { username, password }),
 
+  bgLaunch: (launchToken: string) =>
+    api.post('/auth/bg-launch', { launchToken }),
+
   me: () => api.get('/auth/me'),
 
   changePassword: (currentPassword: string, newPassword: string) =>
