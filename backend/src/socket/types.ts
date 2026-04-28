@@ -172,6 +172,8 @@ export interface SendChatPayload {
 
 // Place bet
 export interface PlaceBetPayload {
+  tableId?: string;
+  gameId?: 'baccarat' | 'baccarat-nova' | 'baccarat-imperial';
   bets: BetEntry[];
   isNoCommission?: boolean; // 免佣模式
 }
@@ -210,6 +212,7 @@ export interface FakeBroadcastEvent {
 export interface ClientToServerEvents {
   'bet:place': (data: PlaceBetPayload) => void;
   'bet:clear': () => void;
-  'game:requestState': () => void;
+  'game:requestState': (data?: { tableId?: string }) => void;
   'chat:send': (data: SendChatPayload) => void;
+  'join:table': (data: { gameType: string; tableId?: string }) => void;
 }

@@ -96,6 +96,7 @@ interface TableState {
   } | null;
   currentBets: Map<string, BetEntry[]>;
   noCommissionMode: Map<string, boolean>;
+  userGameIds: Map<string, string>;
   timerInterval: NodeJS.Timeout | null;
   cachedRoadmap: any[];
   bettingDuration: number; // 投注時間（秒）
@@ -122,6 +123,7 @@ function getTableState(tableId: string): TableState {
       currentRound: null,
       currentBets: new Map(),
       noCommissionMode: new Map(),
+      userGameIds: new Map(),
       timerInterval: null,
       cachedRoadmap: [],
       bettingDuration: 30, // default 30 seconds
@@ -617,6 +619,7 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
       });
 
       const totalBet = bets.reduce((sum, b) => sum + b.amount, 0);
+      const gameId = state.userGameIds.get(userId) || 'baccarat';
       let totalPayout = 0;
       for (const result of betResults) {
         if (result.won) {
@@ -630,7 +633,9 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
         userId,
         amount: totalBet,
         payout: totalPayout,
+        gameId,
         resultData: {
+          gameId,
           tableId,
           roundId: savedRound.id,
           roundNumber: round.roundNumber,
@@ -760,6 +765,7 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
     // Clear bets
     state.currentBets.clear();
     state.noCommissionMode.clear();
+    state.userGameIds.clear();
 
     console.log(`[Table ${tableId}] Settlement complete, ${state.cardsRemaining} cards remaining`);
   }
@@ -830,7 +836,8 @@ export async function placeTableBet(
   tableId: string,
   userId: string,
   bets: BetEntry[],
-  isNoCommission: boolean = false
+  isNoCommission: boolean = false,
+  gameId: string = 'baccarat'
 ): Promise<{
   success: boolean;
   roundId?: string;
@@ -903,6 +910,7 @@ export async function placeTableBet(
   let newBalance = 0;
   try {
     newBalance = await bgPlaceBet(userId, newBetTotal, {
+      gameId,
       tableId,
       roundId: state.roundId,
       roundNumber: state.roundNumber,
@@ -934,6 +942,7 @@ export async function placeTableBet(
 
   state.currentBets.set(userId, mergedBets);
   state.noCommissionMode.set(userId, isNoCommission);
+  state.userGameIds.set(userId, gameId);
 
   return {
     success: true,
@@ -944,7 +953,7 @@ export async function placeTableBet(
   };
 }
 
-export async function clearTableBets(tableId: string, userId: string): Promise<{
+export async function clearTableBets(tableId: string, userId: string, gameId: string = 'baccarat'): Promise<{
   success: boolean;
   newBalance?: number;
   errorCode?: string;
@@ -961,6 +970,7 @@ export async function clearTableBets(tableId: string, userId: string): Promise<{
 
   if (totalToRefund > 0) {
     const newBalance = await bgClearBet(userId, totalToRefund, {
+      gameId: state.userGameIds.get(userId) || gameId,
       tableId,
       roundId: state.roundId,
       roundNumber: state.roundNumber,
@@ -983,6 +993,7 @@ export async function clearTableBets(tableId: string, userId: string): Promise<{
 
     state.currentBets.delete(userId);
     state.noCommissionMode.delete(userId);
+    state.userGameIds.delete(userId);
 
     return { success: true, newBalance };
   }

@@ -4,12 +4,18 @@ import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../services/api';
+import { getBaccaratSkin, type BaccaratSkin } from '../config/baccaratSkins';
 
 export default function Login() {
   const { i18n } = useTranslation();
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
-  const launchToken = useMemo(() => new URLSearchParams(window.location.search).get('launchToken'), []);
+  const launchParams = useMemo(() => new URLSearchParams(window.location.search), []);
+  const launchToken = launchParams.get('launchToken');
+  const skin = useMemo(
+    () => getBaccaratSkin(launchParams.get('skin'), launchParams.get('gameId')),
+    [launchParams],
+  );
   const [error, setError] = useState('');
   const [debug, setDebug] = useState<LaunchDebug | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(launchToken));
@@ -55,17 +61,18 @@ export default function Login() {
   if (launchToken) {
     return (
       <LaunchScreen
-        title={i18n.language === 'zh' ? '正在從 BG 進入百家樂' : 'Entering Baccarat from BG'}
+        title={i18n.language === 'zh' ? `正在從 BG 進入${skin.brand}` : `Entering ${skin.brand} from BG`}
         subtitle={
           error
             ? error
             : i18n.language === 'zh'
-              ? '正在同步會員資料與桌台會話，請稍候。'
+              ? `正在同步會員資料與${skin.lobbyTitle}會話，請稍候。`
               : 'Synchronizing account and table session.'
         }
         isLoading={isLoading}
         tone={error ? 'error' : 'loading'}
         debug={debug}
+        skin={skin}
       />
     );
   }
@@ -80,6 +87,7 @@ export default function Login() {
       }
       isLoading={false}
       tone="idle"
+      skin={skin}
     />
   );
 }
@@ -132,12 +140,14 @@ function LaunchScreen({
   isLoading,
   tone,
   debug,
+  skin,
 }: {
   title: string;
   subtitle: string;
   isLoading: boolean;
   tone: 'loading' | 'error' | 'idle';
   debug?: LaunchDebug | null;
+  skin: BaccaratSkin;
 }) {
   const accent =
     tone === 'error'
@@ -147,21 +157,35 @@ function LaunchScreen({
           text: '#fca5a5',
         }
       : {
-          border: 'rgba(212, 175, 55, 0.28)',
-          glow: 'rgba(212, 175, 55, 0.16)',
-          text: '#f5d87a',
+          border: skin.id === 'nova' ? 'rgba(103, 232, 249, 0.30)' : skin.id === 'imperial' ? 'rgba(248, 198, 106, 0.32)' : 'rgba(212, 175, 55, 0.28)',
+          glow: skin.id === 'nova' ? 'rgba(103, 232, 249, 0.18)' : skin.id === 'imperial' ? 'rgba(185, 28, 28, 0.22)' : 'rgba(212, 175, 55, 0.16)',
+          text: skin.id === 'nova' ? '#a5f3fc' : skin.id === 'imperial' ? '#fde68a' : '#f5d87a',
         };
-
-  return (
-    <div className="min-h-screen w-full relative overflow-hidden">
-      <div
-        className="absolute inset-0"
-        style={{
-          background: `
+  const backdrop =
+    skin.id === 'nova'
+      ? `
+            radial-gradient(ellipse 120% 80% at 80% 50%, rgba(124,58,237,0.16) 0%, transparent 50%),
+            radial-gradient(ellipse 100% 100% at 20% 80%, rgba(6,182,212,0.12) 0%, transparent 40%),
+            linear-gradient(135deg, #03131d 0%, #081723 50%, #050811 100%)
+          `
+      : skin.id === 'imperial'
+        ? `
+            radial-gradient(ellipse 120% 80% at 80% 50%, rgba(185,28,28,0.18) 0%, transparent 50%),
+            radial-gradient(ellipse 100% 100% at 20% 80%, rgba(245,158,11,0.12) 0%, transparent 40%),
+            linear-gradient(135deg, #180808 0%, #26100d 50%, #0d0505 100%)
+          `
+        : `
             radial-gradient(ellipse 120% 80% at 80% 50%, rgba(139,69,19,0.15) 0%, transparent 50%),
             radial-gradient(ellipse 100% 100% at 20% 80%, rgba(212,175,55,0.08) 0%, transparent 40%),
             linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #0a0a0f 100%)
-          `,
+          `;
+
+  return (
+    <div className="min-h-screen w-full relative overflow-hidden" style={{ fontFamily: skin.fontFamily }}>
+      <div
+        className="absolute inset-0"
+        style={{
+          background: backdrop,
         }}
       />
 
@@ -179,12 +203,12 @@ function LaunchScreen({
         >
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0c0c14] shadow-[0_0_32px_rgba(212,175,55,0.22)]">
             {isLoading ? (
-              <Loader2 className="h-7 w-7 animate-spin text-[#d4af37]" />
+              <Loader2 className="h-7 w-7 animate-spin" style={{ color: accent.text }} />
             ) : (
-              <span className="text-2xl font-black text-[#d4af37]">JW</span>
+              <span className="text-2xl font-black" style={{ color: accent.text }}>{skin.logoText}</span>
             )}
           </div>
-          <div className="text-[12px] tracking-[0.34em] text-amber-500/55 uppercase">BG Gateway</div>
+          <div className="text-[12px] tracking-[0.34em] uppercase" style={{ color: accent.text }}>{skin.english}</div>
           <h1 className="mt-4 text-[30px] font-bold text-white">{title}</h1>
           <p className="mt-3 text-[14px] leading-relaxed" style={{ color: accent.text }}>
             {subtitle}

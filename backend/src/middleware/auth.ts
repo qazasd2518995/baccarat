@@ -9,6 +9,9 @@ export interface JWTPayload {
   username: string;
   role: UserRole;
   bgUserId?: string;
+  gameId?: 'baccarat' | 'baccarat-nova' | 'baccarat-imperial';
+  provider?: string;
+  skin?: 'royal' | 'nova' | 'imperial';
 }
 
 declare global {

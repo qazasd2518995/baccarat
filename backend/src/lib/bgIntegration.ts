@@ -68,6 +68,7 @@ export async function bgSettleRound(input: {
   userId: string;
   amount: number;
   payout: number;
+  gameId?: string;
   resultData?: unknown;
 }): Promise<{ balance: number; betId?: string }> {
   const bgUserId = await resolveBgUserId(input.userId);
@@ -76,7 +77,7 @@ export async function bgSettleRound(input: {
     body: JSON.stringify({
       ...input,
       userId: bgUserId,
-      gameId: 'baccarat',
+      gameId: input.gameId || 'baccarat',
     }),
   });
   return {

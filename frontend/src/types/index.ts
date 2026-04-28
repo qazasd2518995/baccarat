@@ -8,6 +8,9 @@ export interface User {
   nickname?: string;
   role: UserRole;
   balance: number;
+  gameId?: string;
+  provider?: string;
+  skin?: 'royal' | 'nova' | 'imperial';
   status: UserStatus;
   createdAt: string;
   parentAgent?: {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -64,6 +64,7 @@ import MarqueeChat, { useMarqueeChat, MarqueeQuickButtons } from '../components/
 import { FlyingChipOverlay, useFlyingChips, ChipStack } from '../components/game/BetAreaChips';
 import NoticeMarquee from '../components/game/NoticeMarquee';
 import { VirtualPlayersBar } from '../components/game/VirtualPlayersBar';
+import { getBaccaratSkin } from '../config/baccaratSkins';
 
 // Chip component - uses CasinoChip SVG
 function Chip({ value, selected, onClick, disabled, small, extraSmall }: { value: number | string; selected: boolean; onClick: () => void; disabled?: boolean; small?: boolean; extraSmall?: boolean }) {
@@ -440,6 +441,7 @@ export default function Game() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const skin = useMemo(() => getBaccaratSkin(user?.skin, user?.gameId), [user?.skin, user?.gameId]);
 
   // Get tableId from URL query params
   const searchParams = new URLSearchParams(window.location.search);
@@ -1210,7 +1212,7 @@ export default function Game() {
   }, []);
 
   return (
-    <div className="h-full bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
+    <div className={`h-full flex flex-col overflow-hidden ${skin.rootClass}`} style={{ fontFamily: skin.fontFamily }}>
       {/* Loading screen */}
       <AnimatePresence>
         <GameLoadingScreen visible={!isConnected} />
@@ -1223,7 +1225,7 @@ export default function Game() {
       <NoticeMarquee />
 
       {/* Top Header Bar - Desktop only */}
-      <header className="hidden lg:flex h-11 bg-[#0d1117] items-center justify-between px-2 sm:px-4 border-b border-gray-800/50">
+      <header className={`hidden lg:flex h-11 items-center justify-between px-2 sm:px-4 border-b ${skin.topbarClass}`}>
         {/* Left - Back & Info */}
         <div className="flex items-center gap-2 sm:gap-3">
           <button
@@ -1263,7 +1265,7 @@ export default function Game() {
 
         {/* Center - Balance (tablet) */}
         <div className="xl:hidden flex items-center gap-2">
-          <span className="text-amber-400 font-bold text-sm">${balance.toLocaleString()}</span>
+          <span className={`${skin.accentTextClass} font-bold text-sm`}>${balance.toLocaleString()}</span>
         </div>
 
         {/* Right - Controls */}
@@ -1335,7 +1337,7 @@ export default function Game() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="lg:hidden fixed top-12 right-2 z-50 bg-[#1a1f2e] border border-gray-700 rounded-lg shadow-xl p-2 min-w-[160px]"
+            className={`lg:hidden fixed top-12 right-2 z-50 border rounded-lg shadow-xl p-2 min-w-[160px] ${skin.sidebarClass}`}
           >
             <div className="flex flex-col gap-1">
               {/* Connection Status */}
@@ -1410,11 +1412,11 @@ export default function Game() {
       {/* Main Content */}
       <div className="flex-1 flex min-h-0 overflow-hidden lg:overflow-auto">
         {/* Left Sidebar - User & Session Info (hidden on mobile/tablet) */}
-        <div className="hidden xl:flex w-60 bg-[#141922] border-r border-gray-800/50 flex-col shrink-0">
+        <div className={`hidden xl:flex w-60 border-r flex-col shrink-0 ${skin.sidebarClass}`}>
           {/* User Card */}
           <div className="p-4 border-b border-gray-800/50">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center font-bold text-xl shadow-lg ${skin.badgeClass}`}>
                 {(user?.username || 'P')[0].toUpperCase()}
               </div>
               <div className="flex-1">
@@ -1422,16 +1424,16 @@ export default function Game() {
                   <span className="text-base text-white font-bold">{user?.username || 'Player'}</span>
                 </div>
                 <div className="flex items-center gap-1 mt-1">
-                  <span className="text-yellow-400 font-bold text-xl">${balance.toLocaleString()}</span>
+                  <span className={`${skin.accentTextClass} font-bold text-xl`}>${balance.toLocaleString()}</span>
                 </div>
               </div>
             </div>
 
             {/* Bet Range */}
             <div className="flex items-center justify-center gap-2 text-sm text-gray-300 bg-black/30 rounded-lg py-2">
-              <ArrowUpDown className="w-4 h-4 text-amber-400" />
+              <ArrowUpDown className={`w-4 h-4 ${skin.accentTextClass}`} />
               <span>
-                {t('betRange')}: <span className="text-amber-400 font-bold">{bettingLimits
+                {t('betRange')}: <span className={`${skin.accentTextClass} font-bold`}>{bettingLimits
                   ? `${bettingLimits.player.min.toLocaleString()}-${(bettingLimits.player.max / 1000).toFixed(0)}K`
                   : '10-100K'}</span>
               </span>
@@ -1501,7 +1503,7 @@ export default function Game() {
 
             {/* Quick Tips */}
             <div className="mt-3 p-3 bg-gradient-to-br from-amber-500/10 to-transparent rounded-lg border border-amber-500/20">
-              <div className="text-amber-400 text-xs font-bold mb-1">💡 {t('tip')}</div>
+              <div className={`${skin.accentTextClass} text-xs font-bold mb-1`}>💡 {t('tip')}</div>
               <div className="text-[11px] text-gray-400 leading-relaxed">
                 {(() => {
                   const tips = [
@@ -1529,13 +1531,22 @@ export default function Game() {
           >
             {/* Countdown timer — positioned inside dealer table, top-right on mobile, top-left on desktop */}
             <CountdownTimer timeRemaining={timeRemaining} phase={phase} hidden={lastResult !== null || frozenResult !== null || showResult} />
+            <div
+              className={`pointer-events-none absolute inset-0 z-[1] ${
+                skin.id === 'nova'
+                  ? 'bg-[radial-gradient(circle_at_70%_20%,rgba(34,211,238,0.16),transparent_30%),linear-gradient(120deg,rgba(59,130,246,0.08),rgba(147,51,234,0.12))]'
+                  : skin.id === 'imperial'
+                    ? 'bg-[radial-gradient(circle_at_72%_18%,rgba(248,198,106,0.14),transparent_30%),linear-gradient(120deg,rgba(127,29,29,0.16),rgba(245,158,11,0.08))]'
+                    : 'bg-[radial-gradient(circle_at_72%_18%,rgba(232,212,138,0.10),transparent_30%)]'
+              }`}
+            />
 
               {/* Top info bar */}
               {/* Desktop only: Game info bar */}
               <div className="hidden sm:flex relative z-10 items-center justify-center pt-2 pb-1">
-                <div className="flex items-center gap-2 bg-black/30 rounded-full px-4 py-1 border border-[#d4af37]/10">
-                  <span className="text-[11px] text-[#d4af37]/70 font-mono">{t('baccarat')} {shoeNumber}</span>
-                  <span className="text-[#d4af37]/20">|</span>
+                <div className="flex items-center gap-2 bg-black/30 rounded-full px-4 py-1 border border-white/10">
+                  <span className={`text-[11px] font-mono ${skin.accentTextClass}`}>{skin.tableLabel} {shoeNumber}</span>
+                  <span className="text-white/20">|</span>
                   <span className={`text-[11px] font-bold ${phaseDisplay.color}`}>{roundNumber} — {phaseDisplay.text}</span>
                 </div>
               </div>
@@ -1717,7 +1728,7 @@ export default function Game() {
           />
 
           {/* Betting Panel */}
-          <div className="bg-[#0d1117] lg:flex-none shrink-0 flex flex-col">
+          <div className={`lg:flex-none shrink-0 flex flex-col ${skin.topbarClass}`}>
             {/* Quick Message Buttons - Desktop only, above Control Bar */}
             <div className="hidden lg:flex items-center gap-1 px-2 sm:px-4 py-1.5 border-b border-gray-800/30 bg-black/30">
               <span className="text-[10px] text-gray-500 mr-2">廣播:</span>
@@ -1727,7 +1738,7 @@ export default function Game() {
             {/* Control Bar - Hidden on mobile */}
             <div className="hidden lg:flex flex-wrap sm:flex-nowrap items-center justify-between px-2 sm:px-4 py-2 gap-2 border-b border-gray-800/50">
               <div className="flex items-center gap-2 sm:gap-3">
-                <span className="hidden sm:inline text-xs text-gray-400">{t('switchPlay')}</span>
+                <span className="hidden sm:inline text-xs text-gray-400">{skin.shortBrand}</span>
                 <span className="text-xs text-gray-500">{t('noComm')}</span>
                 <button
                   onClick={() => setIsNoCommission(!isNoCommission)}
@@ -2064,7 +2075,7 @@ export default function Game() {
                 </div>
 
                 {/* Chips Row - Desktop */}
-                <div ref={chipSelectorRef} className="hidden lg:flex justify-center items-center gap-1.5 py-2 px-2 bg-[#1a1f2e]">
+                <div ref={chipSelectorRef} className={`hidden lg:flex justify-center items-center gap-1.5 py-2 px-2 ${skin.rootClass}`}>
                   {displayedChips.map((value) => (
                     <Chip
                       key={value}
@@ -2085,7 +2096,7 @@ export default function Game() {
                 </div>
 
                 {/* Mobile: Chips + Confirm/Cancel, Balance row below */}
-                <div ref={!chipSelectorRef.current ? chipSelectorRef : undefined} className="lg:hidden bg-[#1a1f2e]">
+                <div ref={!chipSelectorRef.current ? chipSelectorRef : undefined} className={`lg:hidden ${skin.rootClass}`}>
                   {/* Row 1: Chips + Confirm/Cancel */}
                   <div className="flex items-center gap-0.5 py-0.5 px-1">
                     <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide flex-1">
@@ -2214,7 +2225,7 @@ export default function Game() {
             </div>
 
             {/* Mobile Roadmap Section - Only visible on mobile/tablet */}
-            <div className="lg:hidden bg-[#0d1117] flex-1 flex flex-col min-h-[140px]">
+            <div className={`lg:hidden flex-1 flex flex-col min-h-[140px] ${skin.topbarClass}`}>
               <div className="flex-1 min-h-0">
                 <LobbyRoadmap
                   roadHistory={(() => {
@@ -2258,7 +2269,7 @@ export default function Game() {
         </div>
 
         {/* Right Sidebar - Hidden on mobile/tablet */}
-        <div className="hidden xl:flex w-64 bg-[#141922] border-l border-gray-800/50 flex-col shrink-0">
+        <div className={`hidden xl:flex w-64 border-l flex-col shrink-0 ${skin.sidebarClass}`}>
           {/* Dealer Info */}
           <div className="p-3 border-b border-gray-800/50">
             <div className="flex items-center gap-3">

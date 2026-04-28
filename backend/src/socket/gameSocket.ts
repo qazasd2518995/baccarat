@@ -14,6 +14,7 @@ import {
 // Validation schema for bet placement
 const placeBetSchema = z.object({
   tableId: z.string().optional(), // Optional tableId, defaults to '1'
+  gameId: z.enum(['baccarat', 'baccarat-nova', 'baccarat-imperial']).optional(),
   bets: z.array(
     z.object({
       type: z.enum(['player', 'banker', 'tie', 'player_pair', 'banker_pair', 'super_six', 'player_bonus', 'banker_bonus']),
@@ -42,13 +43,14 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
     try {
       const validatedData = placeBetSchema.parse(data);
       const { bets, isNoCommission = false } = validatedData;
+      const gameId = socket.user.gameId || validatedData.gameId || 'baccarat';
 
       // Get tableId from data or from socket rooms
       const tableId = validatedData.tableId || getTableIdFromSocket(socket);
 
       console.log(`[Socket] ${username} placing bets on table ${tableId}:`, bets, isNoCommission ? '(免佣)' : '');
 
-      const result = await placeTableBet(tableId, userId, bets, isNoCommission);
+      const result = await placeTableBet(tableId, userId, bets, isNoCommission, gameId);
 
       if (result.success) {
         socket.emit('bet:confirmed', {
@@ -96,7 +98,7 @@ export function handleGameEvents(io: TypedServer, socket: AuthenticatedSocket): 
       const tableId = getTableIdFromSocket(socket);
       console.log(`[Socket] ${username} clearing bets on table ${tableId}`);
 
-      const result = await clearTableBets(tableId, userId);
+      const result = await clearTableBets(tableId, userId, socket.user.gameId || 'baccarat');
 
       if (result.success) {
         // Emit cleared bets (empty array)

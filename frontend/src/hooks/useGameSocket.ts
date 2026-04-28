@@ -21,7 +21,7 @@ import { useAuthStore } from '../store/authStore';
 import { gameApi } from '../services/api';
 
 export function useGameSocket(tableId?: string) {
-  const { token, isAuthenticated, updateUser } = useAuthStore();
+  const { token, isAuthenticated, updateUser, user } = useAuthStore();
 
   const {
     setConnected,
@@ -326,9 +326,9 @@ export function useGameSocket(tableId?: string) {
     }
 
     console.log('[useGameSocket] Submitting bets:', pendingBets, isNoCommission ? '(免佣)' : '');
-    socketPlaceBet(pendingBets, isNoCommission);
+    socketPlaceBet(pendingBets, isNoCommission, user?.gameId);
     return { success: true };
-  }, [pendingBets, phase, bettingLimits]);
+  }, [pendingBets, phase, bettingLimits, user?.gameId]);
 
   // Cancel all bets (pending and confirmed)
   const cancelBets = useCallback(() => {

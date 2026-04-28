@@ -22,6 +22,9 @@ const bgLaunchPayloadSchema = z.object({
   displayName: z.string().nullable().optional(),
   balance: z.string().optional(),
   role: z.literal('member'),
+  gameId: z.enum(['baccarat', 'baccarat-nova', 'baccarat-imperial']).default('baccarat'),
+  provider: z.string().min(1).max(80).default('Royal Crown Studios'),
+  skin: z.enum(['royal', 'nova', 'imperial']).default('royal'),
 });
 
 export async function login(req: Request, res: Response) {
@@ -216,6 +219,9 @@ export async function bgLaunch(req: Request, res: Response) {
         username: user.username,
         role: user.role,
         bgUserId: payload.userId,
+        gameId: payload.gameId,
+        provider: payload.provider,
+        skin: payload.skin,
       },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' }
@@ -229,6 +235,9 @@ export async function bgLaunch(req: Request, res: Response) {
         nickname: user.nickname,
         role: user.role,
         balance: user.balance,
+        gameId: payload.gameId,
+        provider: payload.provider,
+        skin: payload.skin,
       },
     });
   } catch (error) {

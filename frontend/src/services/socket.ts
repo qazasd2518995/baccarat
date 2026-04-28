@@ -172,7 +172,7 @@ interface FakeBroadcastEvent {
 
 // Client to Server Events Interface
 interface ClientToServerEvents {
-  'bet:place': (data: { bets: BetEntry[]; isNoCommission?: boolean }) => void;
+  'bet:place': (data: { bets: BetEntry[]; isNoCommission?: boolean; gameId?: string }) => void;
   'bet:clear': () => void;
   'game:requestState': (data?: { tableId?: string }) => void;
   'chat:send': (data: { message: string }) => void;
@@ -242,12 +242,12 @@ export function disconnectSocket(): void {
 // Socket Actions
 // ============================================
 
-export function placeBet(bets: BetEntry[], isNoCommission: boolean = false): void {
+export function placeBet(bets: BetEntry[], isNoCommission: boolean = false, gameId?: string): void {
   if (!socket?.connected) {
     console.error('[Socket] Cannot place bet: not connected');
     return;
   }
-  socket.emit('bet:place', { bets, isNoCommission });
+  socket.emit('bet:place', { bets, isNoCommission, gameId });
 }
 
 export function clearBets(): void {

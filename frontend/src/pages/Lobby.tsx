@@ -36,6 +36,7 @@ import NoticeMarquee from '../components/game/NoticeMarquee';
 import { useGLTF } from '@react-three/drei';
 import { ALL_MODEL_URLS } from '../components/game/DealerAvatar';
 import type { RoadHistoryEntry } from '../utils/roadmap';
+import { getBaccaratSkin } from '../config/baccaratSkins';
 
 interface Table {
   id: string;
@@ -70,6 +71,7 @@ export default function Lobby() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const skin = useMemo(() => getBaccaratSkin(user?.skin, user?.gameId), [user?.skin, user?.gameId]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState<'normal' | 'good_road'>('normal');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -337,7 +339,7 @@ export default function Lobby() {
   }), [tables, selectedCategory, viewMode]);
 
   return (
-    <div className="h-full bg-[#1a1f2e] text-white flex flex-col overflow-hidden">
+    <div className={`h-full flex flex-col overflow-hidden ${skin.rootClass}`} style={{ fontFamily: skin.fontFamily }}>
       {/* Notice Marquee */}
       <NoticeMarquee />
 
@@ -355,30 +357,30 @@ export default function Lobby() {
         {/* Left Sidebar - Hidden on mobile, slide-in menu */}
         <div className={`
           fixed lg:relative inset-y-0 left-0 z-50
-          w-64 bg-[#141922] border-r border-gray-800/50 flex flex-col
+          w-64 border-r flex flex-col ${skin.sidebarClass}
           transform transition-transform duration-300 ease-in-out
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           lg:flex
         `}>
-          {/* JW 九贏百家 Header */}
+          {/* Brand Header */}
           <div className="p-4 border-b border-gray-800/50">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 border border-amber-400/30">
-                <span className="text-black font-black text-sm tracking-tighter" style={{ fontFamily: 'system-ui' }}>JW</span>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg border border-white/15 ${skin.badgeClass}`}>
+                <span className="font-black text-sm tracking-tighter">{skin.logoText}</span>
               </div>
               <div className="flex flex-col">
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 font-black text-sm tracking-wide" style={{ fontFamily: 'system-ui' }}>
-                  九贏百家
+                <span className={`font-black text-sm tracking-wide ${skin.accentTextClass}`}>
+                  {skin.brand}
                 </span>
                 <span className="text-gray-500 text-[10px] tracking-widest">
-                  JIU WIN
+                  {skin.english}
                 </span>
               </div>
             </div>
 
             {/* User Card */}
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-14 h-14 rounded-lg bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white font-bold text-xl">
+              <div className={`w-14 h-14 rounded-lg flex items-center justify-center font-bold text-xl ${skin.badgeClass}`}>
                 me
               </div>
               <div className="flex-1">
@@ -387,7 +389,7 @@ export default function Lobby() {
                   <span className="text-sm text-gray-300">{user?.username || 'meta111698'}</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-yellow-400 font-bold text-lg">${Number(user?.balance || 0).toLocaleString()}</span>
+                  <span className={`${skin.accentTextClass} font-bold text-lg`}>${Number(user?.balance || 0).toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -522,7 +524,7 @@ export default function Lobby() {
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {/* Sub Navigation */}
-          <div className="h-auto sm:h-10 bg-[#0d1117] flex flex-wrap sm:flex-nowrap items-center px-2 sm:px-4 gap-2 sm:gap-4 py-2 sm:py-0 border-b border-gray-800/50">
+          <div className={`h-auto sm:h-10 flex flex-wrap sm:flex-nowrap items-center px-2 sm:px-4 gap-2 sm:gap-4 py-2 sm:py-0 border-b ${skin.topbarClass}`}>
             <button
               onClick={() => {
                 const newState = toggleBgm();
@@ -553,8 +555,8 @@ export default function Lobby() {
                   onClick={() => setSelectedCategory(tab.id)}
                   className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition whitespace-nowrap ${
                     selectedCategory === tab.id
-                      ? 'bg-[#2a3548] text-white'
-                      : 'text-gray-500 hover:text-gray-300'
+                      ? skin.buttonActiveClass
+                      : skin.buttonIdleClass
                   }`}
                 >
                   {tab.icon && <tab.icon className="w-3 h-3 sm:w-4 sm:h-4" />}
@@ -596,7 +598,7 @@ export default function Lobby() {
           </div>
 
           {/* Tables Grid */}
-          <div className="flex-1 p-2 sm:p-4 overflow-auto bg-[#0d1117]">
+          <div className={`flex-1 p-2 sm:p-4 overflow-auto ${skin.topbarClass}`}>
             {filteredTables.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
                 <LayoutGrid className="w-12 h-12 sm:w-16 sm:h-16 mb-4 opacity-50" />
@@ -607,8 +609,8 @@ export default function Lobby() {
                 {filteredTables.map((table, index) => {
                   const isSpeed = table.bettingDuration === 15;
                   const gameLabel = isSpeed
-                    ? (table.gameType === 'baccarat' ? '急速百家乐' : table.gameType === 'dragonTiger' ? '急速龙虎' : GAME_TYPE_LABELS[table.gameType])
-                    : (GAME_TYPE_LABELS[table.gameType] || table.gameType);
+                    ? (table.gameType === 'baccarat' ? `急速${skin.tableLabel}` : table.gameType === 'dragonTiger' ? '急速龙虎' : GAME_TYPE_LABELS[table.gameType])
+                    : (table.gameType === 'baccarat' ? skin.tableLabel : GAME_TYPE_LABELS[table.gameType] || table.gameType);
                   // Extract table number from name (e.g., "百家樂 1" -> "1")
                   const tableNumber = table.name.replace(/[^\dA-Za-z]/g, '').trim() || (index + 1).toString();
                   // Generate virtual player count (50-2000 range, varies by table, deterministic)
@@ -623,7 +625,7 @@ export default function Lobby() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.03 }}
                       onClick={() => handleJoinTable(table.id, table.gameType)}
-                      className="bg-[#0a0e14] rounded overflow-hidden border border-[#1a2030] hover:border-[#d4af37] cursor-pointer group transition-all duration-200"
+                      className={`rounded overflow-hidden border cursor-pointer group transition-all duration-200 ${skin.cardClass} ${skin.tableHoverClass}`}
                     >
                       {/* Header Bar — dark with stats */}
                       <div className="h-7 bg-[#0d1219] flex items-center px-2 gap-2">
@@ -730,7 +732,7 @@ export default function Lobby() {
         </div>
 
         {/* Right Sidebar - Following List Only (Hidden on mobile and tablet) */}
-        <div className="hidden xl:flex w-48 bg-[#141922] border-l border-gray-800/50 flex-col shrink-0">
+        <div className={`hidden xl:flex w-48 border-l flex-col shrink-0 ${skin.sidebarClass}`}>
           {/* Following List Button */}
           <div className="p-4">
             <button
