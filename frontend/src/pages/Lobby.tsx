@@ -16,6 +16,7 @@ import {
   HelpCircle,
   Globe,
   ArrowUpDown,
+  Home,
   LogOut,
   Menu,
   X,
@@ -37,6 +38,7 @@ import { useGLTF } from '@react-three/drei';
 import { ALL_MODEL_URLS } from '../components/game/DealerAvatar';
 import type { RoadHistoryEntry } from '../utils/roadmap';
 import { getBaccaratSkin } from '../config/baccaratSkins';
+import { openBgLobby } from '../utils/bgReturn';
 
 interface Table {
   id: string;
@@ -321,6 +323,10 @@ export default function Lobby() {
     }
   };
 
+  const handleReturnToBgLobby = useCallback(() => {
+    openBgLobby();
+  }, []);
+
   // Filter tables based on selected category and view mode
   const filteredTables = useMemo(() => tables.filter((table) => {
     // Hide Bull Bull tables
@@ -469,6 +475,13 @@ export default function Lobby() {
           {/* Menu Items */}
           <div className="p-4 border-t border-gray-800/50 space-y-1">
             <button
+              type="button"
+              onClick={handleReturnToBgLobby}
+              className="w-full text-left text-sm text-cyan-300 flex items-center gap-2 py-2 px-3 hover:bg-cyan-400/10 rounded transition-colors"
+            >
+              <Home className="w-4 h-4" /> 返回 BG 大廳
+            </button>
+            <button
               onClick={() => {
                 const newState = toggleBgm();
                 setIsBgmOn(newState);
@@ -563,6 +576,16 @@ export default function Lobby() {
                   {t(tab.labelKey)}
                 </button>
               ))}
+
+              <button
+                type="button"
+                onClick={handleReturnToBgLobby}
+                className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm transition whitespace-nowrap text-cyan-200 hover:bg-cyan-400/10 hover:text-white"
+                title="返回 BG 大廳"
+              >
+                <Home className="w-3 h-3 sm:w-4 sm:h-4" />
+                BG大廳
+              </button>
 
               {/* Hamburger menu — inside tab bar, mobile only */}
               <button

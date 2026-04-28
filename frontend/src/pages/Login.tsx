@@ -5,6 +5,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { authApi } from '../services/api';
 import { getBaccaratSkin, type BaccaratSkin } from '../config/baccaratSkins';
+import { resolveLaunchReturnUrl, saveBgReturnUrl } from '../utils/bgReturn';
 
 export default function Login() {
   const { i18n } = useTranslation();
@@ -12,6 +13,7 @@ export default function Login() {
   const { setAuth } = useAuthStore();
   const launchParams = useMemo(() => new URLSearchParams(window.location.search), []);
   const launchToken = launchParams.get('launchToken');
+  const bgReturnUrl = useMemo(() => resolveLaunchReturnUrl(launchParams), [launchParams]);
   const skin = useMemo(
     () => getBaccaratSkin(launchParams.get('skin'), launchParams.get('gameId')),
     [launchParams],
@@ -38,6 +40,7 @@ export default function Login() {
         }
 
         setAuth(data.token, data.user);
+        saveBgReturnUrl(bgReturnUrl);
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         navigate('/', { replace: true });
@@ -56,7 +59,7 @@ export default function Login() {
     return () => {
       cancelled = true;
     };
-  }, [i18n.language, launchToken, navigate, setAuth]);
+  }, [bgReturnUrl, i18n.language, launchToken, navigate, setAuth]);
 
   if (launchToken) {
     return (
