@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
@@ -18,103 +18,45 @@ export default function Login() {
   );
   const [error, setError] = useState('');
   const [debug, setDebug] = useState<LaunchDebug | null>(null);
-  const [trace, setTrace] = useState<LaunchTraceEntry[]>([]);
-  const [elapsedMs, setElapsedMs] = useState(0);
   const [isLoading, setIsLoading] = useState(Boolean(launchToken));
-  const traceStartedAtRef = useRef(performance.now());
-  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-
-  const addTrace = useCallback((label: string, detail?: string, tone: LaunchTraceEntry['tone'] = 'info') => {
-    const entry: LaunchTraceEntry = {
-      atMs: Math.round(performance.now() - traceStartedAtRef.current),
-      label,
-      detail,
-      tone,
-    };
-    setTrace((prev) => [...prev.slice(-18), entry]);
-    console.info('[BG Gateway Debug]', entry);
-  }, []);
-
-  useEffect(() => {
-    if (!launchToken) return;
-
-    const id = window.setInterval(() => {
-      setElapsedMs(Math.round(performance.now() - traceStartedAtRef.current));
-    }, 250);
-    return () => window.clearInterval(id);
-  }, [launchToken]);
 
   useEffect(() => {
     if (!launchToken) return;
 
     let cancelled = false;
-    traceStartedAtRef.current = performance.now();
-    setElapsedMs(0);
-    const tokenPreview = `${launchToken.slice(0, 10)}...${launchToken.slice(-6)} (${launchToken.length} chars)`;
-    const startEntry: LaunchTraceEntry = {
-      atMs: 0,
-      label: 'login route mounted',
-      detail: `skin=${skin.id} gameId=${launchParams.get('gameId') || 'n/a'} token=${tokenPreview}`,
-      tone: 'info',
-    };
-    setTrace([startEntry]);
-    console.info('[BG Gateway Debug]', startEntry);
     setError('');
     setDebug(null);
     setIsLoading(true);
 
-    const requestStartedAt = performance.now();
-    addTrace('POST /auth/bg-launch start', `api=${apiUrl}`);
     authApi
       .bgLaunch(launchToken)
       .then(({ data }) => {
         if (cancelled) return;
-        addTrace(
-          'POST /auth/bg-launch ok',
-          `${Math.round(performance.now() - requestStartedAt)}ms user=${data.user?.username ?? 'missing'} token=${data.token?.length ?? 0} chars`,
-          'ok',
-        );
         if (!data.token || !data.user) {
-          addTrace('invalid launch response', 'missing token or user in response body', 'error');
           setError(i18n.language === 'zh' ? '百家樂啟動憑證無效' : 'Invalid baccarat launch token');
           return;
         }
 
-        const storeStartedAt = performance.now();
         setAuth(data.token, data.user);
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        addTrace(
-          'auth saved',
-          `${Math.round(performance.now() - storeStartedAt)}ms balance=${String(data.user.balance ?? 'n/a')}`,
-          'ok',
-        );
-        addTrace('navigate /', 'replace=true; lobby route should mount next', 'ok');
         navigate('/', { replace: true });
       })
       .catch((err) => {
         if (cancelled) return;
         const nextError = getLaunchError(err, i18n.language);
-        addTrace(
-          'POST /auth/bg-launch failed',
-          `after ${Math.round(performance.now() - requestStartedAt)}ms status=${nextError.debug.statusCode} message=${nextError.debug.backendMessage}`,
-          'error',
-        );
         console.error('[BG Gateway] bg-launch failed', nextError.debug, err);
         setError(nextError.message);
         setDebug(nextError.debug);
       })
       .finally(() => {
-        if (!cancelled) {
-          addTrace('launch promise settled', `total=${Math.round(performance.now() - traceStartedAtRef.current)}ms`);
-          setIsLoading(false);
-        }
+        if (!cancelled) setIsLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [addTrace, apiUrl, i18n.language, launchParams, launchToken, navigate, setAuth, skin.id]);
+  }, [i18n.language, launchToken, navigate, setAuth]);
 
   if (launchToken) {
     return (
@@ -130,9 +72,6 @@ export default function Login() {
         isLoading={isLoading}
         tone={error ? 'error' : 'loading'}
         debug={debug}
-        trace={trace}
-        elapsedMs={elapsedMs}
-        apiUrl={apiUrl}
         skin={skin}
       />
     );
@@ -148,19 +87,9 @@ export default function Login() {
       }
       isLoading={false}
       tone="idle"
-      trace={trace}
-      elapsedMs={elapsedMs}
-      apiUrl={apiUrl}
       skin={skin}
     />
   );
-}
-
-interface LaunchTraceEntry {
-  atMs: number;
-  label: string;
-  detail?: string;
-  tone?: 'info' | 'ok' | 'warn' | 'error';
 }
 
 interface LaunchDebug {
@@ -168,11 +97,6 @@ interface LaunchDebug {
   errorCode: string;
   backendMessage: string;
   apiUrl: string;
-}
-
-function formatDebugMs(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(2)}s`;
 }
 
 function getLaunchError(error: unknown, language: string): { message: string; debug: LaunchDebug } {
@@ -215,9 +139,6 @@ function LaunchScreen({
   isLoading,
   tone,
   debug,
-  trace,
-  elapsedMs,
-  apiUrl,
   skin,
 }: {
   title: string;
@@ -225,9 +146,6 @@ function LaunchScreen({
   isLoading: boolean;
   tone: 'loading' | 'error' | 'idle';
   debug?: LaunchDebug | null;
-  trace?: LaunchTraceEntry[];
-  elapsedMs?: number;
-  apiUrl?: string;
   skin: BaccaratSkin;
 }) {
   const accent =
@@ -272,9 +190,9 @@ function LaunchScreen({
 
       <div className="absolute inset-0 opacity-[0.03]" />
 
-      <div className="relative z-10 min-h-screen flex items-center justify-center px-6 py-8">
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-6">
         <div
-          className="w-full max-w-[620px] rounded-[28px] px-8 py-10 text-center"
+          className="w-full max-w-[520px] rounded-[28px] px-8 py-10 text-center"
           style={{
             background: 'linear-gradient(135deg, rgba(18,18,26,0.96) 0%, rgba(10,10,15,0.98) 100%)',
             border: `1px solid ${accent.border}`,
@@ -302,63 +220,7 @@ function LaunchScreen({
               <div className="break-all">api: {debug.apiUrl}</div>
             </div>
           ) : null}
-          <LaunchDebugPanel
-            trace={trace ?? []}
-            elapsedMs={elapsedMs ?? 0}
-            apiUrl={apiUrl ?? ''}
-            tone={tone}
-          />
         </div>
-      </div>
-    </div>
-  );
-}
-
-function LaunchDebugPanel({
-  trace,
-  elapsedMs,
-  apiUrl,
-  tone,
-}: {
-  trace: LaunchTraceEntry[];
-  elapsedMs: number;
-  apiUrl: string;
-  tone: 'loading' | 'error' | 'idle';
-}) {
-  const toneClass = {
-    info: 'text-white/72',
-    ok: 'text-emerald-200',
-    warn: 'text-yellow-200',
-    error: 'text-red-200',
-  };
-
-  if (tone === 'idle' && trace.length === 0) return null;
-
-  return (
-    <div className="mt-6 rounded-2xl border border-white/10 bg-black/28 px-4 py-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-2">
-        <div className="text-[11px] font-black uppercase tracking-[0.28em]" style={{ color: tone === 'error' ? '#fca5a5' : '#f5d87a' }}>
-          Launch Debug
-        </div>
-        <div className="font-mono text-[11px] text-white/62">
-          {tone.toUpperCase()} · {formatDebugMs(elapsedMs)}
-        </div>
-      </div>
-      <div className="mt-2 break-all font-mono text-[10px] leading-relaxed text-white/45">
-        api: {apiUrl || 'n/a'}
-      </div>
-      <div className="mt-3 max-h-[220px] space-y-1 overflow-auto pr-1 font-mono text-[10px] leading-relaxed">
-        {trace.length > 0 ? (
-          trace.map((entry, index) => (
-            <div key={`${entry.atMs}-${entry.label}-${index}`} className={toneClass[entry.tone ?? 'info']}>
-              <span className="text-white/34">+{formatDebugMs(entry.atMs)}</span>{' '}
-              <span className="font-semibold">{entry.label}</span>
-              {entry.detail ? <span className="text-white/46"> · {entry.detail}</span> : null}
-            </div>
-          ))
-        ) : (
-          <div className="text-white/45">waiting for launch token...</div>
-        )}
       </div>
     </div>
   );
