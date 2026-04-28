@@ -152,14 +152,16 @@ export async function bgLaunch(req: Request, res: Response) {
     const decoded = jwt.verify(launchToken, bgLaunchSecret) as unknown;
     const payload = bgLaunchPayloadSchema.parse(decoded);
 
-    const existingByBgUserId = await prisma.user.findUnique({
-      where: { bgUserId: payload.userId },
-      select: { id: true, username: true, bgUserId: true },
-    });
-    const existingByUsername = await prisma.user.findUnique({
-      where: { username: payload.username },
-      select: { id: true, username: true, bgUserId: true },
-    });
+    const [existingByBgUserId, existingByUsername] = await Promise.all([
+      prisma.user.findUnique({
+        where: { bgUserId: payload.userId },
+        select: { id: true, username: true, bgUserId: true },
+      }),
+      prisma.user.findUnique({
+        where: { username: payload.username },
+        select: { id: true, username: true, bgUserId: true },
+      }),
+    ]);
 
     if (existingByBgUserId && existingByUsername && existingByBgUserId.id !== existingByUsername.id) {
       console.warn('[BG launch] account mapping conflict', {
