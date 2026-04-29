@@ -37,6 +37,51 @@ function toMoney(value: number): Prisma.Decimal {
   return new Prisma.Decimal(value.toFixed(2));
 }
 
+type SettlementBetResult = {
+  type: BetType;
+  amount: number;
+  won: boolean;
+  payout: number;
+};
+
+function roundCents(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function applyBridgePayoutToBetResults(
+  betResults: SettlementBetResult[],
+  totalBet: number,
+  finalTotalPayout: number,
+  controlled: boolean,
+): SettlementBetResult[] {
+  if (!controlled || totalBet <= 0) return betResults;
+  if (finalTotalPayout <= 0) {
+    return betResults.map((bet) => ({
+      ...bet,
+      won: false,
+      payout: -bet.amount,
+    }));
+  }
+
+  let allocated = 0;
+  return betResults.map((bet, index) => {
+    const isLast = index === betResults.length - 1;
+    const returned = isLast
+      ? roundCents(finalTotalPayout - allocated)
+      : roundCents(finalTotalPayout * (bet.amount / totalBet));
+    allocated += returned;
+
+    const net = roundCents(returned - bet.amount);
+    if (net > 0) {
+      return { ...bet, won: true, payout: net };
+    }
+    if (Math.abs(net) < 0.01) {
+      return { ...bet, won: false, payout: 0 };
+    }
+    return { ...bet, won: false, payout: -bet.amount };
+  });
+}
+
 function formatBetTransactionNote(roundNumber: string, bets?: BetEntry[]): string {
   const summary = bets?.map((bet) => `${bet.type}:${bet.amount}`).join(', ');
   return summary ? `Round #${roundNumber} - Bets: ${summary}` : `Round #${roundNumber}`;
@@ -646,6 +691,15 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
           bets: betResults,
         },
       });
+      const settledTotalPayout = bridgeSettlement.controlled
+        ? bridgeSettlement.payout
+        : totalPayout;
+      const settledBetResults = applyBridgePayoutToBetResults(
+        betResults,
+        totalBet,
+        settledTotalPayout,
+        bridgeSettlement.controlled,
+      );
 
       const finalBalance = await prisma.$transaction(async (tx) => {
         await tx.user.update({
@@ -653,18 +707,18 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
           data: { balance: toMoney(bridgeSettlement.balance) },
         });
 
-        if (totalPayout > 0) {
+        if (settledTotalPayout > 0) {
           await createMirroredTransaction(tx, {
             userId,
-            type: totalPayout > totalBet ? 'win' : 'refund',
-            amount: totalPayout,
-            balanceBefore: bridgeSettlement.balance - totalPayout,
+            type: settledTotalPayout > totalBet ? 'win' : 'refund',
+            amount: settledTotalPayout,
+            balanceBefore: bridgeSettlement.balance - settledTotalPayout,
             balanceAfter: bridgeSettlement.balance,
             note: formatSettlementTransactionNote(round.roundNumber, round.result),
           });
         }
 
-        for (const bet of betResults) {
+        for (const bet of settledBetResults) {
           let status: 'won' | 'lost' | 'refunded';
           let payoutAmount: number;
           if (bet.won) {
@@ -693,18 +747,20 @@ async function handleTableResultPhase(io: TypedServer, tableId: string, duration
         return bridgeSettlement.balance;
       });
 
-      const netResult = totalPayout - totalBet;
+      const netResult = settledTotalPayout - totalBet;
 
       io.to(`user:${userId}`).emit('bet:settlement', {
         roundId: savedRound.id,
-        bets: betResults,
+        bets: settledBetResults,
         totalBet,
-        totalPayout,
+        totalPayout: settledTotalPayout,
         netResult,
         newBalance: finalBalance,
       });
 
-      console.log(`[Table ${tableId}] Settled for user ${userId}: net=${netResult}`);
+      console.log(
+        `[Table ${tableId}] Settled for user ${userId}: net=${netResult}${bridgeSettlement.controlled ? ' (BG controlled)' : ''}`,
+      );
     }
 
     // Update table statistics in database

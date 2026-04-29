@@ -7,6 +7,13 @@ interface BalanceResponse {
   balance: string;
 }
 
+interface SettleResponse extends BalanceResponse {
+  betId?: string;
+  payout?: string;
+  multiplier?: string;
+  controlled?: boolean;
+}
+
 
 async function resolveBgUserId(userId: string): Promise<string> {
   const user = await prisma.user.findUnique({
@@ -70,9 +77,9 @@ export async function bgSettleRound(input: {
   payout: number;
   gameId?: string;
   resultData?: unknown;
-}): Promise<{ balance: number; betId?: string }> {
+}): Promise<{ balance: number; betId?: string; payout: number; multiplier?: number; controlled: boolean }> {
   const bgUserId = await resolveBgUserId(input.userId);
-  const data = await request<{ balance: string; betId?: string }>('/api/integrations/baccarat/settle', {
+  const data = await request<SettleResponse>('/api/integrations/baccarat/settle', {
     method: 'POST',
     body: JSON.stringify({
       ...input,
@@ -83,5 +90,8 @@ export async function bgSettleRound(input: {
   return {
     balance: Number(data.balance || 0),
     betId: data.betId,
+    payout: Number(data.payout ?? input.payout),
+    multiplier: data.multiplier === undefined ? undefined : Number(data.multiplier),
+    controlled: Boolean(data.controlled),
   };
 }
